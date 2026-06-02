@@ -1,0 +1,473 @@
+# Review Notes: Mistake Watch
+
+## Assumptions Made
+
+- Supabase will be used for Postgres, Auth, and persistent room-related data.
+- SpacetimeDB will be used for low-latency live room state and playback sync rather than a hand-rolled Node/WebSocket service or Supabase Realtime alone.
+- The first shippable MVP should prove direct media sync and queue behavior before investing heavily in remote browser streaming.
+- Browser mode should be treated as a separate beta-quality phase until infrastructure cost, site compatibility, and security are validated.
+- The first release is for the owner and friends, so guest-first joining is acceptable and preferred early on.
+
+## Resolved Decisions
+
+- The platform will be room-based.
+- Host-led playback is the default authority model.
+- Only one person can control the shared browser at a time.
+- Queue management is a first-class requirement, especially for music mode.
+- The UI should prioritize the active room experience over a landing page.
+- MVP identity should allow guests to join with a display name; accounts can be introduced for persistence, stronger host identity, and later browser-mode limits.
+- MVP media support should start with direct media URLs and HLS streams.
+- YouTube is the preferred provider integration after direct media/HLS.
+- Cloudflare R2 is the chosen storage direction for owner-uploaded raw media files and future HLS assets.
+- Spotify is out of scope unless the product direction is explicitly reopened later.
+- Google Cast is a later playback-device integration after browser playback is stable.
+- Shared browser mode is phase two so the core room, sync, and queue foundations are built properly first.
+- Host controls playback.
+- Guests can add queue items by default.
+- Host can remove, reorder, and clear queue items.
+- Hosts should eventually have per-user toggles for queue, playback, and browser-control permissions.
+- Later queue collaboration should include voting or approval modes.
+- Later music discovery can include a "next suggested song" moment around 75% progress, showing three suggestions plus a random option, where majority vote can add the winner to the queue.
+- Design references have been added under `Design Reference/` for home/dashboard, cinematic watch room, and listen mode.
+- The reference style direction is a premium dark "Obsidian Lounge" media interface with cyan watch accents and amber listen accents.
+- The cinematic room reference should guide the core watch-room shell.
+- The listen reference should guide music mode inside the same room shell.
+- The home-page reference should be treated as a functional home/dashboard concept rather than a marketing page.
+- The shared reference design system has been promoted to root `DESIGN.md`.
+- The misspelled cinematic room reference folder has been renamed to `Design Reference/Cinematic Room Page`.
+- The intended domain is `watch.mistakestudios.com`.
+- The product name is `Mistake Watch`.
+- The first app screen should be a dashboard based on the Home Page reference.
+- The dashboard should eventually show friends' open rooms, but that depends on accounts and friending.
+- Friend-room invites should eventually work from inside a room: a friend invites another friend, the recipient gets a visible invite pop-up while online, and the same invite persists in the notification bell/drawer until acted on.
+- Room chat is a separate live-room feature from friend invites. It should use stable member/user ids, avatars, and host role display rather than display names as identifiers.
+- All users should have an avatar. The supplied hardware-themed avatar set under `Avatars/` should be used for selectable avatars, and host avatars should show the supplied crown overlay.
+- Direct invite-link joining remains important for the guest-first friends-and-family MVP.
+- Duplicate `DESIGN.md` files inside design reference folders should be replaced with pointers to the root design system.
+- The updated Home Page reference is stronger visually, with a cinematic full-width hero, search, current-room chip, and content rows.
+- The updated Home Page reference must be adapted away from public "Trending" or catalog language into private dashboard sections such as current room, recent rooms, friends' open rooms, saved rooms, and join/create actions.
+- Floating bubble-style control docks should be avoided. When controls are needed, use the grounded Cinematic Room Page bottom control bar pattern.
+- Use the latest stable compatible package line for scaffold dependencies where it verifies cleanly, to keep the foundation future-proof.
+- Markdown task files are the durable source of truth; HTML review artifacts are companion surfaces for complex review, implementation reporting, QA readiness, and handoff.
+- Major frontend UI milestones should be browser-verified at `http://127.0.0.1:5371` unless the local app port is intentionally changed.
+- Supabase schema/auth/RLS work should use current Supabase guidance, migration-based DDL, documented RLS intent, and advisor checks when project access is available.
+
+## Questions For Review
+
+- Should rooms be ephemeral only at first, or should users have saved rooms/playlists/history?
+- Should browser mode be available to all rooms or gated behind host account limits/billing/admin approval?
+- What deployment target do you prefer for SpacetimeDB hosting and browser-worker services?
+- What should the dashboard show before accounts/friending are built: recent local rooms, join/create only, or mocked disabled friend-room placeholders?
+
+## Decisions To Confirm Later
+
+- Exact sync drift thresholds for subtle rate correction vs hard seek.
+- Whether SpacetimeDB should be self-hosted or use SpacetimeDB Maincloud for early testing.
+- How much active room state should be mirrored back into Supabase for history, recovery, and analytics.
+- Whether Supabase Auth should include magic links, OAuth, anonymous auth, or all of these after the guest-first MVP.
+- When to add account-based friendships and friends' open-room discovery.
+- Whether browser mode should use WebRTC directly or a managed/browser-streaming service.
+- Whether music queue search should support provider APIs after URL-only queueing is working.
+- Whether to archive the old generated reference HTML after implementation starts, or keep it as visual inspiration.
+- Whether Task 4 should include an `implementation-report.html` immediately, or whether to wait until the room shell adds more visual complexity.
+
+## Possible Simplifications
+
+- Start with direct media URLs and HLS only.
+- Keep uploaded media objects in Cloudflare R2 rather than Supabase Postgres or Supabase Storage for the long-term media path.
+- Use guest room identities before full account features.
+- Keep queue permissions simple: host manages, guests can add.
+- Delay remote browser mode until the core room sync is demonstrably stable.
+- Run the frontend, Supabase local stack, and SpacetimeDB module locally before introducing production hosting complexity.
+- Build a static dashboard first, but keep room creation and invite joining as the first functional flows.
+- Tokenize only cyan watch mode and amber listen mode first; keep blue/night mode for later.
+
+## Implementation Notes
+
+- Design reference notes were normalized with page-specific insights on home/dashboard, watch room, and listen mode.
+- Supabase plugin access is working. The existing project is `watch-mistakestudios` with project ref `qzmivwhzotuleivzphhm`, region `eu-central-1`, status `ACTIVE_HEALTHY`, and API URL `https://qzmivwhzotuleivzphhm.supabase.co`.
+- The `watch-mistakestudios` public schema currently has no tables. Security advisors report `public.rls_auto_enable()` is a callable `SECURITY DEFINER` function for both `anon` and `authenticated`; this should be reviewed before exposing app data.
+- Task 1 implementation started the Next.js scaffold for Mistake Watch with dashboard and room route placeholders, mock data modules, Tailwind, ESLint, Prettier, TypeScript, and lucide-react.
+- `AGENTS.md` now includes skill checkpoints for spec-first workflow, approved task implementation, design enforcement, Supabase, browser verification, QA, and commit prep.
+- The scaffold intentionally avoids Supabase, realtime, playback sync, queue behavior, and detailed UI primitives because those are later tasks.
+- NPM audit still reports two moderate advisories via Next's bundled PostCSS dependency. The scaffold is on Next 16.2.6 with no high or critical advisories reported; npm's suggested fix points to an obsolete Next major and is not appropriate.
+- Task 1.A approved the latest-compatible baseline direction for Next, React, Tailwind, TypeScript, ESLint, Prettier, and lucide-react.
+- Task 1.A updated the scaffold to Next 16.2.6, React 19.2.6, React DOM 19.2.6, Tailwind CSS 4.3.0, `@tailwindcss/postcss` 4.3.0, lucide-react 1.16.0, TypeScript 6.0.3, Prettier 3.8.3, and ESLint 9.39.4.
+- ESLint 10.4.0 was tested as the latest release, but it failed with Next's current ESLint config stack (`scopeManager.addGlobals is not a function`), so the scaffold uses the latest verified-compatible ESLint 9.x line.
+- Tailwind was migrated to the v4 PostCSS entrypoint using `@tailwindcss/postcss` and `@import "tailwindcss"`.
+- Task 2 converted the Obsidian Lounge design system into Tailwind v4 theme tokens and global utility classes.
+- Task 2 added reusable base primitives for buttons, icon buttons, inputs, tabs, panels, badges, avatars, sliders, tooltips, app containers, and app shells.
+- Task 2 lightly refactored the scaffold dashboard and room placeholder pages to consume the new primitives without implementing the full dashboard or room shell early.
+- Task 2 preserved the no-floating-bubble-dock rule; no detached transport dock primitive was introduced.
+- Task 3 implemented the dashboard shell using the updated Home Page reference: fixed top navigation, Mistake Watch branding, mode links, search placeholder, notification/settings placeholders, profile/avatar state, current-room chip, cinematic hero, create-room action, rejoin action, and join-by-link/code form.
+- Task 3 keeps dashboard copy private and friends-oriented, avoiding public trending/catalog claims.
+- Task 3 intentionally leaves detailed current/recent/saved/friends room sections as scoped placeholders for Task 4.
+- Task 3 uses a cinematic background image from the supplied Home Page reference to preserve the intended visual direction.
+- Workflow specs were updated after rereading the active skills: `AGENTS.md`, `tasks.md`, and `acceptance-criteria.md` now call out HTML review artifacts, Browser QA on port `5371`, Supabase migration/RLS checks, QA release gating, and report-first commit prep.
+- Task 4 replaced the dashboard placeholder cards with current room, recent rooms, saved rooms, and friends' open rooms sections.
+- Task 4 added a reusable room row/card pattern that shows host, participants, mode, privacy, now-playing text, room activity, and join state.
+- Task 4 keeps friends' open rooms visibly account/friending-dependent through disabled Needs Account states rather than implying live social discovery exists.
+- Task 4 created `implementation-report.html` as a compact human review surface for the dashboard content milestone.
+- Task 4.B design polish moved base CSS resets into Tailwind's base layer so utility classes win, centralized button/link styling through `buttonClassName`, converted locked room actions into status badges, made room card accents mode-aware, reduced current-room chip glow, and tightened dashboard section spacing.
+- `C:\Users\Admin\dev\open-design` was reviewed as a design-systems and skills reference. Its most useful ideas for Mistake Watch are critique discipline, token-first component rules, accent discipline, and avoiding generic AI-template repetition; its visual systems should be treated as methodology/reference, not copied into the Obsidian Lounge look.
+- Task 5 replaced the room scaffold with a static cinematic watch-room shell.
+- Task 5 added the media stage, top room status HUD, right sidebar tabs, queue preview, participants panel, permissions preview, chat placeholder, invite/share/settings/leave actions, and grounded bottom transport bar.
+- Task 5 keeps playback sync, source loading, queue mutations, realtime presence, and permission authority as static placeholders for later approved tasks.
+- Task 5 fixed the dynamic room route to await `params` so the room id renders correctly in Next 16.
+- Task 6 added listen mode inside the shared room shell rather than creating a separate product surface.
+- Task 6 added an amber music stage with album-art treatment, now-playing metadata, host-led listening labels, direct-audio source placeholder, audio visualizer, and mode switcher.
+- Task 6 added `musicRoomMock` and route selection so `/rooms/music-afterglow` renders listen mode while `/rooms/alpha-theatre` continues to render watch mode.
+- Task 6 reused the grounded transport bar and room sidebar; queue rows now support artist metadata and amber now-playing badges in listen mode.
+- Task 6 keeps provider search, real playback, queue mutations, suggested-next voting, and audio source validation deferred to later approved tasks.
+- Task 7 converted the room sidebar into an interactive tabbed surface so queue, people, permissions, and chat no longer stack into a long cramped rail on smaller widths.
+- Task 7 tightened responsive behavior for the dashboard hero, join form, room stage, queue rows, permission chips, long source labels, and grounded transport bar.
+- Task 7 added sidebar tab click and arrow-key handling while keeping the room shell static and deferring real data, Supabase wiring, and SpacetimeDB live state to later tasks.
+- Task 8 added Supabase environment documentation for `watch-mistakestudios`, a typed config helper, a Supabase workspace README, and `docs/data-model.md`.
+- Task 8 keeps actual DDL, migrations, RLS policy creation, grants, and generated database types deferred to Task 9.
+- Task 8 uses current Supabase guidance that public/exposed-schema tables need RLS plus explicit access grants; RLS protects rows, while grants affect Data API/GraphQL schema visibility.
+- Task 9 applied the MVP Supabase schema to `watch-mistakestudios` through migrations `20260528094023_mvp_schema_guest_identity.sql` and `20260528094907_task9_advisor_fixes.sql`.
+- Task 9 created `profiles`, `rooms`, `guest_identities`, `room_members`, `room_settings`, `member_permissions`, `queue_items`, and `playback_sessions` with RLS enabled on every app table.
+- Task 9 keeps `guest_identities` server-managed. Direct client roles have no table grants, and a restrictive deny policy documents that clients cannot directly read or mutate token hashes.
+- Task 9 generated local Supabase database types and added browser, server, and admin client helpers.
+- Task 9 added server-only guest room helpers for guest-hosted room creation, invite metadata, guest joining, room-scoped token hashing, and host/member reclaim after refresh or disconnect.
+- Task 9 deliberately does not wire dashboard actions or room routes to real data; that remains Task 10.
+- Task 10 replaced dashboard mock sourcing with Supabase-backed room data where available from room-scoped guest cookies.
+- Task 10 added server-action create and join flows for guest-hosted rooms, invite links, and quick invite-code joins.
+- Task 10 added a room invite gate so direct room invite links can collect a guest display name before entering the room.
+- Task 10 room pages now reclaim the guest token from an HTTP-only cookie and render the static room shell from Supabase room, membership, settings, and queue records.
+- Task 10 keeps SpacetimeDB live snapshots, playback sync, source loading, queue mutations, accounts, friending, and real-time permission authority deferred to later tasks.
+- Local `.env.local` is not present yet, so create/join actions are wired but require `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and server-only `SUPABASE_SECRET_KEY` before they can create real rooms from the local app.
+
+## Verification Notes
+
+- Spec packet created and Task 1 scaffold implemented.
+- Task 1 verification passed: `npm run typecheck`, `npm run lint`, `npm run build`, and scoped `npm run format`.
+- `npm audit --json` was run after upgrading to Next 16.2.6; remaining findings are moderate Next/PostCSS advisories with no suitable forward fix from npm at this time.
+- Task 1.A verification passed after the latest-compatible update: `npm run typecheck`, `npm run lint`, `npm run build`, and scoped `npm run format`.
+- Task 2 verification passed: `npm run typecheck`, `npm run lint`, `npm run build`, and scoped `npm run format`.
+- Task 3 verification passed: `npm run typecheck`, `npm run lint`, `npm run build`, and scoped `npm run format`.
+- Task 3 local app check returned HTTP 200 at `http://127.0.0.1:3000`.
+- Local development port changed to `5371` to avoid collisions with other apps that commonly use port `3000`.
+- Spec workflow update completed as a documentation-only change; no app/source implementation files were edited.
+- Task 4 verification passed: `npm run typecheck`, `npm run lint`, `npm run build`, and scoped Prettier check for Task 4 files.
+- Full components Prettier check surfaced pre-existing formatting drift in unrelated UI primitive files: `components/ui/avatar.tsx`, `components/ui/icon-button.tsx`, and `components/ui/input.tsx`.
+- Task 4 local app check returned HTTP 200 at `http://127.0.0.1:5371`.
+- Browser DOM verification confirmed the dashboard renders Current Room, Recent Rooms, Saved Rooms, Friends' Open Rooms, Alpha Theatre, and Needs Account states.
+- Browser layout metrics at a 1280px viewport reported no horizontal overflow. Screenshot capture timed out in the browser layer, so visual verification is partial.
+- Task 4.B verification passed: `npm run typecheck`, `npm run lint`, `npm run build`, and Browser style/layout checks at `http://127.0.0.1:5371`.
+- Task 4.B Browser verification confirmed the hero CTA renders cyan with dark text, secondary buttons keep consistent weight, locked room states render as badges rather than buttons, and no horizontal overflow is present.
+- Task 4.B screenshot capture succeeded in the in-app browser after the polish pass.
+- Task 5 verification passed: `npm run typecheck`, `npm run lint`, `npm run build`, and `npm run format`.
+- Task 5 Browser verification passed at `http://127.0.0.1:5371/rooms/alpha-theatre`: room shell content rendered, route id rendered, grounded transport bar was pinned to the viewport bottom, and no horizontal overflow was present.
+- Task 5 screenshot capture succeeded in the in-app browser. The screenshot was taken at the current in-app browser width, where the sidebar stacks under the media stage until the desktop breakpoint.
+- Task 6 verification passed: `npm run typecheck`, `npm run lint`, `npm run build`, and `npm run format`.
+- Task 6 Browser verification passed at `http://127.0.0.1:5371/rooms/music-afterglow`: listen room, listen mode label, now-playing title/artist, queue items, visualizer bars, grounded transport, and no horizontal overflow were confirmed.
+- Task 6 regression Browser verification passed at `http://127.0.0.1:5371/rooms/alpha-theatre`: watch room label, static player surface, watch title, queue item, and no horizontal overflow were confirmed.
+- Task 6 screenshot capture timed out in the browser layer, likely due to the animated visualizer, so visual verification was DOM/layout based for this pass.
+- Task 7 verification passed: `npm run typecheck`, `npm run lint`, `npm run build`, and `npm run format`.
+- Task 7 Browser verification passed at `http://127.0.0.1:5371/`: dashboard hero, join form, current room, friends' rooms, nav height, and no horizontal overflow were confirmed.
+- Task 7 Browser verification passed at `http://127.0.0.1:5371/rooms/alpha-theatre`: sidebar tabs rendered with ARIA panel wiring, the People tab switched panels, the queue panel no longer stacked with people content, the transport stayed pinned, and no horizontal overflow was confirmed.
+- Task 7 Browser verification passed at `http://127.0.0.1:5371/rooms/music-afterglow`: listen mode, artist metadata, visualizer bars, sidebar tab wiring, grounded transport, and no horizontal overflow were confirmed.
+- Task 8 verification passed: `npm run typecheck`, `npm run lint`, `npm run build`, `npm run format`, and Prettier checks for `docs/data-model.md`, `supabase/README.md`, `review-notes.md`, and `implementation-report.html`.
+- Task 9 remote verification passed: Supabase lists all eight app tables with RLS enabled.
+- Task 9 remote verification passed: `public.rls_auto_enable()` is no longer executable by `anon` or `authenticated`.
+- Task 9 remote verification passed: security advisors report no lints.
+- Task 9 performance advisors report only unused-index info on the fresh empty schema; no missing foreign-key index lints remain after the advisor-fix migration.
+- Task 9 smoke verification created a guest-hosted room, guest identity, host membership, settings row, and reclaim match. The smoke row was then explicitly deleted and row counts returned to zero.
+- Task 9 local verification passed: `npm run typecheck`, `npm run lint`, `npm run build`, and `npm run format`.
+- `npm audit --audit-level=high` could not complete because the npm audit endpoint returned an error in the sandbox; external registry audit escalation was rejected by the reviewer, so no fresh audit result was produced for Task 9.
+- Task 10 local verification passed: `npm run typecheck`, `npm run lint`, `npm run build`, and `npm run format`.
+- Task 10 runtime verification passed: `http://127.0.0.1:5371/` returned HTTP 200 after starting the local dev server.
+- Task 10 runtime verification passed: `http://127.0.0.1:5371/rooms/test-room?invite=abc` returned HTTP 200 and exercises the invite-gate route path.
+- Browser automation tools were not available through tool discovery for Task 10, so no screenshot-based visual QA was captured in this pass.
+- Task 11 added the first SpacetimeDB live room engine skeleton under `spacetime/src/index.ts`.
+- Task 11 added live tables for `room_session`, `room_participant`, `live_queue_item`, and `room_error`, plus reducers for `seed_room_session`, `join_room`, `heartbeat`, `leave_room`, and disconnect handling.
+- Task 11 added generated-binding-ready frontend helpers under `lib/spacetime/` for configuration, snapshot types, snapshot merging, and the initial connect/join/subscribe/disconnect adapter shape.
+- Task 11 documented the Supabase durable data versus SpacetimeDB live room boundary in `docs/sync-model.md`.
+- Task 11 installed the `spacetimedb` package at version `2.3.0` and added package scripts plus `spacetime.json` for later publishing of `mistake-watch-rooms` and TypeScript binding generation.
+- Task 11 updated `.env.example` so local SpacetimeDB defaults to `ws://127.0.0.1:5372`, avoiding the frontend app port `5371` and common `3000` conflicts.
+- Task 11 intentionally does not implement playback sync math, permission authority UI wiring, media source loading, real queue mutations, or browser mode.
+- Task 11 verification passed: `npm run typecheck`, `npm run lint`, `npm run build`, and `npm run format`.
+- Task 11 follow-up verified the installed SpacetimeDB CLI at version `2.3.0`.
+- Task 11 follow-up added SpacetimeDB TypeScript module metadata in `spacetime/package.json` and `spacetime/tsconfig.json`, matching the CLI's TypeScript template expectations.
+- Task 11 follow-up generated concrete TypeScript bindings under `lib/spacetime/generated/`.
+- Task 11 follow-up started a local SpacetimeDB server on `127.0.0.1:5372` and published the room module locally to database `mistake-watch-08qfy`.
+- Task 11 follow-up smoke-tested the `seed_room_session` reducer through the CLI, queried the resulting `room_session` row, deleted the smoke row, and confirmed cleanup.
+- Task 11 follow-up corrected local publish behavior so `npm run spacetime:publish` targets `http://127.0.0.1:5372` explicitly instead of relying on the global default server.
+- Task 11 follow-up verification passed: `npm run spacetime:generate`, `npm run spacetime:publish`, `npm run typecheck`, `npm run lint`, `npm run format`, and `npm run build`.
+- Task 12 added `room_permission` to SpacetimeDB for live queue, playback, and browser-control capability flags.
+- Task 12 added host-owned SpacetimeDB reducers for `set_member_permissions`, `grant_room_control`, and `revoke_room_control`.
+- Task 12 tightened live authority reducers so heartbeat and leave calls must come from the identity that owns the participant row, and permission/control changes require the authoritative host participant identity.
+- Task 12 added a client live-room hook that connects to generated SpacetimeDB bindings, subscribes to room session, participants, permissions, and errors, stores the SpacetimeDB token in local storage, joins the room, sends heartbeats, and leaves cleanly on unmount.
+- Task 12 wired the room People and Permissions tabs to live SpacetimeDB state with connection status, controller badges, host-only grant/revoke controls, and host-only permission buttons.
+- Task 12 keeps playback sync, source loading, queue mutations, and browser streaming deferred to later tasks.
+- Task 12 local SpacetimeDB verification passed: generated bindings, published the updated module locally, seeded a smoke room, joined host and guest participants, updated guest permissions through the host reducer, granted controller identity, queried the resulting state, and cleaned up smoke rows.
+- Task 12 local app verification passed: `npm run typecheck`, `npm run lint`, `npm run format`, `npm run build`, and dashboard HTTP 200 at `http://127.0.0.1:5371/`.
+- Task 12 room-route HTTP checks against old mock routes returned 404 because Task 10 moved room pages to Supabase-backed real rooms. Browser automation was unavailable through tool discovery, so live panel visual/interaction QA still needs a manual pass against a real joined room.
+- Post-Task 12 browser review tightened the room/sidebar shape language after user feedback: tab strips and active sidebar panels should read as one attached surface, and standard product panels should use sharper rounded corners while keeping major media canvases/modal-scale surfaces visually distinct.
+- Post-Task 12 room shell polish connects the room mode switcher to the top room identity/invite panel with a hairline divider, avoiding detached floating controls while preserving a clear row split.
+- Post-Task 12 room header polish removes the visible long invite URL and room ID from the top header, keeps copy/share as the invite actions, moves the viewer count beside the room name, and removes the duplicate room HUD from the media stage.
+- Post-Task 12 idle media polish models the empty player border as a thicker glass-tube SVG path with one long moving light beam around the player window edge, changes the transport status to `Awaiting Media`, and constrains the matching waiting motion to the one-dimensional progress track while no source is loaded.
+- Follow-up idle media adjustment moves the tube outside the clipped player surface so it borders the player window, triples the beam/tail length, and slows the border travel for a single continuous light-beam read.
+- Follow-up geometry fix forces the SVG tube overlay to stretch to the full player wrapper dimensions instead of retaining a square intrinsic SVG box, so the beam follows the actual player width and height.
+- Task 12 live-room follow-up fixed the SpacetimeDB `onInsert` runtime error by using the generated snake_case table accessors (`room_participant`, `room_permission`, `room_session`, `room_error`) instead of camelCase names in the frontend hook.
+- Task 13 added the canonical playback-state model and isolated sync math under `lib/player/`, including expected-position calculation, settled/rate-correction/seek/hard-seek thresholds, paused/ended alignment, buffering/error wait states, and autoplay-block handling.
+- Task 13 added `npm run test:sync` with focused Node tests for expected position, drift correction, duration clamping, paused alignment, medium and hard seeks, and autoplay-blocked playback.
+- Task 13 verification passed: `npm run test:sync`, `npm run typecheck`, `npm run lint`, `npm run format`, and `npm run build`.
+- Task 14 verification passed: `npm run typecheck`, `npm run lint`, `npm run format`, `npm run test:sync`, and `npm run build`.
+- Task 14 SpacetimeDB verification passed: generated TypeScript bindings and published the updated module locally to `mistake-watch-08qfy` with a non-destructive migration.
+- Task 14 browser verification is partial: headless Chrome captured the invite/join page, but two-client joined-room media sync still needs manual verification using active room cookies or a Playwright setup that can complete the guest join flow.
+- Task 14 added direct media source validation and host-only source loading for direct audio/video URLs and HLS `.m3u8` streams.
+- Task 14 added `hls.js` 1.6.16 and a direct media player adapter that uses native HLS when available, falls back to `hls.js`, and applies the Task 13 drift-correction decisions to the active audio/video element.
+- Task 14 added SpacetimeDB `load_media_source` and `set_playback_state` reducers, plus `room_session` source fields with migration-safe defaults so local publish can add the fields without deleting data.
+- Task 14 refactored the room shell so a single live-room hook feeds the media stage, music stage, sidebar, and transport controls rather than opening separate SpacetimeDB connections per panel.
+- Task 14 surfaced invalid URL, unsupported HLS, media load, buffering, ended, error, and autoplay-blocked states at the player layer.
+- Task 14 published the updated local SpacetimeDB module to `mistake-watch-08qfy` on `http://127.0.0.1:5372` using `--break-clients`; this allowed the schema migration and disconnected existing local clients, but did not delete data.
+- Task 14 browser check reached the room invite page in a fresh headless Chrome profile and captured `task14-room-check.png`; because that profile did not share the in-app browser's joined-room guest cookie, full joined-room/two-client playback QA remains manual.
+- User QA after Task 14 confirmed a guest could join the host room with the room code.
+- User QA after Task 14 found the copy invite and share invite actions did not work, requiring manual room-code copying.
+- User QA after Task 14 found live permission changes propagated correctly between host and guest.
+- User QA after Task 14 found the video/player source URL flow was not usable from the room UI, so Task 14 needs a focused follow-up before playback sync can be judged.
+- User QA after Task 14 found queue adding was not usable. This is expected to remain incomplete until Task 15, but the UI should communicate that clearly if the add affordance is visible.
+- Task 14 follow-up implemented functional copy/share invite actions with clipboard fallback and visible copied/shared feedback.
+- Task 14 follow-up moved the direct media source form into the visible empty-player content instead of leaving it as a bottom overlay near the grounded transport bar.
+- Task 14 follow-up disables source loading until the live room is connected and shows clearer host/connection helper text.
+- Task 14 follow-up verification passed: `npm run typecheck`, `npm run lint`, `npm run format`, `npm run test:sync`, and `npm run build`.
+- Task 14 follow-up still needs joined-room browser verification for copy/share behavior and successful host source loading.
+- Task 14.B adds YouTube as a first-class watch-room source using the official YouTube IFrame Player API while keeping each viewer's own YouTube browser session responsible for Premium/login/eligibility.
+- Task 14.B source validation accepts common YouTube watch, short, embed, live, share URLs, and raw video IDs, then normalizes them to canonical watch URLs.
+- Task 14.B adds a YouTube media player adapter that maps YouTube player events into the existing SpacetimeDB playback state and applies the existing drift-correction loop through `playVideo`, `pauseVideo`, `seekTo`, and `setPlaybackRate`.
+- Task 14.B keeps YouTube restricted to watch rooms for now; listen mode rejects YouTube links until music-mode/provider behavior is designed.
+- Task 14.B published the local SpacetimeDB module after preserving `youtube` as a source type in `load_media_source`.
+- Task 14.B verification passed: `npm run test:sync`, `npm run typecheck`, `npm run lint`, `npm run format`, and `npm run build`.
+- Task 14.B still needs joined-room browser verification with an embeddable YouTube video because YouTube playback depends on the external iframe API and viewer account/browser state.
+- Task 14.B QA follow-up fixed YouTube black flashing by decoupling the iframe/player creation effect from live-room state updates; live playback updates now use refs instead of recreating the iframe.
+- Task 14.B QA follow-up applied the same source-lifecycle stabilization to the direct/HLS media adapter so playback state changes do not reload the media element.
+- Task 14.B QA follow-up moved the source URL form out of the player canvas and into the sidebar directly below the Queue/People/Perms/Chat tab bar.
+- Task 14.B QA follow-up removed the player-surface "Now playing" overlay while media is loaded; the grounded transport bar remains the now-playing surface.
+- Task 14.B QA follow-up verification passed: `npm run typecheck`, `npm run lint`, `npm run format`, `npm run test:sync`, and `npm run build`.
+- Task 14.B transport follow-up added a SpacetimeDB `update_media_title` reducer so the YouTube player can report the real video title back into the live session for the bottom transport bar.
+- Task 14.B transport follow-up added bottom-bar skip controls for 10 seconds back, 5 seconds back, 5 seconds forward, and 10 seconds forward.
+- YouTube quality selection cannot be implemented as a custom Mistake Watch control through the current official IFrame API because `getPlaybackQuality`, `setPlaybackQuality`, and `getAvailableQualityLevels` are no longer supported. Users must use YouTube's native player controls for quality selection.
+- YouTube pause overlays/details are part of the native embedded player UI. Hiding native controls would reduce that overlay but would also remove the practical path for users to change quality.
+- Task 14.B transport follow-up verification passed: SpacetimeDB generate/publish, `npm run typecheck`, `npm run lint`, `npm run format`, `npm run test:sync`, and `npm run build`.
+- Task 14.B native-control follow-up intentionally keeps YouTube native controls enabled for user-owned settings like quality.
+- Task 14.B native-control follow-up tightens unauthorized guest correction: unpermitted local YouTube play, pause, or seek actions are not published to SpacetimeDB and are corrected back to the canonical host timeline more aggressively.
+- Task 14.B native-control follow-up fixed blocked YouTube quality/settings clicks by removing the loaded-media player-stage overlay layer that was sitting above the iframe and marking decorative idle layers as pointer-events-none.
+- Task 14.B native-control follow-up verification passed: `npm run typecheck`, `npm run lint`, `npm run format`, `npm run test:sync`, and `npm run build`.
+- Task 14.B desktop layout follow-up moves room identity, invite, mode, settings, and leave controls into a compact left rail on desktop while keeping the mobile top bar.
+- Task 14.B desktop layout follow-up makes the Queue/People/Perms/Chat sidebar read as one attached right rail instead of a set of floating panels.
+- Task 14.B desktop layout follow-up changes the grounded transport into a two-level bar with the media title above controls/progress.
+- Task 14.B desktop layout follow-up replaces confusing skip-to-next-looking icons with circular skip icons that visibly show 5 or 10 seconds.
+- YouTube views and likes would require the YouTube Data API and an API key; public dislikes are not available through YouTube's official API, so those metrics were not added to the transport.
+- YouTube embed theming is controlled by YouTube. The current official player-parameters documentation says the old `theme` parameter is deprecated and HTML5 players use the dark theme, so there is no supported Mistake Watch parameter to force a separate dark-control mode.
+- Task 14.B desktop layout follow-up verification passed: `npm run typecheck`, `npm run lint`, `npm run format`, `npm run test:sync`, and `npm run build`.
+- Task 14.B fixed-rail follow-up attaches the desktop left rail to the far left of the viewport, enlarges the room type/name block, makes Exit a labeled button, adds a participant preview, and slots mode/copy/share/settings into the rail.
+- Task 14.B fixed-rail follow-up attaches the right sidebar to the far right of the viewport with square desktop edges.
+- Task 14.B fixed-rail follow-up adds `source_duration_seconds` to SpacetimeDB so the transport progress bar can show real elapsed and total time for YouTube media.
+- Task 14.B fixed-rail follow-up styles the app sliders instead of leaving browser-default range controls visible.
+- Task 14.B fixed-rail follow-up verification passed: SpacetimeDB generate/publish, `npm run typecheck`, `npm run lint`, `npm run format`, `npm run test:sync`, and `npm run build`.
+- Task 14.B rail action follow-up moves the transport title above the progress row so long YouTube titles do not clip into the duration bar.
+- Task 14.B rail action follow-up adds room code and invite link display to the invite block, makes the invite link a clickable join hyperlink, gives Share visible text, makes Settings a wide button, removes the redundant lower desktop Leave button, and renames the top exit action to Leave Room.
+- Task 14.B rail action follow-up verification passed: `npm run typecheck`, `npm run lint`, `npm run format`, `npm run test:sync`, and `npm run build`.
+- User QA after Task 14.B confirmed two-client YouTube sync is performing very well, with roughly 200ms observed difference after one pause/catch-up moment.
+- User QA after Task 14.B confirmed synced audio can overlap tightly enough that two clients audibly play together, host/guest permission behavior works as intended, and unauthorized guest time changes are auto-corrected back to the host timeline.
+- Local dev follow-up changes `npm run dev` into a combined launcher that starts SpacetimeDB on `127.0.0.1:5372` when needed before starting the Next.js app on `127.0.0.1:5371`.
+- Task 15 adds SpacetimeDB live queue reducers for `add_queue_item`, `play_queue_item`, `move_queue_item`, `remove_queue_item`, and `clear_queue`.
+- Task 15 wires the Queue tab to live SpacetimeDB queue state, adds an inline URL queue form, keeps guests able to add queue items by default, and keeps play-now, remove, reorder, and clear controls host-only.
+- Task 15 play-now behavior loads the selected queue source into the authoritative room session, sets `active_queue_item_id`, resets position to zero, and pauses until the host starts playback.
+- Task 15 adds focused queue model unit tests under `tests/queue/` and an `npm run test:queue` script.
+- Task 15 local SpacetimeDB verification passed: generated bindings, published the updated module locally to `mistake-watch-08qfy`, smoke-tested queue add and play-now reducers through the CLI, verified the room session picked up the active queue item, and cleaned up smoke rows.
+- Task 15 browser smoke verification passed at `http://127.0.0.1:5371`: the joined room loaded, Queue tab rendered the Add URL surface, live room status reached connected, and no browser console errors were reported.
+- Post-Task 15 product decision: use Cloudflare R2 for future media uploads. Supabase should store media metadata and permissions; R2 should store large raw media files and future HLS playlist/segment assets.
+- Task 15.B adds lightweight queue metadata enrichment without provider API keys: YouTube queue rows derive thumbnails from parsed video IDs, raw YouTube IDs are hidden behind a clean `YouTube video` pending title, and missing duration now reads `Metadata pending`.
+- Task 15.B updates `update_media_title` so active queued media receives the player-reported title and duration once the YouTube/direct player resolves real metadata.
+- Task 15.B changes the SpacetimeDB `add_queue_item` reducer duration payload to optional so pending metadata remains missing instead of being forced through a fake zero duration.
+- Task 15.B verification passed: SpacetimeDB module `tsc --noEmit`, SpacetimeDB generate/publish to local `mistake-watch-08qfy`, `npm run typecheck`, `npm run lint`, `npm run format`, `npm run test:sync`, `npm run test:queue`, and `npm run build`.
+- Task 15.B browser smoke is partial: the local room route returned HTTP 200, but fresh browser automation lacked the in-app browser's joined-room cookies and reached the guest join gate. Manual joined-room review should reload tabs after the SpacetimeDB publish and verify YouTube queue thumbnail/title/duration behavior.
+- Task 15.C moves the desktop left room rail into the client live-room experience so the participant preview uses the same SpacetimeDB participant state as the right People tab.
+- Task 15.C adds host room renaming from the room rail. The rename first persists through a server action to Supabase after host cookie validation, then mirrors through the SpacetimeDB `update_room_name` reducer for joined clients.
+- Task 15.C adds a separate copy button beside the room code, keeping full invite copy/share as separate actions.
+- Task 15.C adds a neutral People tab count badge, a short visual pulse when online participant count increases, and a best-effort local Web Audio join cue when the browser permits playback.
+- Task 15.C gives participants deterministic colors and symbol icons through the shared avatar component and left rail preview.
+- Task 15.C verification passed: SpacetimeDB module `tsc --noEmit`, SpacetimeDB generate/publish to local `mistake-watch-08qfy`, `npm run typecheck`, `npm run lint`, `npm run format`, `npm run test:sync`, `npm run test:queue`, and `npm run build`.
+- Task 15.C manual browser QA should reload open room tabs after the SpacetimeDB publish, rename the room as host, confirm the name updates in another joined client, join a new guest, confirm the left rail and People tab count update, and confirm the room-code copy button copies only the code.
+- Follow-up finding: dashboard cards currently use durable `room_members.length` as `participants`, so rooms can look occupied even when no one is connected. This should be fixed before Task 16 as Task 15.D.
+- Room lifecycle decision: unsaved temporary rooms should close after one hour of idle time, while saved rooms should remain rejoinable and preserve their persisted queue.
+- Guest-first identity clarification: display names are labels only. The current stable identifiers are UUIDs for `guest_identities.id` and `room_members.id`, plus a room-scoped HTTP-only guest token. Usernames should not be used as primary IDs before account login exists.
+- Supabase lifecycle implementation note: Supabase Cron can run SQL/functions on a schedule, and Supabase docs also describe scheduling Edge Functions through `pg_cron` plus `pg_net`. For this use case, a SQL cleanup function scheduled by Supabase Cron is likely sufficient unless cleanup must coordinate with external services.
+- Task 15.D dashboard live-state follow-up adds a client SpacetimeDB subscription layer for the dashboard's known recent/saved/friend room IDs without joining those rooms. Dashboard cards can now reflect live room names, online people counts, active media labels, and playback state from SpacetimeDB instead of only the initial Supabase snapshot.
+- Task 15.D remaining work: durable saved-room toggles, one-hour idle termination, Supabase cleanup scheduling, and filtering closed temporary rooms still need their dedicated lifecycle implementation.
+- Task 15.D scope refinement: saved-room behavior must include explicit save/unsave UI, durable saved state in Supabase, temporary rooms defaulting to unsaved, preserved queues for saved rooms, and old invite/code links blocked after temporary room closure.
+- Task 15.E added as the next dashboard polish slice: restructure create/join into an attached right-side panel, add saved-room quick links/sidebar, and add first-time-only guidance explaining the create, invite, media, queue, and save flow. This is intentionally separate from Task 15.D lifecycle backend work.
+- Task 15.E visual refinement: active dashboard rooms should get a restrained glowing border/light state, and the dashboard watch/rejoin/invite strip should show the current media thumbnail when live metadata provides one.
+- Task 15.D implementation adds Supabase room lifecycle columns for saved state, saved owner context, idle deadline, closed timestamp, and close reason.
+- Task 15.D adds a private SQL cleanup function plus an optional Supabase Cron registration when `pg_cron` exists, and also adds an app-side server cleanup path so local/dev dashboard and invite reads can close expired unsaved rooms.
+- Task 15.D adds a host-only Save Room/Saved Room toggle in the room rail, keeps saved rooms visible in dashboard saved rooms, and blocks reclaim/join paths for closed rooms.
+- Task 15.D Supabase verification passed on `watch-mistakestudios`: lifecycle migration applied, covering-index follow-up applied, schema columns verified, cleanup function executed with count result, and security advisors returned no lints. Performance advisors only show unused-index INFO notices expected for new or low-traffic indexes.
+- Task 15.E implementation moves create/join out of the hero into an attached right-side dashboard control panel, adds saved/recent quick links, and adds a first-run guide that stores dismissal in localStorage for the guest-first MVP.
+- Task 15.E preserves live dashboard state while adding thumbnail metadata plumbing for YouTube/current media and a thumbnail-aware current-room watch/rejoin strip.
+- Task 15.E adds a restrained active-room border/glow state to dashboard room cards; larger active-card animation polish remains out of scope until a visual QA pass approves it.
+- Task 15.E correction: the desktop dashboard now uses true side panels with saved spaces on the left, start/join controls on the right, and the hero plus room lists in the center column. The first-run explanation is now a localStorage-dismissed modal popup instead of embedded page content, and recent/current room cards render provider thumbnails when `thumbnailUrl` is available.
+- Task 15.E visual follow-up adds a performant code-native live dashboard background with scroll parallax, removes the external hero image from the home surface, changes the side rails to match the translucent navbar material, fixes sticky rail behavior by using horizontal clipping instead of overflow-hidden, and delays the current-room split layout until wider screens so the center column does not collapse at 1280px.
+- Task 15.E side-panel follow-up makes the rails match the navbar dark material exactly, removes the right-rail "Start or join" heading and explanatory copy, compacts the dashboard hero, and removes the desktop center-column gutter so the hero surface touches both side rails.
+- Task 15.E navbar/background follow-up removes the navbar max-width container so its content uses the full available viewport width, adds a full-page filtered background layer matching the hero treatment, and strengthens cyan/amber dynamic background color while keeping the sidebars on the same translucent `bg-surface/85` material as the navbar.
+- Task 15.E chrome correction replaces the shared translucent `bg-surface/85` approach with a shared `dashboard-chrome-surface` class for the navbar and both sidebars. This prevents the sidebars from looking lighter or greener than the navbar when they sit over the dynamic cyan/amber page background.
+- Task 15.E chrome correction follow-up makes `dashboard-chrome-surface` near-opaque over `#0e0e0f` after visual review showed the earlier 0.97 alpha still allowed enough background bleed for the sidebars to look different from the navbar.
+- Task 15.E sidebar panel correction removes the inner reusable `Panel`/`glass-panel` wrapper from the saved-spaces and room-controls sidebars. The visible "Saved spaces" header/content now inherits the sidebar chrome directly instead of drawing a second gray glass card over it.
+- Task 15.E navbar scaling correction removes the duplicate current-room chip from the dashboard navbar because it cramped the notification/settings/profile controls on narrower desktop widths. Current-room rejoin behavior remains available in the hero, current-room section, and saved/recent rail.
+- Task 15.E center-background correction moves the hero-only filtered cyan/amber treatment onto a new full-height `dashboard-content-surface` wrapping the entire center column, so the homepage keeps the same atmosphere below the hero and through the current-room/dashboard content.
+- Task 15.E side-panel compacting adds desktop compact controls for the saved-spaces and room-controls rails, reducing each side panel to a 72px icon rail while preserving full mobile panel behavior.
+- Task 15.E card-shape correction tightens the shared large-radius tokens so dashboard cards, panels, and matching controls feel sharper while remaining softly rounded, and darkens/translucifies the shared panel material for better fit against the cinematic dashboard background.
+- Task 15.E rail motion correction smooths dashboard side-panel compacting through animated grid column changes, restores the right-side compact toggle to the rail's left edge, right-aligns the Room Controls badge, and centers the desktop navbar search field.
+- Task 15.E verification passed: `npm run typecheck`, `npm run lint`, `npm run format`, `npm run test:queue`, `npm run test:sync`, `npm run build`, and a local dashboard HTTP 200 check.
+- Task planning follow-up adds Task 17 for persistent selectable avatars and host crown overlays, Task 18 for live room chat, and expands the later Accounts/Friends task to include room-to-friend invites, invite pop-ups, and notification bell/drawer persistence.
+- Task 16 wires listen/music mode into the existing live playback authority model instead of introducing a second sync path.
+- Task 16 adds mode-aware source validation: listen rooms accept direct audio URLs and HLS streams, while YouTube and direct video files remain watch-room sources for now.
+- Task 16 updates listen-mode empty and unable-to-play states so users see clear audio/HLS guidance rather than generic watch-room copy.
+- Task 16 adds host-authorized queue auto-advance for listen rooms when the current direct audio/HLS item ends, selecting the next queued item by queue position and starting it when possible.
+- Task 16 extends direct media playback metadata reporting and HLS handling so audio elements can update live media title/duration and use the same HLS path as video elements.
+- Task 16 verification passed: `npm run lint`, `npm run typecheck`, `npm run format`, `npm run test:queue`, `npm run test:sync`, and `npm run build`.
+- Task 16 browser smoke was blocked by local Next dev-server launch instability in the Codex background shell. SpacetimeDB was reachable at `http://127.0.0.1:5372/`, and the app briefly returned HTTP 200 once, but fresh browser automation later hit `ERR_CONNECTION_REFUSED`; manual browser review should run after starting `npm run dev` in a normal terminal.
+- Task planning follow-up adds Task 16.B for YouTube and YouTube Music listen-mode playback using an artwork-first layout with a visible embedded YouTube mini player and a toggle to swap artwork-first/video-first presentation.
+- Task 16.B must keep YouTube playback compliant: do not extract audio, hide the iframe, cover required player controls, or make the player too small to be a real visible embedded player.
+- Task planning follow-up adds Task 16.C for YouTube Data API metadata enrichment. Views and likes belong there, alongside title, channel, duration, and thumbnails. Public dislikes remain unavailable through the official API and should not be faked.
+- Task 16.B implementation allows YouTube and YouTube Music links in listen rooms, normalizes `music.youtube.com/watch?v=...` to canonical YouTube watch URLs, and keeps direct video files rejected for listen rooms.
+- Task 16.B implementation changes the listen stage so YouTube-backed listening uses the YouTube thumbnail as the main artwork surface by default, docks a visible 200px square YouTube iframe player in the artwork panel, and provides an Artwork/Video toggle to swap the primary surface.
+- Task 16.B verification passed: `npm run test:sync`, `npm run test:queue`, `npm run typecheck`, `npm run lint`, touched-file `npx prettier --check`, and `npm run build`. Repo-wide `npm run format -- --check` still reports pre-existing formatting drift in `app/globals.css` and `lib/spacetime/use-live-room.ts`, which were outside this task's edits.
+- Room mode switcher follow-up wires the left-rail/mobile Watch/Listen toggle to a host-only Supabase persistence action plus a SpacetimeDB `update_room_mode` reducer, so mode changes update live clients and survive refresh.
+- Room mode switcher follow-up adds the shared full-screen loading overlay while a host switches modes. Guests see the updated room stage through live state but cannot switch the room mode.
+- Room mode switcher follow-up verification passed: SpacetimeDB generate/build/publish to Maincloud, `npm run typecheck`, `npm run lint`, `npm run test:sync`, `npm run test:queue`, touched-file Prettier check, `npm run build`, Vercel production deploy, and live custom-domain health checks.
+- Music-mode visualizer follow-up replaces the listen-mode transport progress slider with an amber waveform progress control and adds left/right ambient waveform columns to the music stage background.
+- Music-mode visualizer follow-up is playback-state reactive across all listen sources. It animates while the canonical session is playing and settles while paused or waiting. True frequency-reactive analysis remains deferred because YouTube iframe audio cannot be sampled directly by the app.
+- Music-mode visualizer follow-up verification passed: `npm run typecheck`, `npm run lint`, `npm run test:sync`, `npm run test:queue`, `npm run format -- --check`, and `npm run build`.
+- Task planning follow-up adds Task 16.D for real audio-reactive waveforms and listen-mode visualizer UI adjustments. Recommended approach is WaveSurfer.js for interactive direct/R2 audio waveform progress, Web Audio `AnalyserNode` for real-time accessible-source visuals, and precomputed peak data for large uploaded media. YouTube/YouTube Music iframe playback should keep a state-reactive fallback because the app cannot sample iframe audio directly.
+- Task 16.C adds a server-side YouTube Data API metadata route at `/api/youtube/metadata` using `YOUTUBE_API_KEY` or `GOOGLE_YOUTUBE_API_KEY`; the key is not exposed to client JavaScript.
+- Task 16.C fetches and normalizes YouTube title, channel, thumbnails, duration, published date, views, and likes when available. Public dislikes remain intentionally unavailable because the official public API does not expose them.
+- Task 16.C adds in-memory server and browser-side metadata caches so room UI calls do not repeatedly spend provider quota for the same video id.
+- Task 16.C enriches the listen stage, watch/listen transport bar, queue rows, current-room dashboard card, and dashboard room cards with YouTube metadata while keeping playback independent from API success.
+- Task 16.C verification passed: `npm run typecheck`, `npm run lint`, `npm run test:sync`, `npm run format -- --check`, and `npm run build`.
+- Playback follow-up: direct media and YouTube now call queue auto-advance on ended playback in both watch and listen modes, rather than only direct listen-mode playback.
+- Playback follow-up: YouTube-backed rooms keep the stable watch-style stage when toggling Watch/Listen so the same embedded player instance is preserved instead of remounting into the listen artwork layout and risking iframe distortion/reload.
+- Playback follow-up verification passed: `npm run typecheck`, `npm run lint`, `npm run test:sync`, `npm run test:queue`, `npm run format -- --check`, and `npm run build`.
+- Task planning follow-up adds Task 16.E for transport local controls and a host/controller-gated queue autoplay toggle placed beside the volume controls. Autoplay should become room-authoritative, while volume and fullscreen remain local-only per viewer.
+- Task 16.E adds `queue_autoplay_enabled` to the SpacetimeDB room session and a `set_queue_autoplay` reducer so autoplay is room-authoritative and visible to all clients.
+- Task 16.E preserves the room timeline during Watch/Listen mode changes instead of pausing playback, which makes mode switching less disruptive.
+- Task 16.E wires the transport volume slider as local-only browser state for direct media/HLS and YouTube iframe playback, persisted in localStorage without syncing to other viewers.
+- Task 16.E wires the fullscreen control as a local-only request against the active stage wrapper, not a shared playback-state mutation.
+- Task 16.E published the updated SpacetimeDB module to Maincloud. The publish added an append-only session column and disconnected existing clients once so they could reconnect with the new schema.
+- Task 16.E verification passed: SpacetimeDB generate/build/publish to Maincloud, `npm run typecheck`, `npm run lint`, `npm run test:sync`, `npm run test:queue`, `npm run format -- --check`, and `npm run build`.
+- Closed-room routing follow-up redirects stale `/rooms/[roomId]` tabs back to the dashboard with a Mistake Watch modal instead of showing Vercel's generic 404. The modal explains that idle unsaved rooms close after about an hour and that saved rooms stay available for later reuse.
+- Queue history follow-up shows one previously played queue item in the Queue panel with a replay action. This is intentionally capped at one for the guest-first MVP; account settings can later allow up to ten previous items.
+- Queue order confidence: host reordering updates SpacetimeDB queue positions, and autoplay selects the next queued item by the lowest current position, so the room should play the newly ordered queue rather than the original add order.
+- Listen-mode UX follow-up makes YouTube listen sessions artwork-first with a visible, labeled YouTube Source monitor. Compact mode keeps the source player at 220 by 220, while Expanded mode uses a larger source panel where the layout allows.
+- Queue rail follow-up consolidates source loading and queue adding into the Queue panel sticky top control, then separates `Up Next` and `History` so active queue items do not compete with previous-song history.
+- Mode theme follow-up tightens listen/watch accent propagation across the right rail tabs, queue source control, queue tab states, and transport autoplay control.
+- Room UI structure follow-up keeps the left rail as a compact room overview only: room name, mode switch, quick member preview, invite group, saved-room action, and settings. Detailed people and permission management moved into a combined right-rail `Members` tab.
+- The current `Members` tab uses existing generated avatar/status data and permission state only. It deliberately does not implement Supabase login, custom avatar uploads, friending, profiles, or the later crown-overlay avatar system.
+- Task planning follow-up adds Task 16.F for YouTube playlist import, queue playback modes, Smart Shuffle, Loop Queue, Autoplay Related structure, compact queue cards, and history queue actions.
+- Task 16.F is intentionally scoped to queue/provider UX and live queue behavior. It should not implement avatars, auth, friends, chat, R2 uploads, or broad room layout redesign.
+- Task 16.F UI ownership is the right Queue tab only: Add media card, Queue controls card, Up Next/History segmented tabs, and compact queue/history cards. The left room rail remains overview-only, and the center media/listen stage remains playback-focused.
+- Task 16.F should import playlists through a server-side YouTube Data API path, keep API keys private, use paginated playlist item fetching, skip unavailable/duplicate entries where possible, and show explicit import preview and summary states.
+- Task 16.F Smart Shuffle should operate only on upcoming queue items, keep current/history stable, preserve pinned/play-next items, avoid repetitive artist/channel/playlist-source ordering where metadata exists, and gracefully fall back when metadata is sparse.
+- Task 16.F implementation adds YouTube playlist detection through the source parser, a server-side `/api/youtube/playlist` import preview path, playlist title/item fetching through the YouTube Data API, and duplicate/unavailable summary handling in the Queue panel.
+- Task 16.F implementation adds queue helper logic for shared queue modes, loop next-item selection, deterministic shuffle, Smart Shuffle scoring, and tests for loop and Smart Shuffle behavior.
+- Task 16.F implementation extends SpacetimeDB with append-only queue metadata columns and room `queue_mode`, plus reducers for queue mode and queue item priority. The module was published to Maincloud after correcting schema order to avoid a manual migration.
+- Task 16.F implementation keeps playlist and advanced queue controls inside the right Queue tab: Add media card, playlist preview, Queue controls card, Up Next/History tabs, compact queue cards, and History requeue/play-next actions.
+- Task 16.F verification passed: SpacetimeDB generate, SpacetimeDB publish to Maincloud, `npm run typecheck`, `npm run lint`, `npm run format -- --check`, `npm run test:queue`, `npm run test:sync`, and `npm run build`.
+- Task 16.F was deployed to Vercel production, and the custom-domain health check passed at `https://watch.mistakestudios.com/api/health`.
+- Task 16.F manual QA still needed: paste a public YouTube playlist in a live room, verify preview/import summary, confirm Add All/Shuffle Add/Smart Shuffle Add ordering, verify Loop Queue cycles without duplicates, and verify guests without queue management permission see disabled management controls.
+- Task planning follow-up adds Task 17.A for optional avatar motion and host overlay polish after the static selectable avatar system in Task 17. The recommended direction is code-native CSS/SVG motion first, with sprite sheets only for avatars that cannot be expressed cleanly as simple pulses, sweeps, pings, or rotations.
+- Task 17.A should keep the hardware avatar PNGs as the identity source of truth, keep the crown overlay separate from avatar identity, preserve reduced-motion fallbacks, and avoid any motion that distracts from watch/listen playback.
+- Task planning follow-up adds Task 17.B for Signal Aperture brand and website theme alignment. The new logo direction is an amber aperture/chip mark around a cyan play/sync core with a dark glass tile and stylized `Mistake Watch` wordmark.
+- Task 17.B should align favicon, navbar, loading/sync states, dashboard chrome, and room chrome to the Signal Aperture brand without turning the app into a logo showcase or disrupting media-first room usability.
+- Logo/brand hierarchy decision: product identity uses the Signal Aperture mark; user identity uses the hardware-themed avatar set; host identity uses the separate crown overlay; system activity can use aperture rotation, cyan core pulse, or trace-sweep motion with reduced-motion fallbacks.
+- Room polish follow-up changes player startup volume so a stored zero volume no longer causes new sessions to start muted. Users can still locally lower volume after load, but fresh playback should begin audible by default.
+- Room polish follow-up adds mobile-visible sound controls in the grounded transport bar so volume, fullscreen, and queue autoplay are not desktop-only controls.
+- Room polish follow-up adds a mobile top tab strip for Queue, Members, and Chat while keeping the right rail tabs as the desktop control surface.
+- Room polish follow-up adds host-only live member removal reducers for kicking active guests and removing idle guests from the Members tab. These mutate SpacetimeDB live participant state rather than hiding users locally.
+- Room polish follow-up changes invite copy/share actions to use the full room invite link instead of copying or sharing only the room code.
+- Task planning follow-up adds Task 16.G for room loading and metadata caching. It should cache/de-dupe YouTube metadata and playlist lookups without caching live presence, playback position, permissions, or queue mutations.
+- YouTube iframe API load failures on some friends' devices should be treated as likely network, content-blocker, DNS, or device policy issues unless reproduced across known-good networks. The app should keep showing the existing player API error rather than claiming provider success.
+- Task 16.G implementation adds shared TTL and in-flight request de-dupe helpers for YouTube provider calls, then applies them to metadata and playlist preview lookups so concurrent identical requests share one provider/API request.
+- Task 16.G updates YouTube metadata and playlist API response headers to use shared-safe public cache directives. This is limited to provider metadata; live room presence, permissions, playback position, and queue mutations remain uncached.
+- Task 16.G adds client-side metadata and playlist preview request de-duping so multiple queue rows, dashboard cards, or repeated playlist previews do not issue duplicate app API calls during the same browser session.
+- Task 16.G adds preconnect/dns-prefetch hints for YouTube, YouTube thumbnail, and Google API origins, plus static avatar cache headers for the later avatar asset path.
+- Task 16.G marks current-room and listen-mode primary thumbnails as eager/high-priority while keeping queue thumbnails lazy.
+- Task 16.G adds lightweight room transition instrumentation around create/join/leave/rejoin flows using browser Performance marks and sessionStorage, with completion measured when the dashboard returns or the room live connection reaches connected.
+- Task 16.G verification passed: `npm run typecheck`, `npm run lint`, `npm run format -- --check`, `npm run test:queue`, `npm run test:sync`, `npm run test:youtube`, and `npm run build`.
+- Task 17 implementation promotes the supplied hardware avatar images into optimized app-facing assets under `public/avatars/` while preserving the original source files in `Avatars/`.
+- Task 17 adds a fixed avatar catalog for processor, memory, audio, network, storage, controller, cooling, and power avatars, plus a reusable host crown overlay.
+- Task 17 adds guest-first avatar selection persisted in browser localStorage and mirrored into SpacetimeDB live presence through an append-only `room_participant.avatar_key` column.
+- Task 17 updates dashboard nav, room settings, the left room people preview, and the Members/Participants surfaces to render image avatars and host crown overlays while retaining role text/icons for accessibility.
+- Task 17 deliberately does not add Supabase auth, profiles, friends, custom uploads, or account-backed avatar migrations. The local guest-first selection can be migrated into account/profile storage later.
+- Task 17 verification passed: SpacetimeDB generate, SpacetimeDB publish to Maincloud, `npm run typecheck`, `npm run lint`, `npm run format -- --check`, `npm run test:queue`, `npm run test:sync`, `npm run test:youtube`, `npm run test:identity`, and `npm run build`.
+- Live-room bugfix follow-up preserves the current authoritative playback position before queue-mode, queue-autoplay, room-name, media-title, and permission-control updates rewrite the session timestamp. This prevents Shuffle/Smart Shuffle or nearby room-control actions from causing the active song to restart or rewind to an older saved timestamp.
+- Live-room bugfix follow-up adds a SpacetimeDB `room_kick` block table. Host kicks now remove the live participant, revoke permissions, and prevent the same guest member from immediately rejoining that room through the live reducer.
+- Live-room bugfix follow-up makes kicked clients unmount the playback room UI, show a removal notice, and redirect to the dashboard with a matching popup instead of letting the kicked browser continue listening in a broken partial room state.
+- Live-room bugfix verification passed: SpacetimeDB generate, SpacetimeDB publish to Maincloud, `npm run lint`, `npm run typecheck`, `npm run test:queue`, `npm run test:sync`, `npm run test:youtube`, `npm run test:identity`, `npm run format -- --check`, and `npm run build`.
+- Live-room bugfix deployment passed: Vercel production deploy completed, and health checks passed for `https://watch.mistakestudios.com/api/health` and `https://mistake-watch.vercel.app/api/health`.
+- Playback stability follow-up changes metadata-only SpacetimeDB reducers so room name, room mode, queue autoplay, queue mode, media title, and controller assignment no longer mutate playback position or playback timestamp. Only real playback actions should change the room timeline now.
+- Playback stability follow-up adds a persistent YouTube room stage for YouTube sources. Switching Watch/Listen now changes the surrounding layout and styling while keeping the same YouTube iframe player component mounted, avoiding a player reload during mode switches.
+- Playback stability follow-up removes the direct-media remount key dependency on room mode so mode styling changes do not recreate the active media element unless the actual source changes.
+- Playback stability follow-up verification passed: SpacetimeDB publish to Maincloud, `npm run lint`, `npm run typecheck`, `npm run test:sync`, `npm run test:queue`, `npm run test:youtube`, `npm run test:identity`, `npm run format -- --check`, and `npm run build`.
+- Playback stability follow-up deployment passed: Vercel production deploy completed, and health checks passed for `https://watch.mistakestudios.com/api/health` and `https://mistake-watch.vercel.app/api/health`.
+- Playback authority follow-up prevents local drift-correction speed from becoming room authority. Until explicit speed controls exist, all published room playback state uses `playbackRate: 1`, and the SpacetimeDB reducer stores `playback_rate: 1` regardless of client-reported local correction rate.
+- Playback authority follow-up adds active-source guards to YouTube and direct/HLS players. Player events, title updates, duration updates, and error state updates are ignored unless the emitting player/media element still belongs to the room's current active source, preventing stale events from stamping the next song with the previous song's time or duration.
+- Playback authority follow-up verification passed: SpacetimeDB publish to Maincloud, `npm run lint`, `npm run typecheck`, `npm run test:sync`, `npm run test:queue`, `npm run test:youtube`, `npm run test:identity`, `npm run format -- --check`, and `npm run build`.
+- Playback authority follow-up deployment passed: Vercel production deploy completed, and health checks passed for `https://watch.mistakestudios.com/api/health` and `https://mistake-watch.vercel.app/api/health`.
+- Queue-duration stability follow-up makes active queue item duration authoritative once a queue item is playing. Later iframe/media metadata events can update the title, but they cannot overwrite the active song duration when that duration already came from the queue/YouTube metadata import.
+- Queue-duration stability follow-up keeps `set_queue_mode` as a pure queue-policy update. Shuffle/Smart Shuffle changes do not modify source duration, position, timestamp, playback rate, source title, or active queue item.
+- Queue-duration stability follow-up verification passed: SpacetimeDB publish to Maincloud, `npm run lint`, `npm run typecheck`, `npm run test:sync`, `npm run test:queue`, `npm run test:youtube`, `npm run format -- --check`, and `npm run build`.
+- Queue-duration stability follow-up deployment passed: Vercel production deploy completed, and health checks passed for `https://watch.mistakestudios.com/api/health` and `https://mistake-watch.vercel.app/api/health`.
+- Listen-mode sync policy follow-up disables playback-rate correction for all listen-mode playback and all YouTube playback. YouTube/listen clients now tolerate small drift without pitch/speed changes, then seek only after drift crosses the mode-specific threshold.
+- Listen-mode sync policy follow-up keeps gentle playback-rate correction only for direct/HLS watch-mode playback, where native media handles small correction more predictably and audio distortion is less central to the experience.
+- Listen-mode sync policy follow-up verification passed: `npm run lint`, `npm run typecheck`, `npm run test:sync`, `npm run test:queue`, `npm run test:youtube`, `npm run format -- --check`, and `npm run build`.
+- Listen-mode sync policy follow-up deployment passed: Vercel production deploy completed, and health checks passed for `https://watch.mistakestudios.com/api/health` and `https://mistake-watch.vercel.app/api/health`.
+- Task planning follow-up adds Task 19 for seamless next-item loading and resource-aware preload. It should improve perceived transitions without hidden duplicate YouTube players, full-video preloads, or uncontrolled data usage.
+- Task 19 should keep YouTube preparation limited to metadata, thumbnails, player/API readiness, and safe UI preparation unless `cueVideoById` can be proven non-disruptive. Direct/HLS and future R2 media can use conservative metadata/manifest/first-segment preload paths when network and data-saver conditions allow it.
+- Task planning follow-up adds Task 20 for a dedicated Listen Mode music lounge UI using `C:\Users\Admin\Downloads\DesignUI for listen mode.png` and the June 1 listen-mode brief as the reference direction.
+- Task 20 should not be implemented as another patch to the Watch Mode shell. It needs a dedicated listen layout branch with a left Now Playing panel, center discovery surface, top-right Add Media popover, simplified right Queue/Members/Room sidebar, and bottom queue drawer.
+- Task 20 must preserve SpacetimeDB sync, playlist import, shuffle/smart-shuffle, queue reorder, permissions, and room creation/joining. The task is primarily presentation and component-structure work unless pinned-first queue behavior requires a small isolated queue-state addition.
+- Task 20 must keep YouTube source playback compliant in Listen Mode: the iframe/source monitor remains visible and intentional, not hidden, tiny, offscreen, covered, or display-none.
+- Task 20 implementation wires Listen Mode into a dedicated `ListenModeLayout` branch from the room shell, leaving Watch Mode on the existing left-navigation, media-stage, right-sidebar, and transport-bar structure.
+- Task 20 Listen Mode now uses a persistent left Now Playing panel, visible YouTube source monitor, center music discovery surface, top-right Add Media popover, simplified right Queue/Members/Room context panel, and bottom queue drawer.
+- Task 20 reuses the existing SpacetimeDB live room state and reducers for playback, playlist import, queue shuffle/smart shuffle, pinned-first ordering, queue mutations, invite actions, mode switching, and member presence rather than adding a new live-state path.
+- Task 20 verification passed: `npm run typecheck`, `npm run lint`, `npm run format -- --check`, `npm run test:queue`, `npm run test:sync`, and `npm run build`.
+- Task 20 local visual QA limitation: `npm run dev` could not start SpacetimeDB from this sandboxed shell because the child process returned `spawn EPERM`. Frontend-only `npm run dev:next` served `/` with HTTP 200 during a temporary smoke check, but a live-room browser pass still needs to be done in the normal local environment.
+- Task 20 drawer review follow-up: the current Listen queue drawer is still rendered in normal center-column content flow and defaults open. The reference image and attached brief require the queue drawer to be a viewport-bottom tray that is mostly hidden/collapsed below the main discovery area until clicked, then expands upward with the full queue controls and rows. This keeps recommendations/recently-added content visible and makes the drawer feel intentional rather than another large panel in the page flow.
+- Task 20 drawer follow-up implementation moves the Listen queue drawer out of the center content flow and mounts it as a bottom-docked tray. It defaults collapsed with only the queue handle/header visible, then expands upward with search, shuffle, smart shuffle, pinned first, clear, row actions, and the wide queue rows.
+- Task 20 drawer follow-up uses desktop offsets so the tray spans the main center surface between the 320px Now Playing panel and 320px room sidebar, while remaining full-width on smaller screens. This better matches the reference where the drawer is subordinate to discovery content rather than competing with it.
+- Task 20 drawer follow-up verification passed: `npm run typecheck`, `npm run lint`, `npm run format -- --check`, and `npm run build`.
+- Task 20 drawer animation follow-up keeps the queue drawer content mounted during open/close so the tray can animate smoothly upward and downward. The toggle is now a full integrated drawer header with queue count, embedded handle, and rotating chevron instead of a small disconnected-looking tab.
+- False removal guard follow-up subscribes to SpacetimeDB `room_kick` rows and uses that as the immediate removal signal. Missing participant rows now wait longer before redirecting, reducing false "removed from room" notices during reconnect/subscription timing while preserving real host kick behavior.
+- Drawer animation/removal guard verification passed: `npm run typecheck`, `npm run lint`, `npm run format -- --check`, and `npm run build`.
+- Listen sidebar cleanup removes the redundant right-side `Queue` tab now that the bottom-docked queue drawer owns queue management. The Listen right sidebar now focuses on `Members` and `Room`, with `Coming up` remaining as the small contextual queue preview.
+- Listen left panel follow-up adds the missing top-left `Leave Room` action to match Watch Mode exit behavior. The action uses the existing pending navigation overlay and returns to the dashboard.
+- Listen Room tab follow-up adds the host-only Save/Saved room control to the Room tab using the existing saved-room server action. This keeps saved-room management available after removing the old permanent room sidebar.
+- Listen discovery follow-up converts the `For you / Recommended / Trending / From your playlist` controls from separate floating buttons into a connected segmented selector.
+- Listen Now Playing follow-up derives the panel background from the active thumbnail when artwork exists, using a blurred/saturated thumbnail layer behind the controls. Awaiting-media still uses the amber listen fallback because no real source artwork exists yet.
+- Future accounts note: once Supabase login/profile support exists, the Listen Mode greeting should use the account holder's display name instead of the generic `Good evening` copy. Keep the current guest-first version generic until account identity is durable.
+- Listen Members follow-up replaces the display-only Listen member list with the shared `MembersPanel`, so Listen Mode now exposes queue/playback/browser permission toggles, grant/revoke controller, kick, and remove-idle actions from the right sidebar without creating a second authority UI path.
+- Task planning follow-up adds Task 21 for Listen Mode source-monitor stability and dynamic artwork theming. Production testing showed the YouTube mini player can appear as a disruptive separate block, and active thumbnails can be scaled into the center surface poorly. The fix should make the source monitor act as the live artwork area, keep the waveform overlay integrated, avoid center-surface thumbnail stretching, and smoothly shift the Listen page theme based on active content without remounting playback.
+- Task packet cleanup aligns Task 20 with the implemented Listen `MembersPanel` authority behavior, moves the future personalized greeting note into the Accounts/Friends task, and adds Task 22 for real provider recommendations so `Room picks`, `Recommended`, `Trending`, and `From your playlist` do not remain ambiguous placeholders.
+- Task 17.B remains the existing task for returning to the Signal Aperture logo/theme aesthetic pass. Task 21 only adds the small dynamic listen-theme hook needed to keep active source artwork from feeling detached.
+- Task 21 implementation embeds the visible YouTube source monitor inside the stable Now Playing artwork square instead of rendering it as a separate block, keeping the player visible while preventing the production layout jump.
+- Task 21 implementation overlays the existing listen visualizer on the source/artwork monitor with pointer-events disabled, reserves the same monitor geometry before and after source metadata loads, and removes the current song from center `Room picks` so active thumbnails are not blown up in the discovery area.
+- Task 21 implementation adds a content-aware ambient listen backdrop: active artwork is used as a blurred page layer, while source-derived theme variables shift the cyan/amber/blue glow smoothly within the Obsidian Lounge palette.
+- Task 21 verification passed: `npm run typecheck`, `npm run lint`, `npm run format -- --check`, `npm run test:sync`, `npm run test:queue`, `npm run test:youtube`, and `npm run build`.
+- Task 21 Vercel production deploy completed as `dpl_Em8BQGZN4K5aifn9skXHDoMvpBPH`. `npx vercel inspect` reports the deployment is `Ready` and aliased to `https://watch.mistakestudios.com`, `https://mistake-watch.vercel.app`, and the project production aliases. Direct shell HTTP health checks could not connect from this local shell after deploy, so browser-side/manual verification on the custom domain is still recommended.
+- Task 17.B implementation promotes the Signal Aperture direction into a reusable code-native brand system instead of shipping the large concept PNGs in normal navigation. The original concept files remain preserved in `Logo Concepts/`.
+- Task 17.B adds a reusable Signal Aperture mark and lockup, app favicon/icon SVG assets, dashboard navbar branding, Listen Mode room branding, and logo-derived room transition motion.
+- Task 17.B updates `DESIGN.md` with Signal Aperture identity rules, including logo use, icon-only use, motion constraints, reduced-motion expectations, and separation between product logo, avatars, and host crown roles.
+- Task 17.B verification passed: `npm run typecheck`, `npm run lint`, `npm run format -- --check`, and `npm run build`.
+- Task 17.B Vercel production deploy completed as `dpl_EqusULHrUtJLKzqWUHK9PdPtFPcb`. `npx vercel inspect` reports the deployment is `Ready` and aliased to `https://watch.mistakestudios.com`, `https://mistake-watch.vercel.app`, and the project production aliases. Direct shell HTTP health check to the custom domain could not connect from this local shell, so browser-side confirmation is still recommended.
+- Task 17.B navbar correction: the supplied transparent horizontal Signal Aperture PNG is now the dashboard navbar source asset. The original remains untouched in `Logo Concepts/`, with an app-serving copy in `public/brand/`. Code-native/SVG variants remain reserved for favicon, compact chrome, and loading states, not as navbar replacements.
+- Task 17.B navbar correction verification passed: `npm run typecheck`, `npm run lint`, `npm run format -- --check`, and `npm run build`.
+- Task 17.B navbar correction deployed to Vercel production as `dpl_8UmX6BvPL3xDiB6UNhrih9Q7Jvyv`; Vercel inspect reports `Ready` and aliases include `https://watch.mistakestudios.com`.
+- Task 17.B favicon correction: the app favicon/app icon now uses the supplied square Signal Aperture PNG concept (`logo-concept-01-signal-aperture.png`) via `app/icon.png` and `public/brand/logo-concept-01-signal-aperture.png`. The original source file remains preserved in `Logo Concepts/`.
+- Task 17.B brand color rule correction: `DESIGN.md` now treats the provided navbar lockup and square icon as the authoritative color source. Dark neutral remains the foundation, while the logo's gold and blue are the app-wide accent pair for future page work.
+- Task 17.B favicon/color correction verification passed: `npm run typecheck`, `npm run lint`, `npm run format -- --check`, and `npm run build`.
+- Task 17.B favicon/color correction deployed to Vercel production as `dpl_6w4fbuypmu4HB65NCPaGpvXA2k2D`; Vercel inspect reports `Ready` and aliases include `https://watch.mistakestudios.com`.
+- Task planning follow-up adds Task 23 for Listen Mode quality changes: configurable queue drawer height, current-song/total queue readout, playlist auto-detection with a selection overlay, theme-aware waveform colors, stronger thumbnail-driven dynamic theming, and player/control accents that follow the active artwork while preserving the dark neutral base and Signal Aperture gold/blue accent system.
+- Task 23 should remain a UI/UX quality pass and must not change SpacetimeDB playback authority, interrupt active songs, hide the YouTube source monitor, or implement unrelated provider recommendations from Task 22.

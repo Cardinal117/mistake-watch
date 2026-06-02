@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TASK-002.1 Implementation Report - Mistake Watch</title>
+    <style>
+      :root {
+        --bg: #0e0e0f;
+        --surface: #131314;
+        --panel: #1c1b1c;
+        --panel-high: #252426;
+        --text: #e5e2e3;
+        --muted: #b9cacb;
+        --line: rgba(255, 255, 255, 0.1);
+        --cyan: #00dbe9;
+        --gold: #ffba20;
+        --ok: #7df4ff;
+        --warn: #ffba20;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 16% 6%, rgba(0, 219, 233, 0.14), transparent 34rem),
+          radial-gradient(circle at 88% 12%, rgba(255, 186, 32, 0.14), transparent 32rem),
+          var(--bg);
+        color: var(--text);
+        font-family:
+          Inter, Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      main {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 32px 0 48px;
+      }
+
+      header,
+      section {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(19, 19, 20, 0.88);
+        backdrop-filter: blur(18px);
+      }
+
+      header {
+        display: grid;
+        gap: 14px;
+        padding: 28px;
+      }
+
+      section {
+        margin-top: 18px;
+        padding: 22px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        max-width: 820px;
+        font-size: clamp(2rem, 4vw, 3.5rem);
+        line-height: 1.05;
+      }
+
+      h2 {
+        font-size: 1.25rem;
+      }
+
+      p,
+      li {
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      code {
+        color: var(--ok);
+      }
+
+      .label,
+      .status {
+        display: inline-flex;
+        width: fit-content;
+        border: 1px solid rgba(0, 219, 233, 0.34);
+        border-radius: 6px;
+        padding: 6px 10px;
+        color: var(--cyan);
+        font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 12px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 14px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(28, 27, 28, 0.82);
+        padding: 16px;
+      }
+
+      .card strong {
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      ul {
+        margin: 12px 0 0;
+        padding-left: 18px;
+      }
+
+      .status.done {
+        border-color: rgba(125, 244, 255, 0.34);
+        color: var(--ok);
+      }
+
+      .status.warn {
+        border-color: rgba(255, 186, 32, 0.34);
+        color: var(--warn);
+      }
+
+      @media (max-width: 800px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <span class="label">TASK-002.1 / Implemented</span>
+        <h1>Listen Mode Quality Pass</h1>
+        <p>
+          This report covers the focused TASK-002.1 implementation: queue drawer height controls,
+          current-position count, stronger listen theming, selective playlist import, and themed waveform visuals.
+        </p>
+      </header>
+
+      <section>
+        <h2>Files To Review</h2>
+        <div class="grid">
+          <div class="card">
+            <strong>Primary implementation</strong>
+            <p><code>components/room/listen-mode-layout.tsx</code></p>
+          </div>
+          <div class="card">
+            <strong>Task notes</strong>
+            <p><code>docs/tasks/TASK-002-incomplete-work-recovery/review-notes.md</code></p>
+          </div>
+          <div class="card">
+            <strong>Review surface</strong>
+            <p><code>docs/tasks/TASK-002-incomplete-work-recovery/implementation-report.html</code></p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Implementation Summary</h2>
+        <ul>
+          <li>Added persisted Compact, Standard, and Tall height controls to the listen queue drawer.</li>
+          <li>Follow-up revision replaced preset height buttons with a generous persisted drawer height slider.</li>
+          <li>Replaced drawer total-only labels with current item position over total queue size.</li>
+          <li>Strengthened the listen dynamic theme with artwork-derived theme extraction, additional theme variables, and stronger left-origin ambient layers.</li>
+          <li>Added a playlist review overlay for listen mode with per-item selection, Add All, and Add Selected actions.</li>
+          <li>Moved center waveform bar color to the active listen theme variable.</li>
+          <li>Kept playback state, queue reducer semantics, and SpacetimeDB authority unchanged.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Acceptance Status</h2>
+        <div class="grid">
+          <div class="card">
+            <span class="status done">Met</span>
+            <p>Drawer supports configurable heights.</p>
+          </div>
+          <div class="card">
+            <span class="status done">Met</span>
+            <p>Drawer shows current item position plus total queue count.</p>
+          </div>
+          <div class="card">
+            <span class="status done">Met</span>
+            <p>Listen theme and waveform visuals are stronger and theme-aligned.</p>
+          </div>
+          <div class="card">
+            <span class="status done">Met</span>
+            <p>Listen playlist import supports selective review before queue mutation.</p>
+          </div>
+          <div class="card">
+            <span class="status warn">Manual QA</span>
+            <p>Browser visual QA is still recommended for the live overlay and drawer interactions.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Verification</h2>
+        <ul>
+          <li><code>npm run typecheck</code> passed.</li>
+          <li><code>npm run lint</code> passed.</li>
+          <li><code>npm run test:queue</code> passed.</li>
+          <li><code>npm run test:youtube</code> passed.</li>
+          <li><code>npm run build</code> passed.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Manual Review</h2>
+        <p>
+          Manual browser QA is recommended for listen mode. A local background dev-server check was attempted,
+          but local Next/Turbopack startup hit a stale lock/process issue. The production build completed successfully.
+        </p>
+      </section>
+
+      <section>
+        <h2>Next Task</h2>
+        <p>TASK-002.2 Room Chat is the next implementation task.</p>
+      </section>
+    </main>
+  </body>
+</html>

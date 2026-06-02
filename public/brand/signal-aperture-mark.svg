@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Mistake Watch Signal Aperture mark</title>
+  <rect width="64" height="64" rx="14" fill="#0e0e0f"/>
+  <rect x="5" y="5" width="54" height="54" rx="12" fill="#131314" stroke="rgba(255,255,255,.14)"/>
+  <path d="M18 13h-5v9M46 13h5v9M18 51h-5v-9M46 51h5v-9" fill="none" stroke="#00dbe9" stroke-opacity=".76" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M28 9h8M28 55h8M9 28v8M55 28v8" fill="none" stroke="#ffba20" stroke-opacity=".68" stroke-width="2" stroke-linecap="round"/>
+  <g fill="#ffba20" fill-opacity=".82" stroke="#ffdb9d" stroke-opacity=".52" stroke-width=".6" stroke-linejoin="round">
+    <path d="M31.5 10.5 43.5 18 34 30.5 23 30z"/>
+    <path d="M45.2 19.2 51.8 31.8 36.5 35.4 31.8 23.2z"/>
+    <path d="M51.2 34.8 43.7 46.8 31.5 37.2 35.8 26.4z"/>
+    <path d="M40.4 49.8 26.2 51 29.8 35.7 42.2 31.4z"/>
+    <path d="M23.5 49.8 12.4 40.8 25.8 32.2 36.5 37.5z"/>
+    <path d="M11.5 36.8 13.8 22.8 28.2 27.8 31.8 40.2z"/>
+  </g>
+  <circle cx="32" cy="32" r="13" fill="#0e0e0f" fill-opacity=".86" stroke="#ffba20" stroke-width="2.8"/>
+  <circle cx="32" cy="32" r="7" fill="#00dbe9" fill-opacity=".2" stroke="#00dbe9" stroke-width="1.8"/>
+  <path d="M30 27.5v9l8-4.5z" fill="#dbfcff"/>
+</svg>

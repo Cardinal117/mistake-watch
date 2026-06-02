@@ -1,0 +1,10 @@
+{
+  "database": "mistake-watch-rooms",
+  "module-path": "./spacetime",
+  "generate": [
+    {
+      "language": "typescript",
+      "out-dir": "./lib/spacetime/generated"
+    }
+  ]
+}

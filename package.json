@@ -1,0 +1,45 @@
+{
+  "name": "mistake-watch",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:next": "next dev --hostname 127.0.0.1 --port 5371",
+    "dev:any": "next dev",
+    "spacetime:start": "spacetime start --listen-addr 127.0.0.1:5372 --non-interactive",
+    "spacetime:publish": "spacetime publish --server http://127.0.0.1:5372",
+    "spacetime:generate": "spacetime generate",
+    "build": "next build",
+    "start": "next start",
+    "test:identity": "node --test tests/identity/*.test.mjs",
+    "test:queue": "node --test tests/queue/*.test.mjs",
+    "test:sync": "node --test tests/player/*.test.mjs",
+    "test:youtube": "node --test tests/youtube/*.test.mjs",
+    "lint": "eslint .",
+    "format": "prettier --check \"app/**/*.{ts,tsx,css}\" \"lib/**/*.ts\" \"scripts/**/*.mjs\" \"*.{json,mjs,ts}\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.106.2",
+    "hls.js": "^1.6.16",
+    "lucide-react": "^1.16.0",
+    "next": "^16.2.6",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "spacetimedb": "^2.3.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.0",
+    "@types/node": "^25.9.1",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.5.0",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.6",
+    "postcss": "^8.5.15",
+    "prettier": "^3.8.3",
+    "tailwindcss": "^4.3.0",
+    "typescript": "^6.0.3"
+  }
+}
