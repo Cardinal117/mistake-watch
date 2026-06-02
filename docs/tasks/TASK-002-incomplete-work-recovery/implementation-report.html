@@ -213,8 +213,8 @@
             <p>Two-client live exchange and cross-room leakage checks still need manual browser review.</p>
           </div>
           <div class="card">
-            <span class="status blocked">Blocked</span>
-            <p>Live room browser QA is blocked until local Supabase server credentials are configured.</p>
+            <span class="status done">Met</span>
+            <p>Production SpacetimeDB now has the chat table and reducer module update.</p>
           </div>
         </div>
       </section>
@@ -229,6 +229,8 @@
           <li><code>spacetime build</code> passed.</li>
           <li><code>spacetime generate</code> passed.</li>
           <li>Local SpacetimeDB publish to <code>http://127.0.0.1:5372</code> succeeded.</li>
+          <li>Production SpacetimeDB publish to <code>https://maincloud.spacetimedb.com</code> succeeded for <code>mistake-watch-rooms</code>.</li>
+          <li>The production migration created the public <code>room_chat_message</code> table.</li>
           <li>Local Next health check returned HTTP 200.</li>
           <li>Headless Edge loaded <code>http://127.0.0.1:5371</code> and confirmed the dashboard renders.</li>
           <li>Vercel production deploy completed at <code>https://mistake-watch-jhlrp0kk2-cardinal117s-projects.vercel.app</code>.</li>

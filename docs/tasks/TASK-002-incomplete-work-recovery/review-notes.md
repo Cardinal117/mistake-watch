@@ -61,6 +61,7 @@ Verification:
 - `spacetime build` passed.
 - `spacetime generate` passed after installing root and `spacetime/` dependencies.
 - Local SpacetimeDB publish to `http://127.0.0.1:5372` succeeded for database `mistake-watch-rooms`.
+- Production SpacetimeDB publish to `https://maincloud.spacetimedb.com` succeeded for database `mistake-watch-rooms`; migration created the public `room_chat_message` table.
 - Local Next health check returned HTTP 200 at `http://127.0.0.1:5371/api/health`.
 - Vercel production deploy succeeded with deployment URL `https://mistake-watch-jhlrp0kk2-cardinal117s-projects.vercel.app`.
 - Production aliases `https://mistake-watch.vercel.app/api/health` and `https://watch.mistakestudios.com/api/health` both returned HTTP 200.
