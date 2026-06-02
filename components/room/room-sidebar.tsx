@@ -162,6 +162,7 @@ export function RoomSidebar({
         canManageAuthority={liveRoom.canManageAuthority}
         connectionStatus={liveRoom.connectionStatus}
         controllerMemberId={controllerMemberId}
+        currentMemberId={room.currentMember?.id}
         errorMessage={liveRoom.errorMessage}
         grantControl={liveRoom.grantControl}
         onPermissionChange={liveRoom.setPermission}
@@ -183,7 +184,7 @@ export function RoomSidebar({
         onClearQueue={liveRoom.clearQueue}
         onLoadSource={liveRoom.loadMediaSource}
         onMoveQueueItem={liveRoom.moveQueueItem}
-        onPlayQueueItem={liveRoom.playQueueItem}
+        onPlayQueueItem={liveRoom.playQueueItemNow}
         onQueueModeChange={liveRoom.setQueueMode}
         onQueueItemPriorityChange={liveRoom.setQueueItemPriority}
         onRemoveQueueItem={liveRoom.removeQueueItem}

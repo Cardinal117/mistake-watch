@@ -26,6 +26,7 @@ TASK-002 covers:
 - Listen-mode quality pass.
 - Live room chat.
 - Seamless next-item loading and preload.
+- YouTube availability hardening for embed-blocked, unavailable, restricted, or runtime-failed videos.
 - Provider recommendations.
 - Real audio-reactive waveform architecture.
 - Avatar motion polish.
@@ -44,7 +45,7 @@ This packet also does not replace `TASK-001` as historical context. TASK-001 rem
 
 ## Success Criteria
 
-- `tasks.md` gives a clear ordered sequence from TASK-002.1 through TASK-002.12.
+- `tasks.md` gives a clear ordered sequence from TASK-002.1 through TASK-002.13.
 - Each subtask has enough boundaries to prevent scope creep.
 - Acceptance criteria make it clear when a subtask is complete.
 - `review.html` gives a fast first-open status view for the recovery roadmap.
@@ -54,6 +55,6 @@ This packet also does not replace `TASK-001` as historical context. TASK-001 rem
 
 - Some later tasks, especially R2, accounts/friends, shared browser, and hardening, may require separate deeper design packets before implementation.
 - Real audio-reactive waveform work has provider limitations because YouTube iframe audio cannot be sampled directly.
+- YouTube availability can reduce failed playback but cannot guarantee every third-party video is playable in an embedded room.
 - Provider recommendations must remain honest and avoid fake "personalized" data before accounts exist.
 - Chat and notifications must not leak room data between rooms or users.
-

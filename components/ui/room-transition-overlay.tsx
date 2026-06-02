@@ -29,7 +29,7 @@ export function RoomTransitionOverlay({
     >
       <div
         className={cx(
-          "relative w-full max-w-sm overflow-hidden rounded-lg border bg-surface/94 p-6 text-center shadow-screen-glow",
+          "relative w-full max-w-sm overflow-hidden rounded-md border bg-surface/94 p-6 text-center shadow-screen-glow",
           amber
             ? "border-secondary-fixed-dim/35 shadow-amber-glow"
             : "border-primary-fixed-dim/35 shadow-screen-glow",

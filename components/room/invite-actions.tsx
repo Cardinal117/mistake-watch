@@ -5,11 +5,16 @@ import { Check, Copy, Share2 } from "lucide-react";
 import { Button } from "@/components/ui";
 
 type InviteActionsProps = {
+  compact?: boolean;
   inviteUrl?: string;
   roomCode: string;
 };
 
-export function InviteActions({ inviteUrl, roomCode }: InviteActionsProps) {
+export function InviteActions({
+  compact = false,
+  inviteUrl,
+  roomCode,
+}: InviteActionsProps) {
   const [status, setStatus] = useState<
     "copied" | "idle" | "link-copied" | "shared"
   >("idle");
@@ -62,6 +67,43 @@ export function InviteActions({ inviteUrl, roomCode }: InviteActionsProps) {
   function setTemporaryStatus(nextStatus: "copied" | "link-copied" | "shared") {
     setStatus(nextStatus);
     window.setTimeout(() => setStatus("idle"), 1800);
+  }
+
+  if (compact) {
+    return (
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <span className="inline-flex h-8 items-center rounded-sm border border-white/10 bg-surface-container-low/50 px-2 text-label-sm font-semibold text-on-surface-variant">
+          {roomCode}
+        </span>
+        <Button
+          aria-live="polite"
+          className="border-white/10 bg-transparent text-on-surface-variant hover:bg-surface-variant/30 hover:text-on-surface"
+          onClick={copyInvite}
+          size="sm"
+          variant="ghost"
+        >
+          {status === "copied" ? (
+            <Check className="h-4 w-4" aria-hidden />
+          ) : (
+            <Copy className="h-4 w-4" aria-hidden />
+          )}
+          {status === "copied" ? "Copied" : "Copy Link"}
+        </Button>
+        <Button
+          className="border-white/10 bg-transparent text-on-surface-variant hover:bg-surface-variant/30 hover:text-on-surface"
+          onClick={shareInvite}
+          size="sm"
+          variant="ghost"
+        >
+          {status === "shared" ? (
+            <Check className="h-4 w-4" aria-hidden />
+          ) : (
+            <Share2 className="h-4 w-4" aria-hidden />
+          )}
+          {status === "shared" ? "Shared" : "Share"}
+        </Button>
+      </div>
+    );
   }
 
   return (

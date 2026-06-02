@@ -220,6 +220,7 @@ export type LiveRoomState = {
   }): void;
   moveQueueItem(queueItemId: string, position: number): void;
   participants: RoomParticipant[];
+  playQueueItemNow(queueItemId: string): void;
   playQueueItem(queueItemId: string): void;
   removalNotice: string | null;
   removeIdleMember(memberId: string): void;
@@ -664,10 +665,30 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     });
   }
 
+  async function playQueueItemNow(queueItemId: string) {
+    if (!currentMember || !canControlPlayback || !reducers) {
+      return;
+    }
+
+    await reducers.playQueueItem({
+      actorMemberId: currentMember.id,
+      queueItemId,
+      roomId: room.id,
+    });
+
+    await reducers.setPlaybackState({
+      actorMemberId: currentMember.id,
+      playbackRate: 1,
+      positionSeconds: 0,
+      roomId: room.id,
+      status: "playing",
+    });
+  }
+
   async function advanceToNextQueueItem(input?: { autoplay?: boolean }) {
     if (
       !currentMember ||
-      !canManageQueue ||
+      !canControlPlayback ||
       !reducers ||
       !snapshot.session?.queueAutoplayEnabled
     ) {
@@ -887,6 +908,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     loadMediaSource,
     moveQueueItem,
     participants,
+    playQueueItemNow,
     playQueueItem,
     removalNotice,
     removeIdleMember,

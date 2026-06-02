@@ -9,6 +9,7 @@ import { cx } from "@/lib/ui";
 
 type ModeSwitcherProps = {
   canSwitch?: boolean;
+  compact?: boolean;
   mode: RoomSnapshot["mode"];
   onSwitchMode?(mode: "listen" | "watch"): Promise<void>;
 };
@@ -20,6 +21,7 @@ const modes = [
 
 export function ModeSwitcher({
   canSwitch = false,
+  compact = false,
   mode,
   onSwitchMode,
 }: ModeSwitcherProps) {
@@ -55,7 +57,12 @@ export function ModeSwitcher({
       />
       <div
         aria-label="Room mode"
-        className="grid grid-cols-2 gap-1 border-t border-white/10 bg-surface-container-lowest p-1"
+        className={cx(
+          "grid grid-cols-2 gap-1 border-white/10 bg-surface-container-lowest/80 p-1",
+          compact
+            ? "rounded-sm border"
+            : "border-t",
+        )}
         role="tablist"
       >
         {modes.map((item) => {
@@ -67,7 +74,8 @@ export function ModeSwitcher({
               aria-disabled={!canSwitch || Boolean(pendingMode)}
               aria-selected={active}
               className={cx(
-                "inline-flex h-9 items-center justify-center gap-2 rounded-sm px-3 text-label-sm font-semibold text-on-surface-variant transition hover:text-on-surface",
+                "inline-flex items-center justify-center gap-2 rounded-sm px-3 text-label-sm font-semibold text-on-surface-variant transition hover:text-on-surface",
+                compact ? "h-8" : "h-9",
                 active &&
                   (mode === "listen"
                     ? "bg-secondary-fixed-dim/12 text-secondary-fixed-dim"

@@ -14,6 +14,16 @@ User direction:
 
 The remaining work is no longer one clean MVP task. It is a recovery queue of unfinished or partially implemented slices that should be handled one at a time.
 
+## New Production Issue To Insert
+
+After TASK-002.3 playback continuity work, production testing showed that many YouTube items can still fail with "YouTube could not play this video here." This is not always an app bug: YouTube videos can be non-embeddable, private, removed, age/region restricted, or blocked by provider policy.
+
+User direction:
+
+> A lot of videos seem to be getting the error youtube could not play this video here issues? How do we make sure this does not happen?
+
+This needs to become the next task before provider recommendations. Recommendations, playlists, and room picks should not add or promote items that the room cannot actually play.
+
 ## Audit Result To Preserve
 
 The code audit found that early foundation tasks are materially implemented. The incomplete or partial areas are concentrated in later tasks:
@@ -22,6 +32,7 @@ The code audit found that early foundation tasks are materially implemented. The
 - Task 17.A: avatar motion polish.
 - Task 18: room chat.
 - Task 19: seamless next item loading and resource-aware preload.
+- YouTube availability hardening: pre-check, classify, skip, and display unplayable YouTube items.
 - Task 22: provider recommendations and room picks.
 - Task 23: listen mode queue drawer and dynamic theme quality pass.
 - Later Cloudflare R2 upload pipeline.
@@ -38,4 +49,3 @@ The task order in `tasks.md` is canonical for this recovery packet. Do not jump 
 ## Scope Boundary
 
 TASK-002 is a recovery roadmap, not a rewrite. Existing working systems should remain intact unless the active TASK-002 subtask explicitly requires changes.
-

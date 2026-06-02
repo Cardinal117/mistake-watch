@@ -1056,7 +1056,7 @@ export const update_media_title = spacetimedb.reducer(
         : undefined;
     const existingDuration = authority.session.source_duration_seconds;
     const effectiveDuration =
-      activeQueueDuration ?? existingDuration ?? duration_seconds;
+      activeQueueDuration ?? duration_seconds ?? existingDuration;
 
     ctx.db.room_session.delete(authority.session);
     ctx.db.room_session.insert({

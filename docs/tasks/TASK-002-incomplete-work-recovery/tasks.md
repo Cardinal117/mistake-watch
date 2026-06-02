@@ -74,7 +74,32 @@ Safe commit point:
 
 - Queue transitions are smoother and instrumented without changing room authority.
 
-## TASK-002.4: Provider Recommendations and Room Picks
+## TASK-002.4: YouTube Availability Hardening
+
+Source task: production playback reliability follow-up from TASK-002.3.
+
+Work:
+
+- Add a server-side YouTube availability check for single video links and playlist import items using official YouTube metadata where available.
+- Classify YouTube failures into clear states such as playable, embed blocked, removed/private, restricted, provider unavailable, or unknown.
+- Update playlist preview/import so blocked or unavailable items are visible but not selected by default.
+- Update queue add/load flows so known-unplayable videos do not enter the playable queue silently.
+- Update queue, Room Picks, recently added, and player surfaces to show blocked/unavailable states without pretending the item is playable.
+- Handle YouTube IFrame `onError` codes by marking the active item unavailable with a clear reason.
+- If autoplay is enabled, skip classified blocked/unavailable YouTube items without stalling the room.
+- Preserve direct media, HLS, and existing YouTube playback for playable items.
+
+Review checkpoint:
+
+- Playlist imports no longer surprise users with many broken videos mid-session.
+- A blocked YouTube item has a clear reason and cannot look like a normal playable item.
+- Autoplay continues past blocked items when appropriate without hiding the failure from the room.
+
+Safe commit point:
+
+- YouTube queue reliability is hardened before provider recommendations add more YouTube-driven discovery.
+
+## TASK-002.5: Provider Recommendations and Room Picks
 
 Source task: TASK-001 Task 22.
 
@@ -98,7 +123,7 @@ Safe commit point:
 
 - Listen discovery becomes useful and honest without blocking playback.
 
-## TASK-002.5: Real Audio-Reactive Waveform Architecture
+## TASK-002.6: Real Audio-Reactive Waveform Architecture
 
 Source task: TASK-001 Task 16.D.
 
@@ -120,7 +145,7 @@ Safe commit point:
 
 - Listen mode has a technically honest waveform architecture.
 
-## TASK-002.6: Avatar Motion Polish
+## TASK-002.7: Avatar Motion Polish
 
 Source task: TASK-001 Task 17.A.
 
@@ -142,7 +167,7 @@ Safe commit point:
 
 - Avatar identity feels more alive without changing identity persistence.
 
-## TASK-002.7: Cloudflare R2 Media Upload Pipeline
+## TASK-002.8: Cloudflare R2 Media Upload Pipeline
 
 Source task: TASK-001 later R2 direction.
 
@@ -163,7 +188,7 @@ Safe commit point:
 
 - Mistake Watch has the foundation for personal uploaded media.
 
-## TASK-002.8: Voting and Suggested Next
+## TASK-002.9: Voting and Suggested Next
 
 Source task: TASK-001 later voting direction.
 
@@ -183,7 +208,7 @@ Safe commit point:
 
 - Collaborative queue selection exists behind room-authoritative rules.
 
-## TASK-002.9: Accounts, Friends, and Friend Invites
+## TASK-002.10: Accounts, Friends, and Friend Invites
 
 Source task: TASK-001 later accounts/friends direction.
 
@@ -205,7 +230,7 @@ Safe commit point:
 
 - Mistake Watch supports account-backed social room discovery and invites.
 
-## TASK-002.10: Shared Browser Prototype
+## TASK-002.11: Shared Browser Prototype
 
 Source task: TASK-001 later shared browser direction.
 
@@ -225,7 +250,7 @@ Safe commit point:
 
 - Browser mode has a controlled prototype path.
 
-## TASK-002.11: Hardening and Abuse Controls
+## TASK-002.12: Hardening and Abuse Controls
 
 Source task: TASK-001 later hardening direction.
 
@@ -246,7 +271,7 @@ Safe commit point:
 
 - The system is ready for broader friends-and-family usage.
 
-## TASK-002.12: Final QA and Release Gate
+## TASK-002.13: Final QA and Release Gate
 
 Source task: TASK-001 final QA direction.
 
@@ -265,4 +290,3 @@ Review checkpoint:
 Safe commit point:
 
 - TASK-002 recovery work is complete and verified.
-

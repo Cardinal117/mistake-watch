@@ -37,7 +37,7 @@ export function buttonClassName({
   variant?: ButtonVariant;
 } = {}) {
   return cx(
-    "inline-flex items-center justify-center gap-2 rounded-md font-semibold transition duration-200 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45",
+    "inline-flex items-center justify-center gap-2 rounded-sm font-semibold transition duration-200 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45",
     variants[variant],
     sizes[size],
     className,

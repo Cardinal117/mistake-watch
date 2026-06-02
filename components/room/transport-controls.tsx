@@ -22,6 +22,7 @@ import type { RoomSnapshot } from "@/lib/rooms";
 import type { LiveRoomState } from "@/lib/spacetime";
 import { cx } from "@/lib/ui";
 import { YouTubeMetadataLine } from "./youtube-metadata-line";
+import { useNextItemPreparation } from "./use-next-item-preparation";
 
 type TransportControlsProps = {
   liveRoom: LiveRoomState;
@@ -35,13 +36,20 @@ export function TransportControls({ liveRoom, room }: TransportControlsProps) {
   const awaitingMedia = !session?.sourceUrl;
   const canControl = liveRoom.canControlPlayback;
   const queueAutoplayEnabled = session?.queueAutoplayEnabled ?? true;
+  const nextPreparation = useNextItemPreparation(liveRoom);
   const currentPosition = useMemo(() => {
     const canonicalState = buildCanonicalState(liveRoom, room.mode);
 
     return canonicalState ? expectedPositionAt(canonicalState, clockMs) : 0;
   }, [clockMs, liveRoom, room.mode]);
+  const currentQueueItem = session?.activeQueueItemId
+    ? liveRoom.snapshot.queue.find(
+        (item) => item.queueItemId === session.activeQueueItemId,
+      )
+    : null;
   const title = session?.sourceTitle ?? room.nowPlaying.title;
-  const durationSeconds = session?.sourceDurationSeconds ?? 0;
+  const durationSeconds =
+    currentQueueItem?.durationSeconds ?? session?.sourceDurationSeconds ?? 0;
   const labelClass =
     room.mode === "listen"
       ? "text-secondary-fixed-dim"
@@ -108,6 +116,17 @@ export function TransportControls({ liveRoom, room }: TransportControlsProps) {
               sourceUrl={session.sourceUrl}
               tone={room.mode === "listen" ? "amber" : "cyan"}
             />
+          ) : null}
+          {nextPreparation.status !== "idle" && nextPreparation.target ? (
+            <p className="mt-1 truncate text-label-sm text-on-surface-variant">
+              <span className={labelClass}>
+                {formatPreparationStatus(nextPreparation.status)}
+              </span>{" "}
+              {nextPreparation.target.title}
+              {typeof nextPreparation.durationMs === "number" ? (
+                <span> - {nextPreparation.durationMs}ms</span>
+              ) : null}
+            </p>
           ) : null}
         </div>
 
@@ -467,4 +486,26 @@ function formatSeconds(value: number) {
 
 function readStoredVolume() {
   return Math.round(readStoredPlayerVolume() * 100);
+}
+
+function formatPreparationStatus(
+  status: ReturnType<typeof useNextItemPreparation>["status"],
+) {
+  if (status === "preparing") {
+    return "Preparing next:";
+  }
+
+  if (status === "ready") {
+    return "Next ready:";
+  }
+
+  if (status === "partial") {
+    return "Next warming:";
+  }
+
+  if (status === "skipped") {
+    return "Next queued:";
+  }
+
+  return "Next pending:";
 }

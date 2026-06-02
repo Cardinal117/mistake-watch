@@ -32,7 +32,18 @@
 - YouTube preloading avoids hidden players and full-video preload.
 - Transition timing is measurable.
 
-## TASK-002.4 Provider Recommendations and Room Picks
+## TASK-002.4 YouTube Availability Hardening
+
+- Single YouTube links are checked for embeddability/availability before being treated as playable where official metadata is available.
+- Playlist preview classifies items as playable, blocked/unavailable, restricted, unknown, or provider-error where possible.
+- Playlist import defaults to selecting playable items only and clearly reports skipped or blocked counts.
+- Queue and discovery surfaces visually distinguish blocked/unavailable YouTube items from playable items.
+- Playback-authorized users cannot accidentally trigger known-blocked items as normal play actions.
+- YouTube IFrame runtime errors are classified and reflected in room state or local UI without crashing the player.
+- Queue autoplay can advance past classified blocked/unavailable YouTube items while preserving a visible failure record.
+- Direct media, HLS, and playable YouTube items continue to work.
+
+## TASK-002.5 Provider Recommendations and Room Picks
 
 - Discovery tabs represent honest data sources.
 - Queue/history recommendations work before accounts exist.
@@ -40,59 +51,58 @@
 - Recommendation actions respect permissions.
 - Playback is not blocked by recommendations.
 
-## TASK-002.5 Real Audio-Reactive Waveform Architecture
+## TASK-002.6 Real Audio-Reactive Waveform Architecture
 
 - Direct/HLS/R2-capable sources can use real analysis where technically permitted.
 - YouTube sources use a clearly scoped fallback visualizer.
 - Reduced-motion users get non-animated equivalents.
 - Mobile performance constraints are documented and respected.
 
-## TASK-002.6 Avatar Motion Polish
+## TASK-002.7 Avatar Motion Polish
 
 - Existing avatar identities remain unchanged.
 - Optional motion is subtle and reduced-motion aware.
 - Host crown remains a separate role overlay.
 - Motion causes no layout shift in dense room/member surfaces.
 
-## TASK-002.7 Cloudflare R2 Media Upload Pipeline
+## TASK-002.8 Cloudflare R2 Media Upload Pipeline
 
 - Uploaded media is stored outside Supabase Postgres.
 - Supabase stores durable metadata/access records.
 - Existing YouTube/direct media flows remain working.
 - Future waveform peak storage has a defined metadata path.
 
-## TASK-002.8 Voting and Suggested Next
+## TASK-002.9 Voting and Suggested Next
 
 - Suggested-next voting appears at the intended playback moment.
 - Majority vote can add an item to the queue.
 - Random suggestion action exists.
 - Host retains override authority.
 
-## TASK-002.9 Accounts, Friends, and Friend Invites
+## TASK-002.10 Accounts, Friends, and Friend Invites
 
 - Supabase auth/profile layer exists.
 - Friend invites can appear as popup and notification drawer items.
 - Friend rooms can be discovered according to privacy rules.
 - Guest identity migration path is clear.
 
-## TASK-002.10 Shared Browser Prototype
+## TASK-002.11 Shared Browser Prototype
 
 - Browser mode is isolated from media playback.
 - Control permission handoff is explicit.
 - Resource limits and cleanup behavior are defined.
 - Prototype can be tested without destabilizing watch/listen rooms.
 
-## TASK-002.11 Hardening and Abuse Controls
+## TASK-002.12 Hardening and Abuse Controls
 
 - Rate limits and validation exist for high-risk actions.
 - Invite and room access boundaries are reviewed.
 - Supabase RLS and SpacetimeDB authority reducers are reviewed.
 - Provider and realtime failures have visible handling.
 
-## TASK-002.12 Final QA and Release Gate
+## TASK-002.13 Final QA and Release Gate
 
 - Full multi-client room QA is complete.
 - Mobile layout QA is complete.
 - Production environment configuration is verified.
 - `qa-report.html` records readiness, blockers, and residual risks.
-

@@ -931,7 +931,7 @@ function QueueRow({
         </div>
         {item.sourceType === "youtube" && metadata.status !== "available" ? (
           <span className="technical-label mt-1 block text-on-surface-variant/80">
-            {metadata.loading ? "Metadata pending" : "Metadata unavailable"}
+            {metadata.loading ? "Loading details" : "Metadata unavailable"}
           </span>
         ) : null}
         <div className="mt-1.5 flex flex-wrap items-center justify-end gap-1">

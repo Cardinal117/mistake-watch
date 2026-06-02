@@ -33,7 +33,14 @@ Current status:
 ```text
 TASK-002.1 Listen Mode Quality Pass: implemented
 TASK-002.2 Room Chat: implemented
-TASK-002.3 Seamless Next Item Loading: next task
+TASK-002.3 Seamless Next Item Loading: implemented
+TASK-002.4 Provider Recommendations and Room Picks: next task
+```
+
+Product clarification:
+
+```text
+The user explicitly clarified on 2026-06-02 that chat is not wanted in listen mode. Keep chat out of listen mode unless the user later reverses this decision.
 ```
 
 Do not skip ahead unless the user explicitly names another TASK-002 subtask.
@@ -50,24 +57,22 @@ Do not skip ahead unless the user explicitly names another TASK-002 subtask.
 
 ## Current Next Task
 
-TASK-002.3 Seamless Next Item Loading.
+TASK-002.4 Provider Recommendations and Room Picks.
 
 Scope:
 
-- add next-item prediction without mutating current playback or queue state;
-- prefetch safe metadata and thumbnails for likely next items;
-- add direct/HLS metadata preload where network conditions allow;
-- prepare YouTube player/API readiness without hidden duplicate players or full-video preload;
-- add a clear `Preparing next` or `Loading next` UI state;
-- add transition timing instrumentation;
-- invalidate stale preload targets when queue order, queue mode, or current item changes.
+- make `For you`, `Recommended`, `Trending`, and `From your playlist` honest;
+- use queue/history first, then provider-backed YouTube data where available;
+- keep `From your playlist` unavailable or room-history based until accounts exist;
+- add queue/play-next actions that respect permissions;
+- avoid fake personalized/trending data.
 
 Expected verification:
 
 - `npm run typecheck`
 - `npm run lint`
-- relevant preload/queue transition tests if logic is added;
-- browser QA around queue transitions and provider-specific loading states;
+- relevant recommendation/provider tests if logic is added;
+- browser QA around listen room picks and permission-gated add/play-next actions;
 - update `docs/tasks/TASK-002-incomplete-work-recovery/review-notes.md`;
 - update `docs/tasks/TASK-002-incomplete-work-recovery/implementation-report.html`.
 

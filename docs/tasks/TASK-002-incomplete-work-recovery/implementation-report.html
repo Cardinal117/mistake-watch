@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TASK-002.2 Implementation Report - Mistake Watch</title>
+    <title>TASK-002.3 Implementation Report - Mistake Watch</title>
     <style>
       :root {
         --bg: #0e0e0f;
@@ -44,7 +44,7 @@
       header,
       section {
         border: 1px solid var(--line);
-        border-radius: 12px;
+        border-radius: 8px;
         background: rgba(19, 19, 20, 0.9);
         backdrop-filter: blur(18px);
       }
@@ -68,7 +68,7 @@
       }
 
       h1 {
-        max-width: 820px;
+        max-width: 840px;
         font-size: clamp(2rem, 4vw, 3.5rem);
         line-height: 1.05;
       }
@@ -110,7 +110,7 @@
 
       .card {
         border: 1px solid var(--line);
-        border-radius: 10px;
+        border-radius: 8px;
         background: rgba(28, 27, 28, 0.84);
         padding: 16px;
       }
@@ -150,12 +150,12 @@
   <body>
     <main>
       <header>
-        <span class="label">TASK-002.2 / Implemented</span>
-        <h1>Room Chat</h1>
+        <span class="label">TASK-002.3 / Implemented</span>
+        <h1>Seamless Next Item Loading</h1>
         <p>
-          This report covers the focused TASK-002.2 implementation: live room-scoped chat through
-          SpacetimeDB, sender identity context, optimistic send states, retryable failures, and
-          no durable Supabase chat history.
+          This report covers the focused TASK-002.3 implementation: next-item prediction,
+          safe metadata and thumbnail preparation, YouTube API readiness, visible preparation
+          status, and transition instrumentation without mutating queue or playback state.
         </p>
       </header>
 
@@ -163,16 +163,37 @@
         <h2>Files To Review</h2>
         <div class="grid">
           <div class="card">
-            <strong>Live module</strong>
-            <p><code>spacetime/src/index.ts</code></p>
+            <strong>Preparation Engine</strong>
+            <p><code>lib/player/next-item-preparation.ts</code></p>
           </div>
           <div class="card">
-            <strong>Room integration</strong>
-            <p><code>lib/spacetime/use-live-room.ts</code></p>
+            <strong>Client Hook</strong>
+            <p><code>components/room/use-next-item-preparation.ts</code></p>
           </div>
           <div class="card">
-            <strong>Chat UI</strong>
-            <p><code>components/room/room-chat-panel.tsx</code></p>
+            <strong>YouTube API Loader</strong>
+            <p><code>lib/youtube/iframe-api.ts</code></p>
+          </div>
+          <div class="card">
+            <strong>YouTube Autoplay Continuity</strong>
+            <p><code>components/room/youtube-media-player.tsx</code></p>
+            <p><code>lib/player/youtube-autoplay-continuity.ts</code></p>
+          </div>
+          <div class="card">
+            <strong>Watch Controls</strong>
+            <p><code>components/room/transport-controls.tsx</code></p>
+          </div>
+          <div class="card">
+            <strong>Listen Layout</strong>
+            <p><code>components/room/listen-mode-layout.tsx</code></p>
+          </div>
+          <div class="card">
+            <strong>Members Panel</strong>
+            <p><code>components/room/members-panel.tsx</code></p>
+          </div>
+          <div class="card">
+            <strong>Prediction Tests</strong>
+            <p><code>tests/player/next-item-preparation.test.mjs</code></p>
           </div>
         </div>
       </section>
@@ -180,12 +201,36 @@
       <section>
         <h2>Implementation Summary</h2>
         <ul>
-          <li>Added the SpacetimeDB <code>room_chat_message</code> table and generated bindings.</li>
-          <li>Added <code>send_room_chat_message</code> with active-participant ownership checks.</li>
-          <li>Scoped chat subscriptions to the current room to avoid cross-room message leakage.</li>
-          <li>Replaced the placeholder Chat tab with a live chat panel.</li>
-          <li>Displayed sender name, avatar, host crown state, role, timestamp, and message status.</li>
-          <li>Added optimistic sending, failure state, and retry without adding durable Supabase history.</li>
+          <li>Added queue-aware next-item prediction that respects current item, queue order, queue mode, and loop behavior.</li>
+          <li>Added invalidation keys so reorder, shuffle, loop mode, source changes, and active item changes drop stale preparation targets.</li>
+          <li>Added YouTube preparation for thumbnails, provider metadata, and IFrame API readiness without hidden duplicate players or video preloading.</li>
+          <li>Added direct and HLS metadata warming where browser and network conditions allow.</li>
+          <li>Added data-saver and slow-network skip handling so preparation does not waste bandwidth on constrained clients.</li>
+          <li>Added visible next-item preparation status in watch and listen control surfaces.</li>
+          <li>Added performance marks, measures, and a <code>mw:next-item-preparation</code> event for future transition timing QA.</li>
+          <li>Refined listen-mode metadata display so useful cards do not show repeated pending states.</li>
+          <li>Refined the listen source card, next-preparation status strip, members permissions, carousel affordance, and red/dark theme strength.</li>
+          <li>Added a compact technical room header for room state, invite controls, save room, and mode switching.</li>
+          <li>Removed duplicated room-wide controls from the right sidebar so it focuses on members and permissions.</li>
+          <li>Replaced homepage-style listen-room language with active session language and tightened shared control radii.</li>
+          <li>Grouped YouTube source, views, and likes into compact stat chips below the artist line.</li>
+          <li>Moved Preparing Next into an attached bottom strip on the now-playing card with next-item artwork.</li>
+          <li>Added a collapsible right members sidebar with an attached live member rail, persisted collapsed state, and animated desktop grid/drawer offsets.</li>
+          <li>Removed the duplicate right-panel Coming Up card because the now-playing card already owns the Preparing Next preview.</li>
+          <li>Refined the members panel into compact table-like active/idle sections, sorted hosts and online members first, and hid host self-management controls.</li>
+          <li>Made listen room pick cards and recently added rows clickable, permission-aware playback actions.</li>
+          <li>Softened the center listen canvas background so recommendation tabs no longer sit in a mismatched color band.</li>
+          <li>Split the listen queue drawer into Queue and History views so played songs no longer mix into the upcoming queue.</li>
+          <li>Added YouTube player runtime guards before player API calls such as <code>getPlayerState</code>.</li>
+          <li>Kept the YouTube iframe player stable across queue transitions by loading the next video through the existing IFrame API instance instead of remounting.</li>
+          <li>Added a near-end fallback that advances the canonical queue once when YouTube misses <code>ENDED</code> in a backgrounded or throttled tab.</li>
+          <li>Changed automatic next-item advancement to require playback authority rather than full queue-management authority.</li>
+          <li>Added visibility-return resync so returning to a tab aligns the local YouTube player to SpacetimeDB room state without blind autoplay.</li>
+          <li>Changed the blocked-autoplay affordance to a compact <code>Resume playback</code> recovery control.</li>
+          <li>Compressed the listen room header into a technical session strip with inline room-name editing and clearer session stats.</li>
+          <li>Changed listen header stats to show upcoming count, played count, and remaining duration when queued item durations are available.</li>
+          <li>Rebalanced listen header actions so <code>Add Media</code> is primary while Save, Copy Link, Share, and room code read as secondary controls.</li>
+          <li>Integrated the Watch/Listen mode switch into the compact header and tightened Room Picks tabs plus carousel affordance without redesigning the cards.</li>
         </ul>
       </section>
 
@@ -194,27 +239,27 @@
         <div class="grid">
           <div class="card">
             <span class="status done">Met</span>
-            <p>Chat tab is no longer a placeholder.</p>
+            <p>Next-item prediction is isolated from playback and queue mutation.</p>
           </div>
           <div class="card">
             <span class="status done">Met</span>
-            <p>Messages use SpacetimeDB reducer delivery and room-scoped subscriptions.</p>
+            <p>Metadata and thumbnails are warmed for likely next items where safe.</p>
           </div>
           <div class="card">
             <span class="status done">Met</span>
-            <p>Sender identity and role context are visible in each message.</p>
+            <p>YouTube preparation avoids hidden iframes and full-video preloading.</p>
           </div>
           <div class="card">
             <span class="status done">Met</span>
-            <p>Sending, sent, failed, and retry states are visible.</p>
+            <p>Direct/HLS metadata preload is best-effort and non-blocking.</p>
+          </div>
+          <div class="card">
+            <span class="status done">Met</span>
+            <p>Watch and listen modes show clear preparation status copy.</p>
           </div>
           <div class="card">
             <span class="status warn">Manual QA</span>
-            <p>Two-client live exchange and cross-room leakage checks still need manual browser review.</p>
-          </div>
-          <div class="card">
-            <span class="status done">Met</span>
-            <p>Production SpacetimeDB now has the chat table and reducer module update.</p>
+            <p>Live two-client transition timing still needs browser review in production or a fully configured local room.</p>
           </div>
         </div>
       </section>
@@ -222,35 +267,37 @@
       <section>
         <h2>Verification</h2>
         <ul>
-          <li><code>npm run test:spacetime</code> passed.</li>
           <li><code>npm run typecheck</code> passed.</li>
           <li><code>npm run lint</code> passed.</li>
+          <li><code>npm run test:sync</code> passed.</li>
+          <li><code>npm run test:queue</code> passed.</li>
+          <li><code>tests/player/youtube-autoplay-continuity.test.mjs</code> covers the YouTube near-end fallback and authority guards.</li>
+          <li><code>npm run test:spacetime</code> passed.</li>
           <li><code>npm run build</code> passed.</li>
-          <li><code>spacetime build</code> passed.</li>
-          <li><code>spacetime generate</code> passed.</li>
-          <li>Local SpacetimeDB publish to <code>http://127.0.0.1:5372</code> succeeded.</li>
-          <li>Production SpacetimeDB publish to <code>https://maincloud.spacetimedb.com</code> succeeded for <code>mistake-watch-rooms</code>.</li>
-          <li>The production migration created the public <code>room_chat_message</code> table.</li>
-          <li>Local Next health check returned HTTP 200.</li>
-          <li>Headless Edge loaded <code>http://127.0.0.1:5371</code> and confirmed the dashboard renders.</li>
-          <li>Vercel production deploy completed at <code>https://mistake-watch-jhlrp0kk2-cardinal117s-projects.vercel.app</code>.</li>
-          <li>Production health checks returned HTTP 200 for <code>mistake-watch.vercel.app</code> and <code>watch.mistakestudios.com</code>.</li>
         </ul>
       </section>
 
       <section>
         <h2>Manual Review</h2>
         <p>
-          Manual browser QA remains required for two clients in the same room, two different rooms,
-          and failed-send retry behavior. The local app and SpacetimeDB server started successfully.
-          The dashboard currently blocks room creation because <code>SUPABASE_SECRET_KEY</code> is not
-          configured in local environment variables.
+          Manual QA is still pending. A local browser check was attempted after verification:
+          <code>npm run dev:next</code> printed Ready on port <code>5371</code>, but the in-app
+          browser client blocked navigation to both <code>127.0.0.1:5371</code> and
+          <code>localhost:5371</code> with <code>ERR_BLOCKED_BY_CLIENT</code>.
+          Manual QA should confirm that preparation status appears during real queue transitions,
+          stale preparation targets are invalidated after reorder or mode changes, and next-item
+          readiness does not interrupt current playback or cause time jumps.
+          Additional manual QA should tab away shortly before a YouTube item ends, wait for the next
+          item to become canonical, then return and confirm playback resumes or shows the compact
+          recovery control instead of silently stalling.
+          The listen header should also be checked visually in production for compact height, inline
+          room-name editing, action hierarchy, active Listen state, and Room Picks carousel alignment.
         </p>
       </section>
 
       <section>
         <h2>Next Task</h2>
-        <p>TASK-002.3 Seamless Next Item Loading is the next implementation task.</p>
+        <p>TASK-002.4 YouTube Availability Hardening is the next implementation task.</p>
       </section>
     </main>
   </body>

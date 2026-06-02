@@ -9,8 +9,10 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowDown,
+  ArrowLeft,
   ArrowRight,
   ArrowUp,
   Bookmark,
@@ -18,6 +20,7 @@ import {
   Check,
   ChevronUp,
   ChevronsUp,
+  Copy,
   Disc3,
   GripVertical,
   Headphones,
@@ -31,7 +34,6 @@ import {
   Plus,
   Repeat2,
   Search,
-  Share2,
   Shuffle,
   SlidersHorizontal,
   SkipBack,
@@ -45,13 +47,12 @@ import {
 
 import { SignalApertureLockup } from "@/components/brand";
 import {
+  Avatar,
   Badge,
   Button,
   IconButton,
   PendingLink,
   Slider,
-  TabButton,
-  TabsList,
 } from "@/components/ui";
 import { setRoomSavedAction } from "@/lib/rooms/actions";
 import {
@@ -87,6 +88,7 @@ import { DirectMediaPlayer } from "./direct-media-player";
 import { InviteActions } from "./invite-actions";
 import { MembersPanel } from "./members-panel";
 import { ModeSwitcher } from "./mode-switcher";
+import { useNextItemPreparation } from "./use-next-item-preparation";
 import { YoutubeMediaPlayer } from "./youtube-media-player";
 import { YouTubeMetadataLine } from "./youtube-metadata-line";
 
@@ -113,7 +115,6 @@ type QueueAddInput = SourceLoadInput & {
   thumbnailUrl?: string;
 };
 
-type ListenTabId = "members" | "room";
 type PlaylistPreview = YouTubePlaylistPreviewResponse;
 type PlaylistPreviewItem = YouTubePlaylistItem;
 type ListenTheme = {
@@ -123,20 +124,24 @@ type ListenTheme = {
   wave: string;
 };
 
-const listenTabs = [
-  { id: "members", label: "Members" },
-  { id: "room", label: "Room" },
-] as const;
 const MIN_LISTEN_DRAWER_HEIGHT = 34;
 const MAX_LISTEN_DRAWER_HEIGHT = 88;
 
 export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
   const [clockMs, setClockMs] = useState(() => Date.now());
+  const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(
+    readStoredRightSidebarCollapsed,
+  );
   const [volume, setVolume] = useState(readStoredVolume);
   const liveQueueItems = useListenQueueItems(liveRoom, room);
   const session = liveRoom.snapshot.session;
   const currentItem =
     liveQueueItems.find((item) => item.status === "now") ?? null;
+  const currentLiveQueueItem = session?.activeQueueItemId
+    ? liveRoom.snapshot.queue.find(
+        (item) => item.queueItemId === session.activeQueueItemId,
+      )
+    : null;
   const queuedItems = liveQueueItems.filter((item) => item.status === "queued");
   const previousItems = liveQueueItems.filter((item) => item.status === "played");
   const activeArtworkUrl =
@@ -155,15 +160,22 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
     "--listen-shadow": listenTheme.shadow,
     "--listen-wave": listenTheme.wave,
   } as CSSProperties;
+  const listenGridStyle = {
+    "--listen-room-columns": rightSidebarCollapsed
+      ? "400px minmax(0,1fr) 56px"
+      : "320px minmax(0,1fr) 320px",
+  } as CSSProperties;
   const currentPosition = useMemo(() => {
     const canonicalState = buildCanonicalState(liveRoom);
 
     return canonicalState ? expectedPositionAt(canonicalState, clockMs) : 0;
   }, [clockMs, liveRoom]);
-  const durationSeconds = session?.sourceDurationSeconds ?? 0;
+  const durationSeconds =
+    currentLiveQueueItem?.durationSeconds ?? session?.sourceDurationSeconds ?? 0;
   const canControl = liveRoom.canControlPlayback;
   const canManageQueue = liveRoom.canManageQueue;
   const isConnected = liveRoom.connectionStatus === "connected";
+  const nextPreparation = useNextItemPreparation(liveRoom);
 
   useEffect(() => {
     const timer = window.setInterval(() => setClockMs(Date.now()), 500);
@@ -181,6 +193,14 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
     setVolume(safeVolume);
     window.localStorage.setItem("mw_player_volume", String(safeVolume));
     dispatchPlayerVolume(safeVolume / 100);
+  }
+
+  function setSidebarCollapsed(collapsed: boolean) {
+    setRightSidebarCollapsed(collapsed);
+    window.localStorage.setItem(
+      "mw_listen_right_sidebar_collapsed",
+      collapsed ? "1" : "0",
+    );
   }
 
   function setPlayback(status: "paused" | "playing") {
@@ -201,7 +221,7 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
     const previous = previousItems.at(-1);
 
     if (previous) {
-      liveRoom.playQueueItem(previous.id);
+      liveRoom.playQueueItemNow(previous.id);
     }
   }
 
@@ -209,7 +229,7 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
     const next = queuedItems[0];
 
     if (next) {
-      liveRoom.playQueueItem(next.id);
+      liveRoom.playQueueItemNow(next.id);
     }
   }
 
@@ -259,16 +279,20 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
         className="pointer-events-none absolute inset-0 transition-opacity duration-1000"
         style={{
           background:
-            "radial-gradient(circle at 0% 18%, rgb(var(--listen-primary) / 0.68), transparent 46%), radial-gradient(circle at 18% 62%, rgb(var(--listen-secondary) / 0.32), transparent 42%), radial-gradient(circle at 38% 100%, rgb(var(--listen-wave) / 0.2), transparent 48%), linear-gradient(90deg, rgb(var(--listen-primary) / 0.12), rgb(14 14 15 / 0.4) 34%, rgb(19 19 20 / 0.96) 100%)",
+            "radial-gradient(circle at 0% 18%, rgb(var(--listen-primary) / 0.3), transparent 44%), radial-gradient(circle at 18% 62%, rgb(var(--listen-secondary) / 0.18), transparent 40%), radial-gradient(circle at 38% 100%, rgb(var(--listen-wave) / 0.1), transparent 46%), linear-gradient(90deg, rgb(var(--listen-primary) / 0.05), rgb(14 14 15 / 0.64) 34%, rgb(19 19 20 / 0.97) 100%)",
         }}
       />
-      <div className="relative z-10 grid min-h-screen gap-4 px-margin-mobile pb-28 pt-4 md:px-margin-desktop lg:grid-cols-[320px_minmax(0,1fr)_320px] lg:gap-0 lg:px-0 lg:pb-0 lg:pt-0">
+      <div
+        className="relative z-10 grid min-h-screen gap-4 px-margin-mobile pb-28 pt-4 transition-[grid-template-columns] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:px-margin-desktop lg:grid-cols-[var(--listen-room-columns)] lg:gap-0 lg:px-0 lg:pb-0 lg:pt-0"
+        style={listenGridStyle}
+      >
         <ListenNowPlayingPanel
           canControl={canControl}
           currentItem={currentItem}
           currentPosition={currentPosition}
           durationSeconds={durationSeconds}
           liveRoom={liveRoom}
+          nextPreparation={nextPreparation}
           onNext={playNext}
           onPlaybackChange={setPlayback}
           onPrevious={playPrevious}
@@ -284,7 +308,7 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
           className="relative min-w-0 overflow-hidden border-white/10 lg:border-x"
           style={{
             background:
-              "radial-gradient(circle at 0% 22%, rgb(var(--listen-primary) / 0.34), transparent 42%), radial-gradient(circle at 20% 72%, rgb(var(--listen-secondary) / 0.2), transparent 44%), linear-gradient(90deg,rgb(var(--listen-primary) / 0.1),rgb(14 14 15 / 0.76) 42%,rgb(19 19 20 / 0.96))",
+              "radial-gradient(circle at 8% 0%, rgb(var(--listen-primary) / 0.07), transparent 38rem), radial-gradient(circle at 24% 40%, rgb(var(--listen-secondary) / 0.055), transparent 44rem), linear-gradient(90deg,rgb(var(--listen-primary) / 0.025),rgb(14 14 15 / 0.96) 42%,rgb(19 19 20 / 0.985))",
           }}
         >
           <div
@@ -295,24 +319,34 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
             active={session?.status === "playing"}
             artworkUrl={activeArtworkUrl}
           />
-          <div className="relative z-10 grid min-h-full content-start gap-6 px-4 py-5 sm:px-6 lg:px-10 lg:py-8">
+          <ListenTechnicalRoomHeader
+            canAddQueue={liveRoom.canAddQueue}
+            canLoadSource={liveRoom.canManageAuthority}
+            connectionStatus={liveRoom.connectionStatus}
+            historyCount={previousItems.length}
+            liveRoom={liveRoom}
+            onAddQueueItem={liveRoom.addQueueItem}
+            onLoadSource={liveRoom.loadMediaSource}
+            queueCount={queuedItems.length}
+            remainingSeconds={getRemainingQueueSeconds(liveRoom)}
+            room={room}
+          />
+          <div className="relative z-10 grid min-h-full content-start gap-5 px-4 py-4 sm:px-6 lg:px-10 lg:py-6">
             <ListenDiscoveryPanel
-              canAddQueue={liveRoom.canAddQueue}
-              canLoadSource={liveRoom.canManageAuthority}
-              connectionStatus={liveRoom.connectionStatus}
+              canPlay={canControl && isConnected}
               currentItem={currentItem}
               items={liveQueueItems}
-              onAddQueueItem={liveRoom.addQueueItem}
-              onLoadSource={liveRoom.loadMediaSource}
+              onPlayQueueItem={liveRoom.playQueueItemNow}
               room={room}
             />
           </div>
         </section>
 
         <ListenRoomSidebar
+          collapsed={rightSidebarCollapsed}
+          currentMemberId={room.currentMember?.id}
           liveRoom={liveRoom}
-          queuedItems={queuedItems}
-          room={room}
+          onCollapsedChange={setSidebarCollapsed}
         />
       </div>
       <ListenQueueDrawer
@@ -325,13 +359,14 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
         onClearQueue={liveRoom.clearQueue}
         onMoveQueueItem={liveRoom.moveQueueItem}
         onPinnedFirst={() => applyQueueShuffle("pinned")}
-        onPlayQueueItem={liveRoom.playQueueItem}
+        onPlayQueueItem={liveRoom.playQueueItemNow}
         onQueueItemPriorityChange={liveRoom.setQueueItemPriority}
         onRemoveQueueItem={liveRoom.removeQueueItem}
         onShuffle={() => applyQueueShuffle("shuffle")}
         onSmartShuffle={() => applyQueueShuffle("smart")}
         queueMode={session?.queueMode ?? "normal"}
         queuedItems={queuedItems}
+        rightSidebarCollapsed={rightSidebarCollapsed}
       />
     </main>
   );
@@ -343,6 +378,7 @@ function ListenNowPlayingPanel({
   currentPosition,
   durationSeconds,
   liveRoom,
+  nextPreparation,
   onNext,
   onPlaybackChange,
   onPrevious,
@@ -358,6 +394,7 @@ function ListenNowPlayingPanel({
   currentPosition: number;
   durationSeconds: number;
   liveRoom: LiveRoomState;
+  nextPreparation: ReturnType<typeof useNextItemPreparation>;
   onNext(): void;
   onPlaybackChange(status: "paused" | "playing"): void;
   onPrevious(): void;
@@ -386,10 +423,10 @@ function ListenNowPlayingPanel({
   const progressMax = durationSeconds || Math.max(100, Math.ceil(currentPosition));
 
   return (
-    <aside className="relative grid content-start gap-4 overflow-hidden border-white/10 bg-surface/92 p-4 pb-6 backdrop-blur-xl lg:h-screen lg:border-r lg:p-5">
+    <aside className="relative grid content-start gap-4 overflow-hidden border-white/10 bg-surface/94 p-4 pb-6 backdrop-blur-xl lg:h-screen lg:border-r lg:p-5">
       <div className="grid gap-3">
         <PendingLink
-          className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-md border border-white/10 px-3 text-label-sm font-semibold text-on-surface-variant transition hover:bg-surface-variant/35 hover:text-on-surface"
+          className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-sm border border-white/10 px-3 text-label-sm font-semibold text-on-surface-variant transition hover:bg-surface-variant/35 hover:text-on-surface"
           href="/"
           loadingDetail="Returning you to the dashboard."
           loadingLabel="Leaving room"
@@ -405,11 +442,11 @@ function ListenNowPlayingPanel({
       </div>
 
       <div
-        className="relative grid gap-4 overflow-hidden rounded-lg border border-white/10 p-4 shadow-amber-glow transition-colors duration-1000"
+        className="relative grid gap-0 overflow-hidden rounded-md border border-white/10 shadow-amber-glow transition-colors duration-1000"
         style={{
           background:
-            "radial-gradient(circle at 30% 4%, rgb(var(--listen-primary) / 0.32), transparent 42%), radial-gradient(circle at 88% 48%, rgb(var(--listen-secondary) / 0.18), transparent 40%), linear-gradient(180deg, rgb(var(--listen-primary) / 0.19), rgb(19 19 20 / 0.86))",
-          boxShadow: "0 0 56px rgb(var(--listen-shadow) / 0.24)",
+            "radial-gradient(circle at 30% 4%, rgb(var(--listen-primary) / 0.16), transparent 40%), radial-gradient(circle at 88% 48%, rgb(var(--listen-secondary) / 0.11), transparent 38%), linear-gradient(180deg, rgb(var(--listen-primary) / 0.08), rgb(19 19 20 / 0.92))",
+          boxShadow: "0 0 34px rgb(var(--listen-shadow) / 0.14)",
         }}
       >
         {thumbnailUrl ? (
@@ -428,198 +465,409 @@ function ListenNowPlayingPanel({
             />
           </>
         ) : null}
-        <div className="relative z-10 aspect-square min-h-[13.75rem] overflow-hidden rounded-md border border-white/10 bg-surface-container-lowest">
-          {thumbnailUrl ? (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element -- Provider thumbnails are external media artwork. */}
-              <img
-                alt=""
-                className="absolute inset-0 h-full w-full scale-110 object-cover opacity-30 blur-2xl transition-opacity duration-1000"
-                fetchPriority="high"
-                loading="eager"
-                src={thumbnailUrl}
-              />
-            </>
-          ) : null}
+        <div className="relative z-10 grid gap-4 p-4">
+          <div className="relative aspect-square min-h-[13.75rem] overflow-hidden rounded-md border border-white/10 bg-black shadow-[inset_0_0_0_1px_rgb(255_255_255_/_0.04)]">
+            {thumbnailUrl ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element -- Provider thumbnails are external media artwork. */}
+                <img
+                  alt=""
+                  className="absolute inset-0 h-full w-full scale-110 object-cover opacity-30 blur-2xl transition-opacity duration-1000"
+                  fetchPriority="high"
+                  loading="eager"
+                  src={thumbnailUrl}
+                />
+              </>
+            ) : null}
 
-          {youtubeSource ? (
-            <YoutubeMediaPlayer
-              className="absolute inset-0 h-full w-full bg-black"
+            {youtubeSource ? (
+              <YoutubeMediaPlayer
+                className="absolute inset-0 h-full w-full bg-black"
+                liveRoom={liveRoom}
+                mode="listen"
+              />
+            ) : thumbnailUrl ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element -- Provider thumbnails are external media artwork. */}
+                <img
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-contain"
+                  fetchPriority="high"
+                  loading="eager"
+                  src={thumbnailUrl}
+                />
+              </>
+            ) : (
+              <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_35%_25%,rgb(255_186_32_/_0.28),transparent_34%),linear-gradient(145deg,rgb(42_42_43),rgb(14_14_15))] text-secondary-fixed-dim">
+                <Disc3 className="h-20 w-20" aria-hidden />
+              </div>
+            )}
+            <div
+              aria-hidden
+              className="absolute inset-x-0 bottom-0 h-12 bg-[linear-gradient(to_top,rgb(14_14_15_/_0.58),transparent)]"
+            />
+          </div>
+
+          {!youtubeSource && liveSource ? (
+            <DirectMediaPlayer
+              className="sr-only"
               liveRoom={liveRoom}
               mode="listen"
             />
-          ) : thumbnailUrl ? (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element -- Provider thumbnails are external media artwork. */}
-              <img
-                alt=""
-                className="absolute inset-0 h-full w-full object-contain"
-                fetchPriority="high"
-                loading="eager"
-                src={thumbnailUrl}
-              />
-            </>
-          ) : (
-            <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_35%_25%,rgb(255_186_32_/_0.28),transparent_34%),linear-gradient(145deg,rgb(42_42_43),rgb(14_14_15))] text-secondary-fixed-dim">
-              <Disc3 className="h-20 w-20" aria-hidden />
-            </div>
-          )}
-          <div
-            aria-hidden
-            className="absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(to_top,rgb(14_14_15_/_0.76),transparent)]"
-          />
-        </div>
-
-        {!youtubeSource && liveSource ? (
-          <DirectMediaPlayer
-            className="sr-only"
-            liveRoom={liveRoom}
-            mode="listen"
-          />
-        ) : null}
-
-        <div className="relative z-10 grid gap-2">
-          <span className="technical-label text-secondary-fixed-dim">
-            {awaitingMedia ? "Awaiting media" : "Now Playing"}
-          </span>
-          <h1 className="text-headline-md font-semibold leading-tight text-on-surface [overflow-wrap:anywhere]">
-            {title}
-          </h1>
-          <p className="truncate text-body-md text-on-surface-variant">
-            {artist}
-          </p>
-          {youtubeSource ? (
-            <YouTubeMetadataLine sourceUrl={liveSource} tone="amber" />
           ) : null}
-        </div>
 
-        <div className="relative z-10 grid gap-2">
-          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 text-label-sm text-on-surface-variant">
-            <span>{formatSeconds(currentPosition)}</span>
-            <Slider
-              label="Listen progress"
-              max={progressMax}
-              min={0}
-              onChange={(event) => onSeek(Number(event.currentTarget.value))}
-              readOnly={awaitingMedia || !canControl || !durationSeconds}
-              tone="amber"
-              value={
-                awaitingMedia
-                  ? 0
-                  : durationSeconds
-                    ? Math.min(currentPosition, durationSeconds)
-                    : currentPosition
-              }
-            />
-            <span>{durationSeconds ? formatSeconds(durationSeconds) : "--:--"}</span>
+          <div className="grid gap-2">
+            <span className="technical-label text-secondary-fixed-dim">
+              {awaitingMedia ? "Awaiting media" : "Now Playing"}
+            </span>
+            <h1 className="text-headline-md font-semibold leading-tight text-on-surface [overflow-wrap:anywhere]">
+              {title}
+            </h1>
+            <p className="truncate text-body-md text-on-surface-variant">
+              {artist}
+            </p>
+            {youtubeSource ? (
+              <YouTubeMetadataLine
+                showChannel={false}
+                sourceUrl={liveSource}
+                tone="amber"
+              />
+            ) : null}
           </div>
 
-          <div className="flex items-center justify-center gap-2">
-            <IconButton
-              disabled={!canControl}
-              label="Shuffle queue"
-              onClick={onShuffle}
-              variant="ghost"
-            >
-              <Shuffle className="h-5 w-5" aria-hidden />
-            </IconButton>
-            <IconButton
-              disabled={!canControl}
-              label="Previous song"
-              onClick={onPrevious}
-              variant="ghost"
-            >
-              <SkipBack className="h-5 w-5" aria-hidden />
-            </IconButton>
-            <IconButton
-              disabled={awaitingMedia || !canControl}
-              label={isPlaying ? "Pause" : "Play"}
-              onClick={() => onPlaybackChange(isPlaying ? "paused" : "playing")}
-              variant="primary"
-            >
-              {isPlaying ? (
-                <Pause className="h-5 w-5" aria-hidden />
+          <div className="grid gap-2">
+            <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 text-label-sm text-on-surface-variant">
+              <span>{formatSeconds(currentPosition)}</span>
+              <Slider
+                label="Listen progress"
+                max={progressMax}
+                min={0}
+                onChange={(event) => onSeek(Number(event.currentTarget.value))}
+                readOnly={awaitingMedia || !canControl || !durationSeconds}
+                tone="amber"
+                value={
+                  awaitingMedia
+                    ? 0
+                    : durationSeconds
+                      ? Math.min(currentPosition, durationSeconds)
+                      : currentPosition
+                }
+              />
+              <span>{durationSeconds ? formatSeconds(durationSeconds) : "--:--"}</span>
+            </div>
+
+            <div className="flex items-center justify-center gap-2">
+              <IconButton
+                disabled={!canControl}
+                label="Shuffle queue"
+                onClick={onShuffle}
+                variant="ghost"
+              >
+                <Shuffle className="h-5 w-5" aria-hidden />
+              </IconButton>
+              <IconButton
+                disabled={!canControl}
+                label="Previous song"
+                onClick={onPrevious}
+                variant="ghost"
+              >
+                <SkipBack className="h-5 w-5" aria-hidden />
+              </IconButton>
+              <IconButton
+                disabled={awaitingMedia || !canControl}
+                label={isPlaying ? "Pause" : "Play"}
+                onClick={() =>
+                  onPlaybackChange(isPlaying ? "paused" : "playing")
+                }
+                variant="primary"
+              >
+                {isPlaying ? (
+                  <Pause className="h-5 w-5" aria-hidden />
+                ) : (
+                  <Play className="h-5 w-5" aria-hidden />
+                )}
+              </IconButton>
+              <IconButton
+                disabled={!canControl}
+                label="Next song"
+                onClick={onNext}
+                variant="ghost"
+              >
+                <SkipForward className="h-5 w-5" aria-hidden />
+              </IconButton>
+              <IconButton
+                className={cx(
+                  queueAutoplayEnabled &&
+                    "border-secondary-fixed-dim/45 bg-secondary-fixed-dim/10 text-secondary-fixed-dim",
+                )}
+                disabled={!canControl}
+                label={
+                  queueAutoplayEnabled
+                    ? "Disable queue autoplay"
+                    : "Enable queue autoplay"
+                }
+                onClick={() => liveRoom.setQueueAutoplay(!queueAutoplayEnabled)}
+                variant="ghost"
+              >
+                <Repeat2 className="h-5 w-5" aria-hidden />
+              </IconButton>
+            </div>
+
+            <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
+              {volume <= 0 ? (
+                <VolumeX
+                  className="h-5 w-5 text-on-surface-variant"
+                  aria-hidden
+                />
               ) : (
-                <Play className="h-5 w-5" aria-hidden />
+                <Volume2
+                  className="h-5 w-5 text-on-surface-variant"
+                  aria-hidden
+                />
               )}
-            </IconButton>
-            <IconButton
-              disabled={!canControl}
-              label="Next song"
-              onClick={onNext}
-              variant="ghost"
-            >
-              <SkipForward className="h-5 w-5" aria-hidden />
-            </IconButton>
-            <IconButton
-              className={cx(
-                queueAutoplayEnabled &&
-                  "border-secondary-fixed-dim/45 bg-secondary-fixed-dim/10 text-secondary-fixed-dim",
-              )}
-              disabled={!canControl}
-              label={
-                queueAutoplayEnabled
-                  ? "Disable queue autoplay"
-                  : "Enable queue autoplay"
-              }
-              onClick={() => liveRoom.setQueueAutoplay(!queueAutoplayEnabled)}
-              variant="ghost"
-            >
-              <Repeat2 className="h-5 w-5" aria-hidden />
-            </IconButton>
-          </div>
-
-          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
-            {volume <= 0 ? (
-              <VolumeX
-                className="h-5 w-5 text-on-surface-variant"
-                aria-hidden
+              <Slider
+                label="Volume"
+                max={100}
+                min={0}
+                onChange={(event) =>
+                  onVolumeChange(Number(event.currentTarget.value))
+                }
+                tone="amber"
+                value={volume}
               />
-            ) : (
-              <Volume2
-                className="h-5 w-5 text-on-surface-variant"
-                aria-hidden
-              />
-            )}
-            <Slider
-              label="Volume"
-              max={100}
-              min={0}
-              onChange={(event) => onVolumeChange(Number(event.currentTarget.value))}
-              tone="amber"
-              value={volume}
-            />
-            <IconButton
-              label="Fullscreen"
-              onClick={dispatchPlayerFullscreenRequest}
-              variant="ghost"
-            >
-              <Maximize2 className="h-5 w-5" aria-hidden />
-            </IconButton>
+              <IconButton
+                label="Fullscreen"
+                onClick={dispatchPlayerFullscreenRequest}
+                variant="ghost"
+              >
+                <Maximize2 className="h-5 w-5" aria-hidden />
+              </IconButton>
+            </div>
           </div>
         </div>
+
+        {nextPreparation.status !== "idle" && nextPreparation.target ? (
+          <ListenPreparingNextStrip nextPreparation={nextPreparation} />
+        ) : null}
       </div>
     </aside>
   );
 }
 
-function ListenDiscoveryPanel({
+function ListenTechnicalRoomHeader({
   canAddQueue,
   canLoadSource,
   connectionStatus,
-  currentItem,
-  items,
+  historyCount,
+  liveRoom,
   onAddQueueItem,
   onLoadSource,
+  queueCount,
+  remainingSeconds,
   room,
 }: {
   canAddQueue: boolean;
   canLoadSource: boolean;
   connectionStatus: string;
-  currentItem: RoomQueueItem | null;
-  items: RoomQueueItem[];
+  historyCount: number;
+  liveRoom: LiveRoomState;
   onAddQueueItem(input: QueueAddInput): void;
   onLoadSource(input: SourceLoadInput): void;
+  queueCount: number;
+  remainingSeconds: number | null;
+  room: RoomSnapshot;
+}) {
+  const onlineCount = liveRoom.participants.filter(
+    (participant) => participant.status === "online",
+  ).length;
+  const roomName = liveRoom.snapshot.session?.roomName ?? room.name;
+  const canRename =
+    liveRoom.canManageAuthority && liveRoom.connectionStatus === "connected";
+  const [codeCopied, setCodeCopied] = useState(false);
+  const [editingName, setEditingName] = useState(roomName);
+  const [roomNameDirty, setRoomNameDirty] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const visibleRoomName = roomNameDirty ? editingName : roomName;
+
+  async function copyRoomCode() {
+    const copied = await writeClipboard(room.code);
+
+    if (copied) {
+      setCodeCopied(true);
+      window.setTimeout(() => setCodeCopied(false), 1500);
+    }
+  }
+
+  async function commitRoomName() {
+    const nextName = visibleRoomName.trim().replace(/\s+/g, " ");
+
+    if (!canRename || !nextName || nextName === roomName || renaming) {
+      setEditingName(roomName);
+      setRoomNameDirty(false);
+      return;
+    }
+
+    setRenaming(true);
+
+    try {
+      await liveRoom.renameRoom(nextName);
+      setRoomNameDirty(false);
+    } finally {
+      setRenaming(false);
+    }
+  }
+
+  const stats = [
+    `${room.code}`,
+    `${onlineCount} connected`,
+    "Listen mode",
+    `${queueCount} upcoming`,
+    remainingSeconds ? `${formatCompactDuration(remainingSeconds)} remaining` : null,
+    `${historyCount} played`,
+  ].filter((stat): stat is string => Boolean(stat));
+
+  return (
+    <section className="relative z-20 border-b border-white/10 bg-surface/88 backdrop-blur-xl">
+      <div className="grid gap-2 px-4 py-2.5 sm:px-6 lg:px-10">
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="technical-label border-0 p-0 text-secondary-fixed-dim">
+                Signal Room
+              </span>
+              <span className="technical-label border-0 p-0 text-primary-fixed-dim">
+                {connectionStatus}
+              </span>
+            </div>
+            <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+              <input
+                aria-label="Room name"
+                className="min-w-[7rem] max-w-full bg-transparent text-title-md font-semibold leading-tight text-on-surface outline-none transition placeholder:text-on-surface-variant/50 focus:border-b focus:border-secondary-fixed-dim disabled:cursor-default"
+                disabled={!canRename || renaming}
+                onBlur={commitRoomName}
+                onChange={(event) => {
+                  setEditingName(event.currentTarget.value);
+                  setRoomNameDirty(true);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+
+                  if (event.key === "Escape") {
+                    setEditingName(roomName);
+                    setRoomNameDirty(false);
+                    event.currentTarget.blur();
+                  }
+                }}
+                size={Math.min(Math.max(visibleRoomName.length, 7), 28)}
+                value={visibleRoomName}
+              />
+              {renaming ? (
+                <Loader2
+                  className="h-4 w-4 animate-spin text-secondary-fixed-dim"
+                  aria-hidden
+                />
+              ) : null}
+            </div>
+            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-label-sm text-on-surface-variant">
+              {stats.map((stat, index) => (
+                <span className="inline-flex items-center gap-1.5" key={stat}>
+                  {index > 0 ? <span className="opacity-55">/</span> : null}
+                  <span>{stat}</span>
+                  {index === 0 ? (
+                    <button
+                      aria-label="Copy room code"
+                      className="inline-flex h-5 w-5 items-center justify-center rounded-sm border border-white/10 text-primary-fixed-dim transition hover:bg-primary-fixed-dim/10"
+                      onClick={copyRoomCode}
+                      type="button"
+                    >
+                      {codeCopied ? (
+                        <Check className="h-3.5 w-3.5" aria-hidden />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" aria-hidden />
+                      )}
+                    </button>
+                  ) : null}
+                </span>
+              ))}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <ListenAddMediaPopover
+              canAddQueue={canAddQueue}
+              canLoadSource={canLoadSource}
+              connectionStatus={connectionStatus}
+              onAddQueueItem={onAddQueueItem}
+              onLoadSource={onLoadSource}
+            />
+            <ListenSavedRoomToggle
+              canSave={liveRoom.canManageAuthority}
+              compact
+              initialSaved={room.isSaved}
+              roomId={room.id}
+            />
+            <InviteActions
+              compact
+              inviteUrl={room.inviteUrl}
+              roomCode={room.code}
+            />
+          </div>
+        </div>
+        <ModeSwitcher
+          canSwitch={
+            liveRoom.canManageAuthority && liveRoom.connectionStatus === "connected"
+          }
+          compact
+          mode="listen"
+          onSwitchMode={liveRoom.switchMode}
+        />
+      </div>
+    </section>
+  );
+}
+
+function ListenPreparingNextStrip({
+  nextPreparation,
+}: {
+  nextPreparation: ReturnType<typeof useNextItemPreparation>;
+}) {
+  const target = nextPreparation.target;
+
+  if (!target) {
+    return null;
+  }
+
+  return (
+    <div className="relative z-10 grid grid-cols-[3rem_minmax(0,1fr)] items-center gap-3 border-t border-secondary-fixed-dim/22 bg-secondary-fixed-dim/8 px-4 py-3">
+      <QueueArtwork
+        className="h-12 w-12 rounded-sm"
+        thumbnailUrl={target.thumbnailUrl}
+        title={target.title}
+      />
+      <div className="min-w-0">
+        <p className="technical-label border-0 p-0 text-secondary-fixed-dim">
+          {formatListenPreparationStatus(nextPreparation.status)}
+        </p>
+        <p className="mt-1 truncate text-label-sm font-semibold text-on-surface">
+          {target.title}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ListenDiscoveryPanel({
+  canPlay,
+  currentItem,
+  items,
+  onPlayQueueItem,
+  room,
+}: {
+  canPlay: boolean;
+  currentItem: RoomQueueItem | null;
+  items: RoomQueueItem[];
+  onPlayQueueItem(queueItemId: string): void;
   room: RoomSnapshot;
 }) {
   const [activeFilter, setActiveFilter] = useState("for-you");
@@ -640,71 +888,63 @@ function ListenDiscoveryPanel({
   );
 
   return (
-    <div className="grid gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="technical-label text-secondary-fixed-dim">
-            Friends and family first
-          </p>
-          <h2 className="mt-3 text-headline-lg font-semibold text-on-surface">
-            Good evening
-          </h2>
-          <p className="text-body-md text-on-surface-variant">
-            What do you want to listen to next?
-          </p>
-        </div>
-        <ListenAddMediaPopover
-          canAddQueue={canAddQueue}
-          canLoadSource={canLoadSource}
-          connectionStatus={connectionStatus}
-          onAddQueueItem={onAddQueueItem}
-          onLoadSource={onLoadSource}
-        />
-      </div>
-
-      <div className="max-w-full overflow-x-auto pb-1">
-        <div className="inline-grid min-w-max grid-flow-col rounded-md border border-white/10 bg-surface-container-lowest p-1">
-        {[
-          ["for-you", "For you"],
-          ["recommended", "Recommended"],
-          ["trending", "Trending"],
-          ["playlist", "From your playlist"],
-        ].map(([id, label]) => (
-          <button
-            className={cx(
-              "h-9 shrink-0 rounded-sm px-4 text-label-sm font-semibold transition",
-              activeFilter === id
-                ? "bg-secondary-fixed-dim/12 text-secondary-fixed-dim shadow-[inset_0_0_0_1px_rgb(255_186_32_/_0.32)]"
-                : "text-on-surface-variant hover:bg-surface-variant/20 hover:text-on-surface",
-            )}
-            key={id}
-            onClick={() => setActiveFilter(id)}
-            type="button"
-          >
-            {label}
-          </button>
-        ))}
-        </div>
-      </div>
-
+    <div className="grid gap-5">
       <div className="grid gap-3">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-title-md font-semibold text-on-surface">
-            Room picks
-          </h3>
-          <span className="technical-label text-on-surface-variant">
-            Queue based
-          </span>
+        <div className="grid gap-2 border-b border-white/10 pb-2">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-title-md font-semibold text-on-surface">
+              Room picks
+            </h3>
+            <span className="technical-label border-0 p-0 text-on-surface-variant">
+              Queue based
+            </span>
+          </div>
+          <div className="max-w-full overflow-x-auto pb-1">
+            <div className="inline-grid min-w-max grid-flow-col rounded-sm border border-white/10 bg-surface-container-lowest/92 p-1">
+              {[
+                ["for-you", "For you"],
+                ["recommended", "Recommended"],
+                ["trending", "Trending"],
+                ["playlist", "From your playlist"],
+              ].map(([id, label]) => (
+                <button
+                  className={cx(
+                    "h-8 shrink-0 rounded-sm px-4 text-label-sm font-semibold transition",
+                    activeFilter === id
+                      ? "bg-secondary-fixed-dim/14 text-secondary-fixed-dim shadow-[inset_0_0_0_1px_rgb(255_186_32_/_0.34)]"
+                      : "text-on-surface-variant hover:bg-surface-variant/20 hover:text-on-surface",
+                  )}
+                  key={id}
+                  onClick={() => setActiveFilter(id)}
+                  type="button"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
         {recommendations.length > 0 ? (
-          <div className="grid auto-cols-[minmax(11rem,1fr)] grid-flow-col gap-3 overflow-x-auto pb-2">
-            {recommendations.map((item) => (
-              <RecommendationCard
-                current={item.id === currentItem?.id}
-                item={item}
-                key={item.id}
-              />
-            ))}
+          <div className="relative">
+            <div className="grid snap-x auto-cols-[minmax(11rem,12.5rem)] grid-flow-col gap-3 overflow-x-auto pb-3 pr-10 [scrollbar-color:rgb(255_186_32_/_0.42)_transparent] [scrollbar-width:thin]">
+              {recommendations.map((item) => (
+                <RecommendationCard
+                  canPlay={canPlay}
+                  current={item.id === currentItem?.id}
+                  item={item}
+                  key={item.id}
+                  onPlay={() => onPlayQueueItem(item.id)}
+                />
+              ))}
+            </div>
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 right-0 flex w-16 items-center justify-end bg-[linear-gradient(90deg,transparent,rgb(14_14_15_/_0.88)_70%,rgb(14_14_15_/_0.98))]"
+            >
+              <span className="mr-0 inline-flex h-9 w-8 items-center justify-center rounded-sm border border-secondary-fixed-dim/25 bg-surface-container-lowest/90 text-secondary-fixed-dim shadow-[0_0_16px_rgb(255_186_32_/_0.08)]">
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </span>
+            </div>
           </div>
         ) : (
           <EmptyListenPanel>
@@ -726,7 +966,13 @@ function ListenDiscoveryPanel({
         <div className="overflow-hidden rounded-md border border-white/10 bg-surface/55">
           {recentlyAdded.length > 0 ? (
             recentlyAdded.map((item, index) => (
-              <RecentItemRow item={item} key={item.id} minutesAgo={index * 3 + 2} />
+              <RecentItemRow
+                canPlay={canPlay}
+                item={item}
+                key={item.id}
+                minutesAgo={index * 3 + 2}
+                onPlay={() => onPlayQueueItem(item.id)}
+              />
             ))
           ) : (
             <p className="p-4 text-body-md text-on-surface-variant">
@@ -793,6 +1039,7 @@ function ListenAddMediaPopover({
             "Playlist import is unavailable. You can still add a direct video URL.",
         );
       } else if (openReview && payload.items.length > 0) {
+        setIsOpen(false);
         setPlaylistReviewOpen(true);
       }
 
@@ -910,16 +1157,17 @@ function ListenAddMediaPopover({
   return (
     <div className="relative">
       <Button
-        className="shadow-screen-glow"
+        className="border border-secondary-fixed-dim/45 bg-secondary-fixed-dim text-on-secondary-fixed shadow-[0_0_28px_rgb(255_186_32_/_0.14)] hover:bg-secondary-fixed"
         onClick={() => setIsOpen((open) => !open)}
         size="md"
         type="button"
+        variant="secondary"
       >
         <Plus className="h-5 w-5" aria-hidden />
         Add Media
       </Button>
       {isOpen ? (
-        <div className="absolute right-0 top-12 z-40 grid w-[min(24rem,calc(100vw-2rem))] gap-3 rounded-lg border border-white/10 bg-surface/95 p-4 shadow-screen-glow backdrop-blur-xl">
+        <div className="absolute right-0 top-12 z-40 grid w-[min(24rem,calc(100vw-2rem))] gap-3 rounded-md border border-white/10 bg-surface/95 p-4 shadow-[0_0_36px_rgb(255_186_32_/_0.12)] backdrop-blur-xl">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h3 className="text-body-lg font-semibold text-on-surface">
@@ -941,7 +1189,7 @@ function ListenAddMediaPopover({
           <form className="grid gap-2" onSubmit={addSingle}>
             <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
               <input
-                className="h-11 rounded-md border border-white/10 bg-surface-container-low px-3 text-body-md text-on-surface outline-none transition placeholder:text-on-surface-variant/55 focus:border-primary-fixed-dim focus:ring-2 focus:ring-primary-fixed-dim/20"
+                className="h-11 rounded-sm border border-white/10 bg-surface-container-low px-3 text-body-md text-on-surface outline-none transition placeholder:text-on-surface-variant/55 focus:border-secondary-fixed-dim focus:ring-2 focus:ring-secondary-fixed-dim/15"
                 disabled={!canAddQueue && !canLoadSource}
                 onBlur={() => {
                   if (detectUrlType(url) === "youtube-playlist") {
@@ -970,7 +1218,7 @@ function ListenAddMediaPopover({
               Loading playlist preview
             </p>
           ) : null}
-          <div className="grid gap-2 rounded-md bg-surface-container-low p-2">
+          <div className="grid gap-2 rounded-sm bg-surface-container-low p-2">
             <button
               className="grid grid-cols-[2.5rem_minmax(0,1fr)] items-center gap-3 rounded-sm p-2 text-left hover:bg-surface-variant/30"
               disabled={addDisabled}
@@ -983,7 +1231,7 @@ function ListenAddMediaPopover({
               }}
               type="button"
             >
-              <span className="flex h-10 w-10 items-center justify-center rounded-md bg-primary-fixed-dim/10 text-primary-fixed-dim">
+              <span className="flex h-10 w-10 items-center justify-center rounded-sm bg-secondary-fixed-dim/10 text-secondary-fixed-dim">
                 <Headphones className="h-5 w-5" aria-hidden />
               </span>
               <span>
@@ -998,10 +1246,13 @@ function ListenAddMediaPopover({
             <button
               className="grid grid-cols-[2.5rem_minmax(0,1fr)] items-center gap-3 rounded-sm p-2 text-left hover:bg-surface-variant/30"
               disabled={addDisabled || !playlistPreview}
-              onClick={() => setPlaylistReviewOpen(true)}
+              onClick={() => {
+                setIsOpen(false);
+                setPlaylistReviewOpen(true);
+              }}
               type="button"
             >
-              <span className="flex h-10 w-10 items-center justify-center rounded-md bg-secondary-fixed-dim/10 text-secondary-fixed-dim">
+              <span className="flex h-10 w-10 items-center justify-center rounded-sm bg-secondary-fixed-dim/10 text-secondary-fixed-dim">
                 <ListMusic className="h-5 w-5" aria-hidden />
               </span>
               <span>
@@ -1070,6 +1321,8 @@ function ListenPlaylistReviewOverlay({
   preview: PlaylistPreview;
   selectedIds: Set<string>;
 }) {
+  const portalRoot =
+    typeof document === "undefined" ? null : document.body;
   const allSelected =
     preview.items.length > 0 &&
     preview.items.every((item) => selectedIds.has(item.videoId));
@@ -1094,14 +1347,14 @@ function ListenPlaylistReviewOverlay({
     );
   }
 
-  return (
+  const overlay = (
     <div
       aria-modal="true"
-      className="fixed inset-0 z-[70] grid place-items-center bg-background/72 px-4 py-6 backdrop-blur-md"
+      className="fixed inset-0 z-[100] grid place-items-center overflow-hidden bg-background/78 px-4 py-4 backdrop-blur-md"
       role="dialog"
     >
-      <div className="grid max-h-[min(86vh,46rem)] w-full max-w-3xl overflow-hidden rounded-lg border border-secondary-fixed-dim/25 bg-surface/96 shadow-[0_0_64px_rgb(255_186_32_/_0.16)]">
-        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 p-4">
+      <div className="grid h-[min(86vh,44rem)] w-full max-w-3xl grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden rounded-md border border-secondary-fixed-dim/25 bg-surface/96 shadow-[0_0_48px_rgb(255_186_32_/_0.12)]">
+        <div className="flex min-h-0 flex-wrap items-start justify-between gap-3 border-b border-white/10 p-4">
           <div className="min-w-0">
             <Badge tone="amber">Playlist review</Badge>
             <h3 className="mt-2 truncate text-title-md font-semibold text-on-surface">
@@ -1125,12 +1378,12 @@ function ListenPlaylistReviewOverlay({
         </div>
 
         {preview.status !== "available" ? (
-          <div className="p-4 text-body-md text-error">
+          <div className="row-span-2 p-4 text-body-md text-error">
             {preview.reason ?? "Playlist import is unavailable right now."}
           </div>
         ) : (
           <>
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-surface-container-lowest/75 p-3">
+            <div className="flex min-h-0 flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-surface-container-lowest/75 p-3">
               <button
                 className="inline-flex h-9 items-center gap-2 rounded-sm border border-white/10 px-3 text-label-sm font-semibold text-on-surface-variant transition hover:bg-surface-variant/35 hover:text-on-surface"
                 onClick={() => setAllSelected(!allSelected)}
@@ -1161,7 +1414,7 @@ function ListenPlaylistReviewOverlay({
                 </Button>
               </div>
             </div>
-            <div className="max-h-[min(56vh,30rem)] overflow-y-auto p-3">
+            <div className="min-h-0 overflow-y-auto p-3">
               <div className="grid gap-2">
                 {preview.items.map((item, index) => {
                   const selected = selectedIds.has(item.videoId);
@@ -1169,7 +1422,7 @@ function ListenPlaylistReviewOverlay({
                   return (
                     <label
                       className={cx(
-                        "grid cursor-pointer grid-cols-[auto_3.25rem_minmax(0,1fr)_auto] items-center gap-3 rounded-md border p-2 transition",
+                        "grid min-h-16 cursor-pointer grid-cols-[auto_3rem_minmax(0,1fr)_auto] items-center gap-3 rounded-sm border p-2 transition",
                         selected
                           ? "border-secondary-fixed-dim/35 bg-secondary-fixed-dim/10"
                           : "border-white/10 bg-surface-container-low hover:border-white/20",
@@ -1183,6 +1436,7 @@ function ListenPlaylistReviewOverlay({
                         type="checkbox"
                       />
                       <QueueArtwork
+                        className="h-12 w-12"
                         thumbnailUrl={item.thumbnailUrl}
                         title={item.title}
                       />
@@ -1207,18 +1461,25 @@ function ListenPlaylistReviewOverlay({
       </div>
     </div>
   );
+
+  if (!portalRoot) {
+    return null;
+  }
+
+  return createPortal(overlay, portalRoot);
 }
 
 function ListenRoomSidebar({
+  collapsed,
+  currentMemberId,
   liveRoom,
-  queuedItems,
-  room,
+  onCollapsedChange,
 }: {
+  collapsed: boolean;
+  currentMemberId?: string | null;
   liveRoom: LiveRoomState;
-  queuedItems: RoomQueueItem[];
-  room: RoomSnapshot;
+  onCollapsedChange(collapsed: boolean): void;
 }) {
-  const [activeTab, setActiveTab] = useState<ListenTabId>("members");
   const panelNamespace = useId();
   const onlineParticipants = liveRoom.participants.filter(
     (participant) => participant.status === "online",
@@ -1226,61 +1487,75 @@ function ListenRoomSidebar({
   const controllerMemberId =
     liveRoom.participants.find((participant) => participant.isController)?.id ??
     null;
-  const comingUp = queuedItems[0] ?? null;
+
+  if (collapsed) {
+    return (
+      <aside className="grid content-start border-white/10 bg-surface/94 p-2 backdrop-blur-xl transition-[width,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:h-screen lg:border-l">
+        <button
+          aria-label="Open members sidebar"
+          className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-sm border border-white/10 text-secondary-fixed-dim transition hover:bg-secondary-fixed-dim/10"
+          onClick={() => onCollapsedChange(false)}
+          type="button"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+        </button>
+        <div className="grid justify-items-center gap-2">
+          {onlineParticipants.slice(0, 7).map((participant) => (
+            <Avatar
+              avatarKey={participant.avatarKey}
+              className="h-9 w-9"
+              crowned={participant.role === "host"}
+              key={participant.id}
+              name={participant.name}
+              seed={participant.id}
+              status={participant.status}
+              title={participant.name}
+            />
+          ))}
+          {onlineParticipants.length > 7 ? (
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-sm border border-white/10 bg-surface-container text-[11px] font-semibold text-on-surface-variant">
+              +{onlineParticipants.length - 7}
+            </span>
+          ) : null}
+        </div>
+      </aside>
+    );
+  }
 
   return (
-    <aside className="grid content-start gap-4 border-white/10 bg-surface/92 p-4 backdrop-blur-xl lg:h-screen lg:border-l lg:p-5">
-      <TabsList className="grid grid-cols-2 rounded-md border border-white/10 bg-surface-container-lowest p-1">
-        {listenTabs.map((tab) => (
-          <TabButton
-            active={activeTab === tab.id}
-            aria-controls={`${panelNamespace}-${tab.id}-panel`}
-            className={
-              activeTab === tab.id
-                ? "bg-secondary-fixed-dim/12 text-secondary-fixed-dim"
-                : undefined
-            }
-            id={`${panelNamespace}-${tab.id}-tab`}
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+    <aside className="grid content-start gap-4 border-white/10 bg-surface/92 p-4 backdrop-blur-xl transition-[width,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:h-screen lg:border-l lg:p-5">
+      <div className="rounded-md border border-white/10 bg-surface-container-lowest p-1">
+        <div className="flex h-9 items-center justify-between gap-2 rounded-sm bg-secondary-fixed-dim/10 px-2 text-label-sm font-semibold text-secondary-fixed-dim">
+          <span className="px-1">Members</span>
+          <span className="rounded-sm border border-white/10 bg-surface-container px-1.5 text-[11px] text-on-surface">
+            {onlineParticipants.length}
+          </span>
+          <button
+            aria-label="Collapse members sidebar"
+            className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-sm border border-white/10 text-on-surface-variant transition hover:bg-surface-variant/35 hover:text-on-surface"
+            onClick={() => onCollapsedChange(true)}
+            type="button"
           >
-            <span className="inline-flex items-center gap-1.5">
-              {tab.label}
-              {tab.id === "members" ? (
-                <span className="rounded-sm border border-white/10 bg-surface-container px-1.5 text-[11px]">
-                  {onlineParticipants.length}
-                </span>
-              ) : null}
-            </span>
-          </TabButton>
-        ))}
-      </TabsList>
-
-      <div
-        aria-labelledby={`${panelNamespace}-${activeTab}-tab`}
-        className="min-w-0"
-        id={`${panelNamespace}-${activeTab}-panel`}
-        role="tabpanel"
-      >
-        {activeTab === "members" ? (
-          <MembersPanel
-            canManageAuthority={liveRoom.canManageAuthority}
-            connectionStatus={liveRoom.connectionStatus}
-            controllerMemberId={controllerMemberId}
-            errorMessage={liveRoom.errorMessage}
-            grantControl={liveRoom.grantControl}
-            kickMember={liveRoom.kickMember}
-            onPermissionChange={liveRoom.setPermission}
-            participants={liveRoom.participants}
-            removeIdleMember={liveRoom.removeIdleMember}
-            revokeControl={liveRoom.revokeControl}
-          />
-        ) : (
-          <ListenRoomContext liveRoom={liveRoom} room={room} />
-        )}
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
       </div>
 
-      <ComingUpCard item={comingUp} />
+      <div className="min-w-0" id={`${panelNamespace}-members-panel`}>
+        <MembersPanel
+          canManageAuthority={liveRoom.canManageAuthority}
+          connectionStatus={liveRoom.connectionStatus}
+          controllerMemberId={controllerMemberId}
+          currentMemberId={currentMemberId}
+          errorMessage={liveRoom.errorMessage}
+          grantControl={liveRoom.grantControl}
+          kickMember={liveRoom.kickMember}
+          onPermissionChange={liveRoom.setPermission}
+          participants={liveRoom.participants}
+          removeIdleMember={liveRoom.removeIdleMember}
+          revokeControl={liveRoom.revokeControl}
+        />
+      </div>
     </aside>
   );
 }
@@ -1301,6 +1576,7 @@ function ListenQueueDrawer({
   onShuffle,
   onSmartShuffle,
   queuedItems,
+  rightSidebarCollapsed,
 }: {
   canAddQueue: boolean;
   canManageQueue: boolean;
@@ -1321,24 +1597,44 @@ function ListenQueueDrawer({
   onSmartShuffle(): void;
   queueMode: QueueMode;
   queuedItems: RoomQueueItem[];
+  rightSidebarCollapsed: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const [drawerView, setDrawerView] = useState<"history" | "queue">("queue");
   const [drawerHeight, setDrawerHeight] = useState<number>(
     readStoredDrawerHeight,
   );
-  const visibleItems = items.filter((item) => {
+  const queueViewItems = items.filter(
+    (item) => item.status === "now" || item.status === "queued",
+  );
+  const historyItems = items.filter((item) => item.status === "played");
+  const baseVisibleItems =
+    drawerView === "history" ? historyItems : queueViewItems;
+  const visibleItems = baseVisibleItems.filter((item) => {
     const searchable = `${item.title} ${item.artist ?? ""} ${item.channelName ?? ""}`.toLowerCase();
 
     return searchable.includes(query.toLowerCase());
   });
   const manageDisabled = !canManageQueue || !isConnected;
+  const playDisabled = !canManageQueue || !isConnected;
   const activeIndex = currentItem
-    ? items.findIndex((item) => item.id === currentItem.id)
+    ? queueViewItems.findIndex((item) => item.id === currentItem.id)
     : -1;
   const activeQueueLabel =
-    activeIndex >= 0 ? `${activeIndex + 1} / ${items.length}` : `0 / ${items.length}`;
+    activeIndex >= 0
+      ? `${activeIndex + 1} / ${queueViewItems.length}`
+      : `0 / ${queueViewItems.length}`;
+  const drawerCountLabel =
+    drawerView === "history"
+      ? `${historyItems.length} played`
+      : activeQueueLabel;
   const rowsMaxHeight = `max(12rem, calc(${drawerHeight}vh - 13rem))`;
+  const drawerStyle = {
+    "--listen-drawer-left": rightSidebarCollapsed ? "400px" : "320px",
+    "--listen-drawer-right": rightSidebarCollapsed ? "56px" : "320px",
+    maxHeight: open ? `${drawerHeight}vh` : "3rem",
+  } as CSSProperties;
 
   function setHeight(nextHeight: number) {
     const safeHeight = clampNumber(
@@ -1360,14 +1656,12 @@ function ListenQueueDrawer({
   return (
     <section
       className={cx(
-        "fixed bottom-0 left-3 right-3 z-50 overflow-hidden rounded-t-lg border border-b-0 border-white/10 bg-surface/94 shadow-[0_-24px_60px_rgb(0_0_0_/_0.34)] backdrop-blur-xl transition-[max-height,border-color,box-shadow] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:left-[320px] lg:right-[320px]",
+        "fixed bottom-0 left-3 right-3 z-50 overflow-hidden rounded-t-md border border-b-0 border-white/10 bg-surface/94 shadow-[0_-18px_48px_rgb(0_0_0_/_0.32)] backdrop-blur-xl transition-[max-height,border-color,box-shadow,left,right] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:left-[var(--listen-drawer-left)] lg:right-[var(--listen-drawer-right)]",
         open
           ? "border-secondary-fixed-dim/25"
           : "max-h-12 border-white/10",
       )}
-      style={{
-        maxHeight: open ? `${drawerHeight}vh` : "3rem",
-      }}
+      style={drawerStyle}
     >
       <button
         aria-expanded={open}
@@ -1382,10 +1676,10 @@ function ListenQueueDrawer({
           <span className="hidden min-w-0 items-center gap-2 text-left sm:flex">
             <span className="technical-label text-on-surface">Queue</span>
             <span className="text-label-sm text-on-surface-variant">
-              {activeQueueLabel}
+              {drawerCountLabel}
             </span>
           </span>
-        <span className="flex h-8 min-w-24 items-center justify-center gap-2 rounded-md border border-secondary-fixed-dim/25 bg-surface-container-low/90 px-4 shadow-amber-glow">
+        <span className="flex h-8 min-w-24 items-center justify-center gap-2 rounded-sm border border-secondary-fixed-dim/25 bg-surface-container-low/90 px-4 shadow-[0_0_18px_rgb(255_186_32_/_0.1)]">
           <span className="block h-1 w-10 rounded-full bg-secondary-fixed-dim/80" />
           <ChevronUp
             className={cx(
@@ -1411,14 +1705,37 @@ function ListenQueueDrawer({
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 p-4">
             <div className="flex items-center gap-2">
               <h3 className="text-body-lg font-semibold text-on-surface">
-                Queue
+                {drawerView === "history" ? "History" : "Queue"}
               </h3>
               <span className="text-label-sm text-on-surface-variant">
-                {activeQueueLabel}
+                {drawerCountLabel}
               </span>
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
-              <label className="grid h-9 w-56 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-white/10 bg-surface-container-low px-3">
+              <div className="inline-grid h-9 grid-cols-2 rounded-sm border border-white/10 bg-surface-container-lowest p-1">
+                {[
+                  ["queue", "Queue", queueViewItems.length],
+                  ["history", "History", historyItems.length],
+                ].map(([view, label, count]) => (
+                  <button
+                    className={cx(
+                      "rounded-sm px-3 text-label-sm font-semibold transition",
+                      drawerView === view
+                        ? "bg-secondary-fixed-dim/12 text-secondary-fixed-dim"
+                        : "text-on-surface-variant hover:bg-surface-variant/20 hover:text-on-surface",
+                    )}
+                    key={view}
+                    onClick={() => setDrawerView(view as "history" | "queue")}
+                    type="button"
+                  >
+                    {label}
+                    <span className="ml-1 text-[11px] opacity-70">
+                      {count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <label className="grid h-9 w-56 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-sm border border-white/10 bg-surface-container-low px-3">
                 <span className="flex items-center gap-1.5 text-label-sm text-on-surface-variant">
                   <SlidersHorizontal className="h-4 w-4" aria-hidden />
                   Height
@@ -1437,7 +1754,7 @@ function ListenQueueDrawer({
                   {drawerHeight}vh
                 </span>
               </label>
-              <label className="grid h-9 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-md border border-white/10 bg-surface-container-low px-3">
+              <label className="grid h-9 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-sm border border-white/10 bg-surface-container-low px-3">
                 <Search
                   className="h-4 w-4 text-on-surface-variant"
                   aria-hidden
@@ -1514,6 +1831,7 @@ function ListenQueueDrawer({
                     onAddQueueItem={onAddQueueItem}
                     onMoveQueueItem={onMoveQueueItem}
                     onPlayQueueItem={onPlayQueueItem}
+                    playDisabled={playDisabled}
                     onQueueItemPriorityChange={onQueueItemPriorityChange}
                     onRemoveQueueItem={onRemoveQueueItem}
                     queuedIndex={queuedIndex}
@@ -1523,7 +1841,9 @@ function ListenQueueDrawer({
               })
             ) : (
               <p className="p-4 text-body-md text-on-surface-variant">
-                No queue rows match this search.
+                {drawerView === "history"
+                  ? "No history rows match this search."
+                  : "No queue rows match this search."}
               </p>
             )}
           </div>
@@ -1541,6 +1861,7 @@ function ListenQueueRow({
   onAddQueueItem,
   onMoveQueueItem,
   onPlayQueueItem,
+  playDisabled,
   onQueueItemPriorityChange,
   onRemoveQueueItem,
   queuedIndex,
@@ -1554,6 +1875,7 @@ function ListenQueueRow({
   onAddQueueItem(input: QueueAddInput): void;
   onMoveQueueItem(queueItemId: string, position: number): void;
   onPlayQueueItem(queueItemId: string): void;
+  playDisabled: boolean;
   onQueueItemPriorityChange(
     queueItemId: string,
     input: { isPinned?: boolean; isPlayNext?: boolean },
@@ -1600,10 +1922,22 @@ function ListenQueueRow({
       <span
         className={cx(
           "text-label-sm font-semibold",
-          current ? "text-secondary-fixed-dim" : "text-on-surface-variant",
+          current
+            ? "text-secondary-fixed-dim"
+            : item.isPinned || item.isPlayNext
+              ? "text-secondary-fixed-dim"
+              : "text-on-surface-variant",
         )}
       >
-        {current ? "Now playing" : queuedIndex === 0 ? "Up next" : item.status}
+        {current
+          ? "Now playing"
+          : item.isPlayNext
+            ? "Play next"
+            : item.isPinned
+              ? "Pinned"
+              : queuedIndex === 0
+                ? "Up next"
+                : item.status}
       </span>
       <span className="flex items-center justify-end gap-1">
         {current ? (
@@ -1664,11 +1998,12 @@ function ListenQueueRow({
                 isPinned: !item.isPinned,
               })
             }
+            selected={item.isPinned}
           />
         ) : null}
         {!current ? (
           <IconQueueButton
-            disabled={manageDisabled}
+            disabled={playDisabled}
             icon={<Play className="h-4 w-4" aria-hidden />}
             label={`Play ${title}`}
             onClick={() => onPlayQueueItem(item.id)}
@@ -1688,47 +2023,14 @@ function ListenQueueRow({
   );
 }
 
-function ListenRoomContext({
-  liveRoom,
-  room,
-}: {
-  liveRoom: LiveRoomState;
-  room: RoomSnapshot;
-}) {
-  return (
-    <div className="grid gap-4">
-      <ModeSwitcher
-        canSwitch={
-          liveRoom.canManageAuthority && liveRoom.connectionStatus === "connected"
-        }
-        mode="listen"
-        onSwitchMode={liveRoom.switchMode}
-      />
-      <InviteActions inviteUrl={room.inviteUrl} roomCode={room.code} />
-      <div className="rounded-md border border-white/10 bg-surface-container-low p-3">
-        <span className="technical-label text-secondary-fixed-dim">Room</span>
-        <p className="mt-2 text-body-md font-semibold text-on-surface">
-          {liveRoom.snapshot.session?.roomName ?? room.name}
-        </p>
-        <p className="text-label-sm text-on-surface-variant">
-          Host: {room.host}
-        </p>
-      </div>
-      <ListenSavedRoomToggle
-        canSave={liveRoom.canManageAuthority}
-        initialSaved={room.isSaved}
-        roomId={room.id}
-      />
-    </div>
-  );
-}
-
 function ListenSavedRoomToggle({
   canSave,
+  compact = false,
   initialSaved,
   roomId,
 }: {
   canSave: boolean;
+  compact?: boolean;
   initialSaved: boolean;
   roomId: string;
 }) {
@@ -1761,6 +2063,22 @@ function ListenSavedRoomToggle({
     } finally {
       setSaving(false);
     }
+  }
+
+  if (compact) {
+    return (
+      <Button
+        className="shrink-0 border-white/10 bg-transparent text-on-surface-variant hover:bg-surface-variant/30 hover:text-on-surface"
+        disabled={!canSave || saving}
+        onClick={handleToggle}
+        size="sm"
+        type="button"
+        variant="ghost"
+      >
+        <Icon className="h-4 w-4" aria-hidden />
+        {isSaved ? "Saved" : "Save"}
+      </Button>
+    );
   }
 
   return (
@@ -1796,61 +2114,125 @@ function ListenSavedRoomToggle({
 }
 
 function RecommendationCard({
+  canPlay,
   current,
   item,
+  onPlay,
 }: {
+  canPlay: boolean;
   current: boolean;
   item: RoomQueueItem;
+  onPlay(): void;
 }) {
+  const metadata = useYouTubeMetadata(
+    item.sourceType === "youtube" ? item.sourceUrl : null,
+  );
+  const title = metadata.metadata?.title ?? item.title;
+  const channel =
+    metadata.metadata?.channelTitle ?? item.channelName ?? item.artist;
+  const thumbnailUrl = metadata.metadata?.thumbnailUrl ?? item.thumbnailUrl;
+  const duration = getQueueItemDisplayDuration(item, metadata);
+  const disabled = current || !canPlay;
+
   return (
-    <article
+    <button
+      aria-label={
+        current
+          ? `${title} is now playing`
+          : canPlay
+            ? `Play ${title}`
+            : `Playback permission required for ${title}`
+      }
       className={cx(
-        "group min-w-0 overflow-hidden rounded-md border bg-surface/72 transition hover:border-secondary-fixed-dim/35",
-        current ? "border-secondary-fixed-dim/40" : "border-white/10",
+        "group min-w-0 snap-start overflow-hidden rounded-md border bg-surface/72 text-left transition disabled:cursor-not-allowed",
+        current
+          ? "border-secondary-fixed-dim/45 bg-secondary-fixed-dim/8"
+          : "border-white/10 hover:border-secondary-fixed-dim/40 hover:bg-surface-container-low/70",
+        disabled && !current && "opacity-75",
       )}
+      disabled={disabled}
+      onClick={onPlay}
+      type="button"
     >
-      <div className="aspect-[4/3] overflow-hidden bg-surface-container">
+      <div className="relative aspect-[4/3] overflow-hidden bg-surface-container">
         <QueueArtwork
           className="h-full w-full rounded-none border-0"
-          thumbnailUrl={item.thumbnailUrl}
-          title={item.title}
+          thumbnailUrl={thumbnailUrl}
+          title={title}
         />
+        <span
+          className={cx(
+            "absolute inset-0 grid place-items-center bg-black/0 text-secondary-fixed-dim opacity-0 transition group-hover:bg-black/24 group-hover:opacity-100",
+            current && "bg-black/18 opacity-100",
+          )}
+        >
+          {current ? (
+            <span className="technical-label border-secondary-fixed-dim/30 bg-surface/80 text-secondary-fixed-dim">
+              Now
+            </span>
+          ) : (
+            <Play className="h-8 w-8 drop-shadow-[0_0_16px_rgb(255_186_32_/_0.35)]" aria-hidden />
+          )}
+        </span>
       </div>
       <div className="grid gap-1 p-3">
         <p className="truncate text-body-md font-semibold text-on-surface">
-          {item.title}
+          {title}
         </p>
         <p className="truncate text-label-sm text-on-surface-variant">
-          {item.artist ?? item.channelName ?? "Room source"}
+          {channel ?? "Room source"}
         </p>
-        <p className="text-label-sm text-on-surface-variant">
-          {item.duration}
-        </p>
+        {duration ? (
+          <p className="text-label-sm text-on-surface-variant">{duration}</p>
+        ) : null}
       </div>
-    </article>
+    </button>
   );
 }
 
 function RecentItemRow({
+  canPlay,
   item,
   minutesAgo,
+  onPlay,
 }: {
+  canPlay: boolean;
   item: RoomQueueItem;
   minutesAgo: number;
+  onPlay(): void;
 }) {
+  const metadata = useYouTubeMetadata(
+    item.sourceType === "youtube" ? item.sourceUrl : null,
+  );
+  const title = metadata.metadata?.title ?? item.title;
+  const channel =
+    metadata.metadata?.channelTitle ?? item.channelName ?? item.artist;
+  const thumbnailUrl = metadata.metadata?.thumbnailUrl ?? item.thumbnailUrl;
+  const duration = getQueueItemDisplayDuration(item, metadata) ?? "-";
+
   return (
-    <div className="grid grid-cols-[3rem_minmax(0,1fr)_auto_auto_auto] items-center gap-3 border-b border-white/10 p-3 last:border-b-0">
-      <QueueArtwork thumbnailUrl={item.thumbnailUrl} title={item.title} />
+    <button
+      aria-label={
+        canPlay
+          ? `Play ${title}`
+          : `Playback permission required for ${title}`
+      }
+      className="group grid w-full grid-cols-[3rem_minmax(0,1fr)_auto_auto_auto_auto] items-center gap-3 border-b border-white/10 p-3 text-left transition last:border-b-0 hover:bg-surface-variant/18 disabled:cursor-not-allowed disabled:opacity-75"
+      disabled={!canPlay}
+      onClick={onPlay}
+      type="button"
+    >
+      <QueueArtwork thumbnailUrl={thumbnailUrl} title={title} />
       <div className="min-w-0">
         <p className="truncate text-body-md font-semibold text-on-surface">
-          {item.title}
+          {title}
         </p>
         <p className="truncate text-label-sm text-on-surface-variant">
-          {item.artist ?? item.channelName ?? "Room source"}
+          {channel ?? "Room source"}
         </p>
       </div>
       <span className="hidden text-label-sm text-on-surface-variant sm:inline">
-        {item.duration}
+        {duration}
       </span>
       <span className="hidden text-label-sm text-on-surface-variant md:inline">
         Added by {item.addedBy}
@@ -1858,7 +2240,10 @@ function RecentItemRow({
       <span className="hidden text-label-sm text-on-surface-variant lg:inline">
         {minutesAgo}m ago
       </span>
-    </div>
+      <span className="inline-flex h-8 w-8 items-center justify-center rounded-sm border border-white/10 text-secondary-fixed-dim opacity-0 transition group-hover:opacity-100">
+        <Play className="h-4 w-4" aria-hidden />
+      </span>
+    </button>
   );
 }
 
@@ -1949,16 +2334,24 @@ function IconQueueButton({
   icon,
   label,
   onClick,
+  selected = false,
 }: {
   disabled?: boolean;
   icon: ReactNode;
   label: string;
   onClick?(): void;
+  selected?: boolean;
 }) {
   return (
     <button
       aria-label={label}
-      className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-white/10 text-on-surface-variant transition hover:bg-surface-variant/35 hover:text-on-surface disabled:opacity-35"
+      aria-pressed={selected || undefined}
+      className={cx(
+        "inline-flex h-7 w-7 items-center justify-center rounded-sm border transition disabled:opacity-35",
+        selected
+          ? "border-secondary-fixed-dim/40 bg-secondary-fixed-dim/12 text-secondary-fixed-dim shadow-[0_0_14px_rgb(255_186_32_/_0.12)]"
+          : "border-white/10 text-on-surface-variant hover:bg-surface-variant/35 hover:text-on-surface",
+      )}
       disabled={disabled}
       onClick={onClick}
       type="button"
@@ -2165,7 +2558,7 @@ function useListenQueueItems(liveRoom: LiveRoomState, room: RoomSnapshot) {
       duration:
         typeof item.durationSeconds === "number"
           ? formatSeconds(item.durationSeconds)
-          : "Metadata pending",
+          : "-",
       id: item.queueItemId,
       isPinned: item.isPinned,
       isPlayNext: item.isPlayNext,
@@ -2255,6 +2648,22 @@ function buildCanonicalState(
   };
 }
 
+function getRemainingQueueSeconds(liveRoom: LiveRoomState) {
+  if (liveRoom.connectionStatus !== "connected") {
+    return null;
+  }
+
+  const remainingSeconds = liveRoom.snapshot.queue.reduce((total, item) => {
+    if (item.status !== "queued" || typeof item.durationSeconds !== "number") {
+      return total;
+    }
+
+    return total + item.durationSeconds;
+  }, 0);
+
+  return remainingSeconds > 0 ? remainingSeconds : null;
+}
+
 function readStoredVolume() {
   return Math.round(readStoredPlayerVolume() * 100);
 }
@@ -2274,6 +2683,88 @@ function readStoredDrawerHeight() {
         MAX_LISTEN_DRAWER_HEIGHT,
       )
     : 56;
+}
+
+function readStoredRightSidebarCollapsed() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.localStorage.getItem("mw_listen_right_sidebar_collapsed") === "1";
+}
+
+async function writeClipboard(text: string) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      return legacyCopy(text);
+    }
+  }
+
+  return legacyCopy(text);
+}
+
+function legacyCopy(text: string) {
+  const textarea = document.createElement("textarea");
+
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.append(textarea);
+  textarea.select();
+
+  try {
+    return document.execCommand("copy");
+  } finally {
+    textarea.remove();
+  }
+}
+
+function formatListenPreparationStatus(
+  status: ReturnType<typeof useNextItemPreparation>["status"],
+) {
+  if (status === "preparing") {
+    return "Preparing next:";
+  }
+
+  if (status === "ready") {
+    return "Next ready:";
+  }
+
+  if (status === "partial") {
+    return "Next warming:";
+  }
+
+  if (status === "skipped") {
+    return "Next queued:";
+  }
+
+  return "Next pending:";
+}
+
+function getQueueItemDisplayDuration(
+  item: RoomQueueItem,
+  metadata: ReturnType<typeof useYouTubeMetadata>,
+) {
+  if (
+    metadata.metadata?.durationSeconds !== null &&
+    metadata.metadata?.durationSeconds !== undefined
+  ) {
+    return formatSeconds(metadata.metadata.durationSeconds);
+  }
+
+  if (item.duration && item.duration !== "Metadata pending" && item.duration !== "-") {
+    return item.duration;
+  }
+
+  if (!metadata.loading && metadata.status === "unavailable") {
+    return "Unavailable";
+  }
+
+  return null;
 }
 
 function extractThemeFromImage(
@@ -2330,21 +2821,21 @@ function extractThemeFromImage(
       g: green / weightTotal,
       r: red / weightTotal,
     };
-    const hsl = rgbToHsl(base);
+    const hsl = softenListenThemeHue(rgbToHsl(base));
     const primary = hslToRgb({
       h: hsl.h,
-      l: clampNumber(hsl.l * 1.08 + 0.12, 0.42, 0.72),
-      s: clampNumber(hsl.s * 1.34, 0.46, 0.86),
+      l: clampNumber(hsl.l * 1.03 + 0.12, 0.42, 0.68),
+      s: clampNumber(hsl.s * 1.08, 0.38, 0.72),
     });
     const secondary = hslToRgb({
       h: (hsl.h + 22) % 360,
       l: clampNumber(hsl.l * 0.95 + 0.08, 0.34, 0.62),
-      s: clampNumber(hsl.s * 1.08, 0.34, 0.72),
+      s: clampNumber(hsl.s * 0.96, 0.3, 0.62),
     });
     const wave = hslToRgb({
       h: (hsl.h + 8) % 360,
       l: clampNumber(hsl.l * 1.18 + 0.16, 0.5, 0.78),
-      s: clampNumber(hsl.s * 1.38, 0.5, 0.9),
+      s: clampNumber(hsl.s * 1.08, 0.44, 0.78),
     });
 
     return {
@@ -2356,6 +2847,20 @@ function extractThemeFromImage(
   } catch {
     return fallbackTheme;
   }
+}
+
+function softenListenThemeHue(theme: { h: number; l: number; s: number }) {
+  const redRange = theme.h < 18 || theme.h > 344;
+
+  if (!redRange) {
+    return theme;
+  }
+
+  return {
+    h: theme.h < 180 ? 28 : 332,
+    l: theme.l,
+    s: theme.s * 0.72,
+  };
 }
 
 function rgbToHsl({ b, g, r }: { b: number; g: number; r: number }) {
@@ -2438,4 +2943,16 @@ function formatSeconds(totalSeconds: number) {
   const seconds = Math.floor(safeValue % 60);
 
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+function formatCompactDuration(totalSeconds: number) {
+  const safeValue = Number.isFinite(totalSeconds) && totalSeconds > 0 ? totalSeconds : 0;
+  const hours = Math.floor(safeValue / 3600);
+  const minutes = Math.floor((safeValue % 3600) / 60);
+
+  if (hours > 0) {
+    return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
+  }
+
+  return `${minutes}m`;
 }

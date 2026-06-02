@@ -22,7 +22,7 @@ export function Panel({
   ...props
 }: PanelProps) {
   return (
-    <div className={cx("rounded-xl p-5", tones[tone], className)} {...props}>
+    <div className={cx("rounded-md p-5", tones[tone], className)} {...props}>
       {children}
     </div>
   );
