@@ -48,6 +48,7 @@ import RemoveIdleMemberReducer from "./remove_idle_member_reducer";
 import RemoveQueueItemReducer from "./remove_queue_item_reducer";
 import RevokeRoomControlReducer from "./revoke_room_control_reducer";
 import SeedRoomSessionReducer from "./seed_room_session_reducer";
+import SendRoomChatMessageReducer from "./send_room_chat_message_reducer";
 import SetMemberPermissionsReducer from "./set_member_permissions_reducer";
 import SetPlaybackStateReducer from "./set_playback_state_reducer";
 import SetQueueAutoplayReducer from "./set_queue_autoplay_reducer";
@@ -61,6 +62,7 @@ import UpdateRoomNameReducer from "./update_room_name_reducer";
 
 // Import all table schema definitions
 import LiveQueueItemRow from "./live_queue_item_table";
+import RoomChatMessageRow from "./room_chat_message_table";
 import RoomErrorRow from "./room_error_table";
 import RoomKickRow from "./room_kick_table";
 import RoomParticipantRow from "./room_participant_table";
@@ -86,6 +88,21 @@ const tablesSchema = __schema({
       { name: 'live_queue_item_queue_item_id_key', constraint: 'unique', columns: ['queueItemId'] },
     ],
   }, LiveQueueItemRow),
+  room_chat_message: __table({
+    name: 'room_chat_message',
+    indexes: [
+      { accessor: 'message_id', name: 'room_chat_message_message_id_idx_btree', algorithm: 'btree', columns: [
+        'messageId',
+      ] },
+      { accessor: 'by_room_created', name: 'room_chat_message_room_id_created_ms_idx_btree', algorithm: 'btree', columns: [
+        'roomId',
+        'createdMs',
+      ] },
+    ],
+    constraints: [
+      { name: 'room_chat_message_message_id_key', constraint: 'unique', columns: ['messageId'] },
+    ],
+  }, RoomChatMessageRow),
   room_error: __table({
     name: 'room_error',
     indexes: [
@@ -180,6 +197,7 @@ const reducersSchema = __reducers(
   __reducerSchema("remove_queue_item", RemoveQueueItemReducer),
   __reducerSchema("revoke_room_control", RevokeRoomControlReducer),
   __reducerSchema("seed_room_session", SeedRoomSessionReducer),
+  __reducerSchema("send_room_chat_message", SendRoomChatMessageReducer),
   __reducerSchema("set_member_permissions", SetMemberPermissionsReducer),
   __reducerSchema("set_playback_state", SetPlaybackStateReducer),
   __reducerSchema("set_queue_autoplay", SetQueueAutoplayReducer),

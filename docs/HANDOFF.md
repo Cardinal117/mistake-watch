@@ -32,7 +32,8 @@ Current status:
 
 ```text
 TASK-002.1 Listen Mode Quality Pass: implemented
-TASK-002.2 Room Chat: next task
+TASK-002.2 Room Chat: implemented
+TASK-002.3 Seamless Next Item Loading: next task
 ```
 
 Do not skip ahead unless the user explicitly names another TASK-002 subtask.
@@ -49,24 +50,24 @@ Do not skip ahead unless the user explicitly names another TASK-002 subtask.
 
 ## Current Next Task
 
-TASK-002.2 Room Chat.
+TASK-002.3 Seamless Next Item Loading.
 
 Scope:
 
-- replace the placeholder Chat tab with live room-scoped chat;
-- use SpacetimeDB for immediate message delivery;
-- include sender display name, avatar, role, and host crown state;
-- support sending, sent, failed, and reconnect-safe display states;
-- prevent cross-room message leakage;
-- do not add moderation, durable Supabase chat history, accounts, friends, or notification systems in this task.
+- add next-item prediction without mutating current playback or queue state;
+- prefetch safe metadata and thumbnails for likely next items;
+- add direct/HLS metadata preload where network conditions allow;
+- prepare YouTube player/API readiness without hidden duplicate players or full-video preload;
+- add a clear `Preparing next` or `Loading next` UI state;
+- add transition timing instrumentation;
+- invalidate stale preload targets when queue order, queue mode, or current item changes.
 
 Expected verification:
 
 - `npm run typecheck`
 - `npm run lint`
-- relevant chat/realtime tests if logic is added;
-- browser QA with at least two clients in one room;
-- cross-room leakage check;
+- relevant preload/queue transition tests if logic is added;
+- browser QA around queue transitions and provider-specific loading states;
 - update `docs/tasks/TASK-002-incomplete-work-recovery/review-notes.md`;
 - update `docs/tasks/TASK-002-incomplete-work-recovery/implementation-report.html`.
 

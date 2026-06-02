@@ -86,11 +86,24 @@ export type LiveRoomKick = {
   roomId: string;
 };
 
+export type LiveChatMessage = {
+  avatarKey: string | null;
+  clientMessageId: string;
+  createdMs: number;
+  displayName: string;
+  isHost: boolean;
+  memberId: string;
+  messageId: string;
+  roomId: string;
+  text: string;
+};
+
 export type LiveRoomSnapshot = {
   session: LiveRoomSession | null;
   participants: LiveParticipant[];
   permissions: LivePermission[];
   queue: LiveQueueItem[];
+  chatMessages: LiveChatMessage[];
   errors: LiveRoomError[];
   kicks: LiveRoomKick[];
   connection: {

@@ -8,7 +8,6 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
-import { MessageSquareText } from "lucide-react";
 import { TabButton, TabsList } from "@/components/ui";
 import {
   getSourceDisplayTitle,
@@ -19,6 +18,7 @@ import type { RoomSnapshot } from "@/lib/rooms";
 import type { LiveRoomState } from "@/lib/spacetime";
 import { MembersPanel } from "./members-panel";
 import { QueuePanel } from "./queue-panel";
+import { RoomChatPanel } from "./room-chat-panel";
 
 type RoomSidebarProps = {
   activeTab?: RoomTabId;
@@ -149,22 +149,13 @@ export function RoomSidebar({
 
   const activePanel = {
     chat: (
-      <div className="grid gap-3">
-        <div className="flex items-center gap-3">
-          <MessageSquareText
-            className="h-5 w-5 text-primary-fixed-dim"
-            aria-hidden
-          />
-          <div className="min-w-0">
-            <h2 className="text-body-lg font-semibold text-on-surface">
-              Room chat
-            </h2>
-            <p className="text-body-md text-on-surface-variant">
-              Chat is parked here as a room-shell placeholder.
-            </p>
-          </div>
-        </div>
-      </div>
+      <RoomChatPanel
+        connectionStatus={liveRoom.connectionStatus}
+        currentMemberId={room.currentMember?.id}
+        messages={liveRoom.snapshot.chatMessages}
+        participants={liveRoom.participants}
+        sendMessage={liveRoom.sendChatMessage}
+      />
     ),
     members: (
       <MembersPanel

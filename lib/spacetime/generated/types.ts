@@ -31,6 +31,19 @@ export const LiveQueueItem = __t.object("LiveQueueItem", {
 });
 export type LiveQueueItem = __Infer<typeof LiveQueueItem>;
 
+export const RoomChatMessage = __t.object("RoomChatMessage", {
+  avatarKey: __t.option(__t.string()),
+  clientMessageId: __t.string(),
+  createdMs: __t.i64(),
+  displayName: __t.string(),
+  isHost: __t.bool(),
+  memberId: __t.string(),
+  messageId: __t.string(),
+  roomId: __t.string(),
+  text: __t.string(),
+});
+export type RoomChatMessage = __Infer<typeof RoomChatMessage>;
+
 export const RoomError = __t.object("RoomError", {
   code: __t.string(),
   createdMs: __t.i64(),

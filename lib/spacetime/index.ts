@@ -12,6 +12,7 @@ export { emptyLiveRoomSnapshot, mergeLiveRoomSnapshot } from "./snapshot";
 export type {
   JoinRoomReducerPayload,
   GrantRoomControlPayload,
+  LiveChatMessage,
   LiveParticipant,
   LivePermission,
   LivePlaybackStatus,

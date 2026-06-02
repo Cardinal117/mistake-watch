@@ -2,15 +2,17 @@
 
 ## Current Status
 
-Status: TASK-002.1 implemented.
+Status: TASK-002.2 implemented.
 
 TASK-002.1 Listen Mode Quality Pass is complete pending manual visual review in a live room.
+
+TASK-002.2 Room Chat is implemented pending manual two-client browser QA in a live room.
 
 Baseline handoff docs now exist at `docs/HANDOFF.md` and `docs/COMMANDS.md` so future agents can continue from TASK-002 without relying on chat memory.
 
 ## Canonical Next Task
 
-Next implementation task: TASK-002.2 Room Chat.
+Next implementation task: TASK-002.3 Seamless Next Item Loading.
 
 ## Decisions Locked
 
@@ -39,6 +41,38 @@ Next implementation task: TASK-002.2 Room Chat.
 ## Implementation Rule
 
 When the user says "proceed", implement only the next incomplete TASK-002 subtask unless they name a different TASK-002 number.
+
+## TASK-002.2 Implementation Notes
+
+- Added a public SpacetimeDB `room_chat_message` table scoped by `room_id` with a room/created index.
+- Added the `send_room_chat_message` reducer with participant ownership checks, room-scoped idempotency through `room_id:client_message_id`, empty/invalid message rejection, 500-character normalization, sender display metadata, avatar key, and host-role snapshotting.
+- Added chat rows to room subscriptions and live snapshots so messages only stream for the current room.
+- Replaced the Chat tab placeholder with a live room chat panel.
+- Chat UI now shows sender avatar, display name, host/guest role, host crown state, timestamp, and sent/sending/failed state.
+- Local sends are optimistic and can be retried when failed. Confirmed SpacetimeDB messages replace matching pending messages by `clientMessageId`.
+- Chat history remains ephemeral in SpacetimeDB; no durable Supabase chat history, moderation, accounts, friends, or notification systems were added.
+
+Verification:
+
+- `npm run test:spacetime` passed.
+- `npm run typecheck` passed.
+- `npm run lint` passed after removing an unnecessary effect-state update.
+- `npm run build` passed.
+- `spacetime build` passed.
+- `spacetime generate` passed after installing root and `spacetime/` dependencies.
+- Local SpacetimeDB publish to `http://127.0.0.1:5372` succeeded for database `mistake-watch-rooms`.
+- Local Next health check returned HTTP 200 at `http://127.0.0.1:5371/api/health`.
+- Vercel production deploy succeeded with deployment URL `https://mistake-watch-jhlrp0kk2-cardinal117s-projects.vercel.app`.
+- Production aliases `https://mistake-watch.vercel.app/api/health` and `https://watch.mistakestudios.com/api/health` both returned HTTP 200.
+
+Manual review pending:
+
+- In-app Browser automation was still blocked by a runtime setup failure in the Codex environment (`windows sandbox failed: spawn setup refresh`).
+- A headless Edge fallback loaded `http://127.0.0.1:5371` successfully and confirmed the dashboard renders.
+- Live room QA is currently blocked because the local dev server has no `.env.local`; the dashboard reports `Supabase-backed rooms are unavailable: Missing required environment variable: SUPABASE_SECRET_KEY`.
+- Manual QA still needs two clients in one room exchanging messages live.
+- Manual QA still needs a cross-room leakage check with two different room IDs.
+- Manual QA should verify failed send/retry behavior by disconnecting or stopping the local SpacetimeDB server.
 
 ## TASK-002.1 Implementation Notes
 

@@ -13,6 +13,7 @@
     "start": "next start",
     "test:identity": "node --test tests/identity/*.test.mjs",
     "test:queue": "node --test tests/queue/*.test.mjs",
+    "test:spacetime": "node --test tests/spacetime/*.test.mjs",
     "test:sync": "node --test tests/player/*.test.mjs",
     "test:youtube": "node --test tests/youtube/*.test.mjs",
     "lint": "eslint .",

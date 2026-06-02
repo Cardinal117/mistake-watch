@@ -6,6 +6,7 @@ export { MusicStage } from "./music-stage";
 export { ParticipantsPanel } from "./participants-panel";
 export { PermissionToggles } from "./permission-toggles";
 export { QueuePanel } from "./queue-panel";
+export { RoomChatPanel } from "./room-chat-panel";
 export { RoomShell } from "./room-shell";
 export { RoomSidebar } from "./room-sidebar";
 export { RoomStatusHud } from "./room-status-hud";

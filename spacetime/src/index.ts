@@ -175,8 +175,35 @@ const roomKick = table(
   },
 );
 
+const roomChatMessage = table(
+  {
+    indexes: [
+      {
+        accessor: "by_room_created",
+        algorithm: "btree",
+        columns: ["room_id", "created_ms"],
+        name: "room_chat_message_room_created_idx",
+      },
+    ],
+    name: "room_chat_message",
+    public: true,
+  },
+  {
+    avatar_key: t.option(t.string()).default(undefined),
+    client_message_id: t.string(),
+    created_ms: t.i64(),
+    display_name: t.string(),
+    is_host: t.bool(),
+    member_id: t.string(),
+    message_id: t.string().primaryKey(),
+    room_id: t.string(),
+    text: t.string(),
+  },
+);
+
 const spacetimedb = schema({
   live_queue_item: liveQueueItem,
+  room_chat_message: roomChatMessage,
   room_error: roomError,
   room_kick: roomKick,
   room_permission: roomPermission,
@@ -424,6 +451,34 @@ function normalizeAvatarKey(avatarKey: string | undefined) {
   }
 
   return undefined;
+}
+
+function normalizeChatText(text: string) {
+  const normalized = text.trim().replace(/\s+/g, " ");
+
+  if (normalized.length > 500) {
+    return normalized.slice(0, 500).trim();
+  }
+
+  return normalized;
+}
+
+function chatMessageId(roomId: string, clientMessageId: string) {
+  return `${roomId}:${clientMessageId}`;
+}
+
+function pruneRoomChatMessages(
+  ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
+  roomId: string,
+) {
+  const maxMessages = 100;
+  const messages = [...ctx.db.room_chat_message.iter()]
+    .filter((message) => message.room_id === roomId)
+    .sort((a, b) => Number(b.created_ms - a.created_ms));
+
+  messages.slice(maxMessages).forEach((message) => {
+    ctx.db.room_chat_message.delete(message);
+  });
 }
 
 function activeQueueItems(
@@ -1097,6 +1152,71 @@ export const add_queue_item = spacetimedb.reducer(
       thumbnail_url: thumbnail_url?.trim() || undefined,
       title: source_title.trim() || trimmedUrl,
     });
+  },
+);
+
+export const send_room_chat_message = spacetimedb.reducer(
+  {
+    actor_member_id: t.string(),
+    client_message_id: t.string(),
+    room_id: t.string(),
+    text: t.string(),
+  },
+  (ctx, { actor_member_id, client_message_id, room_id, text }) => {
+    const actor = getParticipant(ctx, room_id, actor_member_id);
+
+    if (!actor || !isParticipantSender(ctx, actor)) {
+      recordRoomError(ctx, {
+        code: "chat_permission_denied",
+        message:
+          "Chat message ignored because the caller is not an active room participant.",
+        roomId: room_id,
+      });
+      return;
+    }
+
+    const normalizedText = normalizeChatText(text);
+
+    if (!normalizedText) {
+      recordRoomError(ctx, {
+        code: "chat_message_empty",
+        message: "Chat message ignored because it was empty.",
+        roomId: room_id,
+        severity: "info",
+      });
+      return;
+    }
+
+    const safeClientMessageId = client_message_id.trim();
+
+    if (!safeClientMessageId || safeClientMessageId.length > 120) {
+      recordRoomError(ctx, {
+        code: "chat_message_invalid",
+        message: "Chat message ignored because its client id was invalid.",
+        roomId: room_id,
+      });
+      return;
+    }
+
+    const messageId = chatMessageId(room_id, safeClientMessageId);
+
+    if (ctx.db.room_chat_message.message_id.find(messageId)) {
+      return;
+    }
+
+    ctx.db.room_chat_message.insert({
+      avatar_key: actor.avatar_key,
+      client_message_id: safeClientMessageId,
+      created_ms: nowMs(),
+      display_name: actor.display_name || "Guest",
+      is_host: actor.role === "host",
+      member_id: actor_member_id,
+      message_id: messageId,
+      room_id,
+      text: normalizedText,
+    });
+
+    pruneRoomChatMessages(ctx, room_id);
   },
 );
 

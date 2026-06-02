@@ -18,6 +18,7 @@ import { DbConnection } from "./generated";
 import type {
   RoomError as GeneratedRoomError,
   RoomKick as GeneratedRoomKick,
+  RoomChatMessage as GeneratedRoomChatMessage,
   LiveQueueItem as GeneratedLiveQueueItem,
   RoomParticipant as GeneratedRoomParticipant,
   RoomPermission as GeneratedRoomPermission,
@@ -48,6 +49,7 @@ type TableUpdateCallback<Row> = (
 
 type LiveDb = {
   live_queue_item: ClientTable<GeneratedLiveQueueItem>;
+  room_chat_message: ClientTable<GeneratedRoomChatMessage>;
   room_error: ClientTable<GeneratedRoomError>;
   room_kick: ClientTable<GeneratedRoomKick>;
   room_participant: ClientTable<GeneratedRoomParticipant>;
@@ -123,6 +125,12 @@ type LiveReducers = {
   revokeRoomControl(params: {
     actorMemberId: string;
     roomId: string;
+  }): Promise<void>;
+  sendRoomChatMessage(params: {
+    actorMemberId: string;
+    clientMessageId: string;
+    roomId: string;
+    text: string;
   }): Promise<void>;
   seedRoomSession(params: {
     hostMemberId: string;
@@ -218,6 +226,7 @@ export type LiveRoomState = {
   removeQueueItem(queueItemId: string): void;
   renameRoom(roomName: string): Promise<void>;
   revokeControl(): void;
+  sendChatMessage(input: { clientMessageId: string; text: string }): Promise<void>;
   switchMode(mode: "listen" | "watch"): Promise<void>;
   setPermission(
     memberId: string,
@@ -369,6 +378,8 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
         liveDb.live_queue_item.onInsert(handleRowChange);
         liveDb.live_queue_item.onUpdate(handleRowChange);
         liveDb.live_queue_item.onDelete(handleRowChange);
+        liveDb.room_chat_message.onInsert(handleRowChange);
+        liveDb.room_chat_message.onDelete(handleRowChange);
 
         void connected.reducers.seedRoomSession({
           hostMemberId,
@@ -441,6 +452,8 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
         liveDb.live_queue_item.removeOnInsert(handleRowChange);
         liveDb.live_queue_item.removeOnUpdate(handleRowChange);
         liveDb.live_queue_item.removeOnDelete(handleRowChange);
+        liveDb.room_chat_message.removeOnInsert(handleRowChange);
+        liveDb.room_chat_message.removeOnDelete(handleRowChange);
       }
 
       void (connection.reducers as unknown as LiveReducers).leaveRoom({
@@ -727,6 +740,19 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     });
   }
 
+  async function sendChatMessage(input: { clientMessageId: string; text: string }) {
+    if (!currentMember || !reducers || connectionStatus !== "connected") {
+      throw new Error("Room chat is not connected.");
+    }
+
+    await reducers.sendRoomChatMessage({
+      actorMemberId: currentMember.id,
+      clientMessageId: input.clientMessageId,
+      roomId: room.id,
+      text: input.text,
+    });
+  }
+
   async function renameRoom(roomName: string) {
     if (!currentMember || !canManageAuthority || !reducers) {
       return;
@@ -867,6 +893,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     removeQueueItem,
     renameRoom,
     revokeControl,
+    sendChatMessage,
     switchMode,
     setPermission,
     setPlaybackState,
@@ -913,6 +940,7 @@ function buildFallbackSnapshot(room: RoomSnapshot): LiveRoomSnapshot {
       updatedMs: Date.now(),
     })),
     kicks: [],
+    chatMessages: [],
     queue: room.queue.map((item, index) => ({
       addedByMemberId: "",
       artist: item.artist ?? null,
@@ -963,6 +991,19 @@ function readLiveSnapshot(liveDb: LiveDb): LiveRoomSnapshot {
       connected: true,
       lastError: errors.at(-1)?.message,
     },
+    chatMessages: [...liveDb.room_chat_message.iter()]
+      .sort((a, b) => toNumber(a.createdMs) - toNumber(b.createdMs))
+      .map((message) => ({
+        avatarKey: message.avatarKey ?? null,
+        clientMessageId: message.clientMessageId,
+        createdMs: toNumber(message.createdMs),
+        displayName: message.displayName || "Guest",
+        isHost: message.isHost,
+        memberId: message.memberId,
+        messageId: message.messageId,
+        roomId: message.roomId,
+        text: message.text,
+      })),
     errors: errors.map((error) => ({
       code: error.code,
       createdMs: toNumber(error.createdMs),

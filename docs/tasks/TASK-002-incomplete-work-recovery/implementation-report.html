@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TASK-002.1 Implementation Report - Mistake Watch</title>
+    <title>TASK-002.2 Implementation Report - Mistake Watch</title>
     <style>
       :root {
         --bg: #0e0e0f;
@@ -17,6 +17,7 @@
         --gold: #ffba20;
         --ok: #7df4ff;
         --warn: #ffba20;
+        --error: #ffb4ab;
       }
 
       * {
@@ -27,7 +28,7 @@
         margin: 0;
         background:
           radial-gradient(circle at 16% 6%, rgba(0, 219, 233, 0.14), transparent 34rem),
-          radial-gradient(circle at 88% 12%, rgba(255, 186, 32, 0.14), transparent 32rem),
+          radial-gradient(circle at 88% 12%, rgba(255, 186, 32, 0.12), transparent 32rem),
           var(--bg);
         color: var(--text);
         font-family:
@@ -44,7 +45,7 @@
       section {
         border: 1px solid var(--line);
         border-radius: 12px;
-        background: rgba(19, 19, 20, 0.88);
+        background: rgba(19, 19, 20, 0.9);
         backdrop-filter: blur(18px);
       }
 
@@ -110,7 +111,7 @@
       .card {
         border: 1px solid var(--line);
         border-radius: 10px;
-        background: rgba(28, 27, 28, 0.82);
+        background: rgba(28, 27, 28, 0.84);
         padding: 16px;
       }
 
@@ -134,6 +135,11 @@
         color: var(--warn);
       }
 
+      .status.blocked {
+        border-color: rgba(255, 180, 171, 0.4);
+        color: var(--error);
+      }
+
       @media (max-width: 800px) {
         .grid {
           grid-template-columns: 1fr;
@@ -144,11 +150,12 @@
   <body>
     <main>
       <header>
-        <span class="label">TASK-002.1 / Implemented</span>
-        <h1>Listen Mode Quality Pass</h1>
+        <span class="label">TASK-002.2 / Implemented</span>
+        <h1>Room Chat</h1>
         <p>
-          This report covers the focused TASK-002.1 implementation: queue drawer height controls,
-          current-position count, stronger listen theming, selective playlist import, and themed waveform visuals.
+          This report covers the focused TASK-002.2 implementation: live room-scoped chat through
+          SpacetimeDB, sender identity context, optimistic send states, retryable failures, and
+          no durable Supabase chat history.
         </p>
       </header>
 
@@ -156,16 +163,16 @@
         <h2>Files To Review</h2>
         <div class="grid">
           <div class="card">
-            <strong>Primary implementation</strong>
-            <p><code>components/room/listen-mode-layout.tsx</code></p>
+            <strong>Live module</strong>
+            <p><code>spacetime/src/index.ts</code></p>
           </div>
           <div class="card">
-            <strong>Task notes</strong>
-            <p><code>docs/tasks/TASK-002-incomplete-work-recovery/review-notes.md</code></p>
+            <strong>Room integration</strong>
+            <p><code>lib/spacetime/use-live-room.ts</code></p>
           </div>
           <div class="card">
-            <strong>Review surface</strong>
-            <p><code>docs/tasks/TASK-002-incomplete-work-recovery/implementation-report.html</code></p>
+            <strong>Chat UI</strong>
+            <p><code>components/room/room-chat-panel.tsx</code></p>
           </div>
         </div>
       </section>
@@ -173,13 +180,12 @@
       <section>
         <h2>Implementation Summary</h2>
         <ul>
-          <li>Added persisted Compact, Standard, and Tall height controls to the listen queue drawer.</li>
-          <li>Follow-up revision replaced preset height buttons with a generous persisted drawer height slider.</li>
-          <li>Replaced drawer total-only labels with current item position over total queue size.</li>
-          <li>Strengthened the listen dynamic theme with artwork-derived theme extraction, additional theme variables, and stronger left-origin ambient layers.</li>
-          <li>Added a playlist review overlay for listen mode with per-item selection, Add All, and Add Selected actions.</li>
-          <li>Moved center waveform bar color to the active listen theme variable.</li>
-          <li>Kept playback state, queue reducer semantics, and SpacetimeDB authority unchanged.</li>
+          <li>Added the SpacetimeDB <code>room_chat_message</code> table and generated bindings.</li>
+          <li>Added <code>send_room_chat_message</code> with active-participant ownership checks.</li>
+          <li>Scoped chat subscriptions to the current room to avoid cross-room message leakage.</li>
+          <li>Replaced the placeholder Chat tab with a live chat panel.</li>
+          <li>Displayed sender name, avatar, host crown state, role, timestamp, and message status.</li>
+          <li>Added optimistic sending, failure state, and retry without adding durable Supabase history.</li>
         </ul>
       </section>
 
@@ -188,23 +194,27 @@
         <div class="grid">
           <div class="card">
             <span class="status done">Met</span>
-            <p>Drawer supports configurable heights.</p>
+            <p>Chat tab is no longer a placeholder.</p>
           </div>
           <div class="card">
             <span class="status done">Met</span>
-            <p>Drawer shows current item position plus total queue count.</p>
+            <p>Messages use SpacetimeDB reducer delivery and room-scoped subscriptions.</p>
           </div>
           <div class="card">
             <span class="status done">Met</span>
-            <p>Listen theme and waveform visuals are stronger and theme-aligned.</p>
+            <p>Sender identity and role context are visible in each message.</p>
           </div>
           <div class="card">
             <span class="status done">Met</span>
-            <p>Listen playlist import supports selective review before queue mutation.</p>
+            <p>Sending, sent, failed, and retry states are visible.</p>
           </div>
           <div class="card">
             <span class="status warn">Manual QA</span>
-            <p>Browser visual QA is still recommended for the live overlay and drawer interactions.</p>
+            <p>Two-client live exchange and cross-room leakage checks still need manual browser review.</p>
+          </div>
+          <div class="card">
+            <span class="status blocked">Blocked</span>
+            <p>Live room browser QA is blocked until local Supabase server credentials are configured.</p>
           </div>
         </div>
       </section>
@@ -212,25 +222,33 @@
       <section>
         <h2>Verification</h2>
         <ul>
+          <li><code>npm run test:spacetime</code> passed.</li>
           <li><code>npm run typecheck</code> passed.</li>
           <li><code>npm run lint</code> passed.</li>
-          <li><code>npm run test:queue</code> passed.</li>
-          <li><code>npm run test:youtube</code> passed.</li>
           <li><code>npm run build</code> passed.</li>
+          <li><code>spacetime build</code> passed.</li>
+          <li><code>spacetime generate</code> passed.</li>
+          <li>Local SpacetimeDB publish to <code>http://127.0.0.1:5372</code> succeeded.</li>
+          <li>Local Next health check returned HTTP 200.</li>
+          <li>Headless Edge loaded <code>http://127.0.0.1:5371</code> and confirmed the dashboard renders.</li>
+          <li>Vercel production deploy completed at <code>https://mistake-watch-jhlrp0kk2-cardinal117s-projects.vercel.app</code>.</li>
+          <li>Production health checks returned HTTP 200 for <code>mistake-watch.vercel.app</code> and <code>watch.mistakestudios.com</code>.</li>
         </ul>
       </section>
 
       <section>
         <h2>Manual Review</h2>
         <p>
-          Manual browser QA is recommended for listen mode. A local background dev-server check was attempted,
-          but local Next/Turbopack startup hit a stale lock/process issue. The production build completed successfully.
+          Manual browser QA remains required for two clients in the same room, two different rooms,
+          and failed-send retry behavior. The local app and SpacetimeDB server started successfully.
+          The dashboard currently blocks room creation because <code>SUPABASE_SECRET_KEY</code> is not
+          configured in local environment variables.
         </p>
       </section>
 
       <section>
         <h2>Next Task</h2>
-        <p>TASK-002.2 Room Chat is the next implementation task.</p>
+        <p>TASK-002.3 Seamless Next Item Loading is the next implementation task.</p>
       </section>
     </main>
   </body>
