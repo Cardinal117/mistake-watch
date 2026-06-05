@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TASK-004 Review - Playback Stability and Listen Performance</title>
+    <style>
+      :root {
+        --bg: #0e0e0f;
+        --surface: #131314;
+        --surface-2: #1c1b1c;
+        --surface-3: #242325;
+        --text: #e5e2e3;
+        --muted: #b9cacb;
+        --line: rgba(255, 255, 255, 0.1);
+        --blue: #00dbe9;
+        --gold: #ffba20;
+        --danger: #ffb4ab;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 10% 0%, rgba(0, 219, 233, 0.12), transparent 28rem),
+          radial-gradient(circle at 90% 5%, rgba(255, 186, 32, 0.1), transparent 24rem),
+          var(--bg);
+        color: var(--text);
+        font-family:
+          Geist,
+          Inter,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        line-height: 1.5;
+      }
+
+      a {
+        color: var(--blue);
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      main {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 32px 0 56px;
+      }
+
+      header {
+        border: 1px solid var(--line);
+        background: rgba(19, 19, 20, 0.88);
+        padding: 24px;
+      }
+
+      .eyebrow,
+      .label {
+        color: var(--gold);
+        font-family: "JetBrains Mono", Consolas, monospace;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        letter-spacing: 0;
+      }
+
+      h1 {
+        margin-top: 8px;
+        font-size: clamp(32px, 5vw, 56px);
+        line-height: 1.02;
+      }
+
+      h2 {
+        font-size: 22px;
+      }
+
+      h3 {
+        font-size: 17px;
+      }
+
+      p {
+        margin: 8px 0 0;
+        color: var(--muted);
+      }
+
+      .summary {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      .card,
+      .panel {
+        border: 1px solid var(--line);
+        background: rgba(28, 27, 28, 0.78);
+        padding: 18px;
+      }
+
+      .card strong {
+        display: block;
+        color: var(--text);
+        font-size: 22px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 16px;
+        margin-top: 18px;
+      }
+
+      .two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      section {
+        margin-top: 22px;
+      }
+
+      ul,
+      ol {
+        margin: 10px 0 0;
+        padding-left: 20px;
+        color: var(--muted);
+      }
+
+      li + li {
+        margin-top: 6px;
+      }
+
+      code {
+        color: var(--gold);
+        font-family: "JetBrains Mono", Consolas, monospace;
+        font-size: 0.92em;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        background: rgba(0, 219, 233, 0.08);
+        color: var(--blue);
+        padding: 4px 8px;
+        font-family: "JetBrains Mono", Consolas, monospace;
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      .badge.gold {
+        background: rgba(255, 186, 32, 0.1);
+        color: var(--gold);
+      }
+
+      .badge.warn {
+        background: rgba(255, 180, 171, 0.1);
+        color: var(--danger);
+      }
+
+      .task {
+        display: grid;
+        grid-template-columns: 92px minmax(0, 1fr);
+        gap: 14px;
+        border-top: 1px solid var(--line);
+        padding-top: 14px;
+      }
+
+      .task:first-child {
+        border-top: 0;
+        padding-top: 0;
+      }
+
+      .status-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .files {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .files ul {
+        padding-left: 0;
+        list-style: none;
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .flow div {
+        border: 1px solid var(--line);
+        background: rgba(19, 19, 20, 0.7);
+        min-height: 72px;
+        padding: 12px;
+      }
+
+      @media (max-width: 880px) {
+        .summary,
+        .two,
+        .three,
+        .files,
+        .flow {
+          grid-template-columns: 1fr;
+        }
+
+        main {
+          width: min(100% - 20px, 1180px);
+          padding-top: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <span class="eyebrow">Mistake Watch / TASK-004</span>
+        <h1>Playback Stability and Listen Performance</h1>
+        <p>
+          Spec packet for the next approved work: fix audio correctness first, then reduce hidden render
+          cost across listen mode.
+        </p>
+        <div class="summary">
+          <div class="card">
+            <span class="label">Priority</span>
+            <strong>Audio correctness</strong>
+            <p>Atomic autoplay and follower sync stability come before visual optimization.</p>
+          </div>
+          <div class="card">
+            <span class="label">Second pass</span>
+            <strong>Visibility budget</strong>
+            <p>Closed, collapsed, mobile-hidden, or offscreen content should not render heavy UI.</p>
+          </div>
+          <div class="card">
+            <span class="label">Approval mode</span>
+            <strong>Spec-first</strong>
+            <p>Stateful realtime, mobile playback, and performance work need controlled implementation slices.</p>
+          </div>
+        </div>
+      </header>
+
+      <section class="grid two">
+        <div class="panel">
+          <h2>Current Diagnosis</h2>
+          <ul>
+            <li>Non-controller YouTube clients have a stricter correction path than normal listen sync.</li>
+            <li>Mobile iframe state changes can trigger repeated seek/play corrections.</li>
+            <li>Autoplay currently advances through separate queue and playback reducer calls.</li>
+            <li>Hidden drawers, sidebars, animations, metadata hooks, and long lists can still cost render time.</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h2>Recommended Order</h2>
+          <ol>
+            <li>Atomic SpacetimeDB autoplay reducer.</li>
+            <li>YouTube transition guard.</li>
+            <li>Non-controller listen sync tolerance.</li>
+            <li>Queue drawer lazy render and virtualization.</li>
+            <li>Sidebar, mobile visual, metadata, and thumbnail performance pass.</li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Atomic Autoplay Flow</h2>
+        <p>The reducer should turn autoplay into one coherent room-state transition.</p>
+        <div class="flow">
+          <div><span class="badge gold">1</span><p>Validate playback authority and autoplay enabled.</p></div>
+          <div><span class="badge gold">2</span><p>Select next playable item using queue mode.</p></div>
+          <div><span class="badge gold">3</span><p>Mark current as played and next as playing.</p></div>
+          <div><span class="badge gold">4</span><p>Update session source, position 0, status playing.</p></div>
+          <div><span class="badge gold">5</span><p>Emit one canonical state to all clients.</p></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Implementation Slices</h2>
+        <div class="grid">
+          <div class="task">
+            <span class="badge warn">Task 1</span>
+            <div>
+              <h3>Atomic Autoplay Reducer</h3>
+              <p>Add the reducer, regenerate bindings, update `advanceToNextQueueItem`, and verify queue semantics.</p>
+            </div>
+          </div>
+          <div class="task">
+            <span class="badge warn">Task 2</span>
+            <div>
+              <h3>YouTube Transition Guard</h3>
+              <p>Suppress old-source events during autoplay/manual handoff so the old song cannot spike.</p>
+            </div>
+          </div>
+          <div class="task">
+            <span class="badge warn">Task 3</span>
+            <div>
+              <h3>Non-Controller Listen Sync</h3>
+              <p>Relax unauthorized YouTube micro-correction while preserving meaningful drift correction.</p>
+            </div>
+          </div>
+          <div class="task">
+            <span class="badge">Task 4</span>
+            <div>
+              <h3>Queue Drawer Lazy Render</h3>
+              <p>Closed drawer renders only the handle/count; open drawer renders bounded or virtualized rows.</p>
+            </div>
+          </div>
+          <div class="task">
+            <span class="badge">Task 5</span>
+            <div>
+              <h3>Sidebar Visibility Budget</h3>
+              <p>Collapsed member rail avoids mounting full permission cards and member management controls.</p>
+            </div>
+          </div>
+          <div class="task">
+            <span class="badge">Task 6</span>
+            <div>
+              <h3>Mobile and Motion Budget</h3>
+              <p>Disable heavy waveforms and offscreen animations on mobile, hidden tabs, and reduced-motion contexts.</p>
+            </div>
+          </div>
+          <div class="task">
+            <span class="badge">Task 7</span>
+            <div>
+              <h3>Metadata and Thumbnail Reduction</h3>
+              <p>Share metadata by video ID and defer hidden/offscreen thumbnail and metadata work.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="files">
+        <div class="panel">
+          <h2>Must Review</h2>
+          <ul>
+            <li><a href="./proposal.md">proposal.md</a></li>
+            <li><a href="./design.md">design.md</a></li>
+            <li><a href="./tasks.md">tasks.md</a></li>
+            <li><a href="./acceptance-criteria.md">acceptance-criteria.md</a></li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h2>Background</h2>
+          <ul>
+            <li><a href="./brain-dump.md">brain-dump.md</a></li>
+            <li><a href="./review-notes.md">review-notes.md</a></li>
+            <li><a href="../../../AGENTS.md">AGENTS.md</a></li>
+            <li><a href="../../../DESIGN.md">DESIGN.md</a></li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h2>Likely Code Areas</h2>
+          <ul>
+            <li><code>spacetime/src/index.ts</code></li>
+            <li><code>lib/spacetime/use-live-room.ts</code></li>
+            <li><code>components/room/youtube-media-player.tsx</code></li>
+            <li><code>components/room/listen-mode-layout.tsx</code></li>
+            <li><code>lib/player/sync.ts</code></li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="grid two">
+        <div class="panel">
+          <h2>Risks</h2>
+          <ul>
+            <li>Reducer changes require SpacetimeDB generate, local publish, production publish, and client checks.</li>
+            <li>Virtualization can interfere with queue controls if row identity is mishandled.</li>
+            <li>Lazy rendering must not hide keyboard-reachable controls after panels open.</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h2>Next Action</h2>
+          <p>
+            Approve implementation of Task 1 first: the atomic autoplay reducer. It is the highest-value
+            foundation for the audio transition fix.
+          </p>
+          <div class="status-row">
+            <span class="badge gold">Spec created</span>
+            <span class="badge warn">Implementation not started</span>
+            <span class="badge">Production deploy separate</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
