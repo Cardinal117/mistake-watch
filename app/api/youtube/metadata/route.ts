@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { UNKNOWN_YOUTUBE_AVAILABILITY } from "@/lib/youtube/availability";
 import { getYouTubeMetadata } from "@/lib/youtube/metadata";
 
 export async function GET(request: Request) {
@@ -9,6 +10,7 @@ export async function GET(request: Request) {
   if (!input) {
     return NextResponse.json(
       {
+        availability: UNKNOWN_YOUTUBE_AVAILABILITY,
         metadata: null,
         reason: "Missing YouTube video id or URL.",
         status: "unavailable",

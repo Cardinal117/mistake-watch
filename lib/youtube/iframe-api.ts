@@ -30,7 +30,7 @@ export type YoutubePlayerConstructor = new (
   options: {
     events: {
       onAutoplayBlocked?: () => void;
-      onError?: () => void;
+      onError?: (event: YoutubePlayerEvent) => void;
       onReady?: () => void;
       onStateChange?: (event: YoutubePlayerEvent) => void;
     };

@@ -4,6 +4,7 @@ import {
   useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type FormEvent,
@@ -20,11 +21,11 @@ import {
   Check,
   ChevronUp,
   ChevronsUp,
-  Copy,
   Disc3,
   GripVertical,
   Headphones,
   ListMusic,
+  ListPlus,
   Loader2,
   Maximize2,
   MoreVertical,
@@ -75,14 +76,24 @@ import {
   type QueueMode,
   type SmartShuffleItem,
 } from "@/lib/queue/model";
+import {
+  buildListenDiscoveryResult,
+  buildListenSessionInsights,
+  type ListenDiscoveryTab,
+} from "@/lib/recommendations/listen-discovery";
 import type { RoomQueueItem, RoomSnapshot } from "@/lib/rooms";
-import type { LiveRoomState } from "@/lib/spacetime";
+import type { LiveQueueItem, LiveRoomState } from "@/lib/spacetime";
 import { cx } from "@/lib/ui";
 import { fetchPlaylistPreview } from "@/lib/youtube/playlist-client";
+import { fetchYouTubeMetadata } from "@/lib/youtube/metadata-client";
+import { fetchYouTubeRecommendations } from "@/lib/youtube/recommendations-client";
 import type {
   YouTubePlaylistItem,
   YouTubePlaylistPreviewResponse,
 } from "@/lib/youtube/playlist";
+import type { YouTubeRecommendationResponse } from "@/lib/youtube/recommendations";
+import type { YouTubeVideoMetadata } from "@/lib/youtube/metadata";
+import { getYouTubeAvailabilityLabel } from "@/lib/youtube/availability";
 import { useYouTubeMetadata } from "@/lib/youtube/use-youtube-metadata";
 import { DirectMediaPlayer } from "./direct-media-player";
 import { InviteActions } from "./invite-actions";
@@ -126,13 +137,19 @@ type ListenTheme = {
 
 const MIN_LISTEN_DRAWER_HEIGHT = 34;
 const MAX_LISTEN_DRAWER_HEIGHT = 88;
+const DEFAULT_LISTEN_DRAWER_HEIGHT = 56;
+const DEFAULT_LISTEN_VOLUME = 100;
+const DEFAULT_RIGHT_SIDEBAR_COLLAPSED = false;
 
 export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
-  const [clockMs, setClockMs] = useState(() => Date.now());
+  const [clockMs, setClockMs] = useState(0);
   const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(
-    readStoredRightSidebarCollapsed,
+    DEFAULT_RIGHT_SIDEBAR_COLLAPSED,
   );
-  const [volume, setVolume] = useState(readStoredVolume);
+  const [mobileToolsTab, setMobileToolsTab] = useState<"members" | "room">(
+    "room",
+  );
+  const [volume, setVolume] = useState(DEFAULT_LISTEN_VOLUME);
   const liveQueueItems = useListenQueueItems(liveRoom, room);
   const session = liveRoom.snapshot.session;
   const currentItem =
@@ -160,11 +177,15 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
     "--listen-shadow": listenTheme.shadow,
     "--listen-wave": listenTheme.wave,
   } as CSSProperties;
+  const desktopShell = useDesktopListenShell();
   const listenGridStyle = {
     "--listen-room-columns": rightSidebarCollapsed
       ? "400px minmax(0,1fr) 56px"
       : "320px minmax(0,1fr) 320px",
   } as CSSProperties;
+  const controllerMemberId =
+    liveRoom.participants.find((participant) => participant.isController)?.id ??
+    null;
   const currentPosition = useMemo(() => {
     const canonicalState = buildCanonicalState(liveRoom);
 
@@ -176,11 +197,21 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
   const canManageQueue = liveRoom.canManageQueue;
   const isConnected = liveRoom.connectionStatus === "connected";
   const nextPreparation = useNextItemPreparation(liveRoom);
+  const remainingQueueSeconds = useRemainingQueueSeconds(liveRoom);
 
   useEffect(() => {
     const timer = window.setInterval(() => setClockMs(Date.now()), 500);
 
     return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setVolume(readStoredVolume());
+      setRightSidebarCollapsed(readStoredRightSidebarCollapsed());
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
@@ -243,6 +274,9 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
       ...(currentItem ? [currentItem] : []),
     ].map(toSmartShuffleItem);
     const queued = queuedItems.map(toSmartShuffleItem);
+    const originalPositions = new Map(
+      queued.map((item) => [item.queueItemId, item.position]),
+    );
     const nextOrder =
       strategy === "smart"
         ? smartShuffleQueue(queued, history)
@@ -256,24 +290,20 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
           : shuffleUpcomingQueue(queued);
 
     nextOrder.forEach((item, index) => {
-      liveRoom.moveQueueItem(item.queueItemId, index);
+      if (originalPositions.get(item.queueItemId) !== index) {
+        liveRoom.moveQueueItem(item.queueItemId, index);
+      }
     });
-
-    if (strategy === "shuffle") {
-      liveRoom.setQueueMode("shuffle");
-    }
-
-    if (strategy === "smart") {
-      liveRoom.setQueueMode("smartShuffle");
-    }
   }
 
   return (
     <main
-      className="relative min-h-screen overflow-hidden bg-background text-on-surface"
+      className="relative min-h-screen overflow-x-hidden bg-background text-on-surface xl:h-dvh xl:min-h-dvh xl:overflow-hidden"
       style={listenThemeStyle}
     >
-      <ListenAmbientBackdrop artworkUrl={activeArtworkUrl} />
+      {desktopShell ? (
+        <ListenAmbientBackdrop artworkUrl={activeArtworkUrl} />
+      ) : null}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 transition-opacity duration-1000"
@@ -283,15 +313,31 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
         }}
       />
       <div
-        className="relative z-10 grid min-h-screen gap-4 px-margin-mobile pb-28 pt-4 transition-[grid-template-columns] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:px-margin-desktop lg:grid-cols-[var(--listen-room-columns)] lg:gap-0 lg:px-0 lg:pb-0 lg:pt-0"
+        className="relative z-10 grid gap-4 px-margin-mobile pb-32 pt-4 transition-[grid-template-columns] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:px-margin-desktop xl:h-dvh xl:min-h-0 xl:grid-cols-[var(--listen-room-columns)] xl:gap-0 xl:overflow-hidden xl:px-0 xl:pb-0 xl:pt-0"
         style={listenGridStyle}
       >
         <ListenNowPlayingPanel
           canControl={canControl}
           currentItem={currentItem}
           currentPosition={currentPosition}
+          desktopShell={desktopShell}
           durationSeconds={durationSeconds}
           liveRoom={liveRoom}
+          mobileTools={
+            <ListenMobileRoomTools
+              activeTab={mobileToolsTab}
+              canAddQueue={liveRoom.canAddQueue}
+              canLoadSource={liveRoom.canManageAuthority}
+              connectionStatus={liveRoom.connectionStatus}
+              controllerMemberId={controllerMemberId}
+              currentMemberId={room.currentMember?.id}
+              liveRoom={liveRoom}
+              onAddQueueItem={liveRoom.addQueueItem}
+              onLoadSource={liveRoom.loadMediaSource}
+              onTabChange={setMobileToolsTab}
+              room={room}
+            />
+          }
           nextPreparation={nextPreparation}
           onNext={playNext}
           onPlaybackChange={setPlayback}
@@ -305,20 +351,22 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
         />
 
         <section
-          className="relative min-w-0 overflow-hidden border-white/10 lg:border-x"
+          className="relative grid min-w-0 overflow-visible border-white/10 xl:min-h-0 xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden xl:border-x"
           style={{
             background:
-              "radial-gradient(circle at 8% 0%, rgb(var(--listen-primary) / 0.07), transparent 38rem), radial-gradient(circle at 24% 40%, rgb(var(--listen-secondary) / 0.055), transparent 44rem), linear-gradient(90deg,rgb(var(--listen-primary) / 0.025),rgb(14 14 15 / 0.96) 42%,rgb(19 19 20 / 0.985))",
+              "radial-gradient(circle at 0% 20%, rgb(var(--listen-primary) / 0.075), transparent 34rem), radial-gradient(circle at 20% 54%, rgb(var(--listen-secondary) / 0.045), transparent 42rem), linear-gradient(90deg,rgb(14 14 15 / 0.985),rgb(14 14 15 / 0.96) 44%,rgb(19 19 20 / 0.985))",
           }}
         >
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgb(255_255_255_/_0.035)_1px,transparent_1px),linear-gradient(180deg,rgb(255_255_255_/_0.03)_1px,transparent_1px)] bg-[size:72px_72px] opacity-20"
           />
-          <ListenCenterWaveform
-            active={session?.status === "playing"}
-            artworkUrl={activeArtworkUrl}
-          />
+          {desktopShell ? (
+            <ListenCenterWaveform
+              active={session?.status === "playing"}
+              artworkUrl={activeArtworkUrl}
+            />
+          ) : null}
           <ListenTechnicalRoomHeader
             canAddQueue={liveRoom.canAddQueue}
             canLoadSource={liveRoom.canManageAuthority}
@@ -328,26 +376,32 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
             onAddQueueItem={liveRoom.addQueueItem}
             onLoadSource={liveRoom.loadMediaSource}
             queueCount={queuedItems.length}
-            remainingSeconds={getRemainingQueueSeconds(liveRoom)}
+            remainingSeconds={remainingQueueSeconds}
             room={room}
           />
-          <div className="relative z-10 grid min-h-full content-start gap-5 px-4 py-4 sm:px-6 lg:px-10 lg:py-6">
+          <div className="relative z-10 grid gap-4 px-4 py-4 [scrollbar-color:rgb(255_186_32_/_0.42)_transparent] [scrollbar-width:thin] sm:px-6 xl:min-h-0 xl:overflow-y-auto xl:px-10 xl:py-5">
             <ListenDiscoveryPanel
+              canAddQueue={liveRoom.canAddQueue && isConnected}
+              canLoadSource={liveRoom.canManageAuthority && isConnected}
               canPlay={canControl && isConnected}
               currentItem={currentItem}
               items={liveQueueItems}
+              onAddQueueItem={liveRoom.addQueueItem}
+              onLoadSource={liveRoom.loadMediaSource}
               onPlayQueueItem={liveRoom.playQueueItemNow}
               room={room}
             />
           </div>
         </section>
 
-        <ListenRoomSidebar
-          collapsed={rightSidebarCollapsed}
-          currentMemberId={room.currentMember?.id}
-          liveRoom={liveRoom}
-          onCollapsedChange={setSidebarCollapsed}
-        />
+        <div className="hidden min-h-0 xl:block">
+          <ListenRoomSidebar
+            collapsed={rightSidebarCollapsed}
+            currentMemberId={room.currentMember?.id}
+            liveRoom={liveRoom}
+            onCollapsedChange={setSidebarCollapsed}
+          />
+        </div>
       </div>
       <ListenQueueDrawer
         canAddQueue={liveRoom.canAddQueue}
@@ -355,6 +409,7 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
         currentItem={currentItem}
         isConnected={isConnected}
         items={liveQueueItems}
+        nextPreparation={nextPreparation}
         onAddQueueItem={liveRoom.addQueueItem}
         onClearQueue={liveRoom.clearQueue}
         onMoveQueueItem={liveRoom.moveQueueItem}
@@ -366,6 +421,7 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
         onSmartShuffle={() => applyQueueShuffle("smart")}
         queueMode={session?.queueMode ?? "normal"}
         queuedItems={queuedItems}
+        remainingSeconds={remainingQueueSeconds}
         rightSidebarCollapsed={rightSidebarCollapsed}
       />
     </main>
@@ -376,8 +432,10 @@ function ListenNowPlayingPanel({
   canControl,
   currentItem,
   currentPosition,
+  desktopShell,
   durationSeconds,
   liveRoom,
+  mobileTools,
   nextPreparation,
   onNext,
   onPlaybackChange,
@@ -392,8 +450,10 @@ function ListenNowPlayingPanel({
   canControl: boolean;
   currentItem: RoomQueueItem | null;
   currentPosition: number;
+  desktopShell: boolean;
   durationSeconds: number;
   liveRoom: LiveRoomState;
+  mobileTools?: ReactNode;
   nextPreparation: ReturnType<typeof useNextItemPreparation>;
   onNext(): void;
   onPlaybackChange(status: "paused" | "playing"): void;
@@ -423,7 +483,7 @@ function ListenNowPlayingPanel({
   const progressMax = durationSeconds || Math.max(100, Math.ceil(currentPosition));
 
   return (
-    <aside className="relative grid content-start gap-4 overflow-hidden border-white/10 bg-surface/94 p-4 pb-6 backdrop-blur-xl lg:h-screen lg:border-r lg:p-5">
+    <aside className="relative grid min-h-0 content-start gap-4 overflow-visible border-white/10 bg-transparent p-0 pb-2 xl:h-dvh xl:overflow-hidden xl:border-r xl:bg-surface/94 xl:p-5 xl:pb-6 xl:backdrop-blur-xl">
       <div className="grid gap-3">
         <PendingLink
           className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-sm border border-white/10 px-3 text-label-sm font-semibold text-on-surface-variant transition hover:bg-surface-variant/35 hover:text-on-surface"
@@ -442,14 +502,23 @@ function ListenNowPlayingPanel({
       </div>
 
       <div
-        className="relative grid gap-0 overflow-hidden rounded-md border border-white/10 shadow-amber-glow transition-colors duration-1000"
-        style={{
-          background:
-            "radial-gradient(circle at 30% 4%, rgb(var(--listen-primary) / 0.16), transparent 40%), radial-gradient(circle at 88% 48%, rgb(var(--listen-secondary) / 0.11), transparent 38%), linear-gradient(180deg, rgb(var(--listen-primary) / 0.08), rgb(19 19 20 / 0.92))",
-          boxShadow: "0 0 34px rgb(var(--listen-shadow) / 0.14)",
-        }}
+        className={cx(
+          "relative grid gap-0 overflow-hidden transition-colors duration-1000",
+          desktopShell
+            ? "rounded-md border border-white/10 shadow-amber-glow xl:max-h-[calc(100dvh-7rem)]"
+            : "rounded-none border-0 bg-transparent shadow-none",
+        )}
+        style={
+          desktopShell
+            ? {
+                background:
+                  "radial-gradient(circle at 30% 4%, rgb(var(--listen-primary) / 0.16), transparent 40%), radial-gradient(circle at 88% 48%, rgb(var(--listen-secondary) / 0.11), transparent 38%), linear-gradient(180deg, rgb(var(--listen-primary) / 0.08), rgb(19 19 20 / 0.92))",
+                boxShadow: "0 0 34px rgb(var(--listen-shadow) / 0.14)",
+              }
+            : undefined
+        }
       >
-        {thumbnailUrl ? (
+        {desktopShell && thumbnailUrl ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element -- Provider thumbnails are external media artwork. */}
             <img
@@ -465,8 +534,8 @@ function ListenNowPlayingPanel({
             />
           </>
         ) : null}
-        <div className="relative z-10 grid gap-4 p-4">
-          <div className="relative aspect-square min-h-[13.75rem] overflow-hidden rounded-md border border-white/10 bg-black shadow-[inset_0_0_0_1px_rgb(255_255_255_/_0.04)]">
+        <div className="relative z-10 grid gap-4 py-1 xl:p-4">
+          <div className="relative aspect-square min-h-[13.75rem] overflow-hidden rounded-md border border-white/10 bg-black shadow-[inset_0_0_0_1px_rgb(255_255_255_/_0.04)] xl:max-h-none">
             {thumbnailUrl ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element -- Provider thumbnails are external media artwork. */}
@@ -646,10 +715,14 @@ function ListenNowPlayingPanel({
           </div>
         </div>
 
-        {nextPreparation.status !== "idle" && nextPreparation.target ? (
+        {desktopShell &&
+        nextPreparation.status !== "idle" &&
+        nextPreparation.target ? (
           <ListenPreparingNextStrip nextPreparation={nextPreparation} />
         ) : null}
       </div>
+
+      {mobileTools ? <div className="xl:hidden">{mobileTools}</div> : null}
     </aside>
   );
 }
@@ -683,20 +756,10 @@ function ListenTechnicalRoomHeader({
   const roomName = liveRoom.snapshot.session?.roomName ?? room.name;
   const canRename =
     liveRoom.canManageAuthority && liveRoom.connectionStatus === "connected";
-  const [codeCopied, setCodeCopied] = useState(false);
   const [editingName, setEditingName] = useState(roomName);
   const [roomNameDirty, setRoomNameDirty] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const visibleRoomName = roomNameDirty ? editingName : roomName;
-
-  async function copyRoomCode() {
-    const copied = await writeClipboard(room.code);
-
-    if (copied) {
-      setCodeCopied(true);
-      window.setTimeout(() => setCodeCopied(false), 1500);
-    }
-  }
 
   async function commitRoomName() {
     const nextName = visibleRoomName.trim().replace(/\s+/g, " ");
@@ -722,14 +785,36 @@ function ListenTechnicalRoomHeader({
     `${onlineCount} connected`,
     "Listen mode",
     `${queueCount} upcoming`,
-    remainingSeconds ? `${formatCompactDuration(remainingSeconds)} remaining` : null,
+    remainingSeconds
+      ? `${formatQueueRemainingDuration(remainingSeconds)} remaining`
+      : null,
     `${historyCount} played`,
   ].filter((stat): stat is string => Boolean(stat));
+  const mobileStats = [
+    { label: "Code", value: room.code },
+    { label: "Online", value: String(onlineCount) },
+    { label: "Mode", value: "Listen" },
+    { label: "Upcoming", value: String(queueCount) },
+    remainingSeconds
+      ? {
+          label: "Remaining",
+          value: formatQueueRemainingDuration(remainingSeconds),
+        }
+      : null,
+    { label: "Played", value: String(historyCount) },
+  ].filter(
+    (
+      stat,
+    ): stat is {
+      label: string;
+      value: string;
+    } => Boolean(stat),
+  );
 
   return (
-    <section className="relative z-20 border-b border-white/10 bg-surface/88 backdrop-blur-xl">
-      <div className="grid gap-2 px-4 py-2.5 sm:px-6 lg:px-10">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+    <section className="relative z-20 border-b border-white/6 bg-surface/72 backdrop-blur-xl">
+      <div className="grid gap-2 px-4 py-2.5 sm:px-6 xl:px-10">
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <span className="technical-label border-0 p-0 text-secondary-fixed-dim">
@@ -770,30 +855,37 @@ function ListenTechnicalRoomHeader({
                 />
               ) : null}
             </div>
-            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-label-sm text-on-surface-variant">
+            <p
+              aria-live="polite"
+              className="mt-1 hidden flex-wrap items-center gap-x-2 gap-y-1 text-label-sm text-on-surface-variant xl:flex"
+            >
               {stats.map((stat, index) => (
-                <span className="inline-flex items-center gap-1.5" key={stat}>
+                <span
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap"
+                  key={stat}
+                >
                   {index > 0 ? <span className="opacity-55">/</span> : null}
-                  <span>{stat}</span>
-                  {index === 0 ? (
-                    <button
-                      aria-label="Copy room code"
-                      className="inline-flex h-5 w-5 items-center justify-center rounded-sm border border-white/10 text-primary-fixed-dim transition hover:bg-primary-fixed-dim/10"
-                      onClick={copyRoomCode}
-                      type="button"
-                    >
-                      {codeCopied ? (
-                        <Check className="h-3.5 w-3.5" aria-hidden />
-                      ) : (
-                        <Copy className="h-3.5 w-3.5" aria-hidden />
-                      )}
-                    </button>
-                  ) : null}
+                  <span className="transition-colors duration-300">{stat}</span>
                 </span>
               ))}
             </p>
+            <div className="mt-3 grid grid-cols-2 gap-1.5 min-[420px]:grid-cols-3 xl:hidden">
+              {mobileStats.map((stat) => (
+                <div
+                  className="rounded-sm border border-white/10 bg-background/38 px-2 py-1.5"
+                  key={stat.label}
+                >
+                  <p className="technical-label border-0 p-0 text-on-surface-variant">
+                    {stat.label}
+                  </p>
+                  <p className="mt-0.5 truncate text-label-sm font-semibold text-on-surface">
+                    {stat.value}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+          <div className="hidden flex-wrap items-center gap-2 xl:flex xl:justify-end">
             <ListenAddMediaPopover
               canAddQueue={canAddQueue}
               canLoadSource={canLoadSource}
@@ -814,14 +906,17 @@ function ListenTechnicalRoomHeader({
             />
           </div>
         </div>
-        <ModeSwitcher
-          canSwitch={
-            liveRoom.canManageAuthority && liveRoom.connectionStatus === "connected"
-          }
-          compact
-          mode="listen"
-          onSwitchMode={liveRoom.switchMode}
-        />
+        <div className="hidden xl:block">
+          <ModeSwitcher
+            canSwitch={
+              liveRoom.canManageAuthority &&
+              liveRoom.connectionStatus === "connected"
+            }
+            compact
+            mode="listen"
+            onSwitchMode={liveRoom.switchMode}
+          />
+        </div>
       </div>
     </section>
   );
@@ -857,25 +952,190 @@ function ListenPreparingNextStrip({
   );
 }
 
+function ListenMobileRoomTools({
+  activeTab,
+  canAddQueue,
+  canLoadSource,
+  connectionStatus,
+  controllerMemberId,
+  currentMemberId,
+  liveRoom,
+  onAddQueueItem,
+  onLoadSource,
+  onTabChange,
+  room,
+}: {
+  activeTab: "members" | "room";
+  canAddQueue: boolean;
+  canLoadSource: boolean;
+  connectionStatus: string;
+  controllerMemberId: string | null;
+  currentMemberId?: string | null;
+  liveRoom: LiveRoomState;
+  onAddQueueItem(input: QueueAddInput): void;
+  onLoadSource(input: SourceLoadInput): void;
+  onTabChange(tab: "members" | "room"): void;
+  room: RoomSnapshot;
+}) {
+  const onlineCount = liveRoom.participants.filter(
+    (participant) => participant.status === "online",
+  ).length;
+
+  return (
+    <section className="relative z-20 overflow-hidden rounded-md border border-white/10 bg-surface/82 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.035)] backdrop-blur-xl xl:hidden">
+      <div className="grid grid-cols-2 gap-1 border-b border-white/10 bg-surface-container-lowest/80 p-1">
+        {[
+          ["room", "Room", room.code],
+          ["members", "Members", onlineCount],
+        ].map(([tab, label, meta]) => {
+          const active = activeTab === tab;
+
+          return (
+            <button
+              aria-selected={active}
+              className={cx(
+                "inline-flex h-9 items-center justify-center gap-2 rounded-sm px-3 text-label-sm font-semibold transition",
+                active
+                  ? "bg-secondary-fixed-dim/12 text-secondary-fixed-dim"
+                  : "text-on-surface-variant hover:bg-surface-variant/25 hover:text-on-surface",
+              )}
+              key={tab}
+              onClick={() => onTabChange(tab as "members" | "room")}
+              role="tab"
+              type="button"
+            >
+              {label}
+              <span className="rounded-sm border border-white/10 bg-surface-container px-1.5 text-[11px] text-on-surface-variant">
+                {meta}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {activeTab === "room" ? (
+        <div className="grid gap-3 p-3">
+          <div className="grid gap-2">
+            <ListenAddMediaPopover
+              canAddQueue={canAddQueue}
+              canLoadSource={canLoadSource}
+              connectionStatus={connectionStatus}
+              onAddQueueItem={onAddQueueItem}
+              onLoadSource={onLoadSource}
+            />
+            <div className="grid gap-2">
+              <ListenSavedRoomToggle
+                canSave={liveRoom.canManageAuthority}
+                compact
+                initialSaved={room.isSaved}
+                roomId={room.id}
+              />
+              <InviteActions
+                compact
+                inviteUrl={room.inviteUrl}
+                roomCode={room.code}
+              />
+            </div>
+          </div>
+          <ModeSwitcher
+            canSwitch={
+              liveRoom.canManageAuthority &&
+              liveRoom.connectionStatus === "connected"
+            }
+            compact
+            mode="listen"
+            onSwitchMode={liveRoom.switchMode}
+          />
+        </div>
+      ) : (
+        <div className="max-h-[min(28rem,60vh)] overflow-y-auto p-3 [scrollbar-color:rgb(255_186_32_/_0.42)_transparent] [scrollbar-width:thin]">
+          <MembersPanel
+            canManageAuthority={liveRoom.canManageAuthority}
+            connectionStatus={liveRoom.connectionStatus}
+            controllerMemberId={controllerMemberId}
+            currentMemberId={currentMemberId}
+            errorMessage={liveRoom.errorMessage}
+            grantControl={liveRoom.grantControl}
+            kickMember={liveRoom.kickMember}
+            onPermissionChange={liveRoom.setPermission}
+            participants={liveRoom.participants}
+            removeIdleMember={liveRoom.removeIdleMember}
+            revokeControl={liveRoom.revokeControl}
+          />
+        </div>
+      )}
+    </section>
+  );
+}
+
 function ListenDiscoveryPanel({
+  canAddQueue,
+  canLoadSource,
   canPlay,
   currentItem,
   items,
+  onAddQueueItem,
+  onLoadSource,
   onPlayQueueItem,
   room,
 }: {
+  canAddQueue: boolean;
+  canLoadSource: boolean;
   canPlay: boolean;
   currentItem: RoomQueueItem | null;
   items: RoomQueueItem[];
+  onAddQueueItem(input: QueueAddInput): void;
+  onLoadSource(input: SourceLoadInput): void;
   onPlayQueueItem(queueItemId: string): void;
   room: RoomSnapshot;
 }) {
-  const [activeFilter, setActiveFilter] = useState("for-you");
-  const recommendations = useMemo(
+  const [activeFilter, setActiveFilter] =
+    useState<ListenDiscoveryTab>("for-you");
+  const [providerRecommendations, setProviderRecommendations] =
+    useState<{
+      key: string;
+      response: YouTubeRecommendationResponse;
+    } | null>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const picksRailRef = useRef<HTMLDivElement | null>(null);
+  const providerQuery = useMemo(
+    () => buildProviderRecommendationQuery(currentItem),
+    [currentItem],
+  );
+  const providerRequestKey = `${activeFilter}:${providerQuery ?? ""}`;
+  const providerItems = useMemo(
     () =>
-      items
-        .filter((item) => item.status === "queued")
-        .slice(0, 6),
+      providerRecommendations?.key === providerRequestKey
+        ? providerRecommendations.response.items.map((item) =>
+        youtubeMetadataToQueueItem(item, room.currentMember?.name ?? "Provider"),
+          )
+        : [],
+    [providerRecommendations, providerRequestKey, room.currentMember?.name],
+  );
+  const discovery = useMemo(
+    () =>
+      buildListenDiscoveryResult({
+        activeTab: activeFilter,
+        currentItem,
+        items,
+        providerItems,
+        providerUnavailable:
+          providerRecommendations?.key === providerRequestKey &&
+          (providerRecommendations.response.status === "not-configured" ||
+            providerRecommendations.response.status === "unavailable"),
+      }),
+    [
+      activeFilter,
+      currentItem,
+      items,
+      providerItems,
+      providerRecommendations,
+      providerRequestKey,
+    ],
+  );
+  const sessionInsights = useMemo(
+    () => buildListenSessionInsights(items),
     [items],
   );
   const recentlyAdded = useMemo(
@@ -886,36 +1146,112 @@ function ListenDiscoveryPanel({
         .reverse(),
     [items],
   );
+  const showProviderState =
+    activeFilter === "recommended";
+
+  function updatePicksScrollState() {
+    const rail = picksRailRef.current;
+
+    if (!rail) {
+      setCanScrollLeft(false);
+      setCanScrollRight(false);
+      return;
+    }
+
+    setCanScrollLeft(rail.scrollLeft > 4);
+    setCanScrollRight(
+      rail.scrollLeft + rail.clientWidth < rail.scrollWidth - 4,
+    );
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (activeFilter !== "recommended") {
+      return;
+    }
+
+    void fetchYouTubeRecommendations({
+      kind: activeFilter,
+      query: providerQuery,
+    })
+      .then((payload) => {
+        if (!cancelled) {
+          setProviderRecommendations({
+            key: providerRequestKey,
+            response: payload,
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeFilter, providerQuery, providerRequestKey]);
+
+  useEffect(() => {
+    updatePicksScrollState();
+  }, [discovery.items.length, activeFilter]);
+
+  function scrollPicks(direction: "left" | "right") {
+    const rail = picksRailRef.current;
+
+    if (!rail) {
+      return;
+    }
+
+    rail.scrollBy({
+      behavior: "smooth",
+      left: direction === "left" ? -rail.clientWidth : rail.clientWidth,
+    });
+  }
+
+  function handleAddRecommendation(item: RoomQueueItem, isPlayNext = false) {
+    onAddQueueItem(queueItemToQueueAddInput(item, { isPlayNext }));
+  }
+
+  function handleLoadRecommendation(item: RoomQueueItem) {
+    if (item.id.startsWith("provider:")) {
+      onLoadSource(queueItemToSourceLoadInput(item));
+      return;
+    }
+
+    onPlayQueueItem(item.id);
+  }
 
   return (
     <div className="grid gap-5">
-      <div className="grid gap-3">
-        <div className="grid gap-2 border-b border-white/10 pb-2">
+      <section className="overflow-hidden rounded-md border border-white/10 bg-surface-container-lowest/58 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.035)]">
+        <div className="grid gap-3 border-b border-white/10 bg-surface-container-lowest/42 px-3 py-3 sm:px-4">
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-title-md font-semibold text-on-surface">
               Room picks
             </h3>
             <span className="technical-label border-0 p-0 text-on-surface-variant">
-              Queue based
+              {showProviderState &&
+              providerRecommendations?.key !== providerRequestKey
+                ? "Checking provider"
+                : discovery.sourceLabel}
             </span>
           </div>
-          <div className="max-w-full overflow-x-auto pb-1">
-            <div className="inline-grid min-w-max grid-flow-col rounded-sm border border-white/10 bg-surface-container-lowest/92 p-1">
+          <div className="max-w-full overflow-x-auto">
+            <div className="inline-grid min-w-max grid-flow-col overflow-hidden rounded-sm border border-white/10 bg-background/70">
               {[
                 ["for-you", "For you"],
                 ["recommended", "Recommended"],
-                ["trending", "Trending"],
+                ["top-listened", "Most listened"],
                 ["playlist", "From your playlist"],
-              ].map(([id, label]) => (
+              ].map(([id, label], index) => (
                 <button
                   className={cx(
-                    "h-8 shrink-0 rounded-sm px-4 text-label-sm font-semibold transition",
+                    "h-9 shrink-0 border-l border-white/8 px-4 text-label-sm font-semibold transition first:border-l-0",
                     activeFilter === id
-                      ? "bg-secondary-fixed-dim/14 text-secondary-fixed-dim shadow-[inset_0_0_0_1px_rgb(255_186_32_/_0.34)]"
-                      : "text-on-surface-variant hover:bg-surface-variant/20 hover:text-on-surface",
+                      ? "bg-secondary-fixed-dim/16 text-secondary-fixed-dim shadow-[inset_0_0_0_1px_rgb(255_186_32_/_0.3)]"
+                      : "text-on-surface-variant hover:bg-white/5 hover:text-on-surface",
+                    index === 0 && "border-l-0",
                   )}
                   key={id}
-                  onClick={() => setActiveFilter(id)}
+                  onClick={() => setActiveFilter(id as ListenDiscoveryTab)}
                   type="button"
                 >
                   {label}
@@ -924,35 +1260,69 @@ function ListenDiscoveryPanel({
             </div>
           </div>
         </div>
-        {recommendations.length > 0 ? (
-          <div className="relative">
-            <div className="grid snap-x auto-cols-[minmax(11rem,12.5rem)] grid-flow-col gap-3 overflow-x-auto pb-3 pr-10 [scrollbar-color:rgb(255_186_32_/_0.42)_transparent] [scrollbar-width:thin]">
-              {recommendations.map((item) => (
+        {discovery.items.length > 0 ? (
+          <div className="relative px-3 py-4 sm:px-4">
+            <div
+              className="grid snap-x snap-mandatory auto-cols-[100%] grid-flow-col gap-3 overflow-x-auto pb-1 [scrollbar-color:rgb(255_186_32_/_0.42)_transparent] [scrollbar-width:thin] xl:auto-cols-[minmax(15rem,18rem)] xl:pr-10"
+              onScroll={updatePicksScrollState}
+              ref={picksRailRef}
+            >
+              {discovery.items.map((item) => (
                 <RecommendationCard
+                  canAddQueue={canAddQueue}
+                  canLoadSource={canLoadSource}
                   canPlay={canPlay}
                   current={item.id === currentItem?.id}
+                  inQueue={!item.id.startsWith("provider:")}
                   item={item}
                   key={item.id}
-                  onPlay={() => onPlayQueueItem(item.id)}
+                  onAddQueue={() => handleAddRecommendation(item)}
+                  onLoadNow={() => handleLoadRecommendation(item)}
+                  onPlayNext={() => handleAddRecommendation(item, true)}
                 />
               ))}
             </div>
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 right-0 flex w-16 items-center justify-end bg-[linear-gradient(90deg,transparent,rgb(14_14_15_/_0.88)_70%,rgb(14_14_15_/_0.98))]"
-            >
-              <span className="mr-0 inline-flex h-9 w-8 items-center justify-center rounded-sm border border-secondary-fixed-dim/25 bg-surface-container-lowest/90 text-secondary-fixed-dim shadow-[0_0_16px_rgb(255_186_32_/_0.08)]">
-                <ArrowRight className="h-4 w-4" aria-hidden />
-              </span>
-            </div>
+            {canScrollLeft ? (
+              <div className="pointer-events-none absolute inset-y-0 left-3 flex w-14 items-center justify-start bg-[linear-gradient(270deg,transparent,rgb(14_14_15_/_0.76)_62%,rgb(14_14_15_/_0.94))] sm:left-4">
+                <button
+                  aria-label="Scroll room picks left"
+                  className="pointer-events-auto ml-2 inline-flex h-9 w-8 items-center justify-center rounded-sm border border-secondary-fixed-dim/25 bg-background/85 text-secondary-fixed-dim shadow-[0_0_16px_rgb(255_186_32_/_0.08)] transition hover:bg-secondary-fixed-dim/12"
+                  onClick={() => scrollPicks("left")}
+                  type="button"
+                >
+                  <ArrowLeft className="h-4 w-4" aria-hidden />
+                </button>
+              </div>
+            ) : null}
+            {canScrollRight ? (
+              <div className="pointer-events-none absolute inset-y-0 right-3 flex w-14 items-center justify-end bg-[linear-gradient(90deg,transparent,rgb(14_14_15_/_0.76)_62%,rgb(14_14_15_/_0.94))] sm:right-4">
+                <button
+                  aria-label="Scroll room picks right"
+                  className="pointer-events-auto mr-2 inline-flex h-9 w-8 items-center justify-center rounded-sm border border-secondary-fixed-dim/25 bg-background/85 text-secondary-fixed-dim shadow-[0_0_16px_rgb(255_186_32_/_0.08)] transition hover:bg-secondary-fixed-dim/12"
+                  onClick={() => scrollPicks("right")}
+                  type="button"
+                >
+                  <ArrowRight className="h-4 w-4" aria-hidden />
+                </button>
+              </div>
+            ) : null}
           </div>
         ) : (
-          <EmptyListenPanel>
-            Add media to build room picks. Recommendations will become real once
-            provider suggestions are wired.
-          </EmptyListenPanel>
+          <div className="p-3 sm:p-4">
+            <EmptyListenPanel>{discovery.emptyMessage}</EmptyListenPanel>
+          </div>
         )}
-      </div>
+        {showProviderState &&
+        providerRecommendations?.key === providerRequestKey &&
+        providerRecommendations.response.reason &&
+        providerRecommendations.response.source === "unavailable" ? (
+          <p className="border-t border-white/10 px-4 py-3 text-label-sm text-on-surface-variant">
+            {providerRecommendations.response.reason}
+          </p>
+        ) : null}
+      </section>
+
+      <ListenAiDjHome insights={sessionInsights} />
 
       <div className="grid gap-3">
         <div className="flex items-center justify-between gap-3">
@@ -1030,7 +1400,11 @@ function ListenAddMediaPopover({
 
       setPlaylistPreview(payload);
       setSelectedPlaylistIds(
-        new Set(payload.items.map((item) => item.videoId)),
+        new Set(
+          payload.items
+            .filter((item) => !item.isUnavailable)
+            .map((item) => item.videoId),
+        ),
       );
 
       if (payload.status !== "available") {
@@ -1077,7 +1451,29 @@ function ListenAddMediaPopover({
     } satisfies SourceLoadInput;
   }
 
-  function addSingle(event: FormEvent<HTMLFormElement>) {
+  async function checkYouTubeInput(input: SourceLoadInput) {
+    if (input.sourceType !== "youtube") {
+      return input;
+    }
+
+    const metadata = await fetchYouTubeMetadata(input.sourceUrl);
+
+    if (metadata.availability?.playable === false) {
+      setErrorMessage(metadata.availability.reason);
+      return null;
+    }
+
+    return {
+      ...input,
+      artist: metadata.metadata?.channelTitle ?? undefined,
+      channelName: metadata.metadata?.channelTitle ?? undefined,
+      durationSeconds: metadata.metadata?.durationSeconds ?? undefined,
+      sourceTitle: metadata.metadata?.title ?? input.sourceTitle,
+      thumbnailUrl: metadata.metadata?.thumbnailUrl ?? undefined,
+    } satisfies QueueAddInput;
+  }
+
+  async function addSingle(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const input = parseMediaUrl();
 
@@ -1085,20 +1481,32 @@ function ListenAddMediaPopover({
       return;
     }
 
-    onAddQueueItem(input);
+    const checkedInput = await checkYouTubeInput(input);
+
+    if (!checkedInput) {
+      return;
+    }
+
+    onAddQueueItem(checkedInput);
     setUrl("");
     setPlaylistPreview(null);
     setSelectedPlaylistIds(new Set());
   }
 
-  function loadSingle() {
+  async function loadSingle() {
     const input = parseMediaUrl();
 
     if (!input) {
       return;
     }
 
-    onLoadSource(input);
+    const checkedInput = await checkYouTubeInput(input);
+
+    if (!checkedInput) {
+      return;
+    }
+
+    onLoadSource(checkedInput);
     setUrl("");
     setPlaylistPreview(null);
     setSelectedPlaylistIds(new Set());
@@ -1110,13 +1518,15 @@ function ListenAddMediaPopover({
       return;
     }
 
+    const playableItems = items.filter((item) => !item.isUnavailable);
     let added = 0;
 
-    items.forEach((item) => {
+    playableItems.forEach((item) => {
       onAddQueueItem({
         artist: item.channelTitle ?? undefined,
         channelName: item.channelTitle ?? undefined,
         durationSeconds: item.durationSeconds ?? undefined,
+        isUnavailable: item.isUnavailable,
         playlistId: playlistPreview.playlistId ?? undefined,
         playlistTitle: playlistPreview.playlistTitle ?? undefined,
         sourceTitle: item.title,
@@ -1127,7 +1537,9 @@ function ListenAddMediaPopover({
       added += 1;
     });
 
-    setImportSummary(`Added ${added} ${label} from playlist.`);
+    setImportSummary(
+      `Added ${added} ${label} from playlist. Skipped ${items.length - playableItems.length} unavailable.`,
+    );
     setUrl("");
     setPlaylistPreview(null);
     setPlaylistReviewOpen(false);
@@ -1155,9 +1567,9 @@ function ListenAddMediaPopover({
   }
 
   return (
-    <div className="relative">
+    <div className="relative w-full sm:w-auto">
       <Button
-        className="border border-secondary-fixed-dim/45 bg-secondary-fixed-dim text-on-secondary-fixed shadow-[0_0_28px_rgb(255_186_32_/_0.14)] hover:bg-secondary-fixed"
+        className="w-full border border-secondary-fixed-dim/45 bg-secondary-fixed-dim text-on-secondary-fixed shadow-[0_0_28px_rgb(255_186_32_/_0.14)] hover:bg-secondary-fixed sm:w-auto"
         onClick={() => setIsOpen((open) => !open)}
         size="md"
         type="button"
@@ -1225,8 +1637,12 @@ function ListenAddMediaPopover({
               onClick={() => {
                 const input = parseMediaUrl();
                 if (input) {
-                  onAddQueueItem(input);
-                  setUrl("");
+                  void checkYouTubeInput(input).then((checkedInput) => {
+                    if (checkedInput) {
+                      onAddQueueItem(checkedInput);
+                      setUrl("");
+                    }
+                  });
                 }
               }}
               type="button"
@@ -1268,7 +1684,7 @@ function ListenAddMediaPopover({
             </button>
             <Button
               disabled={loadDisabled}
-              onClick={loadSingle}
+              onClick={() => void loadSingle()}
               size="sm"
               type="button"
               variant="ghost"
@@ -1323,9 +1739,10 @@ function ListenPlaylistReviewOverlay({
 }) {
   const portalRoot =
     typeof document === "undefined" ? null : document.body;
+  const playableItems = preview.items.filter((item) => !item.isUnavailable);
   const allSelected =
-    preview.items.length > 0 &&
-    preview.items.every((item) => selectedIds.has(item.videoId));
+    playableItems.length > 0 &&
+    playableItems.every((item) => selectedIds.has(item.videoId));
 
   function toggleItem(videoId: string) {
     const next = new Set(selectedIds);
@@ -1342,7 +1759,7 @@ function ListenPlaylistReviewOverlay({
   function setAllSelected(selected: boolean) {
     onSelectionChange(
       selected
-        ? new Set(preview.items.map((item) => item.videoId))
+        ? new Set(playableItems.map((item) => item.videoId))
         : new Set(),
     );
   }
@@ -1361,7 +1778,7 @@ function ListenPlaylistReviewOverlay({
               {preview.playlistTitle ?? "YouTube playlist"}
             </h3>
             <p className="text-label-sm text-on-surface-variant">
-              {selectedIds.size} selected / {preview.items.length} available
+              {selectedIds.size} selected / {playableItems.length} playable
               {preview.skippedUnavailable
                 ? ` / ${preview.skippedUnavailable} unavailable skipped`
                 : ""}
@@ -1394,7 +1811,7 @@ function ListenPlaylistReviewOverlay({
               </button>
               <div className="flex flex-wrap gap-2">
                 <Button
-                  disabled={addDisabled || preview.items.length === 0}
+                  disabled={addDisabled || playableItems.length === 0}
                   onClick={onImportAll}
                   size="sm"
                   type="button"
@@ -1418,12 +1835,15 @@ function ListenPlaylistReviewOverlay({
               <div className="grid gap-2">
                 {preview.items.map((item, index) => {
                   const selected = selectedIds.has(item.videoId);
+                  const unavailable = item.isUnavailable;
 
                   return (
                     <label
                       className={cx(
-                        "grid min-h-16 cursor-pointer grid-cols-[auto_3rem_minmax(0,1fr)_auto] items-center gap-3 rounded-sm border p-2 transition",
-                        selected
+                        "grid min-h-16 grid-cols-[auto_3rem_minmax(0,1fr)_auto] items-center gap-3 rounded-sm border p-2 transition",
+                        unavailable
+                          ? "cursor-not-allowed border-white/10 bg-surface-container-low opacity-55"
+                          : selected
                           ? "border-secondary-fixed-dim/35 bg-secondary-fixed-dim/10"
                           : "border-white/10 bg-surface-container-low hover:border-white/20",
                       )}
@@ -1432,7 +1852,12 @@ function ListenPlaylistReviewOverlay({
                       <input
                         checked={selected}
                         className="accent-secondary-fixed-dim"
-                        onChange={() => toggleItem(item.videoId)}
+                        disabled={unavailable}
+                        onChange={() => {
+                          if (!unavailable) {
+                            toggleItem(item.videoId);
+                          }
+                        }}
                         type="checkbox"
                       />
                       <QueueArtwork
@@ -1448,8 +1873,15 @@ function ListenPlaylistReviewOverlay({
                           {item.channelTitle ?? "YouTube"}
                         </span>
                       </span>
-                      <span className="technical-label text-on-surface-variant">
-                        {index + 1}
+                      <span className="grid justify-items-end gap-1 text-right">
+                        <span className="technical-label text-on-surface-variant">
+                          {index + 1}
+                        </span>
+                        {unavailable ? (
+                          <Badge tone="amber">
+                            {getYouTubeAvailabilityLabel(item.availability)}
+                          </Badge>
+                        ) : null}
                       </span>
                     </label>
                   );
@@ -1490,7 +1922,7 @@ function ListenRoomSidebar({
 
   if (collapsed) {
     return (
-      <aside className="grid content-start border-white/10 bg-surface/94 p-2 backdrop-blur-xl transition-[width,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:h-screen lg:border-l">
+      <aside className="grid min-h-0 content-start border-white/10 bg-surface/94 p-2 backdrop-blur-xl transition-[width,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] xl:h-dvh xl:border-l">
         <button
           aria-label="Open members sidebar"
           className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-sm border border-white/10 text-secondary-fixed-dim transition hover:bg-secondary-fixed-dim/10"
@@ -1523,7 +1955,7 @@ function ListenRoomSidebar({
   }
 
   return (
-    <aside className="grid content-start gap-4 border-white/10 bg-surface/92 p-4 backdrop-blur-xl transition-[width,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:h-screen lg:border-l lg:p-5">
+    <aside className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-4 overflow-hidden border-white/10 bg-surface/92 p-4 backdrop-blur-xl transition-[width,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] xl:h-dvh xl:border-l xl:p-5">
       <div className="rounded-md border border-white/10 bg-surface-container-lowest p-1">
         <div className="flex h-9 items-center justify-between gap-2 rounded-sm bg-secondary-fixed-dim/10 px-2 text-label-sm font-semibold text-secondary-fixed-dim">
           <span className="px-1">Members</span>
@@ -1541,7 +1973,10 @@ function ListenRoomSidebar({
         </div>
       </div>
 
-      <div className="min-w-0" id={`${panelNamespace}-members-panel`}>
+      <div
+        className="min-h-0 min-w-0 overflow-y-auto [scrollbar-color:rgb(255_186_32_/_0.32)_transparent] [scrollbar-width:thin]"
+        id={`${panelNamespace}-members-panel`}
+      >
         <MembersPanel
           canManageAuthority={liveRoom.canManageAuthority}
           connectionStatus={liveRoom.connectionStatus}
@@ -1566,6 +2001,7 @@ function ListenQueueDrawer({
   currentItem,
   isConnected,
   items,
+  nextPreparation,
   onAddQueueItem,
   onClearQueue,
   onMoveQueueItem,
@@ -1576,6 +2012,7 @@ function ListenQueueDrawer({
   onShuffle,
   onSmartShuffle,
   queuedItems,
+  remainingSeconds,
   rightSidebarCollapsed,
 }: {
   canAddQueue: boolean;
@@ -1583,6 +2020,7 @@ function ListenQueueDrawer({
   currentItem: RoomQueueItem | null;
   isConnected: boolean;
   items: RoomQueueItem[];
+  nextPreparation: ReturnType<typeof useNextItemPreparation>;
   onAddQueueItem(input: QueueAddInput): void;
   onClearQueue(): void;
   onMoveQueueItem(queueItemId: string, position: number): void;
@@ -1597,13 +2035,15 @@ function ListenQueueDrawer({
   onSmartShuffle(): void;
   queueMode: QueueMode;
   queuedItems: RoomQueueItem[];
+  remainingSeconds: number | null;
   rightSidebarCollapsed: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [drawerView, setDrawerView] = useState<"history" | "queue">("queue");
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [drawerHeight, setDrawerHeight] = useState<number>(
-    readStoredDrawerHeight,
+    DEFAULT_LISTEN_DRAWER_HEIGHT,
   );
   const queueViewItems = items.filter(
     (item) => item.status === "now" || item.status === "queued",
@@ -1629,12 +2069,26 @@ function ListenQueueDrawer({
     drawerView === "history"
       ? `${historyItems.length} played`
       : activeQueueLabel;
-  const rowsMaxHeight = `max(12rem, calc(${drawerHeight}vh - 13rem))`;
+  const compactRemainingLabel = remainingSeconds
+    ? formatQueueRemainingDuration(remainingSeconds)
+    : null;
+  const nextPreview =
+    nextPreparation.status !== "idle" ? nextPreparation.target : null;
+  const collapsedDrawerHeight = nextPreview ? "4.5rem" : "3rem";
+  const rowsMaxHeight = `max(12rem, calc(${drawerHeight}vh - 10.5rem))`;
   const drawerStyle = {
     "--listen-drawer-left": rightSidebarCollapsed ? "400px" : "320px",
     "--listen-drawer-right": rightSidebarCollapsed ? "56px" : "320px",
-    maxHeight: open ? `${drawerHeight}vh` : "3rem",
+    maxHeight: open ? `${drawerHeight}vh` : collapsedDrawerHeight,
   } as CSSProperties;
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setDrawerHeight(readStoredDrawerHeight());
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   function setHeight(nextHeight: number) {
     const safeHeight = clampNumber(
@@ -1656,7 +2110,7 @@ function ListenQueueDrawer({
   return (
     <section
       className={cx(
-        "fixed bottom-0 left-3 right-3 z-50 overflow-hidden rounded-t-md border border-b-0 border-white/10 bg-surface/94 shadow-[0_-18px_48px_rgb(0_0_0_/_0.32)] backdrop-blur-xl transition-[max-height,border-color,box-shadow,left,right] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:left-[var(--listen-drawer-left)] lg:right-[var(--listen-drawer-right)]",
+        "fixed bottom-0 left-3 right-3 z-50 overflow-hidden rounded-t-md border border-b-0 border-white/10 bg-surface/94 shadow-[0_-18px_48px_rgb(0_0_0_/_0.32)] backdrop-blur-xl transition-[max-height,border-color,box-shadow,left,right] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] xl:left-[var(--listen-drawer-left)] xl:right-[var(--listen-drawer-right)]",
         open
           ? "border-secondary-fixed-dim/25"
           : "max-h-12 border-white/10",
@@ -1667,30 +2121,49 @@ function ListenQueueDrawer({
         aria-expanded={open}
         aria-label={open ? "Collapse queue drawer" : "Open queue drawer"}
         className={cx(
-          "group mx-auto grid h-12 w-full grid-cols-[1fr_auto_1fr] items-center px-4 text-secondary-fixed-dim transition hover:bg-secondary-fixed-dim/8",
+          "group mx-auto grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 py-2 text-secondary-fixed-dim transition hover:bg-secondary-fixed-dim/8 sm:px-4",
           open && "border-b border-white/10",
         )}
         onClick={() => setOpen((current) => !current)}
         type="button"
       >
-          <span className="hidden min-w-0 items-center gap-2 text-left sm:flex">
+          <span className="grid min-w-0 gap-1 text-left">
+          <span className="flex min-w-0 items-center gap-2">
             <span className="technical-label text-on-surface">Queue</span>
             <span className="text-label-sm text-on-surface-variant">
               {drawerCountLabel}
             </span>
           </span>
-        <span className="flex h-8 min-w-24 items-center justify-center gap-2 rounded-sm border border-secondary-fixed-dim/25 bg-surface-container-low/90 px-4 shadow-[0_0_18px_rgb(255_186_32_/_0.1)]">
-          <span className="block h-1 w-10 rounded-full bg-secondary-fixed-dim/80" />
+          {nextPreview ? (
+            <span className="flex min-w-0 items-center gap-2 xl:hidden">
+              <span className="technical-label border-0 p-0 text-secondary-fixed-dim">
+                Next
+              </span>
+              <span className="truncate text-label-sm font-semibold text-on-surface-variant">
+                {nextPreview.title}
+              </span>
+            </span>
+          ) : null}
+          </span>
+        <span className="flex h-7 min-w-16 items-center justify-center gap-2 rounded-sm border border-secondary-fixed-dim/25 bg-surface-container-low/90 px-3 shadow-[0_0_18px_rgb(255_186_32_/_0.1)]">
+          <span className="block h-1 w-8 rounded-full bg-secondary-fixed-dim/80" />
           <ChevronUp
             className={cx(
-              "h-4 w-4 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              "h-3.5 w-3.5 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
               open && "rotate-180",
             )}
             aria-hidden
           />
         </span>
-        <span className="hidden justify-end text-label-sm text-on-surface-variant sm:flex">
-          {open ? "Hide details" : "Open queue"}
+        <span className="grid min-w-0 justify-items-end gap-1 text-right text-label-sm text-on-surface-variant">
+          {compactRemainingLabel ? (
+            <span className="whitespace-nowrap text-secondary-fixed-dim">
+              {compactRemainingLabel}
+            </span>
+          ) : null}
+          <span className="hidden min-[440px]:block">
+            {open ? "Hide details" : "Open queue"}
+          </span>
         </span>
       </button>
       <div
@@ -1702,17 +2175,17 @@ function ListenQueueDrawer({
             : "pointer-events-none translate-y-3 opacity-0",
         )}
       >
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 p-4">
-            <div className="flex items-center gap-2">
-              <h3 className="text-body-lg font-semibold text-on-surface">
-                {drawerView === "history" ? "History" : "Queue"}
-              </h3>
-              <span className="text-label-sm text-on-surface-variant">
-                {drawerCountLabel}
-              </span>
-            </div>
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <div className="inline-grid h-9 grid-cols-2 rounded-sm border border-white/10 bg-surface-container-lowest p-1">
+        <div className="grid gap-3 border-b border-white/10 p-3 sm:p-4">
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <h3 className="truncate text-body-lg font-semibold text-on-surface">
+                  {drawerView === "history" ? "History" : "Queue"}
+                </h3>
+                <span className="text-label-sm text-on-surface-variant">
+                  {drawerCountLabel}
+                </span>
+              </div>
+              <div className="inline-grid h-9 shrink-0 grid-cols-2 rounded-sm border border-white/10 bg-surface-container-lowest p-1">
                 {[
                   ["queue", "Queue", queueViewItems.length],
                   ["history", "History", historyItems.length],
@@ -1735,26 +2208,9 @@ function ListenQueueDrawer({
                   </button>
                 ))}
               </div>
-              <label className="grid h-9 w-56 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-sm border border-white/10 bg-surface-container-low px-3">
-                <span className="flex items-center gap-1.5 text-label-sm text-on-surface-variant">
-                  <SlidersHorizontal className="h-4 w-4" aria-hidden />
-                  Height
-                </span>
-                <input
-                  aria-label="Queue drawer height"
-                  className="h-2 min-w-0 accent-secondary-fixed-dim"
-                  max={MAX_LISTEN_DRAWER_HEIGHT}
-                  min={MIN_LISTEN_DRAWER_HEIGHT}
-                  onChange={(event) => setHeight(Number(event.currentTarget.value))}
-                  step={1}
-                  type="range"
-                  value={drawerHeight}
-                />
-                <span className="w-10 text-right text-[11px] font-semibold text-secondary-fixed-dim">
-                  {drawerHeight}vh
-                </span>
-              </label>
-              <label className="grid h-9 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-sm border border-white/10 bg-surface-container-low px-3">
+            </div>
+            <div className="grid gap-2 md:grid-cols-[minmax(14rem,1fr)_auto] md:items-center">
+              <label className="grid h-10 min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-sm border border-white/10 bg-surface-container-low px-3">
                 <Search
                   className="h-4 w-4 text-on-surface-variant"
                   aria-hidden
@@ -1766,6 +2222,7 @@ function ListenQueueDrawer({
                   value={query}
                 />
               </label>
+              <div className="flex min-w-0 flex-wrap items-center gap-2 md:justify-end">
               <Button
                 disabled={manageDisabled || queuedItems.length < 2}
                 onClick={onShuffle}
@@ -1805,10 +2262,47 @@ function ListenQueueDrawer({
               >
                 Clear
               </Button>
-              <IconButton label="More queue actions" variant="ghost">
+              <button
+                aria-expanded={settingsOpen}
+                aria-label="Queue drawer settings"
+                className={cx(
+                  "inline-flex h-9 w-9 items-center justify-center rounded-sm border border-white/10 text-on-surface-variant transition hover:bg-surface-variant/35 hover:text-on-surface",
+                  settingsOpen &&
+                    "border-secondary-fixed-dim/35 bg-secondary-fixed-dim/10 text-secondary-fixed-dim",
+                )}
+                onClick={() => setSettingsOpen((current) => !current)}
+                title="Queue drawer settings"
+                type="button"
+              >
                 <MoreVertical className="h-4 w-4" aria-hidden />
-              </IconButton>
+              </button>
+              </div>
             </div>
+            {settingsOpen ? (
+              <div className="rounded-sm border border-white/10 bg-surface-container-lowest/70 p-3">
+                <label className="grid gap-2 sm:grid-cols-[auto_minmax(10rem,1fr)_auto] sm:items-center">
+                  <span className="inline-flex items-center gap-1.5 text-label-sm text-on-surface-variant">
+                    <SlidersHorizontal className="h-4 w-4" aria-hidden />
+                    Drawer height
+                  </span>
+                  <input
+                    aria-label="Queue drawer height"
+                    className="h-2 min-w-0 accent-secondary-fixed-dim"
+                    max={MAX_LISTEN_DRAWER_HEIGHT}
+                    min={MIN_LISTEN_DRAWER_HEIGHT}
+                    onChange={(event) =>
+                      setHeight(Number(event.currentTarget.value))
+                    }
+                    step={1}
+                    type="range"
+                    value={drawerHeight}
+                  />
+                  <span className="text-label-sm font-semibold text-secondary-fixed-dim">
+                    {drawerHeight}vh
+                  </span>
+                </label>
+              </div>
+            ) : null}
           </div>
           <div
             className="overflow-y-auto"
@@ -1896,11 +2390,24 @@ function ListenQueueRow({
       ? formatSeconds(metadata.metadata.durationSeconds)
       : item.duration;
   const isQueued = item.status === "queued";
+  const isBlocked =
+    item.isUnavailable || metadata.metadata?.availability?.playable === false;
+  const statusLabel = isBlocked
+    ? "Unavailable"
+    : current
+      ? "Now playing"
+      : item.isPlayNext
+        ? "Play next"
+        : item.isPinned
+          ? "Pinned"
+          : queuedIndex === 0
+            ? "Up next"
+            : item.status;
 
   return (
     <div
       className={cx(
-        "group grid min-w-[48rem] grid-cols-[2rem_2rem_3.25rem_minmax(12rem,1fr)_5rem_9rem_7rem_7rem_2rem] items-center gap-3 border-b border-white/10 px-4 py-2 text-label-sm transition last:border-b-0",
+        "group grid min-w-0 grid-cols-[1.25rem_1.5rem_3rem_minmax(0,1fr)_auto] items-center gap-2 border-b border-white/10 px-3 py-2.5 text-label-sm transition last:border-b-0 xl:min-w-[48rem] xl:grid-cols-[2rem_2rem_3.25rem_minmax(12rem,1fr)_5rem_9rem_7rem_8.5rem] xl:gap-3 xl:px-4 xl:py-2",
         current
           ? "bg-secondary-fixed-dim/10 text-on-surface"
           : "text-on-surface-variant hover:bg-surface-variant/20 hover:text-on-surface",
@@ -1910,18 +2417,29 @@ function ListenQueueRow({
       <span className="text-on-surface-variant">{index + 1}</span>
       <QueueArtwork thumbnailUrl={thumbnailUrl} title={title} />
       <div className="min-w-0">
-        <p className="truncate text-body-md font-semibold text-on-surface">
+        <p className="overflow-hidden break-words text-body-md font-semibold leading-5 text-on-surface [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] xl:min-h-12 xl:leading-6">
           {title}
         </p>
         <p className="truncate text-label-sm text-on-surface-variant">
           {channel ?? "Room source"}
+          <span className="xl:hidden"> · {duration}</span>
+        </p>
+        <p
+          className={cx(
+            "mt-1 text-[11px] font-semibold uppercase tracking-[0.08em] xl:hidden",
+            current || item.isPinned || item.isPlayNext
+              ? "text-secondary-fixed-dim"
+              : "text-on-surface-variant",
+          )}
+        >
+          {statusLabel}
         </p>
       </div>
-      <span>{duration}</span>
-      <span className="truncate">Added by {item.addedBy}</span>
+      <span className="hidden xl:inline">{duration}</span>
+      <span className="hidden truncate xl:inline">Added by {item.addedBy}</span>
       <span
         className={cx(
-          "text-label-sm font-semibold",
+          "hidden text-label-sm font-semibold xl:inline",
           current
             ? "text-secondary-fixed-dim"
             : item.isPinned || item.isPlayNext
@@ -1929,17 +2447,9 @@ function ListenQueueRow({
               : "text-on-surface-variant",
         )}
       >
-        {current
-          ? "Now playing"
-          : item.isPlayNext
-            ? "Play next"
-            : item.isPinned
-              ? "Pinned"
-              : queuedIndex === 0
-                ? "Up next"
-                : item.status}
+        {statusLabel}
       </span>
-      <span className="flex items-center justify-end gap-1">
+      <span className="flex max-w-[6.5rem] flex-wrap items-center justify-end gap-1 xl:max-w-none xl:flex-nowrap">
         {current ? (
           <span className="inline-flex h-5 items-end gap-0.5 text-secondary-fixed-dim">
             {[0, 1, 2].map((bar) => (
@@ -1971,13 +2481,14 @@ function ListenQueueRow({
           </>
         ) : item.status === "played" ? (
           <IconQueueButton
-            disabled={!canAddQueue}
+            disabled={!canAddQueue || isBlocked}
             icon={<Plus className="h-4 w-4" aria-hidden />}
-            label={`Requeue ${title}`}
+            label={isBlocked ? `${title} is unavailable` : `Requeue ${title}`}
             onClick={() =>
               onAddQueueItem({
                 artist: item.artist,
                 channelName: item.channelName,
+                isUnavailable: item.isUnavailable,
                 playlistId: item.playlistId,
                 playlistTitle: item.playlistTitle,
                 sourceTitle: item.title,
@@ -2003,22 +2514,22 @@ function ListenQueueRow({
         ) : null}
         {!current ? (
           <IconQueueButton
-            disabled={playDisabled}
+            disabled={playDisabled || isBlocked}
             icon={<Play className="h-4 w-4" aria-hidden />}
-            label={`Play ${title}`}
+            label={isBlocked ? `${title} is unavailable` : `Play ${title}`}
             onClick={() => onPlayQueueItem(item.id)}
           />
         ) : null}
+        <button
+          aria-label={`Remove ${title}`}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-sm border border-error/30 text-error transition hover:bg-error-container/25 disabled:opacity-35"
+          disabled={manageDisabled}
+          onClick={() => onRemoveQueueItem(item.id)}
+          type="button"
+        >
+          <Trash2 className="h-4 w-4" aria-hidden />
+        </button>
       </span>
-      <button
-        aria-label={`Remove ${title}`}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-sm border border-error/30 text-error transition hover:bg-error-container/25 disabled:opacity-35"
-        disabled={manageDisabled}
-        onClick={() => onRemoveQueueItem(item.id)}
-        type="button"
-      >
-        <Trash2 className="h-4 w-4" aria-hidden />
-      </button>
     </div>
   );
 }
@@ -2113,16 +2624,126 @@ function ListenSavedRoomToggle({
   );
 }
 
+function ListenAiDjHome({
+  insights,
+}: {
+  insights: ReturnType<typeof buildListenSessionInsights>;
+}) {
+  return (
+    <section className="overflow-hidden rounded-md border border-white/10 bg-surface-container-lowest/52 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.035)]">
+      <div className="grid gap-3 border-b border-white/10 bg-surface-container-lowest/36 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+        <div className="min-w-0">
+          <span className="technical-label border-secondary-fixed-dim/30 text-secondary-fixed-dim">
+            Future AI DJ
+          </span>
+          <h3 className="mt-2 text-title-md font-semibold text-on-surface">
+            Session intelligence home
+          </h3>
+          <p className="mt-1 max-w-2xl text-label-sm text-on-surface-variant">
+            This area is reserved for future advisory room intelligence. For
+            now it only reads queue and history signals.
+          </p>
+        </div>
+        <Badge tone="neutral">Advisory only</Badge>
+      </div>
+      <div className="grid gap-2 p-3 sm:grid-cols-3 sm:p-4">
+        {insights.map((insight) => (
+          <div
+            className="rounded-sm border border-white/10 bg-background/45 p-3"
+            key={insight.label}
+          >
+            <p className="technical-label border-0 p-0 text-on-surface-variant">
+              {insight.label}
+            </p>
+            <p className="mt-1 truncate text-label-sm font-semibold text-on-surface">
+              {insight.value}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function buildProviderRecommendationQuery(item: RoomQueueItem | null) {
+  if (!item) {
+    return null;
+  }
+
+  return [item.artist ?? item.channelName, item.title]
+    .filter((value): value is string => Boolean(value?.trim()))
+    .join(" ")
+    .trim();
+}
+
+function youtubeMetadataToQueueItem(
+  item: YouTubeVideoMetadata,
+  addedBy: string,
+): RoomQueueItem {
+  return {
+    addedBy,
+    artist: item.channelTitle ?? undefined,
+    channelName: item.channelTitle ?? undefined,
+    duration: item.durationSeconds ? formatSeconds(item.durationSeconds) : "",
+    durationSeconds: item.durationSeconds ?? undefined,
+    id: `provider:${item.videoId}`,
+    isUnavailable: !item.availability.playable,
+    sourceType: "youtube",
+    sourceUrl: `https://www.youtube.com/watch?v=${item.videoId}`,
+    status: "queued",
+    thumbnailUrl: item.thumbnailUrl ?? undefined,
+    title: item.title ?? "YouTube video",
+    videoId: item.videoId,
+  };
+}
+
+function queueItemToSourceLoadInput(item: RoomQueueItem): SourceLoadInput {
+  return {
+    sourceTitle: item.title,
+    sourceType: item.sourceType ?? "youtube",
+    sourceUrl: item.sourceUrl ?? "",
+  };
+}
+
+function queueItemToQueueAddInput(
+  item: RoomQueueItem,
+  options: { isPlayNext?: boolean } = {},
+): QueueAddInput {
+  return {
+    artist: item.artist,
+    channelName: item.channelName,
+    durationSeconds: item.durationSeconds,
+    isPlayNext: options.isPlayNext,
+    isUnavailable: item.isUnavailable,
+    playlistId: item.playlistId,
+    playlistTitle: item.playlistTitle,
+    sourceTitle: item.title,
+    sourceType: item.sourceType ?? "youtube",
+    sourceUrl: item.sourceUrl ?? "",
+    thumbnailUrl: item.thumbnailUrl,
+  };
+}
+
 function RecommendationCard({
+  canAddQueue,
+  canLoadSource,
   canPlay,
   current,
+  inQueue,
   item,
-  onPlay,
+  onAddQueue,
+  onLoadNow,
+  onPlayNext,
 }: {
+  canAddQueue: boolean;
+  canLoadSource: boolean;
   canPlay: boolean;
   current: boolean;
+  inQueue: boolean;
   item: RoomQueueItem;
-  onPlay(): void;
+  onAddQueue(): void;
+  onLoadNow(): void;
+  onPlayNext(): void;
 }) {
   const metadata = useYouTubeMetadata(
     item.sourceType === "youtube" ? item.sourceUrl : null,
@@ -2132,29 +2753,38 @@ function RecommendationCard({
     metadata.metadata?.channelTitle ?? item.channelName ?? item.artist;
   const thumbnailUrl = metadata.metadata?.thumbnailUrl ?? item.thumbnailUrl;
   const duration = getQueueItemDisplayDuration(item, metadata);
-  const disabled = current || !canPlay;
+  const isBlocked =
+    item.isUnavailable || metadata.metadata?.availability?.playable === false;
+  const canPrimaryPlay = inQueue ? canPlay : canLoadSource;
+  const disabled = current || !canPrimaryPlay || isBlocked;
+  const primaryLabel = inQueue ? "Play" : "Load now";
 
   return (
-    <button
-      aria-label={
-        current
-          ? `${title} is now playing`
-          : canPlay
-            ? `Play ${title}`
-            : `Playback permission required for ${title}`
-      }
+    <article
       className={cx(
-        "group min-w-0 snap-start overflow-hidden rounded-md border bg-surface/72 text-left transition disabled:cursor-not-allowed",
+        "group min-w-0 snap-start overflow-hidden rounded-md border bg-surface/72 text-left transition",
         current
           ? "border-secondary-fixed-dim/45 bg-secondary-fixed-dim/8"
           : "border-white/10 hover:border-secondary-fixed-dim/40 hover:bg-surface-container-low/70",
         disabled && !current && "opacity-75",
       )}
-      disabled={disabled}
-      onClick={onPlay}
-      type="button"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-surface-container">
+      <button
+        aria-label={
+          current
+            ? `${title} is now playing`
+            : canPrimaryPlay
+              ? isBlocked
+                ? `${title} is unavailable`
+                : `${primaryLabel} ${title}`
+              : `Permission required for ${title}`
+        }
+        className="block w-full text-left disabled:cursor-not-allowed"
+        disabled={disabled}
+        onClick={onLoadNow}
+        type="button"
+      >
+        <div className="relative aspect-[4/3] overflow-hidden bg-surface-container">
         <QueueArtwork
           className="h-full w-full rounded-none border-0"
           thumbnailUrl={thumbnailUrl}
@@ -2174,7 +2804,8 @@ function RecommendationCard({
             <Play className="h-8 w-8 drop-shadow-[0_0_16px_rgb(255_186_32_/_0.35)]" aria-hidden />
           )}
         </span>
-      </div>
+        </div>
+      </button>
       <div className="grid gap-1 p-3">
         <p className="truncate text-body-md font-semibold text-on-surface">
           {title}
@@ -2185,8 +2816,36 @@ function RecommendationCard({
         {duration ? (
           <p className="text-label-sm text-on-surface-variant">{duration}</p>
         ) : null}
+        {isBlocked ? (
+          <Badge tone="amber">
+            {getYouTubeAvailabilityLabel(metadata.metadata?.availability)}
+          </Badge>
+        ) : null}
+        <CardActionRail>
+          <IconQueueButton
+            disabled={disabled}
+            icon={<Play className="h-3.5 w-3.5" aria-hidden />}
+            label={`${primaryLabel} ${title}`}
+            onClick={onLoadNow}
+            rail
+          />
+          <IconQueueButton
+            disabled={!canAddQueue || isBlocked}
+            icon={<Plus className="h-3.5 w-3.5" aria-hidden />}
+            label={`Add ${title} to the end of the queue`}
+            onClick={onAddQueue}
+            rail
+          />
+          <IconQueueButton
+            disabled={!canAddQueue || isBlocked}
+            icon={<ListPlus className="h-3.5 w-3.5" aria-hidden />}
+            label={`Add ${title} to play next. Pinned songs stay first when pinned-first is active.`}
+            onClick={onPlayNext}
+            rail
+          />
+        </CardActionRail>
       </div>
-    </button>
+    </article>
   );
 }
 
@@ -2209,16 +2868,20 @@ function RecentItemRow({
     metadata.metadata?.channelTitle ?? item.channelName ?? item.artist;
   const thumbnailUrl = metadata.metadata?.thumbnailUrl ?? item.thumbnailUrl;
   const duration = getQueueItemDisplayDuration(item, metadata) ?? "-";
+  const isBlocked =
+    item.isUnavailable || metadata.metadata?.availability?.playable === false;
 
   return (
     <button
       aria-label={
         canPlay
-          ? `Play ${title}`
+          ? isBlocked
+            ? `${title} is unavailable`
+            : `Play ${title}`
           : `Playback permission required for ${title}`
       }
       className="group grid w-full grid-cols-[3rem_minmax(0,1fr)_auto_auto_auto_auto] items-center gap-3 border-b border-white/10 p-3 text-left transition last:border-b-0 hover:bg-surface-variant/18 disabled:cursor-not-allowed disabled:opacity-75"
-      disabled={!canPlay}
+      disabled={!canPlay || isBlocked}
       onClick={onPlay}
       type="button"
     >
@@ -2238,7 +2901,9 @@ function RecentItemRow({
         Added by {item.addedBy}
       </span>
       <span className="hidden text-label-sm text-on-surface-variant lg:inline">
-        {minutesAgo}m ago
+        {isBlocked
+          ? getYouTubeAvailabilityLabel(metadata.metadata?.availability)
+          : `${minutesAgo}m ago`}
       </span>
       <span className="inline-flex h-8 w-8 items-center justify-center rounded-sm border border-white/10 text-secondary-fixed-dim opacity-0 transition group-hover:opacity-100">
         <Play className="h-4 w-4" aria-hidden />
@@ -2292,6 +2957,14 @@ function SmallMediaCard({
   );
 }
 
+function CardActionRail({ children }: { children: ReactNode }) {
+  return (
+    <div className="mt-2 grid grid-cols-3 overflow-hidden rounded-sm border border-white/10 bg-background/52">
+      {children}
+    </div>
+  );
+}
+
 function EmptyListenPanel({ children }: { children: ReactNode }) {
   return (
     <div className="rounded-md border border-dashed border-white/10 bg-surface/55 p-4 text-body-md text-on-surface-variant">
@@ -2334,12 +3007,14 @@ function IconQueueButton({
   icon,
   label,
   onClick,
+  rail = false,
   selected = false,
 }: {
   disabled?: boolean;
   icon: ReactNode;
   label: string;
   onClick?(): void;
+  rail?: boolean;
   selected?: boolean;
 }) {
   return (
@@ -2347,13 +3022,18 @@ function IconQueueButton({
       aria-label={label}
       aria-pressed={selected || undefined}
       className={cx(
-        "inline-flex h-7 w-7 items-center justify-center rounded-sm border transition disabled:opacity-35",
+        rail
+          ? "inline-flex h-8 items-center justify-center border-l border-white/10 transition first:border-l-0 disabled:opacity-35"
+          : "inline-flex h-7 w-7 items-center justify-center rounded-sm border transition disabled:opacity-35",
         selected
           ? "border-secondary-fixed-dim/40 bg-secondary-fixed-dim/12 text-secondary-fixed-dim shadow-[0_0_14px_rgb(255_186_32_/_0.12)]"
-          : "border-white/10 text-on-surface-variant hover:bg-surface-variant/35 hover:text-on-surface",
+          : rail
+            ? "border-white/10 text-on-surface-variant hover:bg-surface-variant/35 hover:text-on-surface"
+            : "border-white/10 text-on-surface-variant hover:bg-surface-variant/35 hover:text-on-surface",
       )}
       disabled={disabled}
       onClick={onClick}
+      title={label}
       type="button"
     >
       {icon}
@@ -2398,13 +3078,13 @@ function ListenCenterWaveform({
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-x-0 bottom-0 top-[28%] z-0 overflow-hidden"
+      className="pointer-events-none absolute inset-x-0 bottom-0 top-0 z-0 overflow-hidden"
     >
       {artworkUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- Provider artwork is used as a low-detail center-stage ambient layer.
         <img
           alt=""
-          className="absolute inset-x-[-12%] bottom-[-18%] h-[82%] w-[124%] object-cover opacity-18 blur-3xl saturate-150"
+          className="absolute inset-x-[-12%] bottom-[-24%] h-[105%] w-[124%] object-cover opacity-16 blur-3xl saturate-150"
           key={artworkUrl}
           loading="eager"
           src={artworkUrl}
@@ -2415,8 +3095,8 @@ function ListenCenterWaveform({
       ) : null}
       <div
         className={cx(
-          "absolute inset-x-[-8%] bottom-0 flex h-56 items-end justify-center gap-2 px-8 transition-opacity duration-1000",
-          active ? "opacity-55" : "opacity-28",
+          "absolute inset-x-[-8%] bottom-0 flex h-[52%] items-end justify-center gap-2 px-8 transition-opacity duration-1000",
+          active ? "opacity-46" : "opacity-22",
         )}
       >
         {Array.from({ length: 68 }).map((_, index) => (
@@ -2435,7 +3115,7 @@ function ListenCenterWaveform({
           />
         ))}
       </div>
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgb(19_19_20_/_0.12),transparent_24%,rgb(19_19_20_/_0.72)),linear-gradient(90deg,rgb(14_14_15_/_0.72),transparent_42%,transparent_58%,rgb(14_14_15_/_0.72))]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgb(19_19_20_/_0.08),transparent_42%,rgb(19_19_20_/_0.72)),linear-gradient(90deg,rgb(14_14_15_/_0.72),transparent_42%,transparent_58%,rgb(14_14_15_/_0.72))]" />
     </div>
   );
 }
@@ -2559,6 +3239,10 @@ function useListenQueueItems(liveRoom: LiveRoomState, room: RoomSnapshot) {
         typeof item.durationSeconds === "number"
           ? formatSeconds(item.durationSeconds)
           : "-",
+      durationSeconds:
+        typeof item.durationSeconds === "number"
+          ? item.durationSeconds
+          : undefined,
       id: item.queueItemId,
       isPinned: item.isPinned,
       isPlayNext: item.isPlayNext,
@@ -2594,6 +3278,104 @@ function useListenQueueItems(liveRoom: LiveRoomState, room: RoomSnapshot) {
     participantsById,
     room.queue,
   ]);
+}
+
+function useDesktopListenShell() {
+  const [desktopShell, setDesktopShell] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 1280px)");
+
+    function updateDesktopShell() {
+      setDesktopShell(mediaQuery.matches);
+    }
+
+    updateDesktopShell();
+    mediaQuery.addEventListener("change", updateDesktopShell);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updateDesktopShell);
+    };
+  }, []);
+
+  return desktopShell;
+}
+
+function useRemainingQueueSeconds(liveRoom: LiveRoomState) {
+  const [metadataDurations, setMetadataDurations] = useState<
+    Record<string, number>
+  >({});
+  const missingDurationItems = useMemo(
+    () =>
+      liveRoom.snapshot.queue.filter(
+        (item) =>
+          item.status === "queued" &&
+          item.sourceType === "youtube" &&
+          typeof item.durationSeconds !== "number" &&
+          Boolean(item.sourceUrl),
+      ),
+    [liveRoom.snapshot.queue],
+  );
+  const missingDurationKey = useMemo(
+    () =>
+      missingDurationItems
+        .map((item) => `${item.queueItemId}:${item.sourceUrl}`)
+        .join("|"),
+    [missingDurationItems],
+  );
+
+  useEffect(() => {
+    if (
+      liveRoom.connectionStatus !== "connected" ||
+      missingDurationItems.length === 0
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void Promise.all(
+      missingDurationItems.map(async (item) => {
+        const response = await fetchYouTubeMetadata(item.sourceUrl);
+        const durationSeconds = response.metadata?.durationSeconds;
+
+        return typeof durationSeconds === "number" && durationSeconds > 0
+          ? ([item.queueItemId, durationSeconds] as const)
+          : null;
+      }),
+    ).then((entries) => {
+      if (cancelled) {
+        return;
+      }
+
+      const resolvedEntries = entries.filter(
+        (entry): entry is readonly [string, number] => Boolean(entry),
+      );
+
+      if (resolvedEntries.length === 0) {
+        return;
+      }
+
+      setMetadataDurations((current) => {
+        const next = { ...current };
+
+        for (const [queueItemId, durationSeconds] of resolvedEntries) {
+          next[queueItemId] = durationSeconds;
+        }
+
+        return next;
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [liveRoom.connectionStatus, missingDurationItems, missingDurationKey]);
+
+  return useMemo(
+    () => getRemainingQueueSeconds(liveRoom.snapshot.queue, metadataDurations),
+    [liveRoom.snapshot.queue, metadataDurations],
+  );
 }
 
 function toSmartShuffleItem(item: RoomQueueItem, index = 0) {
@@ -2648,17 +3430,25 @@ function buildCanonicalState(
   };
 }
 
-function getRemainingQueueSeconds(liveRoom: LiveRoomState) {
-  if (liveRoom.connectionStatus !== "connected") {
-    return null;
-  }
-
-  const remainingSeconds = liveRoom.snapshot.queue.reduce((total, item) => {
-    if (item.status !== "queued" || typeof item.durationSeconds !== "number") {
+function getRemainingQueueSeconds(
+  queueItems: LiveQueueItem[],
+  metadataDurations: Record<string, number>,
+) {
+  const remainingSeconds = queueItems.reduce((total, item) => {
+    if (item.status !== "queued") {
       return total;
     }
 
-    return total + item.durationSeconds;
+    const durationSeconds =
+      typeof item.durationSeconds === "number"
+        ? item.durationSeconds
+        : metadataDurations[item.queueItemId];
+
+    if (typeof durationSeconds !== "number" || durationSeconds <= 0) {
+      return total;
+    }
+
+    return total + durationSeconds;
   }, 0);
 
   return remainingSeconds > 0 ? remainingSeconds : null;
@@ -2670,7 +3460,7 @@ function readStoredVolume() {
 
 function readStoredDrawerHeight() {
   if (typeof window === "undefined") {
-    return 56;
+    return DEFAULT_LISTEN_DRAWER_HEIGHT;
   }
 
   const stored = window.localStorage.getItem("mw_listen_queue_drawer_height");
@@ -2682,45 +3472,15 @@ function readStoredDrawerHeight() {
         MIN_LISTEN_DRAWER_HEIGHT,
         MAX_LISTEN_DRAWER_HEIGHT,
       )
-    : 56;
+    : DEFAULT_LISTEN_DRAWER_HEIGHT;
 }
 
 function readStoredRightSidebarCollapsed() {
   if (typeof window === "undefined") {
-    return false;
+    return DEFAULT_RIGHT_SIDEBAR_COLLAPSED;
   }
 
   return window.localStorage.getItem("mw_listen_right_sidebar_collapsed") === "1";
-}
-
-async function writeClipboard(text: string) {
-  if (navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
-      return legacyCopy(text);
-    }
-  }
-
-  return legacyCopy(text);
-}
-
-function legacyCopy(text: string) {
-  const textarea = document.createElement("textarea");
-
-  textarea.value = text;
-  textarea.setAttribute("readonly", "");
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  document.body.append(textarea);
-  textarea.select();
-
-  try {
-    return document.execCommand("copy");
-  } finally {
-    textarea.remove();
-  }
 }
 
 function formatListenPreparationStatus(
@@ -2760,7 +3520,11 @@ function getQueueItemDisplayDuration(
     return item.duration;
   }
 
-  if (!metadata.loading && metadata.status === "unavailable") {
+  if (
+    item.isUnavailable ||
+    metadata.metadata?.availability?.playable === false ||
+    (!metadata.loading && metadata.status === "unavailable")
+  ) {
     return "Unavailable";
   }
 
@@ -2945,14 +3709,15 @@ function formatSeconds(totalSeconds: number) {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
-function formatCompactDuration(totalSeconds: number) {
-  const safeValue = Number.isFinite(totalSeconds) && totalSeconds > 0 ? totalSeconds : 0;
+function formatQueueRemainingDuration(totalSeconds: number) {
+  const safeValue =
+    Number.isFinite(totalSeconds) && totalSeconds > 0 ? totalSeconds : 0;
   const hours = Math.floor(safeValue / 3600);
   const minutes = Math.floor((safeValue % 3600) / 60);
 
   if (hours > 0) {
-    return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
   }
 
-  return `${minutes}m`;
+  return `${Math.max(1, minutes)}m`;
 }

@@ -2,7 +2,7 @@
 
 ## Current Status
 
-Status: TASK-002.3 implemented.
+Status: TASK-002.5 Provider Recommendations and Room Picks is implemented pending live-room visual and permission QA.
 
 TASK-002.1 Listen Mode Quality Pass is complete pending manual visual review in a live room.
 
@@ -10,11 +10,13 @@ TASK-002.2 Room Chat is implemented pending manual two-client browser QA in a li
 
 TASK-002.3 Seamless Next Item Loading is implemented pending manual live-room transition QA.
 
+TASK-002.4 YouTube Availability Hardening is complete. The earlier SpacetimeDB CLI blocker was resolved by calling the installed executable directly at `C:\Users\Admin\AppData\Local\SpacetimeDB\spacetime.exe`; build with `--module-path .\spacetime`, generate, local publish, and Maincloud publish all succeeded.
+
 Baseline handoff docs now exist at `docs/HANDOFF.md` and `docs/COMMANDS.md` so future agents can continue from TASK-002 without relying on chat memory.
 
 ## Canonical Next Task
 
-Next implementation task: TASK-002.4 YouTube Availability Hardening.
+Next implementation task after TASK-002.5 QA: TASK-002.5A Adaptive Listen Card Drift.
 
 ## Decisions Locked
 
@@ -30,7 +32,7 @@ Next implementation task: TASK-002.4 YouTube Availability Hardening.
 - Chat comes before recommendations because it is a clear missing room feature.
 - R2, voting, accounts/friends, shared browser, and hardening are later system-level tasks.
 - Real waveform work must be technically honest: direct/HLS/R2 sources can support real analysis, YouTube iframe sources cannot be sampled directly.
-- Provider recommendations must not fake personalized or trending data.
+- Provider recommendations must not fake personalized, provider-trending, or listening-history data.
 - YouTube availability hardening cannot make every video embeddable. It should prevent known-bad items from looking playable, classify runtime failures, and keep autoplay moving when possible.
 
 ## Future Accounts/Friends Notes
@@ -38,6 +40,29 @@ Next implementation task: TASK-002.4 YouTube Availability Hardening.
 - When TASK-002.10 adds accounts and friends, the right room sidebar should support a two-tab social structure: `Members` for current room participants and `Friends` for quickly inviting friends into the active room.
 - The current share action should become the primary invite action in that future flow: it should still support link sharing, but also act as the entry point for friend invites once accounts exist.
 - The future Friends tab should not be built into the current guest-first member UI. Keep the current implementation focused on live room members, permissions, and host actions until accounts/profiles/friending are in scope.
+
+## Future Listen Motion And AI Notes
+
+- TASK-002.5A was added as a UI-extra task for adaptive listen-card drift. The intent is subtle ambient motion in the center listen surface, using existing room-pick/recommendation cards rather than a separate decorative layer.
+- Adaptive drift must be content-aware. It should only run when the rail has enough cards and overflow width to avoid blank gaps; otherwise it should fall back to the existing static/snap carousel.
+- The drift must pause during interaction and respect reduced-motion. It must not change playback state, queue order, provider data, permissions, or SpacetimeDB authority.
+- TASK-002.10B was added as a later AI DJ / session-intelligence task. This should not be pulled into the drift task or provider recommendations prematurely.
+- The AI DJ direction should support readouts such as `Signal Analysis`, `Current Mood`, `Room Energy`, `Current Session`, `Songs Added`, `Top Contributor`, `Current Pattern Detected`, and `Suggested Direction`.
+- Personal user memory belongs after accounts/profiles and consent boundaries exist. Before then, AI/session intelligence can only use current room/session history and queue data.
+- AI DJ suggestions should remain advisory by default and should feed host-approved queue actions, suggested-next voting, or provider recommendations rather than silently mutating the queue.
+- TASK-002.5 added a future AI DJ/session-intelligence home in the listen discovery surface. It is intentionally non-autonomous: it reads queue/history session signals only and does not imply account memory, fake mood data, or queue mutation.
+- The user wants Mistake Watch to eventually replace Spotify-like personal listening value with first-party account history. TASK-002.10 should include durable listening history foundations and a future original recap experience, similar in purpose to a wrapped-style year/month recap but branded and modeled as Mistake Watch's own feature.
+
+## Future Easter Egg And Achievement Notes
+
+- TASK-002.10A was added immediately after accounts/friends as the account-backed easter egg and achievements task.
+- The first planned trigger is `cardinal mistake`.
+- The intended effect is a local cinematic failure overlay: fade to black, play the chosen failure sting, show a `YOU DIED` style screen, then fade back to the room.
+- The effect must not pause, seek, skip, desync, reorder, or otherwise mutate the shared room state.
+- Achievement unlocks should be durable only after accounts/profiles exist and should be idempotent per user/achievement.
+- Guest fallback can run the visual locally, but it should not imply durable profile achievement history before login.
+- Trigger detection should avoid normal form fields unless intentionally registered, especially URL inputs, room-name editing, settings fields, and future chat input.
+- Keep the effect and audio asset-driven. The user currently wants the iconic `YOU DIED` direction for the private friends-and-family project, but the system should be able to swap assets later without architecture changes.
 
 ## Console Issues Captured From Production
 
@@ -50,7 +75,7 @@ Next implementation task: TASK-002.4 YouTube Availability Hardening.
 ## Current Listen UI Follow-Up Notes
 
 - Room pick cards and recently added rows should become clickable playback actions. Users with playback authority should play that queue item immediately; users without authority should see disabled/permission-aware affordance rather than silent failure.
-- The visible color mismatch around the `For you`, `Recommended`, `Trending`, and `From your playlist` tabs should be fixed by making the center content background continuous and reducing the hard tinted band behind the tab selector.
+- The visible color mismatch around the `For you`, `Recommended`, `Most listened`, and `From your playlist` tabs should be fixed by making the center content background continuous and reducing the hard tinted band behind the tab selector.
 - Recommendation cards need clear clickable affordance: pointer cursor, restrained hover border, subtle play indicator, and a distinct current/now-playing state.
 - The listen queue drawer must stop mixing played items into the main upcoming queue view. Add a `History` filter/tab and keep previously played songs there so `Queue` clearly represents current and upcoming items only.
 
@@ -75,7 +100,10 @@ Next implementation task: TASK-002.4 YouTube Availability Hardening.
 - TASK-002.3 can accidentally mutate playback if preload logic is not isolated.
 - TASK-002.4 can accidentally overpromise YouTube reliability. Keep the task focused on availability checks, clear failure states, and safe skipping.
 - TASK-002.5 can drift into fake recommendation content if provider data is unavailable.
+- TASK-002.5A can become distracting if implemented as a marquee. It needs measured overflow thresholds, interaction pauses, and reduced-motion handling.
 - TASK-002.8 and TASK-002.10 likely need extra Supabase, Cloudflare, and security review before implementation.
+- TASK-002.10A should not let fun local effects mutate shared room state or create duplicate account achievement records.
+- TASK-002.10B should not introduce persistent taste memory before account/profile consent exists.
 - TASK-002.11 requires stricter isolation than normal UI work because browser mode can become resource-heavy and abuse-prone.
 
 ## Implementation Rule
@@ -92,6 +120,69 @@ When the user says "proceed", implement only the next incomplete TASK-002 subtas
 - Runtime direction: YouTube IFrame `onError` codes should be mapped into readable states. Expected mappings include removed/private, embed blocked, player/browser issue, and missing referrer/client identity.
 - Scope boundary: do not build provider recommendations, accounts, durable failure analytics, moderation, or non-YouTube media upload in this task.
 - Testing direction: add focused tests for availability classification, playlist selection defaults, queue disabled states, and runtime error mapping. Run `npm run typecheck`, `npm run lint`, relevant YouTube/player tests, `npm run build`, and production/browser QA.
+
+## TASK-002.4 Implementation Notes
+
+- Added `lib/youtube/availability.ts` as the shared YouTube availability classifier for metadata, playlist, and runtime iframe failure paths.
+- YouTube metadata now requests the official `status` part along with snippet, duration, and statistics so embeddability, privacy, and upload status can be classified where the Data API exposes them.
+- Metadata responses now include top-level availability, allowing UI surfaces to display an unavailable/block reason even when no normal metadata record exists.
+- Playlist preview now keeps visible unavailable playlist rows when YouTube provides a video id, enriches playlist rows through batched `videos.list` checks, and defaults selection to playable rows only.
+- Single YouTube link add/load flows now call the server metadata route before treating the item as playable. Known non-embeddable/private/removed items are blocked with a clear reason; unknown/provider-unavailable lookups remain allowed rather than over-blocking uncertain items.
+- Queue rows, listen room picks, recently added rows, and listen queue drawer rows now disable normal play actions for known unavailable YouTube items and show explicit unavailable labels/reasons.
+- YouTube iframe `onError` codes are mapped to readable availability states. Runtime failures set a clear local error and, when autoplay is enabled and the client has playback authority, request the next queue item after a short grace window.
+- Queue-selection logic now skips known unavailable items for normal, loop, shuffle, and smart-shuffle next-item selection.
+- SpacetimeDB `play_queue_item` now rejects known-unavailable queue rows, and the reducer guard has been built, generated, published locally, and published to Maincloud after resolving the CLI path issue.
+
+Verification:
+
+- `npm run test:youtube` passed.
+- `npm run test:queue` passed.
+- `npm run test:sync` passed.
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run test:spacetime` passed.
+- `npm run build` passed.
+
+Resolved verification:
+
+- The SpacetimeDB CLI path issue was resolved by calling `C:\Users\Admin\AppData\Local\SpacetimeDB\spacetime.exe` directly.
+- `spacetime build --module-path .\spacetime` passed.
+- `spacetime generate` passed.
+- Local publish to `http://127.0.0.1:5372` for `mistake-watch-rooms` passed.
+- Maincloud publish to `https://maincloud.spacetimedb.com` for `mistake-watch-rooms` passed.
+
+Manual review pending:
+
+- Test playlist preview with a mixed playlist containing playable and unavailable/private/embed-blocked items.
+- Test single known embed-blocked YouTube links to confirm they are blocked before queue add/load.
+- Test active runtime iframe failure handling and autoplay skip with two clients.
+
+## TASK-002.5 Implementation Notes
+
+- Added `lib/recommendations/listen-discovery.ts` to make listen discovery tabs explicit about source state: room queue, room history, provider, provider-limited, or unavailable.
+- `For you` now uses playable queue/history rows and filters known-unavailable items.
+- `Recommended` uses server-side YouTube search when provider data is available, otherwise it falls back to honest room-history recommendations.
+- `Most listened` replaced `Trending` because Mistake Watch is a listen-together room, not a general music app. It is currently host/room-history based; after accounts exist it should be based on the accounts present in the room and clearly show the most listened-to songs across those members.
+- `From your playlist` does not claim account playlist access before accounts exist. It uses room playlist/history matches when available and otherwise shows accounts-required copy.
+- Added `lib/youtube/recommendations.ts`, `lib/youtube/recommendations-client.ts`, and `app/api/youtube/recommendations/route.ts` so provider data stays server-side and `YOUTUBE_API_KEY` is not exposed to the client.
+- Listen recommendation cards now support permission-aware load/play, add-to-queue, and play-next actions.
+- Added a future AI DJ/session-intelligence home in the listen center surface. It summarizes current queue/history signals only and remains advisory.
+- Added `tests/recommendations/listen-discovery.test.mjs`.
+
+Verification:
+
+- `node --test tests\recommendations\listen-discovery.test.mjs` passed.
+- `npm run test:youtube` passed.
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
+- The listen UI now uses provider recommendations only for `Recommended`; `Most listened` is not backed by global YouTube trends.
+
+Manual review pending:
+
+- Live listen-room visual QA for all four tabs.
+- Multi-client permission QA for recommendation card load/play, add-to-queue, and play-next actions.
+- Provider-limited state QA by testing with missing or invalid YouTube provider configuration.
 
 ## TASK-002.3 Implementation Notes
 
@@ -216,6 +307,10 @@ Manual review pending:
 - Follow-up revision derives the listen theme from the current artwork thumbnail when browser image sampling is available, with a warm non-blue fallback when sampling is blocked.
 - Follow-up revision moves the dominant page gradient origin to the left player/artwork side instead of keeping a constant blue wash across the page.
 - Follow-up revision fixes the playlist review modal stacking bug by rendering the modal through a `document.body` portal. This keeps it above the center listen surface and queue drawer instead of trapping it inside the listen grid's lower stacking context.
+- Follow-up mobile usability pass promotes `xl` to the full desktop listen-room shell breakpoint. Mobile, tablet, and narrow/vertical monitor widths use a single-column media-first flow with a mobile Room/Members tools panel, while wide desktop keeps the three-column shell.
+- Follow-up mobile correction moves the Room/Members tools panel into the visible mobile top/player flow instead of burying it below the full player and center content. The mobile player shell now drops the desktop-style panel background, border, and artwork glow wrapper so the media player reads as the mobile surface rather than a nested sidebar card.
+- Follow-up mobile regression repair restores playback-control priority by moving the full mobile Room/Members tools below the current-player controls and capping the mobile YouTube/artwork viewport. Queue drawer height settings now render as an attached settings row instead of a floating overlay that can collide with queue rows.
+- Follow-up mobile scroll repair removes the desktop app-shell height/overflow trap from mobile. The listen room now uses normal vertical document flow below `xl`, so player controls, Room/Members tools, Room Picks, and Recently Added can occupy the scroll area instead of leaving a black void.
 
 Verification:
 

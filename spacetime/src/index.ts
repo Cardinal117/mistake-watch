@@ -514,6 +514,41 @@ function nextQueuePosition(
     : 0;
 }
 
+function playNextQueuePosition(
+  ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
+  roomId: string,
+  excludeQueueItemId?: string,
+) {
+  const lockedPositions = queuedQueueItems(ctx, roomId)
+    .filter(
+      (item) =>
+        item.queue_item_id !== excludeQueueItemId &&
+        (item.is_pinned || item.is_play_next),
+    )
+    .map((item) => item.position);
+
+  return lockedPositions.length > 0 ? Math.max(...lockedPositions) + 1 : 0;
+}
+
+function shiftQueuedItemsAtOrAfter(
+  ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
+  roomId: string,
+  position: number,
+  excludeQueueItemId?: string,
+) {
+  queuedQueueItems(ctx, roomId)
+    .filter(
+      (item) =>
+        item.queue_item_id !== excludeQueueItemId && item.position >= position,
+    )
+    .sort((a, b) => b.position - a.position)
+    .forEach((item) => {
+      replaceQueueItem(ctx, item, {
+        position: item.position + 1,
+      });
+    });
+}
+
 function replaceQueueItem(
   ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
   item: NonNullable<
@@ -1133,6 +1168,14 @@ export const add_queue_item = spacetimedb.reducer(
       return;
     }
 
+    const position = is_play_next
+      ? playNextQueuePosition(ctx, room_id)
+      : nextQueuePosition(ctx, room_id);
+
+    if (is_play_next) {
+      shiftQueuedItemsAtOrAfter(ctx, room_id, position);
+    }
+
     ctx.db.live_queue_item.insert({
       added_by_member_id: actor_member_id,
       artist: artist?.trim() || undefined,
@@ -1143,7 +1186,7 @@ export const add_queue_item = spacetimedb.reducer(
       is_unavailable,
       playlist_id: playlist_id?.trim() || undefined,
       playlist_title: playlist_title?.trim() || undefined,
-      position: nextQueuePosition(ctx, room_id),
+      position,
       queue_item_id: ctx.newUuidV7().toString(),
       room_id,
       source_type: normalizeSourceType(source_type),
@@ -1244,10 +1287,18 @@ export const set_queue_item_priority = spacetimedb.reducer(
       return;
     }
 
+    const position = is_play_next
+      ? playNextQueuePosition(ctx, room_id, queue_item_id)
+      : queueItem.position;
+
+    if (is_play_next) {
+      shiftQueuedItemsAtOrAfter(ctx, room_id, position, queue_item_id);
+    }
+
     replaceQueueItem(ctx, queueItem, {
       is_pinned,
       is_play_next,
-      position: is_play_next ? 0 : queueItem.position,
+      position,
     });
 
     normalizeQueuedPositions(ctx, room_id);
@@ -1268,6 +1319,7 @@ export const play_queue_item = spacetimedb.reducer(
       !authority ||
       !queueItem ||
       queueItem.room_id !== room_id ||
+      queueItem.is_unavailable ||
       (queueItem.status !== "queued" &&
         queueItem.status !== "playing" &&
         queueItem.status !== "played")

@@ -78,6 +78,18 @@ Mistake Watch is a polished, room-based watch/listen website for synchronized di
 - For dashboard, room, listen-mode, and other visual milestones, create or update `implementation-report.html` or `qa-report.html` only when the report makes review easier than Markdown alone.
 - Before commit or handoff, use the QA/release checklist from the task packet and document blockers clearly.
 
+## SpacetimeDB CLI Recovery
+
+- If PowerShell says `spacetime` is not recognized, check the installed shim directly at `C:\Users\Admin\AppData\Local\SpacetimeDB\spacetime.exe`.
+- The project PATH can include `C:\Users\Admin\AppData\Local\SpacetimeDB` while `spacetime` still fails to resolve in the current Codex shell. In that case, use the full executable path instead of blocking on PATH.
+- The root `spacetime.json` points at `mistake-watch-rooms`, but plain `spacetime build` may still look for `./src/index.ts` from the repo root. Build with the explicit module path:
+  - `& "C:\Users\Admin\AppData\Local\SpacetimeDB\spacetime.exe" build --module-path .\spacetime`
+- Local publish command:
+  - `& "C:\Users\Admin\AppData\Local\SpacetimeDB\spacetime.exe" publish --server http://127.0.0.1:5372 --module-path .\spacetime mistake-watch-rooms --break-clients`
+- Production publish command:
+  - `& "C:\Users\Admin\AppData\Local\SpacetimeDB\spacetime.exe" publish --server https://maincloud.spacetimedb.com --module-path .\spacetime mistake-watch-rooms --break-clients --yes=remote`
+- After publishing schema/reducer changes, run `& "C:\Users\Admin\AppData\Local\SpacetimeDB\spacetime.exe" generate` and then `npm run typecheck`.
+
 ## Git And Handoff
 
 - Do not stage, commit, or push unless the user explicitly approves.

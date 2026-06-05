@@ -1,4 +1,9 @@
 import { parseYouTubeVideoId } from "@/lib/player/source";
+import {
+  classifyYouTubeVideoStatus,
+  type YouTubeAvailability,
+  UNKNOWN_YOUTUBE_AVAILABILITY,
+} from "./availability";
 import { InFlightRequestCache, TtlCache } from "./cache";
 
 const YOUTUBE_VIDEOS_ENDPOINT = "https://www.googleapis.com/youtube/v3/videos";
@@ -19,6 +24,7 @@ export type YouTubeThumbnailSet = {
 };
 
 export type YouTubeVideoMetadata = {
+  availability: YouTubeAvailability;
   channelTitle: string | null;
   durationSeconds: number | null;
   likeCount: number | null;
@@ -31,6 +37,7 @@ export type YouTubeVideoMetadata = {
 };
 
 export type YouTubeMetadataResponse = {
+  availability: YouTubeAvailability;
   metadata: YouTubeVideoMetadata | null;
   reason?: string;
   status: YouTubeMetadataStatus;
@@ -55,6 +62,11 @@ type YouTubeApiVideo = {
     likeCount?: string;
     viewCount?: string;
   };
+  status?: {
+    embeddable?: boolean;
+    privacyStatus?: string;
+    uploadStatus?: string;
+  };
 };
 
 type YouTubeApiResponse = {
@@ -74,6 +86,12 @@ export async function getYouTubeMetadata(
 
   if (!videoId) {
     return {
+      availability: {
+        playable: false,
+        reason: "Invalid YouTube video id.",
+        source: "metadata",
+        status: "removed-private",
+      },
       metadata: null,
       reason: "Invalid YouTube video id.",
       status: "unavailable",
@@ -101,13 +119,17 @@ async function fetchYouTubeMetadata(
       metadata: null,
       reason: "YouTube metadata is not configured.",
       status: "not-configured",
+      availability: UNKNOWN_YOUTUBE_AVAILABILITY,
     });
   }
 
   const requestUrl = new URL(YOUTUBE_VIDEOS_ENDPOINT);
   requestUrl.searchParams.set("id", videoId);
   requestUrl.searchParams.set("key", apiKey);
-  requestUrl.searchParams.set("part", "snippet,contentDetails,statistics");
+  requestUrl.searchParams.set(
+    "part",
+    "snippet,contentDetails,statistics,status",
+  );
 
   try {
     const response = await fetch(requestUrl, {
@@ -124,6 +146,12 @@ async function fetchYouTubeMetadata(
         metadata: null,
         reason: "YouTube metadata is temporarily unavailable.",
         status: "unavailable",
+        availability: {
+          playable: true,
+          reason: "YouTube metadata is temporarily unavailable.",
+          source: "metadata",
+          status: "provider-unavailable",
+        },
       });
     }
 
@@ -135,18 +163,31 @@ async function fetchYouTubeMetadata(
         metadata: null,
         reason: "This YouTube video was not found or is not public.",
         status: "not-found",
+        availability: {
+          playable: false,
+          reason: "This YouTube video was not found or is not public.",
+          source: "metadata",
+          status: "removed-private",
+        },
       });
     }
 
     return cacheMetadata(videoId, {
       metadata: normalizeYouTubeVideo(item, videoId),
       status: "available",
+      availability: classifyYouTubeVideoStatus(item.status ?? {}),
     });
   } catch {
     return cacheMetadata(videoId, {
       metadata: null,
       reason: "YouTube metadata lookup failed.",
       status: "unavailable",
+      availability: {
+        playable: true,
+        reason: "YouTube metadata lookup failed.",
+        source: "metadata",
+        status: "provider-unavailable",
+      },
     });
   }
 }
@@ -158,6 +199,7 @@ export function normalizeYouTubeVideo(
   const thumbnails = normalizeThumbnails(item.snippet?.thumbnails);
 
   return {
+    availability: classifyYouTubeVideoStatus(item.status ?? {}),
     channelTitle: item.snippet?.channelTitle ?? null,
     durationSeconds: parseYouTubeDuration(item.contentDetails?.duration),
     likeCount: parseCount(item.statistics?.likeCount),

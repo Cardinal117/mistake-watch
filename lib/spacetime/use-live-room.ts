@@ -697,6 +697,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
 
     const nextQueueItemId = getNextQueueItemIdForMode(
       snapshot.queue.map((item) => ({
+        isUnavailable: item.isUnavailable,
         position: item.position,
         queueItemId: item.queueItemId,
         status: item.status,

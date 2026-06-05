@@ -32,6 +32,7 @@ const {
   getNextQueueItemIdForMode,
   markQueueItemPlaying,
   nextQueuePosition,
+  playNextQueuePosition,
   reorderQueuedItems,
   scoreSmartShuffleCandidate,
   smartShuffleQueue,
@@ -49,6 +50,32 @@ test("nextQueuePosition appends after active queue positions", () => {
       { position: 4, queueItemId: "c", status: "playing" },
     ]),
     5,
+  );
+});
+
+test("playNextQueuePosition inserts after pinned and existing play-next items", () => {
+  assert.equal(
+    playNextQueuePosition([
+      { position: 0, queueItemId: "pinned", status: "queued", isPinned: true },
+      {
+        position: 1,
+        queueItemId: "existing-next",
+        status: "queued",
+        isPlayNext: true,
+      },
+      { position: 2, queueItemId: "normal", status: "queued" },
+    ]),
+    2,
+  );
+});
+
+test("playNextQueuePosition inserts first when no pinned group exists", () => {
+  assert.equal(
+    playNextQueuePosition([
+      { position: 0, queueItemId: "normal-a", status: "queued" },
+      { position: 1, queueItemId: "normal-b", status: "queued" },
+    ]),
+    0,
   );
 });
 
@@ -114,6 +141,21 @@ test("getNextQueuedItemId returns the first queued item by position", () => {
       { position: 1, queueItemId: "old", status: "played" },
     ]),
     "next",
+  );
+});
+
+test("getNextQueuedItemId skips known unavailable queued items", () => {
+  assert.equal(
+    getNextQueuedItemId([
+      {
+        isUnavailable: true,
+        position: 0,
+        queueItemId: "blocked",
+        status: "queued",
+      },
+      { position: 1, queueItemId: "playable", status: "queued" },
+    ]),
+    "playable",
   );
 });
 

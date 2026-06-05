@@ -19,10 +19,11 @@ Implementation rules:
 2. Chat comes before recommendations because it is a clear missing room feature and is smaller than provider discovery.
 3. Preload comes before recommendations because queue transitions should be stable before adding more ways to queue media.
 4. YouTube availability hardening comes before recommendations because discovery and playlists should not promote media that cannot play in an embedded room.
-5. Recommendations come before real waveform architecture because they rely on existing metadata and queue behavior rather than a new playback-analysis stack.
-6. Real waveform architecture comes after listen/preload stability because it can affect playback, performance, and mobile behavior.
-7. Avatar motion stays after core room features because it is identity polish, not room functionality.
-8. R2, voting, accounts/friends, browser mode, and hardening remain later because they are larger systems with storage, auth, security, or infrastructure consequences.
+5. Recommendations come before adaptive card drift because the drift should animate real room-pick/recommendation cards, not placeholder ambience.
+6. Adaptive card drift comes before real waveform architecture because it is a UI motion pass with strict non-mutating boundaries.
+7. Real waveform architecture comes after listen/preload stability because it can affect playback, performance, and mobile behavior.
+8. Avatar motion stays after core room features because it is identity polish, not room functionality.
+9. R2, voting, accounts/friends, achievements, AI DJ, browser mode, and hardening remain later because they are larger systems with storage, auth, security, provider, or infrastructure consequences.
 
 ## Shared Systems
 
@@ -77,6 +78,45 @@ All UI work follows `DESIGN.md`:
 - compact, readable technical controls;
 - responsive mobile behavior;
 - reduced-motion support for ambient or decorative motion.
+
+### Adaptive Listen Card Drift
+
+The adaptive drift task is a listen-room UI enhancement, not a queue or recommendation data change.
+
+Implementation direction:
+
+- measure rail width, viewport width, card count, and available overflow before enabling drift;
+- only loop when there is enough content to avoid visible blank gaps;
+- use a slow, linear or near-linear motion that feels like ambient room movement rather than a marquee;
+- pause on hover, focus, keyboard interaction, drag/touch interaction, and modal/drawer overlays;
+- disable continuous movement for reduced-motion users;
+- preserve card click, play, focus, and permission states.
+
+### AI DJ / Session Intelligence
+
+The AI DJ task is intentionally later than accounts/friends. It should begin with room-session intelligence and only add personal memory after profile and consent boundaries exist.
+
+Implementation direction:
+
+- analyze real session inputs such as playback history, queue shape, duration, contributors, provider metadata, and room energy signals;
+- label unavailable or low-confidence analysis clearly;
+- keep suggestions advisory unless an authorized user acts;
+- do not mutate the queue automatically;
+- never present invented mood, energy, or personalization as verified fact.
+
+### Easter Eggs And Achievements
+
+The easter egg task belongs immediately after accounts because durable achievements need stable user identity.
+
+Implementation direction:
+
+- separate the trigger detector, effect renderer, sound playback, and achievement persistence so each part can be tested and replaced;
+- keep easter egg effects local by default and never mutate shared room playback state;
+- store achievements with stable IDs and idempotent unlock behavior;
+- allow guest/local fallback effects before login, but reserve durable profile achievements for signed-in users;
+- avoid firing hidden triggers from ordinary form fields unless that field is explicitly registered;
+- support reduced-motion and reduced-audio alternatives;
+- keep visual/audio assets replaceable so the project can later switch from inspired/private-use assets to original assets without rewriting the achievement system.
 
 ## Documentation Flow
 

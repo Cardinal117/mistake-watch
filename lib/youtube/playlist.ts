@@ -1,16 +1,25 @@
 import { parseYouTubePlaylist } from "@/lib/player/source";
+import {
+  classifyYouTubePlaylistItemStatus,
+  classifyYouTubeVideoStatus,
+  type YouTubeAvailability,
+} from "./availability";
 import { InFlightRequestCache, TtlCache } from "./cache";
+import { parseYouTubeDuration } from "./metadata";
 
 const YOUTUBE_PLAYLIST_ITEMS_ENDPOINT =
   "https://www.googleapis.com/youtube/v3/playlistItems";
 const YOUTUBE_PLAYLISTS_ENDPOINT =
   "https://www.googleapis.com/youtube/v3/playlists";
+const YOUTUBE_VIDEOS_ENDPOINT = "https://www.googleapis.com/youtube/v3/videos";
 const PLAYLIST_CACHE_TTL_MS = 20 * 60 * 1000;
 const MAX_IMPORT_ITEMS = 250;
 
 export type YouTubePlaylistItem = {
+  availability: YouTubeAvailability;
   channelTitle: string | null;
   durationSeconds: number | null;
+  isUnavailable: boolean;
   position: number;
   sourceUrl: string;
   thumbnailUrl: string | null;
@@ -50,6 +59,20 @@ type YouTubePlaylistApiItem = {
   status?: {
     privacyStatus?: string;
   };
+};
+
+type YouTubeVideoAvailabilityApiResponse = {
+  items?: Array<{
+    contentDetails?: {
+      duration?: string;
+    };
+    id?: string;
+    status?: {
+      embeddable?: boolean;
+      privacyStatus?: string;
+      uploadStatus?: string;
+    };
+  }>;
 };
 
 const playlistCache = new TtlCache<YouTubePlaylistPreviewResponse>(
@@ -159,13 +182,21 @@ async function fetchYouTubePlaylistPreview(
       }
     } while (nextPageToken && items.length < MAX_IMPORT_ITEMS);
 
-    return cachePlaylist(playlistId, {
+    const enrichedItems = await enrichPlaylistItemsWithVideoStatus(
       items,
+      apiKey,
+    );
+    skippedUnavailable = enrichedItems.filter(
+      (item) => item.isUnavailable,
+    ).length;
+
+    return cachePlaylist(playlistId, {
+      items: enrichedItems,
       playlistId,
       playlistTitle,
       skippedUnavailable,
       status: "available",
-      totalCount: totalCount || items.length + skippedUnavailable,
+      totalCount: totalCount || enrichedItems.length + skippedUnavailable,
     });
   } catch {
     return cachePlaylist(playlistId, {
@@ -215,25 +246,30 @@ function normalizePlaylistItem(
 ): YouTubePlaylistItem | null {
   const videoId = item.snippet?.resourceId?.videoId;
   const title = item.snippet?.title?.trim();
+  const availability = classifyYouTubePlaylistItemStatus({
+    privacyStatus: item.status?.privacyStatus,
+    title,
+    videoId,
+  });
 
-  if (
-    !videoId ||
-    !title ||
-    title === "Deleted video" ||
-    title === "Private video" ||
-    item.status?.privacyStatus === "private"
-  ) {
+  if (!videoId) {
     return null;
   }
 
   const thumbnails = item.snippet?.thumbnails;
+  const safeTitle =
+    title && title !== "Deleted video" && title !== "Private video"
+      ? title
+      : "Unavailable YouTube video";
 
   return {
+    availability,
     channelTitle:
       item.snippet?.videoOwnerChannelTitle ??
       item.snippet?.channelTitle ??
       null,
     durationSeconds: null,
+    isUnavailable: !availability.playable,
     position: item.snippet?.position ?? 0,
     sourceUrl: `https://www.youtube.com/watch?v=${videoId}`,
     thumbnailUrl:
@@ -243,9 +279,87 @@ function normalizePlaylistItem(
       thumbnails?.medium?.url ??
       thumbnails?.default?.url ??
       `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
-    title,
+    title: safeTitle,
     videoId,
   };
+}
+
+async function enrichPlaylistItemsWithVideoStatus(
+  items: YouTubePlaylistItem[],
+  apiKey: string,
+) {
+  const nextItems = [...items];
+
+  for (let index = 0; index < nextItems.length; index += 50) {
+    const batch = nextItems.slice(index, index + 50);
+    const requestUrl = new URL(YOUTUBE_VIDEOS_ENDPOINT);
+
+    requestUrl.searchParams.set("id", batch.map((item) => item.videoId).join(","));
+    requestUrl.searchParams.set("key", apiKey);
+    requestUrl.searchParams.set("part", "contentDetails,status");
+
+    try {
+      const response = await fetch(requestUrl, {
+        headers: {
+          Accept: "application/json",
+        },
+        next: {
+          revalidate: 60 * 10,
+        },
+      });
+
+      if (!response.ok) {
+        continue;
+      }
+
+      const payload =
+        (await response.json()) as YouTubeVideoAvailabilityApiResponse;
+      const videosById = new Map(
+        (payload.items ?? []).map((item) => [item.id, item]),
+      );
+
+      batch.forEach((item, batchIndex) => {
+        const video = videosById.get(item.videoId);
+
+        if (!video) {
+          const availability: YouTubeAvailability = {
+            playable: false,
+            reason: "This YouTube video was not found or is not public.",
+            source: "metadata",
+            status: "removed-private",
+          };
+
+          nextItems[index + batchIndex] = {
+            ...item,
+            availability,
+            isUnavailable: true,
+          };
+          return;
+        }
+
+        const metadataAvailability = classifyYouTubeVideoStatus(
+          video.status ?? {},
+        );
+        const availability =
+          item.availability.playable === false
+            ? item.availability
+            : metadataAvailability;
+
+        nextItems[index + batchIndex] = {
+          ...item,
+          availability,
+          durationSeconds:
+            parseYouTubeDuration(video.contentDetails?.duration) ??
+            item.durationSeconds,
+          isUnavailable: !availability.playable,
+        };
+      });
+    } catch {
+      continue;
+    }
+  }
+
+  return nextItems;
 }
 
 function cachePlaylist(

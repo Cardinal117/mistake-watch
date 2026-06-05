@@ -57,7 +57,22 @@ export function YouTubeMetadataLine({
         )}
         title={reason}
       >
-        Metadata unavailable
+        {reason ?? "Metadata unavailable"}
+      </p>
+    );
+  }
+
+  if (metadata.availability?.playable === false) {
+    return (
+      <p
+        className={cx(
+          "technical-label text-error",
+          compact && "text-[11px]",
+          className,
+        )}
+        title={metadata.availability.reason}
+      >
+        {metadata.availability.reason}
       </p>
     );
   }

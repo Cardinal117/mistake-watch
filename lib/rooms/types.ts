@@ -21,6 +21,7 @@ export type RoomQueueItem = {
   title: string;
   addedBy: string;
   duration: string;
+  durationSeconds?: number;
   status: "now" | "played" | "queued";
   artist?: string;
   channelName?: string;

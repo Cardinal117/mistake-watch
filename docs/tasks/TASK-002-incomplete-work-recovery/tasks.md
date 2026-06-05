@@ -105,23 +105,50 @@ Source task: TASK-001 Task 22.
 
 Work:
 
-- Make `For you`, `Recommended`, `Trending`, and `From your playlist` honest data surfaces.
+- Make `For you`, `Recommended`, `Most listened`, and `From your playlist` honest data surfaces.
 - Use queue and room history as the first recommendation source.
 - Add provider-backed YouTube recommendation/search data only where official API behavior supports it.
 - Keep provider API keys server-side.
 - Add explicit unavailable/provider-limited states.
 - Keep `From your playlist` unavailable or room-history based until accounts exist.
 - Add recommendation card actions for add to queue, play next, and load now where permissions allow.
+- Add a reserved future AI DJ/session-intelligence home that reads current room signals only and does not mutate queue or playback state.
 
 Review checkpoint:
 
-- No fake personalized or trending content is shown.
+- No fake personalized, provider-trending, or listening-history content is shown.
 - Recommendation actions respect queue/playback permissions.
 - Playback and queue import still work if recommendations fail.
+- The future AI DJ area is clearly advisory and does not imply accounts, personal memory, or autonomous queue control.
 
 Safe commit point:
 
 - Listen discovery becomes useful and honest without blocking playback.
+
+## TASK-002.5A: Adaptive Listen Card Drift
+
+Source task: side-conversation UI extra from listen-room discovery direction.
+
+Work:
+
+- Add subtle adaptive horizontal drift to the listen-room center recommendation/card rails.
+- Use the current queue/recommendation cards as the ambient motion source; do not create separate decorative cards.
+- Enable continuous drift only when there are enough cards and enough overflow width to loop without visible gaps.
+- Adapt the loop threshold to viewport size so small screens can drift with fewer cards while wide screens stay static unless the rail can fill the motion path cleanly.
+- Pause drift on hover, focus, keyboard interaction, pointer drag, touch interaction, and while major overlays such as playlist review are active.
+- Respect `prefers-reduced-motion` by disabling continuous drift and keeping the existing static/snap carousel behavior.
+- Preserve permission-aware card behavior: users with playback authority can click/play; users without authority should get disabled or request-style affordance, not fake play controls.
+- Keep queue order, playback state, SpacetimeDB reducers, provider recommendations, and AI features unchanged.
+
+Review checkpoint:
+
+- The card rail feels like quiet ambient room motion, not a marquee or attention-grabbing animation.
+- No blank gaps appear on mobile, desktop, or wide desktop.
+- Interaction remains obvious and stable while the rail is moving.
+
+Safe commit point:
+
+- Listen-room cards have adaptive ambient drift without changing discovery data or playback authority.
 
 ## TASK-002.6: Real Audio-Reactive Waveform Architecture
 
@@ -220,15 +247,72 @@ Work:
 - Add notification bell/drawer support for room invites.
 - Migrate guest avatar/name behavior cleanly into account profiles.
 - Keep host crown role-based, not avatar-specific.
+- Add account-backed listening history foundations for future real `Most listened` data.
+- Track per-account media identity, play count, completion count, total listened time, last played time, and source/provider metadata where available.
+- Prepare a first-party yearly/monthly recap direction, internally treated as a Mistake Watch wrapped-style recap, without depending on Spotify or external account exports.
+- Keep recap naming, visuals, and data model original to Mistake Watch; do not clone Spotify branding.
 
 Review checkpoint:
 
 - Friends can invite friends to rooms through visible notifications.
 - Guest-first behavior still works or has a clear migration path.
+- Real `Most listened` can later aggregate account listening history for members in the active room.
+- Account listening history can support a future Mistake Watch recap showing top songs, artists/channels, rooms, contributors, listening time, and session patterns.
 
 Safe commit point:
 
-- Mistake Watch supports account-backed social room discovery and invites.
+- Mistake Watch supports account-backed social room discovery, invites, and durable listening-history foundations.
+
+## TASK-002.10A: Easter Eggs and Account Achievements
+
+Source task: fun account-layer follow-up from the easter egg and achievements direction.
+
+Work:
+
+- Add an easter egg and achievements system after accounts/profiles exist so unlocks can attach to durable user profiles.
+- Add a typed trigger phrase system for hidden room effects, starting with the `cardinal mistake` trigger.
+- When `cardinal mistake` is typed, trigger a local-only cinematic failure overlay: fade the screen to black, play the chosen failure sting, show the `YOU DIED` style screen, then fade back to the room without disrupting playback, queue, sync, or other users.
+- Record the related achievement on the user's account once profiles exist. The first unlock should be idempotent so repeated triggers do not duplicate achievement rows.
+- Keep the visual/audio effect local by default. Do not make it room-wide unless a later host-controlled room-effect mode is explicitly approved.
+- Add an achievement catalog model with stable achievement IDs, display names, descriptions, rarity/category, trigger source, unlocked timestamp, and optional local animation metadata.
+- Add a user achievement surface in the future account/profile UI and a compact in-room unlock toast that does not cover core playback controls.
+- Support guest-safe fallback behavior: before account login, easter eggs can run locally, but durable achievement persistence should be unavailable or local-only until the user signs in.
+- Add safety controls so typed triggers do not fire while entering normal URLs, chat messages, room names, or form fields unless that input is intentionally registered for easter egg detection.
+- Respect reduced-motion and reduced-audio preferences. Provide a no-motion/no-audio fallback that still unlocks the achievement.
+- Keep copyrighted/inspired media assets isolated behind replaceable app assets so the project can later swap to fully original visual/audio treatment if needed.
+
+Review checkpoint:
+
+- The `cardinal mistake` easter egg feels deliberate, polished, and fun without interrupting the shared room state.
+- Achievements persist correctly to the account profile once accounts exist.
+- Trigger detection is reliable and does not interfere with normal typing or media controls.
+
+Safe commit point:
+
+- Mistake Watch has a durable account-backed achievements foundation and one polished easter egg trigger.
+
+## TASK-002.10B: AI DJ / Session Intelligence
+
+Source task: later listen-room AI DJ direction.
+
+Work:
+
+- Add a future listen-room intelligence surface that can summarize session patterns once the recommendation and account foundations exist.
+- Start with room/session analysis before personal memory: recent playback history, current queue makeup, session duration, songs added, contributor activity, and room energy.
+- After accounts/profiles exist, optionally add consent-aware user memory for taste patterns and recurring room preferences.
+- Surface technical, evidence-backed readouts such as `Signal Analysis`, `Current Mood`, `Room Energy`, `Current Session`, `Songs Added`, `Top Contributor`, and `Current Pattern Detected`.
+- Support an `Odysseus DJ` style module that can explain detected patterns and suggest a direction such as `Dark Orchestral Metal`.
+- Keep AI output advisory by default; it must not mutate the queue, override host authority, or pretend unavailable provider data exists.
+- Feed future suggestions into provider recommendations, suggested-next voting, or host-controlled add/play-next actions only after explicit user action.
+
+Review checkpoint:
+
+- AI DJ feels native to the listen center surface and reads like session intelligence, not generic chatbot copy.
+- Personalization is clearly separated from room-session analysis and only appears after accounts/profiles make it legitimate.
+
+Safe commit point:
+
+- Listen mode has a defined AI/session-intelligence path without pulling AI scope into current discovery or card-drift work.
 
 ## TASK-002.11: Shared Browser Prototype
 

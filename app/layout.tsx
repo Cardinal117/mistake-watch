@@ -7,10 +7,15 @@ export const metadata: Metadata = {
   description:
     "A private watch and listen together space for friends and family.",
   icons: {
-    icon: "/icon.png",
-    shortcut: "/icon.png",
-    apple: "/brand/logo-concept-01-signal-aperture.png",
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
   },
+  manifest: "/site.webmanifest",
 };
 
 type RootLayoutProps = {

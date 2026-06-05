@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TASK-002.3 Implementation Report - Mistake Watch</title>
+    <title>TASK-002.4 Implementation Report - Mistake Watch</title>
     <style>
       :root {
         --bg: #0e0e0f;
@@ -27,8 +27,8 @@
       body {
         margin: 0;
         background:
-          radial-gradient(circle at 16% 6%, rgba(0, 219, 233, 0.14), transparent 34rem),
-          radial-gradient(circle at 88% 12%, rgba(255, 186, 32, 0.12), transparent 32rem),
+          radial-gradient(circle at 16% 6%, rgba(0, 219, 233, 0.12), transparent 34rem),
+          radial-gradient(circle at 86% 10%, rgba(255, 186, 32, 0.12), transparent 30rem),
           var(--bg);
         color: var(--text);
         font-family:
@@ -68,7 +68,7 @@
       }
 
       h1 {
-        max-width: 840px;
+        max-width: 860px;
         font-size: clamp(2rem, 4vw, 3.5rem);
         line-height: 1.05;
       }
@@ -150,12 +150,13 @@
   <body>
     <main>
       <header>
-        <span class="label">TASK-002.3 / Implemented</span>
-        <h1>Seamless Next Item Loading</h1>
+        <span class="label">TASK-002.5 / Implemented</span>
+        <h1>Provider Recommendations and Room Picks</h1>
         <p>
-          This report covers the focused TASK-002.3 implementation: next-item prediction,
-          safe metadata and thumbnail preparation, YouTube API readiness, visible preparation
-          status, and transition instrumentation without mutating queue or playback state.
+          This report covers honest listen-mode discovery: room-derived picks first,
+          optional server-side YouTube provider suggestions where configured, explicit
+          provider-limited states, permission-aware recommendation actions, and a reserved
+          future AI DJ home that does not mutate playback or queue state.
         </p>
       </header>
 
@@ -163,37 +164,30 @@
         <h2>Files To Review</h2>
         <div class="grid">
           <div class="card">
-            <strong>Preparation Engine</strong>
-            <p><code>lib/player/next-item-preparation.ts</code></p>
+            <strong>Recommendation Model</strong>
+            <p><code>lib/recommendations/listen-discovery.ts</code></p>
           </div>
           <div class="card">
-            <strong>Client Hook</strong>
-            <p><code>components/room/use-next-item-preparation.ts</code></p>
+            <strong>YouTube Provider Route</strong>
+            <p><code>lib/youtube/recommendations.ts</code></p>
+            <p><code>app/api/youtube/recommendations/route.ts</code></p>
           </div>
           <div class="card">
-            <strong>YouTube API Loader</strong>
-            <p><code>lib/youtube/iframe-api.ts</code></p>
+            <strong>Client Provider Helper</strong>
+            <p><code>lib/youtube/recommendations-client.ts</code></p>
           </div>
           <div class="card">
-            <strong>YouTube Autoplay Continuity</strong>
-            <p><code>components/room/youtube-media-player.tsx</code></p>
-            <p><code>lib/player/youtube-autoplay-continuity.ts</code></p>
-          </div>
-          <div class="card">
-            <strong>Watch Controls</strong>
-            <p><code>components/room/transport-controls.tsx</code></p>
-          </div>
-          <div class="card">
-            <strong>Listen Layout</strong>
+            <strong>Listen Discovery UI</strong>
             <p><code>components/room/listen-mode-layout.tsx</code></p>
           </div>
           <div class="card">
-            <strong>Members Panel</strong>
-            <p><code>components/room/members-panel.tsx</code></p>
+            <strong>Recommendation Tests</strong>
+            <p><code>tests/recommendations/listen-discovery.test.mjs</code></p>
           </div>
           <div class="card">
-            <strong>Prediction Tests</strong>
-            <p><code>tests/player/next-item-preparation.test.mjs</code></p>
+            <strong>Task Packet</strong>
+            <p><code>docs/tasks/TASK-002-incomplete-work-recovery/tasks.md</code></p>
+            <p><code>docs/tasks/TASK-002-incomplete-work-recovery/acceptance-criteria.md</code></p>
           </div>
         </div>
       </section>
@@ -201,36 +195,14 @@
       <section>
         <h2>Implementation Summary</h2>
         <ul>
-          <li>Added queue-aware next-item prediction that respects current item, queue order, queue mode, and loop behavior.</li>
-          <li>Added invalidation keys so reorder, shuffle, loop mode, source changes, and active item changes drop stale preparation targets.</li>
-          <li>Added YouTube preparation for thumbnails, provider metadata, and IFrame API readiness without hidden duplicate players or video preloading.</li>
-          <li>Added direct and HLS metadata warming where browser and network conditions allow.</li>
-          <li>Added data-saver and slow-network skip handling so preparation does not waste bandwidth on constrained clients.</li>
-          <li>Added visible next-item preparation status in watch and listen control surfaces.</li>
-          <li>Added performance marks, measures, and a <code>mw:next-item-preparation</code> event for future transition timing QA.</li>
-          <li>Refined listen-mode metadata display so useful cards do not show repeated pending states.</li>
-          <li>Refined the listen source card, next-preparation status strip, members permissions, carousel affordance, and red/dark theme strength.</li>
-          <li>Added a compact technical room header for room state, invite controls, save room, and mode switching.</li>
-          <li>Removed duplicated room-wide controls from the right sidebar so it focuses on members and permissions.</li>
-          <li>Replaced homepage-style listen-room language with active session language and tightened shared control radii.</li>
-          <li>Grouped YouTube source, views, and likes into compact stat chips below the artist line.</li>
-          <li>Moved Preparing Next into an attached bottom strip on the now-playing card with next-item artwork.</li>
-          <li>Added a collapsible right members sidebar with an attached live member rail, persisted collapsed state, and animated desktop grid/drawer offsets.</li>
-          <li>Removed the duplicate right-panel Coming Up card because the now-playing card already owns the Preparing Next preview.</li>
-          <li>Refined the members panel into compact table-like active/idle sections, sorted hosts and online members first, and hid host self-management controls.</li>
-          <li>Made listen room pick cards and recently added rows clickable, permission-aware playback actions.</li>
-          <li>Softened the center listen canvas background so recommendation tabs no longer sit in a mismatched color band.</li>
-          <li>Split the listen queue drawer into Queue and History views so played songs no longer mix into the upcoming queue.</li>
-          <li>Added YouTube player runtime guards before player API calls such as <code>getPlayerState</code>.</li>
-          <li>Kept the YouTube iframe player stable across queue transitions by loading the next video through the existing IFrame API instance instead of remounting.</li>
-          <li>Added a near-end fallback that advances the canonical queue once when YouTube misses <code>ENDED</code> in a backgrounded or throttled tab.</li>
-          <li>Changed automatic next-item advancement to require playback authority rather than full queue-management authority.</li>
-          <li>Added visibility-return resync so returning to a tab aligns the local YouTube player to SpacetimeDB room state without blind autoplay.</li>
-          <li>Changed the blocked-autoplay affordance to a compact <code>Resume playback</code> recovery control.</li>
-          <li>Compressed the listen room header into a technical session strip with inline room-name editing and clearer session stats.</li>
-          <li>Changed listen header stats to show upcoming count, played count, and remaining duration when queued item durations are available.</li>
-          <li>Rebalanced listen header actions so <code>Add Media</code> is primary while Save, Copy Link, Share, and room code read as secondary controls.</li>
-          <li>Integrated the Watch/Listen mode switch into the compact header and tightened Room Picks tabs plus carousel affordance without redesigning the cards.</li>
+          <li>Added a shared listen discovery model so tabs have explicit room-queue, room-history, provider, provider-limited, or unavailable source states.</li>
+          <li>Kept <code>For you</code> queue-based and filtered known-unavailable items from room picks.</li>
+          <li>Made <code>Recommended</code> use server-side YouTube search when available, otherwise fall back to honest room-history recommendations.</li>
+          <li>Replaced <code>Trending</code> with <code>Most listened</code>, derived from host/room listening history for now instead of global provider trends.</li>
+          <li>Kept <code>From your playlist</code> account-aware by using room playlist/history matches only and showing accounts-required copy when no room data exists.</li>
+          <li>Added permission-aware recommendation actions for load/play, add to queue, and play next.</li>
+          <li>Added a reserved future AI DJ/session-intelligence home that only summarizes current queue/history signals and remains advisory.</li>
+          <li>Kept provider API keys server-side through the new recommendations API route.</li>
         </ul>
       </section>
 
@@ -239,27 +211,27 @@
         <div class="grid">
           <div class="card">
             <span class="status done">Met</span>
-            <p>Next-item prediction is isolated from playback and queue mutation.</p>
+            <p>Discovery tabs now identify their real source instead of pretending all tabs are personalized/provider-backed.</p>
           </div>
           <div class="card">
             <span class="status done">Met</span>
-            <p>Metadata and thumbnails are warmed for likely next items where safe.</p>
+            <p>Queue and history recommendations work before accounts exist.</p>
           </div>
           <div class="card">
             <span class="status done">Met</span>
-            <p>YouTube preparation avoids hidden iframes and full-video preloading.</p>
+            <p>Provider failures and missing provider data surface as provider-limited or unavailable states.</p>
           </div>
           <div class="card">
             <span class="status done">Met</span>
-            <p>Direct/HLS metadata preload is best-effort and non-blocking.</p>
+            <p>Recommendation actions respect queue and playback/load permissions.</p>
           </div>
           <div class="card">
             <span class="status done">Met</span>
-            <p>Watch and listen modes show clear preparation status copy.</p>
+            <p>The future AI DJ area exists as an advisory signal surface only.</p>
           </div>
           <div class="card">
             <span class="status warn">Manual QA</span>
-            <p>Live two-client transition timing still needs browser review in production or a fully configured local room.</p>
+            <p>Visual and two-client permission behavior should still be checked in a live listen room.</p>
           </div>
         </div>
       </section>
@@ -267,37 +239,41 @@
       <section>
         <h2>Verification</h2>
         <ul>
+          <li><code>node --test tests\recommendations\listen-discovery.test.mjs</code> passed.</li>
+          <li><code>npm run test:youtube</code> passed.</li>
           <li><code>npm run typecheck</code> passed.</li>
           <li><code>npm run lint</code> passed.</li>
-          <li><code>npm run test:sync</code> passed.</li>
-          <li><code>npm run test:queue</code> passed.</li>
-          <li><code>tests/player/youtube-autoplay-continuity.test.mjs</code> covers the YouTube near-end fallback and authority guards.</li>
-          <li><code>npm run test:spacetime</code> passed.</li>
           <li><code>npm run build</code> passed.</li>
+          <li><code>GET /api/youtube/recommendations?kind=recommended</code> is the only provider recommendation route used by the listen UI.</li>
         </ul>
       </section>
 
       <section>
-        <h2>Manual Review</h2>
+        <h2>Scope Boundary</h2>
         <p>
-          Manual QA is still pending. A local browser check was attempted after verification:
-          <code>npm run dev:next</code> printed Ready on port <code>5371</code>, but the in-app
-          browser client blocked navigation to both <code>127.0.0.1:5371</code> and
-          <code>localhost:5371</code> with <code>ERR_BLOCKED_BY_CLIENT</code>.
-          Manual QA should confirm that preparation status appears during real queue transitions,
-          stale preparation targets are invalidated after reorder or mode changes, and next-item
-          readiness does not interrupt current playback or cause time jumps.
-          Additional manual QA should tab away shortly before a YouTube item ends, wait for the next
-          item to become canonical, then return and confirm playback resumes or shows the compact
-          recovery control instead of silently stalling.
-          The listen header should also be checked visually in production for compact height, inline
-          room-name editing, action hierarchy, active Listen state, and Room Picks carousel alignment.
+          This task does not implement account memory, full AI DJ generation, autonomous queue
+          mutation, friend-based personalization, or hidden provider claims. Those remain later
+          tasks after account/profile and consent boundaries exist.
         </p>
       </section>
 
       <section>
+        <h2>Manual Review</h2>
+        <ul>
+          <li>Open a live listen room and switch between all four discovery tabs.</li>
+          <li>Confirm provider-backed Recommended loads when <code>YOUTUBE_API_KEY</code> is configured.</li>
+          <li>Confirm Most listened is room-history based and does not show global provider trends.</li>
+          <li>Confirm provider-limited copy appears if the provider route fails or no provider results exist.</li>
+          <li>Confirm load/play, add to queue, and play-next actions respect current member permissions.</li>
+          <li>Confirm the AI DJ home reads as future/advisory and does not imply automated control.</li>
+        </ul>
+      </section>
+
+      <section>
         <h2>Next Task</h2>
-        <p>TASK-002.4 YouTube Availability Hardening is the next implementation task.</p>
+        <p>
+          Continue to TASK-002.5A Adaptive Listen Card Drift unless QA finds a blocker in TASK-002.5.
+        </p>
       </section>
     </main>
   </body>

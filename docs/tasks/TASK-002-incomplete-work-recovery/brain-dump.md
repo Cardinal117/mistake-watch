@@ -49,3 +49,46 @@ The task order in `tasks.md` is canonical for this recovery packet. Do not jump 
 ## Scope Boundary
 
 TASK-002 is a recovery roadmap, not a rewrite. Existing working systems should remain intact unless the active TASK-002 subtask explicitly requires changes.
+
+## Added Listen Motion And AI DJ Direction
+
+The user wants a future listen-room UI extra where the center recommendation cards continuously and subtly drift from left to right for ambience.
+
+Important constraints captured:
+
+- This applies to listen mode only.
+- The drift should cycle through queue/recommendation cards when enough cards exist.
+- The behavior must adapt to screen size. A small screen can loop fewer cards, while a very wide screen should not animate if it would expose awkward gaps.
+- The drift should feel ambient and premium, not like a cheap marquee.
+- Interaction, click/play behavior, and permissions must remain clear.
+
+The user also described a later AI DJ direction for the listen center surface:
+
+- `Signal Analysis`
+- `Current Mood`
+- `Room Energy`
+- `Current Session`
+- `Songs Added`
+- `Top Contributor`
+- `Odysseus DJ`
+- `Current Pattern Detected`
+- `Suggested Direction`
+
+This is intentionally later than the current UI motion work because durable user memory should wait for accounts/profiles and consent boundaries.
+
+## Added Easter Egg And Achievements Direction
+
+The user wants a fun account-backed easter egg and achievements system after accounts are implemented.
+
+Initial easter egg:
+
+- Trigger phrase: `cardinal mistake`.
+- Effect: screen fades to black, plays the chosen iconic failure-style audio, shows a `YOU DIED` style screen, then fades back to the room.
+- The effect should be local to the user by default and should not disrupt playback, queue state, sync, or other users.
+- The related achievement should persist to the user's account once the account/profile layer exists.
+
+Important product notes:
+
+- This is a friends-and-family project, and the user intends to use the `YOU DIED` style treatment for the easter egg.
+- Keep the achievement/easter egg system asset-driven so visuals and audio can be replaced later without rewriting the system.
+- Guest users can receive local-only fun effects before accounts exist, but durable achievement history belongs to signed-in profiles.

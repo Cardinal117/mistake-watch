@@ -16,7 +16,7 @@ export function InviteActions({
   roomCode,
 }: InviteActionsProps) {
   const [status, setStatus] = useState<
-    "copied" | "idle" | "link-copied" | "shared"
+    "code-copied" | "copied" | "idle" | "shared"
   >("idle");
   const inviteText = useMemo(
     () =>
@@ -36,11 +36,11 @@ export function InviteActions({
     }
   }
 
-  async function copyRoomLink() {
-    const copied = await writeClipboard(inviteText);
+  async function copyRoomCode() {
+    const copied = await writeClipboard(roomCode);
 
     if (copied) {
-      setTemporaryStatus("link-copied");
+      setTemporaryStatus("code-copied");
     }
   }
 
@@ -64,7 +64,7 @@ export function InviteActions({
     await copyInvite();
   }
 
-  function setTemporaryStatus(nextStatus: "copied" | "link-copied" | "shared") {
+  function setTemporaryStatus(nextStatus: "code-copied" | "copied" | "shared") {
     setStatus(nextStatus);
     window.setTimeout(() => setStatus("idle"), 1800);
   }
@@ -72,8 +72,21 @@ export function InviteActions({
   if (compact) {
     return (
       <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <span className="inline-flex h-8 items-center rounded-sm border border-white/10 bg-surface-container-low/50 px-2 text-label-sm font-semibold text-on-surface-variant">
-          {roomCode}
+        <span className="inline-flex h-8 overflow-hidden rounded-sm border border-white/10 bg-surface-container-low/50 text-label-sm font-semibold text-on-surface-variant">
+          <span className="inline-flex items-center px-2">{roomCode}</span>
+          <button
+            aria-label="Copy room code"
+            className="inline-flex h-8 w-8 items-center justify-center border-l border-white/10 text-primary-fixed-dim transition hover:bg-primary-fixed-dim/10"
+            onClick={copyRoomCode}
+            title="Copy room code"
+            type="button"
+          >
+            {status === "code-copied" ? (
+              <Check className="h-4 w-4" aria-hidden />
+            ) : (
+              <Copy className="h-4 w-4" aria-hidden />
+            )}
+          </button>
         </span>
         <Button
           aria-live="polite"
@@ -118,12 +131,13 @@ export function InviteActions({
             {roomCode}
           </span>
           <button
-            aria-label="Copy invite link"
+            aria-label="Copy room code"
             className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-white/10 text-primary-fixed-dim transition hover:bg-primary-fixed-dim/10"
-            onClick={copyRoomLink}
+            onClick={copyRoomCode}
+            title="Copy room code"
             type="button"
           >
-            {status === "link-copied" ? (
+            {status === "code-copied" ? (
               <Check className="h-4 w-4" aria-hidden />
             ) : (
               <Copy className="h-4 w-4" aria-hidden />

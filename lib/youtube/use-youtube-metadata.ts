@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { parseYouTubeVideoId } from "@/lib/player/source";
+import { UNKNOWN_YOUTUBE_AVAILABILITY } from "./availability";
 import type { YouTubeMetadataResponse } from "./metadata";
 
 const clientCache = new Map<string, YouTubeMetadataResponse>();
@@ -50,6 +51,7 @@ export function useYouTubeMetadata(sourceUrl?: string | null) {
         }
 
         const fallback: YouTubeMetadataResponse = {
+          availability: UNKNOWN_YOUTUBE_AVAILABILITY,
           metadata: null,
           reason: "YouTube metadata unavailable.",
           status: "unavailable",

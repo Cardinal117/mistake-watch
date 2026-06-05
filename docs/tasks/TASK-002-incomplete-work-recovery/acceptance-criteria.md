@@ -50,6 +50,18 @@
 - Provider failures show explicit unavailable states.
 - Recommendation actions respect permissions.
 - Playback is not blocked by recommendations.
+- The future AI DJ/session-intelligence area exists as an advisory room-signal surface only.
+- No account memory, fake mood data, autonomous queue mutation, or AI-generated claims are introduced.
+
+## TASK-002.5A Adaptive Listen Card Drift
+
+- Listen-room recommendation/card rails drift only when there is enough overflow content to loop cleanly.
+- The drift adapts to viewport size so mobile, desktop, and wide desktop do not show blank gaps.
+- Motion pauses on hover, focus, keyboard interaction, pointer/touch interaction, and major overlays.
+- `prefers-reduced-motion` disables continuous drift.
+- Existing card click/play behavior and permission-aware disabled states remain intact.
+- The drift does not mutate queue order, playback state, provider data, or SpacetimeDB room state.
+- The animation feels subtle, premium, and room-native rather than like a marquee.
 
 ## TASK-002.6 Real Audio-Reactive Waveform Architecture
 
@@ -85,6 +97,29 @@
 - Friend invites can appear as popup and notification drawer items.
 - Friend rooms can be discovered according to privacy rules.
 - Guest identity migration path is clear.
+- Account-backed listening history stores enough data to support real Most listened calculations later.
+- Listening history can support a future first-party Mistake Watch recap without relying on Spotify exports or branding.
+- Recap data remains original to Mistake Watch and avoids copying Spotify Wrapped presentation or naming.
+
+## TASK-002.10A Easter Eggs and Account Achievements
+
+- Achievement unlocks attach to durable account/profile identity after accounts exist.
+- The `cardinal mistake` typed trigger displays a local cinematic failure overlay and returns the user to the room without disrupting playback, queue, sync, or other participants.
+- The easter egg can run locally before login, but durable achievement persistence is unavailable or local-only until the user signs in.
+- Achievement unlocks are idempotent and cannot create duplicate achievement records for repeated triggers.
+- Trigger detection does not fire unexpectedly while entering URLs, room names, chat text, settings, or other normal form input unless explicitly registered.
+- Reduced-motion and reduced-audio preferences are respected.
+- In-room achievement toasts do not cover critical media controls or permission controls.
+- Visual/audio assets are replaceable app assets so the experience can be made fully original if needed.
+
+## TASK-002.10B AI DJ / Session Intelligence
+
+- Session intelligence uses real room/session inputs such as history, queue state, duration, contributor activity, and provider metadata where available.
+- No fake mood, energy, contributor, or personalization values are shown as real.
+- Account/user memory is unavailable until Supabase auth/profile and consent boundaries exist.
+- AI DJ suggestions are advisory unless the host or an authorized user explicitly adds or plays an item.
+- The surface can explain detected patterns and suggested direction without overriding host authority.
+- Provider/API failures produce unavailable or limited states instead of invented recommendations.
 
 ## TASK-002.11 Shared Browser Prototype
 

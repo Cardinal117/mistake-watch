@@ -33,6 +33,7 @@ import {
   type YoutubePlayer,
   type YoutubePlayerEvent,
 } from "@/lib/youtube/iframe-api";
+import { classifyYouTubeIframeError } from "@/lib/youtube/availability";
 
 type YoutubeMediaPlayerProps = {
   className?: string;
@@ -53,6 +54,8 @@ export function YoutubeMediaPlayer({
   const canonicalStateRef = useRef<CanonicalPlaybackState | null>(null);
   const fallbackAdvancedKeyRef = useRef<string | null>(null);
   const hasNextQueueItemRef = useRef(false);
+  const hydratedAtMsRef = useRef(0);
+  const hydratedPlaybackKeyRef = useRef<string | null>(null);
   const metadataRefreshTimerRef = useRef<number | null>(null);
   const setPlaybackStateRef = useRef(liveRoom.setPlaybackState);
   const updateMediaTitleRef = useRef(liveRoom.updateMediaTitle);
@@ -151,6 +154,39 @@ export function YoutubeMediaPlayer({
     [publishCurrentMetadata],
   );
 
+  const markHydratedIfCanonicalAligned = useCallback(
+    (player: YoutubePlayer, toleranceSeconds = 2) => {
+      const state = canonicalStateRef.current;
+      const activeKey = getActivePlaybackKey(state);
+
+      if (!state?.source || state.source.kind !== "youtube" || !activeKey) {
+        hydratedAtMsRef.current = 0;
+        hydratedPlaybackKeyRef.current = null;
+        return false;
+      }
+
+      const expectedPositionSeconds = expectedYouTubePositionAt(
+        state,
+        Date.now(),
+      );
+      const localPositionSeconds = safeNumber(player.getCurrentTime()) ?? 0;
+      const driftSeconds = Math.abs(
+        localPositionSeconds - expectedPositionSeconds,
+      );
+
+      if (driftSeconds > toleranceSeconds) {
+        hydratedAtMsRef.current = 0;
+        hydratedPlaybackKeyRef.current = null;
+        return false;
+      }
+
+      hydratedAtMsRef.current = Date.now();
+      hydratedPlaybackKeyRef.current = activeKey;
+      return true;
+    },
+    [],
+  );
+
   const applyCanonicalVideoToPlayer = useCallback(
     (player: YoutubePlayer) => {
       const state = canonicalStateRef.current;
@@ -168,20 +204,32 @@ export function YoutubeMediaPlayer({
         playerVideoIdRef.current === currentVideoId;
 
       if (alreadyLoaded) {
-        if (state.status === "playing") {
-          const expectedPositionSeconds = expectedYouTubePositionAt(
-            state,
-            Date.now(),
-          );
-          const localPositionSeconds =
-            safeNumber(player.getCurrentTime()) ?? 0;
+        const expectedPositionSeconds = expectedYouTubePositionAt(
+          state,
+          Date.now(),
+        );
+        const localPositionSeconds = safeNumber(player.getCurrentTime()) ?? 0;
+        const driftSeconds = Math.abs(
+          localPositionSeconds - expectedPositionSeconds,
+        );
 
-          if (Math.abs(localPositionSeconds - expectedPositionSeconds) > 0.75) {
-            player.seekTo(expectedPositionSeconds, true);
-          }
+        applyingRemoteState.current = true;
 
-          player.playVideo();
+        if (driftSeconds > 0.75) {
+          player.seekTo(expectedPositionSeconds, true);
         }
+
+        if (state.status === "playing") {
+          player.playVideo();
+        } else if (state.status === "paused" || state.status === "ended") {
+          player.pauseVideo();
+        }
+
+        window.setTimeout(() => {
+          applyingRemoteState.current = false;
+          markHydratedIfCanonicalAligned(player);
+          scheduleMetadataRefresh(player);
+        }, 180);
         return;
       }
 
@@ -190,6 +238,8 @@ export function YoutubeMediaPlayer({
       applyingRemoteState.current = true;
       setAutoplayBlocked(false);
       setLocalError(null);
+      hydratedAtMsRef.current = 0;
+      hydratedPlaybackKeyRef.current = null;
       playerSourceUrlRef.current = currentSourceUrl;
       playerVideoIdRef.current = currentVideoId;
       fallbackAdvancedKeyRef.current = null;
@@ -205,10 +255,11 @@ export function YoutubeMediaPlayer({
 
       window.setTimeout(() => {
         applyingRemoteState.current = false;
+        markHydratedIfCanonicalAligned(player);
         scheduleMetadataRefresh(player);
       }, 900);
     },
-    [scheduleMetadataRefresh],
+    [markHydratedIfCanonicalAligned, scheduleMetadataRefresh],
   );
 
   const resyncPlayerToCanonicalState = useCallback(
@@ -247,30 +298,61 @@ export function YoutubeMediaPlayer({
 
       window.setTimeout(() => {
         applyingRemoteState.current = false;
+        markHydratedIfCanonicalAligned(player);
       }, 100);
     },
-    [],
+    [markHydratedIfCanonicalAligned],
   );
 
   const publishPlaybackState = useCallback((status: PlaybackStatus) => {
     const player = playerRef.current;
+    const canonicalState = canonicalStateRef.current;
+    const activePlaybackKey = getActivePlaybackKey(canonicalState);
 
     if (
       !isUsableYouTubePlayer(player) ||
       !playerSourceUrlRef.current ||
       activeSourceUrlRef.current !== playerSourceUrlRef.current ||
       !canControlPlaybackRef.current ||
-      applyingRemoteState.current
+      applyingRemoteState.current ||
+      !canonicalState ||
+      !activePlaybackKey ||
+      hydratedPlaybackKeyRef.current !== activePlaybackKey
     ) {
+      if (
+        isUsableYouTubePlayer(player) &&
+        canonicalState?.source?.kind === "youtube" &&
+        activePlaybackKey &&
+        hydratedPlaybackKeyRef.current !== activePlaybackKey
+      ) {
+        applyCanonicalVideoToPlayer(player);
+        resyncPlayerToCanonicalState(player, { forcePlayAttempt: status === "playing" });
+      }
+      return;
+    }
+
+    const localPositionSeconds = safeNumber(player.getCurrentTime()) ?? 0;
+    const expectedPositionSeconds = expectedYouTubePositionAt(
+      canonicalState,
+      Date.now(),
+    );
+    const hydrationAgeMs = Date.now() - hydratedAtMsRef.current;
+
+    if (
+      expectedPositionSeconds > 2 &&
+      Math.abs(localPositionSeconds - expectedPositionSeconds) > 2 &&
+      (localPositionSeconds < 1 || hydrationAgeMs < 2500)
+    ) {
+      resyncPlayerToCanonicalState(player, { forcePlayAttempt: status === "playing" });
       return;
     }
 
     setPlaybackStateRef.current({
       playbackRate: 1,
-      positionSeconds: safeNumber(player.getCurrentTime()) ?? 0,
+      positionSeconds: localPositionSeconds,
       status,
     });
-  }, []);
+  }, [applyCanonicalVideoToPlayer, resyncPlayerToCanonicalState]);
 
   const handlePlayerStateChange = useCallback(
     (yt: YoutubeNamespace, event: YoutubePlayerEvent) => {
@@ -330,9 +412,19 @@ export function YoutubeMediaPlayer({
             onAutoplayBlocked: () => {
               setAutoplayBlocked(true);
             },
-            onError: () => {
-              setLocalError("YouTube could not play this video here.");
+            onError: (event: YoutubePlayerEvent) => {
+              const availability = classifyYouTubeIframeError(event.data);
+
+              setLocalError(availability.reason);
               publishPlaybackState("error");
+
+              if (
+                queueAutoplayEnabledRef.current &&
+                hasNextQueueItemRef.current &&
+                canControlPlaybackRef.current
+              ) {
+                window.setTimeout(() => requestAutoplayAdvance(), 900);
+              }
             },
             onReady: () => {
               setLocalError(null);
@@ -389,6 +481,7 @@ export function YoutubeMediaPlayer({
     handlePlayerStateChange,
     publishPlaybackState,
     publishCurrentMetadata,
+    requestAutoplayAdvance,
     scheduleMetadataRefresh,
   ]);
 

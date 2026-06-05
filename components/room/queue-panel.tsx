@@ -35,10 +35,12 @@ import {
 import type { RoomQueueItem } from "@/lib/rooms";
 import { cx } from "@/lib/ui";
 import { fetchPlaylistPreview } from "@/lib/youtube/playlist-client";
+import { fetchYouTubeMetadata } from "@/lib/youtube/metadata-client";
 import type {
   YouTubePlaylistItem,
   YouTubePlaylistPreviewResponse,
 } from "@/lib/youtube/playlist";
+import { getYouTubeAvailabilityLabel } from "@/lib/youtube/availability";
 import { useYouTubeMetadata } from "@/lib/youtube/use-youtube-metadata";
 
 type QueuePanelProps = {
@@ -175,7 +177,11 @@ export function QueuePanel({
 
       setPlaylistPreview(payload);
       setSelectedPlaylistIds(
-        new Set(payload.items.map((item) => item.videoId)),
+        new Set(
+          payload.items
+            .filter((item) => !item.isUnavailable)
+            .map((item) => item.videoId),
+        ),
       );
 
       if (payload.status !== "available") {
@@ -229,7 +235,29 @@ export function QueuePanel({
     }
   }
 
-  function handleAddQueueItem(event: FormEvent<HTMLFormElement>) {
+  async function checkYouTubeInput(input: SourceLoadInput) {
+    if (input.sourceType !== "youtube") {
+      return input;
+    }
+
+    const metadata = await fetchYouTubeMetadata(input.sourceUrl);
+
+    if (metadata.availability?.playable === false) {
+      setErrorMessage(metadata.availability.reason);
+      return null;
+    }
+
+    return {
+      ...input,
+      artist: metadata.metadata?.channelTitle ?? undefined,
+      channelName: metadata.metadata?.channelTitle ?? undefined,
+      durationSeconds: metadata.metadata?.durationSeconds ?? undefined,
+      sourceTitle: metadata.metadata?.title ?? input.sourceTitle,
+      thumbnailUrl: metadata.metadata?.thumbnailUrl ?? undefined,
+    } satisfies QueueAddInput;
+  }
+
+  async function handleAddQueueItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const input = parseQueueUrl();
 
@@ -237,18 +265,30 @@ export function QueuePanel({
       return;
     }
 
-    onAddQueueItem?.(input);
+    const checkedInput = await checkYouTubeInput(input);
+
+    if (!checkedInput) {
+      return;
+    }
+
+    onAddQueueItem?.(checkedInput);
     setQueueUrl("");
   }
 
-  function handleLoadSource() {
+  async function handleLoadSource() {
     const input = parseQueueUrl();
 
     if (!input) {
       return;
     }
 
-    onLoadSource?.(input);
+    const checkedInput = await checkYouTubeInput(input);
+
+    if (!checkedInput) {
+      return;
+    }
+
+    onLoadSource?.(checkedInput);
     setQueueUrl("");
   }
 
@@ -260,6 +300,11 @@ export function QueuePanel({
     let importItems = playlistPreview.items.filter((item) =>
       strategy === "selected" ? selectedPlaylistIds.has(item.videoId) : true,
     );
+    const skippedUnavailable = importItems.filter(
+      (item) => item.isUnavailable,
+    ).length;
+
+    importItems = importItems.filter((item) => !item.isUnavailable);
 
     if (strategy === "shuffle") {
       importItems = shuffleUpcomingQueue(
@@ -344,7 +389,7 @@ export function QueuePanel({
     }
 
     setImportSummary(
-      `Added ${added} videos. Skipped ${skippedDuplicates} duplicates and ${playlistPreview.skippedUnavailable} unavailable.`,
+      `Added ${added} videos. Skipped ${skippedDuplicates} duplicates and ${skippedUnavailable} unavailable.`,
     );
     setQueueUrl("");
     clearPlaylistPreview();
@@ -441,7 +486,7 @@ export function QueuePanel({
             </Button>
             <Button
               disabled={loadDisabled || isImportingPlaylist}
-              onClick={handleLoadSource}
+              onClick={() => void handleLoadSource()}
               size="sm"
               title={
                 !canLoadSource ? "Host source loading required." : undefined
@@ -740,7 +785,7 @@ function PlaylistPreviewCard({
             {preview.playlistTitle ?? "YouTube playlist"}
           </p>
           <p className="text-label-sm text-on-surface-variant">
-            {preview.items.length} valid videos found
+            {preview.items.filter((item) => !item.isUnavailable).length} playable videos found
             {preview.skippedUnavailable
               ? ` / ${preview.skippedUnavailable} unavailable skipped`
               : ""}
@@ -761,16 +806,27 @@ function PlaylistPreviewCard({
       <div className="grid gap-1.5">
         {visibleItems.map((item) => {
           const selected = selectedIds.has(item.videoId);
+          const unavailable = item.isUnavailable;
 
           return (
             <label
-              className="grid cursor-pointer grid-cols-[auto_2.75rem_minmax(0,1fr)] items-center gap-2 rounded-sm border border-white/10 bg-surface-container/70 p-1.5"
+              className={cx(
+                "grid grid-cols-[auto_2.75rem_minmax(0,1fr)_auto] items-center gap-2 rounded-sm border border-white/10 bg-surface-container/70 p-1.5",
+                unavailable
+                  ? "cursor-not-allowed opacity-60"
+                  : "cursor-pointer",
+              )}
               key={item.videoId}
             >
               <input
                 checked={selected}
                 className="accent-primary-fixed-dim"
+                disabled={unavailable}
                 onChange={() => {
+                  if (unavailable) {
+                    return;
+                  }
+
                   const next = new Set(selectedIds);
 
                   if (selected) {
@@ -792,6 +848,11 @@ function PlaylistPreviewCard({
                   {item.channelTitle ?? "YouTube"}
                 </span>
               </span>
+              {unavailable ? (
+                <Badge tone="amber">
+                  {getYouTubeAvailabilityLabel(item.availability)}
+                </Badge>
+              ) : null}
             </label>
           );
         })}
@@ -879,6 +940,8 @@ function QueueRow({
       : item.duration;
   const isQueued = item.status === "queued";
   const isActive = item.status === "now";
+  const isBlocked =
+    item.isUnavailable || metadata.metadata?.availability?.playable === false;
   const activeTone =
     mode === "listen"
       ? "border-secondary-fixed-dim/40 bg-secondary-fixed-dim/10 shadow-[0_0_24px_rgba(255,186,32,0.08)]"
@@ -934,6 +997,12 @@ function QueueRow({
             {metadata.loading ? "Loading details" : "Metadata unavailable"}
           </span>
         ) : null}
+        {isBlocked ? (
+          <p className="mt-1 text-label-sm text-error">
+            {metadata.metadata?.availability.reason ??
+              "This YouTube item is known unavailable."}
+          </p>
+        ) : null}
         <div className="mt-1.5 flex flex-wrap items-center justify-end gap-1">
           {isQueued ? (
             <>
@@ -984,7 +1053,7 @@ function QueueRow({
           ) : null}
           {item.status !== "now" ? (
             <IconQueueButton
-              disabled={manageDisabled}
+              disabled={manageDisabled || isBlocked}
               icon={<Play className="h-4 w-4" aria-hidden />}
               label={
                 item.status === "played"

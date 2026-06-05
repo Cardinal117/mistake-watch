@@ -1,6 +1,7 @@
 export type QueueItemStatus = "queued" | "playing" | "played" | "removed";
 
 export type QueueModelItem = {
+  isUnavailable?: boolean;
   queueItemId: string;
   position: number;
   status: QueueItemStatus;
@@ -39,6 +40,19 @@ export function nextQueuePosition(items: QueueModelItem[]) {
     .map((item) => item.position);
 
   return activePositions.length > 0 ? Math.max(...activePositions) + 1 : 0;
+}
+
+export function playNextQueuePosition(items: SmartShuffleItem[]) {
+  const lockedPositions = items
+    .filter(
+      (item) =>
+        item.status === "queued" &&
+        !item.isUnavailable &&
+        (item.isPinned || item.isPlayNext),
+    )
+    .map((item) => item.position);
+
+  return lockedPositions.length > 0 ? Math.max(...lockedPositions) + 1 : 0;
 }
 
 export function reorderQueuedItems(
@@ -98,7 +112,7 @@ export function markQueueItemPlaying(
 
 export function getNextQueuedItemId(items: QueueModelItem[]) {
   return [...items]
-    .filter((item) => item.status === "queued")
+    .filter((item) => item.status === "queued" && !item.isUnavailable)
     .sort((a, b) => a.position - b.position)[0]?.queueItemId;
 }
 
@@ -113,14 +127,14 @@ export function getNextQueueItemIdForMode(
   }
 
   return [...items]
-    .filter((item) => item.status === "played")
+    .filter((item) => item.status === "played" && !item.isUnavailable)
     .sort((a, b) => a.position - b.position)[0]?.queueItemId;
 }
 
 export function shuffleUpcomingQueue<T extends QueueModelItem>(items: T[]) {
   return deterministicShuffle(
     items
-      .filter((item) => item.status === "queued")
+      .filter((item) => item.status === "queued" && !item.isUnavailable)
       .sort((a, b) => a.position - b.position),
   ).map((item, index) => ({
     ...item,
@@ -133,7 +147,7 @@ export function smartShuffleQueue<T extends SmartShuffleItem>(
   history: T[] = [],
 ) {
   const upcoming = items
-    .filter((item) => item.status === "queued")
+    .filter((item) => item.status === "queued" && !item.isUnavailable)
     .sort((a, b) => a.position - b.position);
   const locked = upcoming.filter((item) => item.isPinned || item.isPlayNext);
   const pool = upcoming.filter((item) => !item.isPinned && !item.isPlayNext);

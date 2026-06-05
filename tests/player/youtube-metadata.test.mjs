@@ -17,6 +17,7 @@ const tempDir = await mkdtemp(
 );
 const sourcePath = path.join(rootDir, "lib/player/source.ts");
 const metadataPath = path.join(rootDir, "lib/youtube/metadata.ts");
+const availabilityPath = path.join(rootDir, "lib/youtube/availability.ts");
 const formatPath = path.join(rootDir, "lib/youtube/format.ts");
 const cachePath = path.join(rootDir, "lib/youtube/cache.ts");
 const sourceJs = transpile(await readFile(sourcePath, "utf8"), sourcePath);
@@ -27,21 +28,37 @@ const metadataJs = transpile(
       'import { parseYouTubeVideoId } from "./source.mjs";',
     )
     .replace(
+      'import {\r\n  classifyYouTubeVideoStatus,\r\n  type YouTubeAvailability,\r\n  UNKNOWN_YOUTUBE_AVAILABILITY,\r\n} from "./availability";',
+      'import { classifyYouTubeVideoStatus, UNKNOWN_YOUTUBE_AVAILABILITY } from "./availability.mjs";',
+    )
+    .replace(
+      'import {\n  classifyYouTubeVideoStatus,\n  type YouTubeAvailability,\n  UNKNOWN_YOUTUBE_AVAILABILITY,\n} from "./availability";',
+      'import { classifyYouTubeVideoStatus, UNKNOWN_YOUTUBE_AVAILABILITY } from "./availability.mjs";',
+    )
+    .replace(
       'import { InFlightRequestCache, TtlCache } from "./cache";',
       'import { InFlightRequestCache, TtlCache } from "./cache.mjs";',
     ),
   metadataPath,
+);
+const availabilityJs = transpile(
+  await readFile(availabilityPath, "utf8"),
+  availabilityPath,
 );
 const formatJs = transpile(await readFile(formatPath, "utf8"), formatPath);
 const cacheJs = transpile(await readFile(cachePath, "utf8"), cachePath);
 
 await writeFile(path.join(tempDir, "source.mjs"), sourceJs);
 await writeFile(path.join(tempDir, "metadata.mjs"), metadataJs);
+await writeFile(path.join(tempDir, "availability.mjs"), availabilityJs);
 await writeFile(path.join(tempDir, "format.mjs"), formatJs);
 await writeFile(path.join(tempDir, "cache.mjs"), cacheJs);
 
 const { normalizeYouTubeVideo, parseYouTubeDuration } = await import(
   pathToFileURL(path.join(tempDir, "metadata.mjs"))
+);
+const { classifyYouTubeIframeError, classifyYouTubeVideoStatus } = await import(
+  pathToFileURL(path.join(tempDir, "availability.mjs"))
 );
 const { formatCompactCount } = await import(
   pathToFileURL(path.join(tempDir, "format.mjs"))
@@ -89,10 +106,28 @@ test("normalizeYouTubeVideo keeps missing like counts explicit", () => {
   assert.equal(metadata.durationSeconds, 213);
   assert.equal(metadata.viewCount, 1600000000);
   assert.equal(metadata.likeCount, null);
+  assert.equal(metadata.availability.playable, true);
   assert.equal(
     metadata.thumbnailUrl,
     "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
   );
+});
+
+test("classifyYouTubeVideoStatus rejects non-embeddable videos", () => {
+  const availability = classifyYouTubeVideoStatus({
+    embeddable: false,
+    privacyStatus: "public",
+    uploadStatus: "processed",
+  });
+
+  assert.equal(availability.playable, false);
+  assert.equal(availability.status, "embed-blocked");
+});
+
+test("classifyYouTubeIframeError maps embed blocked runtime errors", () => {
+  assert.equal(classifyYouTubeIframeError(101).status, "embed-blocked");
+  assert.equal(classifyYouTubeIframeError(150).status, "embed-blocked");
+  assert.equal(classifyYouTubeIframeError(100).status, "removed-private");
 });
 
 test("formatCompactCount formats provider counts without fake fallbacks", () => {
