@@ -34,7 +34,10 @@ Current status:
 TASK-002.1 Listen Mode Quality Pass: implemented
 TASK-002.2 Room Chat: implemented
 TASK-002.3 Seamless Next Item Loading: implemented
-TASK-002.4 Provider Recommendations and Room Picks: next task
+TASK-003 Dev Environment Parity: implemented
+TASK-002.4 YouTube Availability Hardening: complete; SpacetimeDB build/generate/local publish/Maincloud publish completed after CLI path recovery
+TASK-002.5 Provider Recommendations and Room Picks: implemented pending live-room visual and permission QA
+TASK-002.5A Adaptive Listen Card Drift: next TASK-002 item after TASK-002.5 QA
 ```
 
 Product clarification:
@@ -55,26 +58,38 @@ Do not skip ahead unless the user explicitly names another TASK-002 subtask.
 6. `docs/tasks/TASK-002-incomplete-work-recovery/acceptance-criteria.md`
 7. Relevant source files for the active subtask
 
+## Local Readiness Gate
+
+Before browser QA or local sync testing, run:
+
+```bash
+npm run dev
+npm run dev:check
+```
+
+`npm run dev:check` must pass before local UI findings are trusted. It reports env readiness, Next.js reachability, SpacetimeDB reachability, `/api/health`, and local port owner PIDs for stale-process cleanup.
+
 ## Current Next Task
 
-TASK-002.4 Provider Recommendations and Room Picks.
+Proceed to TASK-002.5A Adaptive Listen Card Drift after TASK-002.5 live-room QA.
 
 Scope:
 
-- make `For you`, `Recommended`, `Trending`, and `From your playlist` honest;
-- use queue/history first, then provider-backed YouTube data where available;
-- keep `From your playlist` unavailable or room-history based until accounts exist;
-- add queue/play-next actions that respect permissions;
-- avoid fake personalized/trending data.
+- add subtle adaptive horizontal drift to listen-room recommendation/card rails;
+- use current queue/recommendation cards as the motion source;
+- only enable continuous drift when there is enough overflow content to avoid blank gaps;
+- pause motion on hover, focus, keyboard interaction, pointer/touch interaction, and major overlays;
+- respect `prefers-reduced-motion`;
+- preserve permission-aware card behavior and all queue/playback/SpacetimeDB state.
 
 Expected verification:
 
+- `npm run dev:check`
 - `npm run typecheck`
 - `npm run lint`
-- relevant recommendation/provider tests if logic is added;
-- browser QA around listen room picks and permission-gated add/play-next actions;
-- update `docs/tasks/TASK-002-incomplete-work-recovery/review-notes.md`;
-- update `docs/tasks/TASK-002-incomplete-work-recovery/implementation-report.html`.
+- targeted UI/unit checks if motion logic is added;
+- browser QA against `http://127.0.0.1:5371`;
+- update the active task packet and implementation report.
 
 ## Runtime Boundaries
 
@@ -108,7 +123,7 @@ Important current direction:
 - grounded side panels, not floating decorative cards;
 - compact controls;
 - cyan and gold accent system from the current Mistake Watch logo direction;
-- no fake personalized/trending data;
+- no fake personalized, provider-trending, or listening-history data;
 - honest unavailable states when provider data is not wired.
 
 ## Deployment Context
@@ -135,7 +150,7 @@ See `docs/COMMANDS.md` for full local, SpacetimeDB, verification, and deployment
 
 ## Known Caveats
 
-- Local dev-server background startup has previously hit stale Next/Turbopack lock or process issues. If this happens, document it and verify with `npm run build` plus production/manual browser QA.
+- Local dev-server background startup has previously hit stale Next/Turbopack lock or process issues. Use `npm run dev:check` as the readiness gate. If local QA is blocked, document the blocker and remediation before relying on production/manual review.
 - YouTube iframe audio cannot be sampled directly for true audio-reactive visualizers. TASK-002.5 must keep YouTube visuals honest and use real audio analysis only for accessible direct/HLS/R2 sources.
 - Do not commit `.env.local` or other secret-bearing files.
 - The current Git repository was initialized after significant project work, so the first commit is expected to be a large baseline commit.

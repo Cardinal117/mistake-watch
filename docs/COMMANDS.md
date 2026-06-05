@@ -35,6 +35,45 @@ npm run spacetime:start
 npm run dev:next
 ```
 
+Check local development readiness:
+
+```bash
+npm run dev:check
+```
+
+Use `npm run dev:check` in a second terminal after startup. It verifies:
+
+- `.env.local` exists;
+- required public and server-only environment variable names exist;
+- known secret values are not exposed through forbidden `NEXT_PUBLIC_` names;
+- the Next.js app port is reachable;
+- the SpacetimeDB port is reachable;
+- `NEXT_PUBLIC_SPACETIME_MODULE` matches the database in `spacetime.json`;
+- the app URL and `/api/health` respond.
+
+The command never prints secret values. A non-zero exit code means local browser QA is not ready.
+
+If port `5371` is already in use, close the existing Next.js process or start with a deliberate alternate port:
+
+```bash
+$env:MISTAKE_WATCH_PORT="5373"; npm run dev
+```
+
+If port `5372` is already in use, confirm whether it is the intended local SpacetimeDB process before testing sync.
+
+If listen/watch rooms show reducer argument errors such as `invalid arguments for reducer join_room`, check:
+
+```bash
+npm run dev:check
+```
+
+Then align local SpacetimeDB module settings and republish:
+
+```bash
+# .env.local and spacetime.local.json should both point to mistake-watch-rooms
+npm run spacetime:publish -- --break-clients
+```
+
 ## SpacetimeDB
 
 Start local SpacetimeDB:
@@ -55,6 +94,13 @@ Generate client bindings:
 npm run spacetime:generate
 ```
 
+If PowerShell reports `spacetime is not recognized`, the SpacetimeDB CLI is not on PATH for the current shell. Restore the CLI/PATH first, then rerun:
+
+```bash
+spacetime build
+npm run spacetime:generate
+```
+
 Production SpacetimeDB uses:
 
 ```text
@@ -72,6 +118,7 @@ NEXT_PUBLIC_SPACETIME_MODULE
 Run these after meaningful implementation work:
 
 ```bash
+npm run dev:check
 npm run typecheck
 npm run lint
 npm run build
@@ -80,6 +127,7 @@ npm run build
 Targeted tests:
 
 ```bash
+npm run test:dev
 npm run test:identity
 npm run test:queue
 npm run test:sync

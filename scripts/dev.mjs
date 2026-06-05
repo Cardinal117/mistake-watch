@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
+import net from "node:net";
 import path from "node:path";
 
 const rootDir = path.resolve(import.meta.dirname, "..");
@@ -20,6 +21,21 @@ async function isSpacetimeReachable() {
   } catch {
     return false;
   }
+}
+
+function isTcpPortOpen(port) {
+  return new Promise((resolve) => {
+    const socket = net.createConnection({ host, port });
+    const done = (isOpen) => {
+      socket.destroy();
+      resolve(isOpen);
+    };
+
+    socket.setTimeout(750);
+    socket.once("connect", () => done(true));
+    socket.once("timeout", () => done(false));
+    socket.once("error", () => done(false));
+  });
 }
 
 function resolveSpacetimeCli() {
@@ -51,6 +67,28 @@ function resolveNextCli() {
   );
 }
 
+function assertExecutablePath(command, label) {
+  if (path.isAbsolute(command) && !existsSync(command)) {
+    throw new Error(
+      `${label} was not found at ${command}. Run npm install or set the expected CLI path.`,
+    );
+  }
+}
+
+function resolveNextSpawn(nextCli) {
+  if (process.platform !== "win32") {
+    return {
+      command: nextCli,
+      args: ["dev", "--hostname", host, "--port", appPort],
+    };
+  }
+
+  return {
+    command: "cmd.exe",
+    args: ["/d", "/c", nextCli, "dev", "--hostname", host, "--port", appPort],
+  };
+}
+
 function pipeOutput(child, label) {
   child.stdout?.on("data", (chunk) => {
     process.stdout.write(`[${label}] ${chunk}`);
@@ -65,6 +103,10 @@ async function waitForSpacetime(child) {
   const deadline = Date.now() + 15_000;
 
   while (Date.now() < deadline) {
+    if (child.startupError) {
+      throw child.startupError;
+    }
+
     if (child.exitCode !== null) {
       throw new Error(`SpacetimeDB exited early with code ${child.exitCode}.`);
     }
@@ -86,6 +128,7 @@ async function ensureSpacetime() {
   }
 
   const spacetimeCli = resolveSpacetimeCli();
+  assertExecutablePath(spacetimeCli, "SpacetimeDB CLI");
   console.log(`[dev] Starting SpacetimeDB on ${spacetimeAddr}`);
 
   startedSpacetime = spawn(
@@ -98,19 +141,41 @@ async function ensureSpacetime() {
     },
   );
 
+  startedSpacetime.once("error", (error) => {
+    startedSpacetime.startupError = error;
+    console.error(
+      `[dev] Failed to start SpacetimeDB. Install the SpacetimeDB CLI or set SPACETIME_CLI. Details: ${error.message}`,
+    );
+  });
+
   pipeOutput(startedSpacetime, "spacetime");
   await waitForSpacetime(startedSpacetime);
   console.log(`[dev] SpacetimeDB ready at ${spacetimeUrl}`);
 }
 
-function startNext() {
-  const nextCli = resolveNextCli();
-  console.log(`[dev] Starting Mistake Watch at http://${host}:${appPort}`);
+async function startNext() {
+  if (await isTcpPortOpen(appPort)) {
+    throw new Error(
+      `The app port ${host}:${appPort} is already in use. Close the existing Next.js process or use MISTAKE_WATCH_PORT to choose another port.`,
+    );
+  }
 
-  startedNext = spawn(nextCli, ["dev", "--hostname", host, "--port", appPort], {
+  const nextCli = resolveNextCli();
+  assertExecutablePath(nextCli, "Next.js CLI");
+  console.log(`[dev] Starting Mistake Watch at http://${host}:${appPort}`);
+  console.log(`[dev] Local health endpoint: http://${host}:${appPort}/api/health`);
+  console.log("[dev] Run npm run dev:check in another terminal to verify readiness.");
+
+  const nextSpawn = resolveNextSpawn(nextCli);
+
+  startedNext = spawn(nextSpawn.command, nextSpawn.args, {
     cwd: rootDir,
     stdio: "inherit",
     windowsHide: true,
+  });
+
+  startedNext.once("error", (error) => {
+    console.error(`[dev] Failed to start Next.js. Details: ${error.message}`);
   });
 
   startedNext.on("exit", (code) => {
@@ -147,7 +212,7 @@ process.on("SIGTERM", () => {
 
 try {
   await ensureSpacetime();
-  startNext();
+  await startNext();
 } catch (error) {
   cleanup();
   console.error(`[dev] ${error instanceof Error ? error.message : error}`);

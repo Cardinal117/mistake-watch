@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TASK-003 Implementation Report</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #090b0c;
+        --panel: #121516;
+        --panel-2: #171b1d;
+        --text: #edf4f4;
+        --muted: #9fb0b2;
+        --line: #2a3133;
+        --cyan: #10d6e6;
+        --gold: #ffc233;
+        --ok: #38d996;
+        --warn: #ffb020;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 12% 0%, rgba(16, 214, 230, 0.12), transparent 28rem),
+          radial-gradient(circle at 86% 8%, rgba(255, 194, 51, 0.08), transparent 22rem),
+          var(--bg);
+        color: var(--text);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+      }
+
+      main {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 40px 24px;
+      }
+
+      header,
+      .card {
+        border: 1px solid var(--line);
+        background: rgba(18, 21, 22, 0.88);
+        border-radius: 6px;
+      }
+
+      header {
+        padding: 26px;
+      }
+
+      .card {
+        padding: 18px;
+      }
+
+      h1,
+      h2 {
+        margin: 0;
+        line-height: 1.1;
+      }
+
+      h1 {
+        font-size: clamp(2rem, 4vw, 3.6rem);
+      }
+
+      h2 {
+        margin-bottom: 12px;
+        font-size: 1.15rem;
+      }
+
+      p,
+      li {
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      code {
+        color: var(--cyan);
+      }
+
+      .eyebrow {
+        color: var(--gold);
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 0.78rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 16px;
+        margin-top: 16px;
+      }
+
+      .span-4 {
+        grid-column: span 4;
+      }
+
+      .span-6 {
+        grid-column: span 6;
+      }
+
+      .span-12 {
+        grid-column: span 12;
+      }
+
+      .status {
+        display: inline-flex;
+        border: 1px solid rgba(56, 217, 150, 0.35);
+        color: var(--ok);
+        border-radius: 4px;
+        padding: 5px 8px;
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+      }
+
+      .warn {
+        border-color: rgba(255, 176, 32, 0.45);
+        color: var(--warn);
+      }
+
+      @media (max-width: 860px) {
+        .span-4,
+        .span-6 {
+          grid-column: span 12;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="eyebrow">TASK-003 / COMPLETE</div>
+        <h1>Dev Environment Parity Gate</h1>
+        <p>
+          Local Mistake Watch now has a diagnostic command, clearer startup behavior, and updated
+          docs so local UI and sync testing can be verified before production deploys.
+        </p>
+        <span class="status">QA Accepted</span>
+      </header>
+
+      <section class="grid">
+        <article class="card span-4">
+          <h2>What Changed</h2>
+          <ul>
+            <li>Added <code>npm run dev:check</code>.</li>
+            <li>Added env, port, app, health, and SpacetimeDB readiness checks.</li>
+            <li>Improved Windows-safe Next.js startup through the combined dev wrapper.</li>
+            <li>Updated README, COMMANDS, HANDOFF, and TASK-003 notes.</li>
+          </ul>
+        </article>
+
+        <article class="card span-4">
+          <h2>Verification</h2>
+          <ul>
+            <li><code>npm run typecheck</code>: passed.</li>
+            <li><code>npm run lint</code>: passed.</li>
+            <li><code>npm run test:dev</code>: passed.</li>
+            <li><code>npm run dev:check</code>: passed with 18 checks after local services were running.</li>
+            <li><code>http://127.0.0.1:5371</code>: responded 200.</li>
+            <li><code>/api/health</code>: responded 200.</li>
+          </ul>
+        </article>
+
+        <article class="card span-4">
+          <h2>Manual Notes</h2>
+          <ul>
+            <li>Sandboxed runs can block local SpacetimeDB with <code>spawn EPERM</code>.</li>
+            <li>A stale Next listener on PID <code>34828</code> caused TCP-open but HTTP-timeout behavior; the checker now reports owning PIDs.</li>
+            <li>Added a module-parity check after a local database mismatch caused <code>join_room</code> reducer serialization failures.</li>
+            <li>Browser automation was unavailable in the original session, so readiness was verified by HTTP checks.</li>
+            <li>User accepted QA completion after the SpacetimeDB CLI/path blocker was resolved and the local workflow was proven usable.</li>
+            <li>No automatic process killing was added.</li>
+          </ul>
+        </article>
+
+        <article class="card span-6">
+          <h2>Files To Review</h2>
+          <ul>
+            <li><code>scripts/dev-check.mjs</code></li>
+            <li><code>scripts/dev.mjs</code></li>
+            <li><code>tests/dev/dev-check.test.mjs</code></li>
+            <li><code>package.json</code></li>
+            <li><code>README.md</code></li>
+            <li><code>docs/COMMANDS.md</code></li>
+            <li><code>docs/HANDOFF.md</code></li>
+          </ul>
+        </article>
+
+        <article class="card span-6">
+          <h2>Acceptance Status</h2>
+          <ul>
+            <li><span class="status">Met</span> <code>npm run dev</code> remains canonical startup.</li>
+            <li><span class="status">Met</span> Diagnostic command exists and returns non-zero on failure.</li>
+            <li><span class="status">Met</span> Secrets are not printed.</li>
+            <li><span class="status">Met</span> Docs now define local readiness workflow.</li>
+            <li><span class="status">Accepted</span> Browser visual confirmation limitation is no longer blocking completion because the user approved the QA state and the environment blocker was resolved.</li>
+          </ul>
+        </article>
+
+        <article class="card span-12">
+          <h2>Next Step</h2>
+          <p>
+            TASK-003 is complete. Continue from the active recovery roadmap; TASK-002.5
+            Provider Recommendations and Room Picks is the next TASK-002 item.
+          </p>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

@@ -143,6 +143,22 @@ npm run spacetime:start
 npm run dev:next
 ```
 
+Check whether local development is ready:
+
+```bash
+npm run dev:check
+```
+
+Run this in a second terminal after `npm run dev` when browser QA or sync testing depends on the local app. The check validates the local env shape, Next.js port, SpacetimeDB port, SpacetimeDB module parity, the app URL, and `/api/health` without printing secret values.
+
+If `npm run dev` reports that port `5371` is already in use, close the existing Next.js process before starting a fresh session. The script deliberately does not kill processes automatically.
+
+If reducers fail with argument or serialization errors, confirm that `.env.local`, `spacetime.local.json`, and `spacetime.json` all point to the same SpacetimeDB database. The expected local database is:
+
+```text
+mistake-watch-rooms
+```
+
 ## SpacetimeDB Commands
 
 Start local SpacetimeDB:
@@ -175,6 +191,7 @@ NEXT_PUBLIC_SPACETIME_MODULE=mistake-watch-rooms
 Run these after meaningful implementation work:
 
 ```bash
+npm run dev:check
 npm run typecheck
 npm run lint
 npm run build
@@ -194,6 +211,8 @@ For UI changes, also verify the local app in the browser:
 ```text
 http://127.0.0.1:5371
 ```
+
+Local browser QA should use production only as a final confirmation path. If local QA is blocked, document the local blocker and exact remediation before relying on production.
 
 ## Deployment
 

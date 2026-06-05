@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TASK-003 Dev Environment Parity</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #090b0c;
+        --panel: #121516;
+        --panel-2: #171b1d;
+        --text: #edf4f4;
+        --muted: #9fb0b2;
+        --line: #2a3133;
+        --cyan: #10d6e6;
+        --gold: #ffc233;
+        --warn: #ffb020;
+        --fail: #ff5c5c;
+        --ok: #38d996;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 12% 10%, rgba(16, 214, 230, 0.12), transparent 28rem),
+          radial-gradient(circle at 88% 0%, rgba(255, 194, 51, 0.09), transparent 24rem),
+          var(--bg);
+        color: var(--text);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+      }
+
+      main {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 40px 24px;
+      }
+
+      header {
+        border: 1px solid var(--line);
+        background: rgba(18, 21, 22, 0.88);
+        padding: 24px;
+        border-radius: 6px;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        line-height: 1.1;
+      }
+
+      h1 {
+        font-size: clamp(2rem, 4vw, 4rem);
+        letter-spacing: 0;
+      }
+
+      h2 {
+        font-size: 1.15rem;
+        margin-bottom: 12px;
+      }
+
+      p {
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .eyebrow {
+        color: var(--gold);
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 0.78rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 16px;
+        margin-top: 16px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        background: rgba(18, 21, 22, 0.84);
+        border-radius: 6px;
+        padding: 18px;
+      }
+
+      .span-4 {
+        grid-column: span 4;
+      }
+
+      .span-6 {
+        grid-column: span 6;
+      }
+
+      .span-8 {
+        grid-column: span 8;
+      }
+
+      .span-12 {
+        grid-column: span 12;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 5px 8px;
+        color: var(--muted);
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+      }
+
+      .ok {
+        border-color: rgba(56, 217, 150, 0.35);
+        color: var(--ok);
+      }
+
+      .warn {
+        border-color: rgba(255, 176, 32, 0.45);
+        color: var(--warn);
+      }
+
+      ul,
+      ol {
+        margin: 10px 0 0;
+        padding-left: 20px;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      code {
+        color: var(--cyan);
+        background: rgba(16, 214, 230, 0.08);
+        border: 1px solid rgba(16, 214, 230, 0.18);
+        border-radius: 4px;
+        padding: 1px 5px;
+      }
+
+      .timeline {
+        display: grid;
+        gap: 10px;
+      }
+
+      .step {
+        display: grid;
+        grid-template-columns: 92px 1fr;
+        gap: 12px;
+        align-items: start;
+        border-top: 1px solid var(--line);
+        padding-top: 12px;
+      }
+
+      @media (max-width: 860px) {
+        .span-4,
+        .span-6,
+        .span-8 {
+          grid-column: span 12;
+        }
+
+        main {
+          padding: 24px 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="eyebrow">TASK-003 / DEV PARITY</div>
+        <h1>Make Local Development Trustworthy</h1>
+        <p>
+          Mistake Watch needs a local environment that can reliably load the dashboard, run
+          SpacetimeDB-backed room tests, and support browser QA before production deploys.
+        </p>
+        <span class="status warn">Spec Ready</span>
+      </header>
+
+      <section class="grid">
+        <article class="card span-4">
+          <h2>Core Problem</h2>
+          <p>
+            Production can be healthy while local development is partially broken. That makes UI
+            review and sync debugging slower than it should be.
+          </p>
+        </article>
+        <article class="card span-4">
+          <h2>Target State</h2>
+          <p>
+            One startup command, one diagnostic command, clear service readiness, and documented
+            recovery paths for common local failures.
+          </p>
+        </article>
+        <article class="card span-4">
+          <h2>Next Action</h2>
+          <p>
+            Implement TASK-003 before resuming TASK-002.4 so browser QA has a dependable local
+            target.
+          </p>
+        </article>
+
+        <article class="card span-8">
+          <h2>Implementation Sequence</h2>
+          <div class="timeline">
+            <div class="step"><span class="status">003.1</span><p>Audit current startup and health behavior.</p></div>
+            <div class="step"><span class="status">003.2</span><p>Add <code>npm run dev:check</code> with env, port, app, health, and SpacetimeDB checks.</p></div>
+            <div class="step"><span class="status">003.3</span><p>Improve startup output without destructive cleanup.</p></div>
+            <div class="step"><span class="status">003.4</span><p>Document canonical local workflow in README, COMMANDS, and HANDOFF.</p></div>
+            <div class="step"><span class="status">003.5</span><p>Verify local browser readiness at <code>http://127.0.0.1:5371</code>.</p></div>
+            <div class="step"><span class="status">003.6</span><p>Run QA and prepare a focused commit.</p></div>
+          </div>
+        </article>
+
+        <article class="card span-4">
+          <h2>Files To Review</h2>
+          <h3>Must Review</h3>
+          <ul>
+            <li><code>proposal.md</code></li>
+            <li><code>design.md</code></li>
+            <li><code>tasks.md</code></li>
+            <li><code>acceptance-criteria.md</code></li>
+          </ul>
+          <h3 style="margin-top: 16px">Optional</h3>
+          <ul>
+            <li><code>brain-dump.md</code></li>
+            <li><code>review-notes.md</code></li>
+          </ul>
+        </article>
+
+        <article class="card span-6">
+          <h2>Key Guardrails</h2>
+          <ul>
+            <li>No secrets printed by diagnostics.</li>
+            <li>No automatic process killing in the first pass.</li>
+            <li>No production deployment changes.</li>
+            <li>No feature work bundled into dev tooling.</li>
+          </ul>
+        </article>
+
+        <article class="card span-6">
+          <h2>Acceptance Gate</h2>
+          <ul>
+            <li><code>npm run dev</code> remains canonical startup.</li>
+            <li><code>npm run dev:check</code> gives pass/warn/fail readiness.</li>
+            <li>Dashboard loads locally for browser QA.</li>
+            <li>Docs explain remediation when local startup fails.</li>
+          </ul>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
