@@ -5,6 +5,7 @@ import type {
   LiveRoomSnapshot,
   LoadMediaSourcePayload,
   AddQueueItemPayload,
+  IssueRoomSeedGrantPayload,
   MoveQueueItemPayload,
   QueueItemReducerPayload,
   RevokeRoomControlPayload,
@@ -28,6 +29,7 @@ export type GeneratedConnection = {
     clearQueue(payload: { actorMemberId: string; roomId: string }): void;
     grantRoomControl(payload: GrantRoomControlPayload): void;
     heartbeat(payload: { memberId: string; roomId: string }): void;
+    issueRoomSeedGrant(payload: IssueRoomSeedGrantPayload): void;
     joinRoom(payload: JoinRoomReducerPayload): void;
     kickMember(payload: {
       actorMemberId: string;

@@ -13,6 +13,7 @@ import {
 import { createSupabaseAdminClient, type Tables } from "@/lib/supabase";
 
 import { closeIdleUnsavedRooms } from "./lifecycle";
+import { createLiveRoomSeedToken } from "./live-authority";
 import type {
   DashboardData,
   DashboardRoomSummary,
@@ -209,7 +210,7 @@ async function getRoomSnapshot(
   });
 }
 
-function mapRoomSnapshot({
+async function mapRoomSnapshot({
   members,
   queueItems,
   room,
@@ -221,14 +222,23 @@ function mapRoomSnapshot({
   queueItems: QueueItem[];
   room: Room;
   settings: RoomSettings | null;
-}): RoomSnapshot {
+}): Promise<RoomSnapshot> {
   const hostMember = members.find((member) => member.role === "host");
   const currentMember = currentMemberId
     ? members.find((member) => member.id === currentMemberId)
     : undefined;
+  const isCurrentHost =
+    Boolean(currentMember && hostMember) && currentMember?.id === hostMember?.id;
   const mappedQueue = queueItems.map(mapQueueItem);
   const nowPlaying = mappedQueue.find((item) => item.status === "now");
   const mode = room.mode === "listen" ? "listen" : "watch";
+  const liveSeedToken =
+    isCurrentHost && hostMember
+      ? await createLiveRoomSeedToken({
+          hostMemberId: hostMember.id,
+          roomId: room.id,
+        })
+      : null;
 
   return {
     code: room.invite_code,
@@ -243,6 +253,7 @@ function mapRoomSnapshot({
     hostMemberId: hostMember?.id ?? null,
     id: room.id,
     isSaved: room.is_saved,
+    liveSeedToken,
     mode,
     name: room.name,
     nowPlaying: {

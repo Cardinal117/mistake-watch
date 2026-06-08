@@ -137,6 +137,7 @@ type LiveReducers = {
     mode: "watch" | "listen" | "browser";
     roomId: string;
     roomName: string;
+    seedToken: string;
   }): Promise<void>;
   setMemberPermissions(params: {
     actorMemberId: string;
@@ -382,12 +383,19 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
         liveDb.room_chat_message.onInsert(handleRowChange);
         liveDb.room_chat_message.onDelete(handleRowChange);
 
-        void connected.reducers.seedRoomSession({
-          hostMemberId,
-          mode: room.mode,
-          roomId: room.id,
-          roomName: room.name,
-        });
+        if (currentMember.role === "host" && room.liveSeedToken) {
+          void connected.reducers.seedRoomSession({
+            hostMemberId,
+            mode: room.mode,
+            roomId: room.id,
+            roomName: room.name,
+            seedToken: room.liveSeedToken,
+          });
+        } else if (currentMember.role === "host") {
+          setErrorMessage(
+            "Live room host authority is not configured. Set SPACETIME_SERVER_AUTH_TOKEN and trusted_seed_issuer before opening live rooms.",
+          );
+        }
         void connected.reducers.joinRoom({
           avatarKey: readStoredAvatarKey(currentMember.id),
           displayName: currentMember.name,
@@ -468,6 +476,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     currentMember,
     room.hostMemberId,
     room.id,
+    room.liveSeedToken,
     room.mode,
     room.name,
     tokenStorageKey,

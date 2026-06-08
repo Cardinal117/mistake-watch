@@ -45,7 +45,12 @@ Current TASK-002 status:
 - `TASK-002.1` Listen Mode Quality Pass: implemented.
 - `TASK-002.2` Room Chat: implemented for watch room context only. The user explicitly does not want chat in listen mode.
 - `TASK-002.3` Seamless Next Item Loading: implemented.
-- `TASK-002.4` YouTube Availability Hardening: next recovery task.
+- `TASK-002.4` YouTube Availability Hardening: complete.
+- `TASK-002.5` Provider Recommendations and Room Picks: implemented pending live-room visual and permission QA.
+- `TASK-002.5A` Adaptive Listen Card Drift: closed after user QA rejected autonomous drift.
+- `TASK-002.5C` Live Room Authority Hardening: implemented pending manual two-client QA.
+- `TASK-002.5D` Queue Authority And Add Media UX Stabilization: next implementation task after TASK-002.5C QA/review.
+- `TASK-002.5B` Cinematic Watch Room Purpose Pass: follows TASK-002.5D so the watch queue/library surfaces inherit stable queue authority and Add Media behavior.
 
 Do not treat future features as shipped until the TASK-002 packet marks them complete.
 
@@ -61,7 +66,8 @@ Do not treat future features as shipped until the TASK-002 packet marks them com
 - YouTube IFrame API for embedded YouTube playback
 - HLS.js for HLS-capable direct media
 - Vercel for frontend hosting
-- Cloudflare R2 planned for owner-uploaded media storage
+- Cloudflare Stream planned for fast uploaded-video processing/playback
+- Cloudflare R2 planned for raw/source archive and supporting media artifacts
 
 ## Architecture Boundaries
 
@@ -113,10 +119,19 @@ Required server-only variables:
 
 ```text
 SUPABASE_SECRET_KEY
+SPACETIME_SERVER_AUTH_TOKEN
 YOUTUBE_API_KEY
 ```
 
 Never commit `.env`, `.env.local`, Vercel secrets, Supabase secret keys, or provider API keys.
+
+Live-room host seeding uses a SpacetimeDB server identity, not a shared SpacetimeDB environment secret. Generate a server identity/token pair for each target database:
+
+```bash
+npm run spacetime:server-token
+```
+
+Store the printed token as `SPACETIME_SERVER_AUTH_TOKEN` in `.env.local` and Vercel. Add the printed identity hex to the private `trusted_seed_issuer` table in that SpacetimeDB database. The identity string is not secret; the auth token is secret. SpacetimeDB does not need `SPACETIME_ROOM_SEED_SECRET`.
 
 Start the app and local SpacetimeDB together:
 
@@ -179,6 +194,12 @@ Generate client bindings:
 npm run spacetime:generate
 ```
 
+Generate a server identity/token pair for live-room seed grants:
+
+```bash
+npm run spacetime:server-token
+```
+
 Production SpacetimeDB uses:
 
 ```text
@@ -233,9 +254,11 @@ https://mistake-watch.vercel.app/api/health
 
 - YouTube can block specific videos from embedded playback due to provider, region, age, copyright, live-premiere, or embedding restrictions.
 - YouTube autoplay and background-tab behavior is browser-controlled. The app owns queue progression and recovery, but user gesture and provider limits still apply.
-- YouTube iframe audio cannot be sampled directly for true audio-reactive visualizers. Real audio analysis must use direct/HLS/R2 sources where browser access is allowed.
+- YouTube iframe audio cannot be sampled directly for true audio-reactive visualizers. Real audio analysis must use direct/HLS/first-party media sources where browser access is allowed.
+- Uploaded watch-room video should use the approved Cloudflare Stream + R2 hybrid direction: Stream for fast processing/playback, R2 for raw/source archive and supporting artifacts where needed.
 - Shared browser control is not implemented yet and must remain a separate future subsystem.
 - Supabase auth, profiles, friend invites, custom avatar uploads, and notification drawers are future tasks.
+- Google OAuth and owner authority are now scheduled before Stream/R2 media work so owner-only upload and source ingestion can be verified server-side.
 
 ## Handoff Reading Order
 
@@ -249,4 +272,4 @@ Before implementing the next task, read:
 6. `docs/tasks/TASK-002-incomplete-work-recovery/review-notes.md`
 7. `docs/tasks/TASK-002-incomplete-work-recovery/acceptance-criteria.md`
 
-The next expected task is `TASK-002.4: YouTube Availability Hardening`.
+The next expected checkpoint is TASK-002.5C QA/review, then `TASK-002.5D: Queue Authority And Add Media UX Stabilization`, then `TASK-002.5B: Cinematic Watch Room Purpose Pass`.

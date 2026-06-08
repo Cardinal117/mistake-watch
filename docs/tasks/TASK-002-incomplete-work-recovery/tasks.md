@@ -150,27 +150,124 @@ Safe commit point:
 
 - Listen-room cards have adaptive ambient drift without changing discovery data or playback authority.
 
+## TASK-002.5C: Live Room Authority Hardening
+
+Source task: security and permission inspection follow-up from live room sync review.
+
+Work:
+
+- Replace browser-client-authoritative live session seeding with a trusted authority path.
+- Require server-verified durable room membership before SpacetimeDB can establish host authority for a room session.
+- Preserve guest-first joins, but ensure guest-provided role/member fields cannot become the source of live authority.
+- Align queue item play-now behavior with the intended playback permission model:
+  - either playback permission allows queue item selection and immediate playback;
+  - or playback-only guests do not see play-now affordances for queue item selection.
+- Add reducer-level duplicate protection for live queue items, especially concurrent or repeated playlist imports.
+- Add abuse and quota protection around playlist preview and recommendation API routes where room/member context is required.
+- Add focused reducer/security tests for unauthorized seed, allowed/denied guest queue add, playback-granted play-now behavior, duplicate playlist imports, and permission revocation during active queue operations.
+
+Review checkpoint:
+
+- A malicious browser client cannot become host by seeding a known room ID.
+- Live room authority is derived from verified durable membership, not arbitrary reducer payload fields.
+- Queue add, queue manage, and playback-control permissions behave consistently across UI and reducers.
+- Playlist imports cannot flood the live queue with duplicate rows.
+
+Safe commit point:
+
+- Live room authority and queue permission paths are hardened before more room UI, voting, media-library, or social features depend on them.
+
+## TASK-002.5D: Queue Authority And Add Media UX Stabilization
+
+Source task: local multi-client QA follow-up after TASK-002.5C live authority testing.
+
+Work:
+
+- Add a real queue-management permission path in SpacetimeDB so full queue access can reorder, remove, clear, pin, play-next, and manage queue rows where intended.
+- Align UI permission gates with reducer authority so enabled controls do not call reducers that will reject the current member.
+- Add server-authoritative playback history so the previous/back transport returns through actually played queue items in exact order.
+- Replace the current Add Media popout with a centered modal rendered above drawers, room panels, listen surfaces, and watch surfaces.
+- Auto-preview pasted single-song and playlist URLs before add/import actions.
+- Add duplicate detection before mutation:
+  - warn when a source is already in the queue;
+  - allow `Add anyway`;
+  - support a local `Remember my choice` duplicate preference.
+- Add visible notifications for queue outcomes, including song added with title, playlist added with count, duplicate detected, duplicate added anyway, permission denied, and provider/preview failure.
+- Redesign playlist review for mobile, vertical monitors, and desktop with search, sorting, select all, add all, add selected, and a more-options duration filter such as select below a timeframe.
+- Keep broader accounts, friends, uploaded-media library, and cinematic watch-room redesign out of this task.
+
+Review checkpoint:
+
+- Guests granted full queue access can perform intended queue-management actions without host-only reducer blocks.
+- Guests without queue-management permission cannot perform queue-management actions and see honest disabled/denied states.
+- Add Media feels like a premium modal, previews URLs before mutation, and never collides with queue drawer controls.
+- Duplicate queue additions warn clearly and can be added anyway by explicit user choice.
+- Previous/back follows actual playback history rather than selecting an unrelated item.
+
+Safe commit point:
+
+- Queue authority, add-media UX, duplicate handling, and user feedback are stable before the cinematic watch-room layout depends on queue/library surfaces.
+
+## TASK-002.5B: Cinematic Watch Room Purpose Pass
+
+Source task: watch-room direction refinement from the cinematic room redesign discussion.
+
+Work:
+
+- Redesign watch mode as an intentional private-theater surface rather than a dashboard-like room shell.
+- Use a quiet top Signal Room band for room identity, connection state, compact room controls, and members drawer access.
+- Make the video stage the dominant object on the page, with surrounding UI receding while playback is active.
+- Add a minimal grounded transport bar that exposes only essential playback, sync, volume, fullscreen, and current/next context.
+- Replace the default always-visible side panel pattern with drawer-based members and queue/library surfaces where possible.
+- Add a compact Up Next area that can expand into a larger watch queue/library drawer without competing with the active video.
+- Add cinematic ambient glow around the stage:
+  - direct/HLS/Stream-first-party media may use sampled or precomputed palette data where technically permitted;
+  - YouTube playback must use thumbnail/provider-derived palette fallback and must not claim frame sampling;
+  - all ambient changes must transition slowly and respect reduced-motion.
+- Keep chat, recommendations, analytics, upload/library implementation, and Cloudflare media storage out of this UI task unless explicitly required for the layout shell.
+
+Review checkpoint:
+
+- Watch mode feels focused, cinematic, synchronized, and immersive.
+- The content is visually dominant and the room supports attention rather than activity.
+- Members, queue, and controls are available without turning the page into a dashboard.
+- Ambient glow feels like cinematic screen spill, not distracting RGB lighting or flicker.
+
+Safe commit point:
+
+- Watch mode has a clear product personality and layout foundation before media-library/upload features are added.
+
 ## TASK-002.6: Real Audio-Reactive Waveform Architecture
 
 Source task: TASK-001 Task 16.D.
 
 Work:
 
-- Implement real audio analysis only for accessible sources.
-- Use Web Audio `AnalyserNode` and/or WaveSurfer for direct, HLS, or future R2 audio where technically permitted.
-- Keep YouTube and YouTube Music on an honest fallback visualizer because iframe audio cannot be sampled directly.
+- Implement a waveform source resolver that classifies media into explicit analysis paths:
+  - `youtube_embed`: fallback visualizer only.
+  - `direct_media`: browser `AnalyserNode` where CORS permits.
+  - `hls_media`: real analysis where technically possible, otherwise generated progress visuals.
+  - `stream_media`: use first-party processed metadata or fallback progress visuals where Cloudflare Stream does not expose analyzable audio.
+  - `r2_media`: prefer precomputed waveform peaks when available; fallback to live analysis only when safe.
+- Prepare the future R2 waveform metadata contract:
+  - `waveform_peaks_url`
+  - `waveform_peaks_key`
+  - `waveform_status`: `missing`, `pending`, `ready`, or `failed`
+- Keep YouTube and YouTube Music honest: if a YouTube URL has a matched ready first-party Stream/R2 asset, use the first-party waveform path; otherwise use the YouTube fallback visualizer because iframe audio cannot be sampled directly.
 - Define waveform progress, ambient side waves, reduced-motion behavior, mobile performance limits, and fallback states.
-- Avoid browser-heavy decoding for large uploaded media; prepare future precomputed peaks for R2 assets.
+- Avoid heavy real-time waveform analysis on mobile by default. Mobile should use precomputed peaks, static artwork visuals, or lightweight progress visuals.
+- Do not implement Stream/R2 upload or ingestion inside TASK-002.6.
 
 Review checkpoint:
 
 - Direct/HLS sources can produce real reactive visuals when CORS and browser support allow it.
 - YouTube listen rooms clearly use fallback visuals without implying hidden audio analysis.
+- Ready first-party Stream/R2 matches have a defined path to precomputed waveform peaks or honest lightweight fallback visuals.
 - Reduced-motion users get a stable static/progress representation.
 
 Safe commit point:
 
-- Listen mode has a technically honest waveform architecture.
+- Listen mode has a technically honest waveform architecture that works for current sources and can consume future first-party media peaks.
 
 ## TASK-002.7: Avatar Motion Polish
 
@@ -194,26 +291,83 @@ Safe commit point:
 
 - Avatar identity feels more alive without changing identity persistence.
 
-## TASK-002.8: Cloudflare R2 Media Upload Pipeline
+## TASK-002.8A: Google OAuth and Owner Authority Foundation
 
-Source task: TASK-001 later R2 direction.
+Source task: dependency correction for owner-only Stream/R2 media work and future social rooms.
 
 Work:
 
-- Add owner-uploaded media storage using Cloudflare R2.
-- Store media metadata and access records in Supabase.
-- Keep large media files out of Supabase Postgres.
-- Prepare future waveform peak metadata beside R2 assets.
+- Add Supabase Auth with Google OAuth using basic profile identity first.
+- Store app profile data in public profile tables, not directly in Supabase `auth.users`.
+- Add a durable owner role model, starting with `profiles.role = owner | member`.
+- Add a server-side owner check helper for later Stream/R2 upload and source ingestion.
+- Connect signed-in account identity to room membership while preserving guest-first room joins.
+- Define guest-to-account migration behavior for display name, avatar, saved rooms, and room memberships.
+- Document Google provider token handling:
+  - request basic profile scopes first;
+  - add playlist/history-related Google or YouTube scopes only when the feature needs them;
+  - use offline access only where refresh-token behavior is required.
+- Do not implement friends, notifications, listening-history aggregation, achievements, or YouTube account playlist access in this foundation task.
+
+Review checkpoint:
+
+- Users can sign in with Google through Supabase Auth.
+- The app can distinguish `owner` and `member` roles server-side.
+- Stream/R2 owner-only upload and source ingestion have a reliable authorization primitive before TASK-002.8 starts.
+- Guest-first rooms still work.
+- No YouTube playlist/history OAuth scopes are requested in the initial login flow.
+
+Safe commit point:
+
+- Mistake Watch has the account and owner-authority foundation needed for owner-only media work without pulling in the full friends/social feature set.
+
+## TASK-002.8: Cloudflare Stream + R2 Media Library and Authorized Upload Pipeline
+
+Source task: TASK-001 later R2 direction, updated by the Cloudflare Stream/R2 hybrid decision.
+
+Work:
+
+- Use Cloudflare Stream as the primary uploaded-video processing and playback layer for fast owner uploads, transcoding, thumbnails, and streamable delivery.
+- Keep Cloudflare R2 available for raw original archive, supporting artifacts, waveform/analysis JSON, source files that should not live in Supabase, and future non-Stream media needs.
+- Add Supabase durable metadata tables for `media_assets`, `media_ingestion_jobs`, and `media_source_matches`.
+- Keep large media files out of Supabase Postgres. Supabase stores durable identity, metadata, access, match, and ingestion status records only.
+- Add owner-only upload/ingestion:
+  - only the project owner account can upload first-party video assets or enqueue external source ingestion;
+  - production must verify owner identity server-side through the TASK-002.8A owner authority foundation;
+  - dev/test mode may allow a temporary owner bypass through an explicit env flag, but this must never be the public default.
+- Add a watch-library surface inside the expanded watch queue drawer:
+  - drag-and-drop upload zone;
+  - stored video list/grid;
+  - processing status;
+  - source match badges;
+  - Add to Queue and Play Now actions where permissions allow.
+- Add source matching:
+  - YouTube video ID is a lookup key, not automatic download permission;
+  - playlist import checks each video ID against `media_source_matches`;
+  - if a ready first-party Stream/R2 asset exists, queue the first-party media;
+  - if no ready first-party asset exists, queue the normal YouTube embed fallback.
+- Add media processing/provider contracts:
+  - use Cloudflare Stream direct upload or equivalent server-authorized upload URLs for user-friendly drag-and-drop;
+  - store Cloudflare Stream asset IDs and playback details in Supabase metadata;
+  - run `yt-dlp` only for owner-authorized sources;
+  - use custom workers/jobs only where Cloudflare Stream does not cover the required artifact, such as waveform peaks or R2 archive handling;
+  - upload non-Stream artifacts to R2 through the S3-compatible API or a Worker/R2 binding path;
+  - update Supabase job status as `pending`, `processing`, `ready`, or `failed`.
+- Add the movie/direct-media path through owner uploads and authorized direct media URLs, with Stream-first playback where possible.
+- Do not include hidden-stream scraping, DRM bypass, ad circumvention, anti-bot circumvention, or piracy-site automation.
 - Keep YouTube and direct URL playback working.
 
 Review checkpoint:
 
-- Uploaded media can be stored and later played through the existing room flow.
-- Access and metadata boundaries are clear.
+- Existing YouTube and direct URL playback still works.
+- Ready first-party Stream/R2 assets are preferred automatically when a matched source is already available.
+- Only owner-authorized upload/ingestion can create first-party media assets.
+- Waveform peaks are generated, queued, or explicitly marked unsupported for supported first-party media.
+- Access, metadata, source matching, and ingestion boundaries are clear.
 
 Safe commit point:
 
-- Mistake Watch has the foundation for personal uploaded media.
+- Mistake Watch has the foundation for an owner-controlled watch media library with Cloudflare Stream-first playback and R2-backed supporting storage.
 
 ## TASK-002.9: Voting and Suggested Next
 
@@ -235,18 +389,20 @@ Safe commit point:
 
 - Collaborative queue selection exists behind room-authoritative rules.
 
-## TASK-002.10: Accounts, Friends, and Friend Invites
+## TASK-002.10: Accounts, Friends, Invites, Listening History, and Social Rooms
 
 Source task: TASK-001 later accounts/friends direction.
 
 Work:
 
-- Add Supabase auth and profile layer.
+- Extend the account and profile foundation created in TASK-002.8A.
 - Add friend relationships and friend room visibility.
 - Add friend invite popups from rooms.
 - Add notification bell/drawer support for room invites.
 - Migrate guest avatar/name behavior cleanly into account profiles.
+- Preserve guest-first rooms until account migration is ready.
 - Keep host crown role-based, not avatar-specific.
+- Add YouTube playlist/history-related Google scopes only if a concrete feature in this task needs them and the consent boundary is explicit.
 - Add account-backed listening history foundations for future real `Most listened` data.
 - Track per-account media identity, play count, completion count, total listened time, last played time, and source/provider metadata where available.
 - Prepare a first-party yearly/monthly recap direction, internally treated as a Mistake Watch wrapped-style recap, without depending on Spotify or external account exports.
@@ -256,6 +412,7 @@ Review checkpoint:
 
 - Friends can invite friends to rooms through visible notifications.
 - Guest-first behavior still works or has a clear migration path.
+- Google OAuth supports playlist/history integrations only after explicit incremental consent.
 - Real `Most listened` can later aggregate account listening history for members in the active room.
 - Account listening history can support a future Mistake Watch recap showing top songs, artists/channels, rooms, contributors, listening time, and session patterns.
 

@@ -187,7 +187,16 @@ Required server-only variables:
 
 ```text
 SUPABASE_SECRET_KEY
+SPACETIME_SERVER_AUTH_TOKEN
 YOUTUBE_API_KEY
 ```
 
 Do not commit `.env`, `.env.local`, `.env.*.local`, Vercel secrets, Supabase secret keys, or provider API keys.
+
+Live-room seed grants use a SpacetimeDB server identity:
+
+```bash
+npm run spacetime:server-token
+```
+
+Store the printed token as `SPACETIME_SERVER_AUTH_TOKEN` in `.env.local` and Vercel. Add the printed identity hex to the private `trusted_seed_issuer` table for the same SpacetimeDB database. The identity hex is an allowlist value, not a secret; the auth token is secret.

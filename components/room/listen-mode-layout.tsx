@@ -298,7 +298,10 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
 
   return (
     <main
-      className="relative min-h-screen overflow-x-hidden bg-background text-on-surface xl:h-dvh xl:min-h-dvh xl:overflow-hidden"
+      className={cx(
+        "relative min-h-screen overflow-x-hidden bg-background text-on-surface",
+        desktopShell && "h-dvh min-h-dvh overflow-hidden",
+      )}
       style={listenThemeStyle}
     >
       {desktopShell ? (
@@ -313,7 +316,12 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
         }}
       />
       <div
-        className="relative z-10 grid gap-4 px-margin-mobile pb-32 pt-4 transition-[grid-template-columns] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:px-margin-desktop xl:h-dvh xl:min-h-0 xl:grid-cols-[var(--listen-room-columns)] xl:gap-0 xl:overflow-hidden xl:px-0 xl:pb-0 xl:pt-0"
+        className={cx(
+          "relative z-10 grid transition-[grid-template-columns] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          desktopShell
+            ? "h-dvh min-h-0 grid-cols-[var(--listen-room-columns)] gap-0 overflow-hidden px-0 pb-0 pt-0"
+            : "gap-4 px-margin-mobile pb-32 pt-4 md:px-margin-desktop",
+        )}
         style={listenGridStyle}
       >
         <ListenNowPlayingPanel
@@ -351,7 +359,11 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
         />
 
         <section
-          className="relative grid min-w-0 overflow-visible border-white/10 xl:min-h-0 xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden xl:border-x"
+          className={cx(
+            "relative grid min-w-0 overflow-visible border-white/10",
+            desktopShell &&
+              "min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden border-x",
+          )}
           style={{
             background:
               "radial-gradient(circle at 0% 20%, rgb(var(--listen-primary) / 0.075), transparent 34rem), radial-gradient(circle at 20% 54%, rgb(var(--listen-secondary) / 0.045), transparent 42rem), linear-gradient(90deg,rgb(14 14 15 / 0.985),rgb(14 14 15 / 0.96) 44%,rgb(19 19 20 / 0.985))",
@@ -371,6 +383,7 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
             canAddQueue={liveRoom.canAddQueue}
             canLoadSource={liveRoom.canManageAuthority}
             connectionStatus={liveRoom.connectionStatus}
+            desktopShell={desktopShell}
             historyCount={previousItems.length}
             liveRoom={liveRoom}
             onAddQueueItem={liveRoom.addQueueItem}
@@ -379,7 +392,12 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
             remainingSeconds={remainingQueueSeconds}
             room={room}
           />
-          <div className="relative z-10 grid gap-4 px-4 py-4 [scrollbar-color:rgb(255_186_32_/_0.42)_transparent] [scrollbar-width:thin] sm:px-6 xl:min-h-0 xl:overflow-y-auto xl:px-10 xl:py-5">
+          <div
+            className={cx(
+              "relative z-10 grid gap-4 px-4 py-4 [scrollbar-color:rgb(255_186_32_/_0.42)_transparent] [scrollbar-width:thin] sm:px-6",
+              desktopShell && "min-h-0 overflow-y-auto px-10 py-5",
+            )}
+          >
             <ListenDiscoveryPanel
               canAddQueue={liveRoom.canAddQueue && isConnected}
               canLoadSource={liveRoom.canManageAuthority && isConnected}
@@ -394,7 +412,7 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
           </div>
         </section>
 
-        <div className="hidden min-h-0 xl:block">
+        <div className={cx("min-h-0", desktopShell ? "block" : "hidden")}>
           <ListenRoomSidebar
             collapsed={rightSidebarCollapsed}
             currentMemberId={room.currentMember?.id}
@@ -423,6 +441,7 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
         queuedItems={queuedItems}
         remainingSeconds={remainingQueueSeconds}
         rightSidebarCollapsed={rightSidebarCollapsed}
+        desktopShell={desktopShell}
       />
     </main>
   );
@@ -483,7 +502,13 @@ function ListenNowPlayingPanel({
   const progressMax = durationSeconds || Math.max(100, Math.ceil(currentPosition));
 
   return (
-    <aside className="relative grid min-h-0 content-start gap-4 overflow-visible border-white/10 bg-transparent p-0 pb-2 xl:h-dvh xl:overflow-hidden xl:border-r xl:bg-surface/94 xl:p-5 xl:pb-6 xl:backdrop-blur-xl">
+    <aside
+      className={cx(
+        "relative grid min-h-0 content-start gap-4 overflow-visible border-white/10 bg-transparent p-0 pb-2",
+        desktopShell &&
+          "h-dvh overflow-hidden border-r bg-surface/94 p-5 pb-6 backdrop-blur-xl",
+      )}
+    >
       <div className="grid gap-3">
         <PendingLink
           className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-sm border border-white/10 px-3 text-label-sm font-semibold text-on-surface-variant transition hover:bg-surface-variant/35 hover:text-on-surface"
@@ -505,7 +530,7 @@ function ListenNowPlayingPanel({
         className={cx(
           "relative grid gap-0 overflow-hidden transition-colors duration-1000",
           desktopShell
-            ? "rounded-md border border-white/10 shadow-amber-glow xl:max-h-[calc(100dvh-7rem)]"
+            ? "max-h-[calc(100dvh-7rem)] rounded-md border border-white/10 shadow-amber-glow"
             : "rounded-none border-0 bg-transparent shadow-none",
         )}
         style={
@@ -534,7 +559,7 @@ function ListenNowPlayingPanel({
             />
           </>
         ) : null}
-        <div className="relative z-10 grid gap-4 py-1 xl:p-4">
+        <div className={cx("relative z-10 grid gap-4 py-1", desktopShell && "p-4")}>
           <div className="relative aspect-square min-h-[13.75rem] overflow-hidden rounded-md border border-white/10 bg-black shadow-[inset_0_0_0_1px_rgb(255_255_255_/_0.04)] xl:max-h-none">
             {thumbnailUrl ? (
               <>
@@ -722,7 +747,7 @@ function ListenNowPlayingPanel({
         ) : null}
       </div>
 
-      {mobileTools ? <div className="xl:hidden">{mobileTools}</div> : null}
+      {mobileTools && !desktopShell ? <div>{mobileTools}</div> : null}
     </aside>
   );
 }
@@ -731,6 +756,7 @@ function ListenTechnicalRoomHeader({
   canAddQueue,
   canLoadSource,
   connectionStatus,
+  desktopShell,
   historyCount,
   liveRoom,
   onAddQueueItem,
@@ -742,6 +768,7 @@ function ListenTechnicalRoomHeader({
   canAddQueue: boolean;
   canLoadSource: boolean;
   connectionStatus: string;
+  desktopShell: boolean;
   historyCount: number;
   liveRoom: LiveRoomState;
   onAddQueueItem(input: QueueAddInput): void;
@@ -813,8 +840,18 @@ function ListenTechnicalRoomHeader({
 
   return (
     <section className="relative z-20 border-b border-white/6 bg-surface/72 backdrop-blur-xl">
-      <div className="grid gap-2 px-4 py-2.5 sm:px-6 xl:px-10">
-        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+      <div
+        className={cx(
+          "grid gap-2 px-4 py-2.5 sm:px-6",
+          desktopShell && "px-10",
+        )}
+      >
+        <div
+          className={cx(
+            "grid gap-3",
+            desktopShell && "grid-cols-[minmax(0,1fr)_auto] items-center",
+          )}
+        >
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <span className="technical-label border-0 p-0 text-secondary-fixed-dim">
@@ -857,7 +894,10 @@ function ListenTechnicalRoomHeader({
             </div>
             <p
               aria-live="polite"
-              className="mt-1 hidden flex-wrap items-center gap-x-2 gap-y-1 text-label-sm text-on-surface-variant xl:flex"
+              className={cx(
+                "mt-1 flex-wrap items-center gap-x-2 gap-y-1 text-label-sm text-on-surface-variant",
+                desktopShell ? "flex" : "hidden",
+              )}
             >
               {stats.map((stat, index) => (
                 <span
@@ -869,7 +909,8 @@ function ListenTechnicalRoomHeader({
                 </span>
               ))}
             </p>
-            <div className="mt-3 grid grid-cols-2 gap-1.5 min-[420px]:grid-cols-3 xl:hidden">
+            {!desktopShell ? (
+              <div className="mt-3 grid grid-cols-2 gap-1.5 min-[420px]:grid-cols-3">
               {mobileStats.map((stat) => (
                 <div
                   className="rounded-sm border border-white/10 bg-background/38 px-2 py-1.5"
@@ -883,15 +924,22 @@ function ListenTechnicalRoomHeader({
                   </p>
                 </div>
               ))}
-            </div>
+              </div>
+            ) : null}
           </div>
-          <div className="hidden flex-wrap items-center gap-2 xl:flex xl:justify-end">
+          <div
+            className={cx(
+              "flex-wrap items-center gap-2",
+              desktopShell ? "flex justify-end" : "hidden",
+            )}
+          >
             <ListenAddMediaPopover
               canAddQueue={canAddQueue}
               canLoadSource={canLoadSource}
               connectionStatus={connectionStatus}
               onAddQueueItem={onAddQueueItem}
               onLoadSource={onLoadSource}
+              roomId={room.id}
             />
             <ListenSavedRoomToggle
               canSave={liveRoom.canManageAuthority}
@@ -906,7 +954,8 @@ function ListenTechnicalRoomHeader({
             />
           </div>
         </div>
-        <div className="hidden xl:block">
+        {desktopShell ? (
+          <div>
           <ModeSwitcher
             canSwitch={
               liveRoom.canManageAuthority &&
@@ -916,7 +965,8 @@ function ListenTechnicalRoomHeader({
             mode="listen"
             onSwitchMode={liveRoom.switchMode}
           />
-        </div>
+          </div>
+        ) : null}
       </div>
     </section>
   );
@@ -1022,6 +1072,7 @@ function ListenMobileRoomTools({
               connectionStatus={connectionStatus}
               onAddQueueItem={onAddQueueItem}
               onLoadSource={onLoadSource}
+              roomId={room.id}
             />
             <div className="grid gap-2">
               <ListenSavedRoomToggle
@@ -1095,7 +1146,7 @@ function ListenDiscoveryPanel({
     useState<{
       key: string;
       response: YouTubeRecommendationResponse;
-    } | null>(null);
+  } | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const picksRailRef = useRef<HTMLDivElement | null>(null);
@@ -1174,6 +1225,7 @@ function ListenDiscoveryPanel({
     void fetchYouTubeRecommendations({
       kind: activeFilter,
       query: providerQuery,
+      roomId: room.id,
     })
       .then((payload) => {
         if (!cancelled) {
@@ -1187,7 +1239,7 @@ function ListenDiscoveryPanel({
     return () => {
       cancelled = true;
     };
-  }, [activeFilter, providerQuery, providerRequestKey]);
+  }, [activeFilter, providerQuery, providerRequestKey, room.id]);
 
   useEffect(() => {
     updatePicksScrollState();
@@ -1263,7 +1315,7 @@ function ListenDiscoveryPanel({
         {discovery.items.length > 0 ? (
           <div className="relative px-3 py-4 sm:px-4">
             <div
-              className="grid snap-x snap-mandatory auto-cols-[100%] grid-flow-col gap-3 overflow-x-auto pb-1 [scrollbar-color:rgb(255_186_32_/_0.42)_transparent] [scrollbar-width:thin] xl:auto-cols-[minmax(15rem,18rem)] xl:pr-10"
+              className="grid snap-x snap-mandatory auto-cols-[100%] grid-flow-col gap-3 overflow-x-auto pb-1 [scrollbar-color:rgb(255_186_32_/_0.42)_transparent] [scrollbar-width:thin] lg:snap-none xl:auto-cols-[minmax(15rem,18rem)] xl:pr-10"
               onScroll={updatePicksScrollState}
               ref={picksRailRef}
             >
@@ -1361,12 +1413,14 @@ function ListenAddMediaPopover({
   connectionStatus,
   onAddQueueItem,
   onLoadSource,
+  roomId,
 }: {
   canAddQueue: boolean;
   canLoadSource: boolean;
   connectionStatus: string;
   onAddQueueItem(input: QueueAddInput): void;
   onLoadSource(input: SourceLoadInput): void;
+  roomId: string;
 }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [importSummary, setImportSummary] = useState<string | null>(null);
@@ -1396,7 +1450,7 @@ function ListenAddMediaPopover({
     setIsImportingPlaylist(true);
 
     try {
-      const payload = await fetchPlaylistPreview(input);
+      const payload = await fetchPlaylistPreview(input, roomId);
 
       setPlaylistPreview(payload);
       setSelectedPlaylistIds(
@@ -1922,7 +1976,7 @@ function ListenRoomSidebar({
 
   if (collapsed) {
     return (
-      <aside className="grid min-h-0 content-start border-white/10 bg-surface/94 p-2 backdrop-blur-xl transition-[width,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] xl:h-dvh xl:border-l">
+      <aside className="grid h-dvh min-h-0 content-start border-l border-white/10 bg-surface/94 p-2 backdrop-blur-xl transition-[width,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]">
         <button
           aria-label="Open members sidebar"
           className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-sm border border-white/10 text-secondary-fixed-dim transition hover:bg-secondary-fixed-dim/10"
@@ -1955,7 +2009,7 @@ function ListenRoomSidebar({
   }
 
   return (
-    <aside className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-4 overflow-hidden border-white/10 bg-surface/92 p-4 backdrop-blur-xl transition-[width,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] xl:h-dvh xl:border-l xl:p-5">
+    <aside className="grid h-dvh min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-4 overflow-hidden border-l border-white/10 bg-surface/92 p-5 backdrop-blur-xl transition-[width,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]">
       <div className="rounded-md border border-white/10 bg-surface-container-lowest p-1">
         <div className="flex h-9 items-center justify-between gap-2 rounded-sm bg-secondary-fixed-dim/10 px-2 text-label-sm font-semibold text-secondary-fixed-dim">
           <span className="px-1">Members</span>
@@ -1999,6 +2053,7 @@ function ListenQueueDrawer({
   canAddQueue,
   canManageQueue,
   currentItem,
+  desktopShell,
   isConnected,
   items,
   nextPreparation,
@@ -2018,6 +2073,7 @@ function ListenQueueDrawer({
   canAddQueue: boolean;
   canManageQueue: boolean;
   currentItem: RoomQueueItem | null;
+  desktopShell: boolean;
   isConnected: boolean;
   items: RoomQueueItem[];
   nextPreparation: ReturnType<typeof useNextItemPreparation>;
@@ -2110,7 +2166,10 @@ function ListenQueueDrawer({
   return (
     <section
       className={cx(
-        "fixed bottom-0 left-3 right-3 z-50 overflow-hidden rounded-t-md border border-b-0 border-white/10 bg-surface/94 shadow-[0_-18px_48px_rgb(0_0_0_/_0.32)] backdrop-blur-xl transition-[max-height,border-color,box-shadow,left,right] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] xl:left-[var(--listen-drawer-left)] xl:right-[var(--listen-drawer-right)]",
+        "fixed bottom-0 z-50 overflow-hidden rounded-t-md border border-b-0 border-white/10 bg-surface/94 shadow-[0_-18px_48px_rgb(0_0_0_/_0.32)] backdrop-blur-xl transition-[max-height,border-color,box-shadow,left,right] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+        desktopShell
+          ? "left-[var(--listen-drawer-left)] right-[var(--listen-drawer-right)]"
+          : "left-3 right-3",
         open
           ? "border-secondary-fixed-dim/25"
           : "max-h-12 border-white/10",
@@ -2134,8 +2193,8 @@ function ListenQueueDrawer({
               {drawerCountLabel}
             </span>
           </span>
-          {nextPreview ? (
-            <span className="flex min-w-0 items-center gap-2 xl:hidden">
+          {nextPreview && !desktopShell ? (
+            <span className="flex min-w-0 items-center gap-2">
               <span className="technical-label border-0 p-0 text-secondary-fixed-dim">
                 Next
               </span>
@@ -2318,6 +2377,7 @@ function ListenQueueDrawer({
                   <ListenQueueRow
                     canAddQueue={canAddQueue}
                     current={item.id === currentItem?.id}
+                    desktopShell={desktopShell}
                     index={index}
                     item={item}
                     key={item.id}
@@ -2349,6 +2409,7 @@ function ListenQueueDrawer({
 function ListenQueueRow({
   canAddQueue,
   current,
+  desktopShell,
   index,
   item,
   manageDisabled,
@@ -2363,6 +2424,7 @@ function ListenQueueRow({
 }: {
   canAddQueue: boolean;
   current: boolean;
+  desktopShell: boolean;
   index: number;
   item: RoomQueueItem;
   manageDisabled: boolean;
@@ -2422,11 +2484,12 @@ function ListenQueueRow({
         </p>
         <p className="truncate text-label-sm text-on-surface-variant">
           {channel ?? "Room source"}
-          <span className="xl:hidden"> · {duration}</span>
+          {!desktopShell ? <span> · {duration}</span> : null}
         </p>
         <p
           className={cx(
-            "mt-1 text-[11px] font-semibold uppercase tracking-[0.08em] xl:hidden",
+            "mt-1 text-[11px] font-semibold uppercase tracking-[0.08em]",
+            desktopShell && "hidden",
             current || item.isPinned || item.isPlayNext
               ? "text-secondary-fixed-dim"
               : "text-on-surface-variant",
@@ -3284,7 +3347,9 @@ function useDesktopListenShell() {
   const [desktopShell, setDesktopShell] = useState(false);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(min-width: 1280px)");
+    const mediaQuery = window.matchMedia(
+      "(min-width: 900px) and (pointer: fine)",
+    );
 
     function updateDesktopShell() {
       setDesktopShell(mediaQuery.matches);

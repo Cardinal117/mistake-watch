@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireRoomMemberRequestContext } from "@/lib/rooms/request-guards";
 import {
   getYouTubeRecommendations,
   type YouTubeRecommendationKind,
@@ -12,6 +13,22 @@ const VALID_KINDS = new Set<YouTubeRecommendationKind>([
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const kind = searchParams.get("kind") as YouTubeRecommendationKind | null;
+  const context = await requireRoomMemberRequestContext(request, {
+    limit: 20,
+    windowMs: 60_000,
+  });
+
+  if (!context.ok) {
+    return NextResponse.json(
+      {
+        items: [],
+        reason: context.body.reason,
+        source: "unavailable",
+        status: context.body.status,
+      },
+      { status: context.status },
+    );
+  }
 
   if (!kind || !VALID_KINDS.has(kind)) {
     return NextResponse.json(
@@ -32,7 +49,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json(response, {
     headers: {
-      "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=21600",
+      "Cache-Control": "private, no-store",
     },
   });
 }

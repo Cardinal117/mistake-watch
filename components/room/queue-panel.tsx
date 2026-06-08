@@ -63,6 +63,7 @@ type QueuePanelProps = {
   onQueueModeChange?(mode: QueueMode): void;
   onRemoveQueueItem?(queueItemId: string): void;
   queueMode?: QueueMode;
+  roomId: string;
 };
 
 type SourceLoadInput = {
@@ -111,6 +112,7 @@ export function QueuePanel({
   onQueueModeChange,
   onRemoveQueueItem,
   queueMode = "normal",
+  roomId,
 }: QueuePanelProps) {
   const [activeQueueTab, setActiveQueueTab] = useState<"history" | "up-next">(
     "up-next",
@@ -173,7 +175,7 @@ export function QueuePanel({
     setIsImportingPlaylist(true);
 
     try {
-      const payload = await fetchPlaylistPreview(input);
+      const payload = await fetchPlaylistPreview(input, roomId);
 
       setPlaylistPreview(payload);
       setSelectedPlaylistIds(

@@ -10,6 +10,7 @@
     "spacetime:start": "spacetime start --listen-addr 127.0.0.1:5372 --non-interactive",
     "spacetime:publish": "spacetime publish --server http://127.0.0.1:5372",
     "spacetime:generate": "spacetime generate",
+    "spacetime:server-token": "node scripts/create-spacetime-server-token.mjs",
     "build": "next build",
     "start": "next start",
     "test:identity": "node --test tests/identity/*.test.mjs",

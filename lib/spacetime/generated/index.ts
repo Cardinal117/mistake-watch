@@ -38,6 +38,7 @@ import AddQueueItemReducer from "./add_queue_item_reducer";
 import ClearQueueReducer from "./clear_queue_reducer";
 import GrantRoomControlReducer from "./grant_room_control_reducer";
 import HeartbeatReducer from "./heartbeat_reducer";
+import IssueRoomSeedGrantReducer from "./issue_room_seed_grant_reducer";
 import JoinRoomReducer from "./join_room_reducer";
 import KickMemberReducer from "./kick_member_reducer";
 import LeaveRoomReducer from "./leave_room_reducer";
@@ -187,6 +188,7 @@ const reducersSchema = __reducers(
   __reducerSchema("clear_queue", ClearQueueReducer),
   __reducerSchema("grant_room_control", GrantRoomControlReducer),
   __reducerSchema("heartbeat", HeartbeatReducer),
+  __reducerSchema("issue_room_seed_grant", IssueRoomSeedGrantReducer),
   __reducerSchema("join_room", JoinRoomReducer),
   __reducerSchema("kick_member", KickMemberReducer),
   __reducerSchema("leave_room", LeaveRoomReducer),

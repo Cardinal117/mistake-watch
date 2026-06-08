@@ -8,8 +8,9 @@ const pendingPlaylistPreviews = new Map<
   Promise<YouTubePlaylistPreviewResponse>
 >();
 
-export function fetchPlaylistPreview(input: string) {
-  const key = input.trim();
+export function fetchPlaylistPreview(input: string, roomId: string) {
+  const trimmedInput = input.trim();
+  const key = `${roomId}:${trimmedInput}`;
   const cached = playlistPreviewCache.get(key);
 
   if (cached) {
@@ -22,7 +23,12 @@ export function fetchPlaylistPreview(input: string) {
     return pending;
   }
 
-  const request = fetch(`/api/youtube/playlist?url=${encodeURIComponent(key)}`)
+  const params = new URLSearchParams({
+    roomId,
+    url: trimmedInput,
+  });
+
+  const request = fetch(`/api/youtube/playlist?${params.toString()}`)
     .then((response) => {
       if (!response.ok) {
         throw new Error("playlist request failed");

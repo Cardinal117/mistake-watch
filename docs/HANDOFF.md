@@ -37,7 +37,10 @@ TASK-002.3 Seamless Next Item Loading: implemented
 TASK-003 Dev Environment Parity: implemented
 TASK-002.4 YouTube Availability Hardening: complete; SpacetimeDB build/generate/local publish/Maincloud publish completed after CLI path recovery
 TASK-002.5 Provider Recommendations and Room Picks: implemented pending live-room visual and permission QA
-TASK-002.5A Adaptive Listen Card Drift: next TASK-002 item after TASK-002.5 QA
+TASK-002.5A Adaptive Listen Card Drift: closed; autonomous drift removed after user QA found it annoying
+TASK-002.5C Live Room Authority Hardening: implemented pending manual two-client QA
+TASK-002.5D Queue Authority And Add Media UX Stabilization: next implementation task after TASK-002.5C QA/review
+TASK-002.5B Cinematic Watch Room Purpose Pass: follows TASK-002.5D
 ```
 
 Product clarification:
@@ -69,26 +72,38 @@ npm run dev:check
 
 `npm run dev:check` must pass before local UI findings are trusted. It reports env readiness, Next.js reachability, SpacetimeDB reachability, `/api/health`, and local port owner PIDs for stale-process cleanup.
 
-## Current Next Task
+## Current Next Checkpoint
 
-Proceed to TASK-002.5A Adaptive Listen Card Drift after TASK-002.5 live-room QA.
+Proceed to TASK-002.5C QA/review, then TASK-002.5D Queue Authority And Add Media UX Stabilization, then TASK-002.5B Cinematic Watch Room Purpose Pass.
 
-Scope:
+TASK-002.5C implemented scope:
 
-- add subtle adaptive horizontal drift to listen-room recommendation/card rails;
-- use current queue/recommendation cards as the motion source;
-- only enable continuous drift when there is enough overflow content to avoid blank gaps;
-- pause motion on hover, focus, keyboard interaction, pointer/touch interaction, and major overlays;
-- respect `prefers-reduced-motion`;
-- preserve permission-aware card behavior and all queue/playback/SpacetimeDB state.
+- replace browser-client-authoritative live session seeding with a trusted authority path;
+- require server-verified durable room membership before SpacetimeDB can establish host authority;
+- issue one-time private SpacetimeDB seed grants from a server identity stored in `SPACETIME_SERVER_AUTH_TOKEN`;
+- preserve guest-first joins while preventing guest-provided role/member fields from becoming the authority source;
+- align queue play-now behavior with the intended playback permission model;
+- add reducer-level duplicate protection for playlist imports;
+- add appropriate abuse/quota protection around playlist preview and recommendation API routes.
+
+TASK-002.5D planned scope:
+
+- add explicit queue-management authority so full queue access matches reducer behavior;
+- align enabled queue controls with reducer permissions;
+- add server-authoritative playback history for the previous/back transport;
+- replace Add Media with a centered modal above drawers and panels;
+- add URL preview, duplicate warning/add-anyway behavior, local duplicate preference, playlist review controls, and visible queue notifications.
 
 Expected verification:
 
 - `npm run dev:check`
 - `npm run typecheck`
 - `npm run lint`
-- targeted UI/unit checks if motion logic is added;
-- browser QA against `http://127.0.0.1:5371`;
+- `npm run test:queue`
+- `npm run test:sync`
+- `npm run test:spacetime`
+- `npm run test:youtube`
+- browser/two-client QA against `http://127.0.0.1:5371` when local readiness passes;
 - update the active task packet and implementation report.
 
 ## Runtime Boundaries
@@ -125,6 +140,12 @@ Important current direction:
 - cyan and gold accent system from the current Mistake Watch logo direction;
 - no fake personalized, provider-trending, or listening-history data;
 - honest unavailable states when provider data is not wired.
+- live host authority must come from verified membership, not browser-provided reducer payload fields.
+- queue add, queue management, playback control, and host authority should remain distinct capabilities.
+- Add Media should be a centered modal surface before watch queue/library drawer work builds on it.
+- watch mode should feel focused, cinematic, synchronized, and media-first rather than like a dashboard.
+- Cloudflare Stream is the approved fast video processing/playback path for uploaded watch-room video; R2 remains available for raw/source archive, waveform/analysis JSON, supporting artifacts, and future non-Stream media needs.
+- Google OAuth and owner authority must land before Stream/R2 media-library work so owner-only upload and source ingestion can be enforced server-side.
 
 ## Deployment Context
 
@@ -151,8 +172,9 @@ See `docs/COMMANDS.md` for full local, SpacetimeDB, verification, and deployment
 ## Known Caveats
 
 - Local dev-server background startup has previously hit stale Next/Turbopack lock or process issues. Use `npm run dev:check` as the readiness gate. If local QA is blocked, document the blocker and remediation before relying on production/manual review.
-- YouTube iframe audio cannot be sampled directly for true audio-reactive visualizers. TASK-002.5 must keep YouTube visuals honest and use real audio analysis only for accessible direct/HLS/R2 sources.
+- YouTube iframe audio cannot be sampled directly for true audio-reactive visualizers. TASK-002.6 must keep YouTube visuals honest and use real audio analysis only for accessible direct/HLS/first-party media sources.
 - Do not commit `.env.local` or other secret-bearing files.
+- Live-room seed grant setup requires `SPACETIME_SERVER_AUTH_TOKEN` in `.env.local` and Vercel, plus the matching identity hex in SpacetimeDB's private `trusted_seed_issuer` table. SpacetimeDB does not use `SPACETIME_ROOM_SEED_SECRET`.
 - The current Git repository was initialized after significant project work, so the first commit is expected to be a large baseline commit.
 
 ## Handoff Rule

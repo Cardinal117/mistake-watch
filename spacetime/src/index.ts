@@ -201,6 +201,32 @@ const roomChatMessage = table(
   },
 );
 
+const roomSeedGrant = table(
+  {
+    name: "room_seed_grant",
+  },
+  {
+    created_by_identity: t.identity(),
+    created_ms: t.i64(),
+    expires_ms: t.i64(),
+    grant_key: t.string().primaryKey(),
+    host_member_id: t.string(),
+    room_id: t.string(),
+    seed_token: t.string(),
+  },
+);
+
+const trustedSeedIssuer = table(
+  {
+    name: "trusted_seed_issuer",
+  },
+  {
+    created_ms: t.i64(),
+    identity_hex: t.string().primaryKey(),
+    label: t.string(),
+  },
+);
+
 const spacetimedb = schema({
   live_queue_item: liveQueueItem,
   room_chat_message: roomChatMessage,
@@ -208,7 +234,9 @@ const spacetimedb = schema({
   room_kick: roomKick,
   room_permission: roomPermission,
   room_participant: roomParticipant,
+  room_seed_grant: roomSeedGrant,
   room_session: roomSession,
+  trusted_seed_issuer: trustedSeedIssuer,
 });
 
 export default spacetimedb;
@@ -223,6 +251,72 @@ function participantKey(roomId: string, memberId: string) {
 
 function permissionKey(roomId: string, memberId: string) {
   return `${roomId}:${memberId}`;
+}
+
+function roomSeedGrantKey(roomId: string, hostMemberId: string) {
+  return `${roomId}:${hostMemberId}`;
+}
+
+function constantTimeStringEqual(a: string, b: string) {
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  let diff = 0;
+
+  for (let index = 0; index < a.length; index += 1) {
+    diff |= a.charCodeAt(index) ^ b.charCodeAt(index);
+  }
+
+  return diff === 0;
+}
+
+function isTrustedSeedIssuer(
+  ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
+) {
+  return Boolean(
+    ctx.db.trusted_seed_issuer.identity_hex.find(senderIdentityHex(ctx)),
+  );
+}
+
+function senderIdentityHex(
+  ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
+) {
+  const sender = ctx.sender as unknown as {
+    toHexString?: () => string;
+  };
+
+  return sender.toHexString?.() ?? String(ctx.sender);
+}
+
+function getValidRoomSeedGrant(
+  ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
+  roomId: string,
+  hostMemberId: string,
+  seedToken: string,
+) {
+  const grant = ctx.db.room_seed_grant.grant_key.find(
+    roomSeedGrantKey(roomId, hostMemberId),
+  );
+
+  if (!grant) {
+    return null;
+  }
+
+  if (grant.expires_ms < nowMs()) {
+    ctx.db.room_seed_grant.delete(grant);
+    return null;
+  }
+
+  if (
+    grant.room_id !== roomId ||
+    grant.host_member_id !== hostMemberId ||
+    !constantTimeStringEqual(grant.seed_token, seedToken.trim())
+  ) {
+    return null;
+  }
+
+  return grant;
 }
 
 function kickKey(roomId: string, memberId: string) {
@@ -397,6 +491,10 @@ function normalizeSourceType(sourceType: string) {
   return "direct";
 }
 
+function normalizeSourceUrl(sourceUrl: string) {
+  return sourceUrl.trim();
+}
+
 function normalizeRoomMode(mode: string) {
   return mode === "listen" ? "listen" : "watch";
 }
@@ -492,6 +590,22 @@ function activeQueueItems(
         (item.status === "queued" || item.status === "playing"),
     )
     .sort((a, b) => a.position - b.position);
+}
+
+function findDuplicateActiveQueueItem(
+  ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
+  roomId: string,
+  sourceType: string,
+  sourceUrl: string,
+) {
+  const normalizedSourceType = normalizeSourceType(sourceType);
+  const normalizedSourceUrl = normalizeSourceUrl(sourceUrl);
+
+  return activeQueueItems(ctx, roomId).find(
+    (item) =>
+      normalizeSourceType(item.source_type) === normalizedSourceType &&
+      normalizeSourceUrl(item.source_url) === normalizedSourceUrl,
+  );
 }
 
 function queuedQueueItems(
@@ -839,14 +953,75 @@ export const heartbeat = spacetimedb.reducer(
   },
 );
 
+export const issue_room_seed_grant = spacetimedb.reducer(
+  {
+    expires_ms: t.i64(),
+    host_member_id: t.string(),
+    room_id: t.string(),
+    seed_token: t.string(),
+  },
+  (ctx, { expires_ms, host_member_id, room_id, seed_token }) => {
+    if (!isTrustedSeedIssuer(ctx)) {
+      recordRoomError(ctx, {
+        code: "seed_issuer_denied",
+        message:
+          "Seed grant ignored because the caller is not a trusted server issuer.",
+        roomId: room_id,
+      });
+      return;
+    }
+
+    const trimmedToken = seed_token.trim();
+    const now = nowMs();
+    const maxExpiryMs = now + BigInt(5 * 60 * 1000);
+
+    if (!room_id.trim() || !host_member_id.trim() || trimmedToken.length < 32) {
+      recordRoomError(ctx, {
+        code: "seed_grant_invalid",
+        message: "Seed grant ignored because its room, host, or token was invalid.",
+        roomId: room_id,
+      });
+      return;
+    }
+
+    if (expires_ms <= now || expires_ms > maxExpiryMs) {
+      recordRoomError(ctx, {
+        code: "seed_grant_expiry_invalid",
+        message:
+          "Seed grant ignored because its expiry was missing, expired, or too far in the future.",
+        roomId: room_id,
+      });
+      return;
+    }
+
+    const grantKey = roomSeedGrantKey(room_id, host_member_id);
+    const existing = ctx.db.room_seed_grant.grant_key.find(grantKey);
+
+    if (existing) {
+      ctx.db.room_seed_grant.delete(existing);
+    }
+
+    ctx.db.room_seed_grant.insert({
+      created_by_identity: ctx.sender,
+      created_ms: now,
+      expires_ms,
+      grant_key: grantKey,
+      host_member_id,
+      room_id,
+      seed_token: trimmedToken,
+    });
+  },
+);
+
 export const seed_room_session = spacetimedb.reducer(
   {
     host_member_id: t.string(),
     mode: t.string(),
     room_name: t.string(),
     room_id: t.string(),
+    seed_token: t.string(),
   },
-  (ctx, { host_member_id, mode, room_name, room_id }) => {
+  (ctx, { host_member_id, mode, room_name, room_id, seed_token }) => {
     const existing = ctx.db.room_session.room_id.find(room_id);
 
     if (existing) {
@@ -865,6 +1040,25 @@ export const seed_room_session = spacetimedb.reducer(
 
       return;
     }
+
+    const seedGrant = getValidRoomSeedGrant(
+      ctx,
+      room_id,
+      host_member_id,
+      seed_token,
+    );
+
+    if (!seedGrant) {
+      recordRoomError(ctx, {
+        code: "seed_authority_denied",
+        message:
+          "Live room seed ignored because no valid private seed grant exists.",
+        roomId: room_id,
+      });
+      return;
+    }
+
+    ctx.db.room_seed_grant.delete(seedGrant);
 
     ctx.db.room_session.insert({
       active_queue_item_id: undefined,
@@ -999,7 +1193,7 @@ export const load_media_source = spacetimedb.reducer(
       return;
     }
 
-    const trimmedUrl = source_url.trim();
+    const trimmedUrl = normalizeSourceUrl(source_url);
 
     if (!trimmedUrl) {
       recordRoomError(ctx, {
@@ -1168,6 +1362,19 @@ export const add_queue_item = spacetimedb.reducer(
       return;
     }
 
+    if (
+      findDuplicateActiveQueueItem(ctx, room_id, source_type, trimmedUrl)
+    ) {
+      recordRoomError(ctx, {
+        code: "queue_duplicate_ignored",
+        message:
+          "Queue item ignored because the same active source is already in the live queue.",
+        roomId: room_id,
+        severity: "info",
+      });
+      return;
+    }
+
     const position = is_play_next
       ? playNextQueuePosition(ctx, room_id)
       : nextQueuePosition(ctx, room_id);
@@ -1312,7 +1519,7 @@ export const play_queue_item = spacetimedb.reducer(
     room_id: t.string(),
   },
   (ctx, { actor_member_id, queue_item_id, room_id }) => {
-    const authority = getAuthorizedHost(ctx, room_id, actor_member_id);
+    const authority = getAuthorizedPlaybackActor(ctx, room_id, actor_member_id);
     const queueItem = ctx.db.live_queue_item.queue_item_id.find(queue_item_id);
 
     if (

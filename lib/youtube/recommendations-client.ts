@@ -14,11 +14,13 @@ const pendingRecommendationRequests = new Map<
 export function fetchYouTubeRecommendations({
   kind,
   query,
+  roomId,
 }: {
   kind: YouTubeRecommendationKind;
   query?: string | null;
+  roomId: string;
 }) {
-  const key = `${kind}:${query?.trim() ?? ""}`;
+  const key = `${roomId}:${kind}:${query?.trim() ?? ""}`;
   const cached = recommendationCache.get(key);
 
   if (cached) {
@@ -33,6 +35,7 @@ export function fetchYouTubeRecommendations({
 
   const params = new URLSearchParams({
     kind,
+    roomId,
   });
 
   if (query?.trim()) {

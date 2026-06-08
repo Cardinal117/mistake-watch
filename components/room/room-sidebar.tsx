@@ -189,6 +189,7 @@ export function RoomSidebar({
         onQueueItemPriorityChange={liveRoom.setQueueItemPriority}
         onRemoveQueueItem={liveRoom.removeQueueItem}
         queueMode={liveRoom.snapshot.session?.queueMode ?? "normal"}
+        roomId={room.id}
       />
     ),
   } satisfies Record<RoomTabId, ReactNode>;

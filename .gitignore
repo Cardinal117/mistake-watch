@@ -4,6 +4,7 @@ node_modules
 .wrangler
 out
 dist
+.tmp
 *.log
 .env
 .env.local

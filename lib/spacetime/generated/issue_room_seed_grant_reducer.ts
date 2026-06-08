@@ -11,9 +11,8 @@ import {
 } from "spacetimedb";
 
 export default {
+  expiresMs: __t.i64(),
   hostMemberId: __t.string(),
-  mode: __t.string(),
-  roomName: __t.string(),
   roomId: __t.string(),
   seedToken: __t.string(),
 };

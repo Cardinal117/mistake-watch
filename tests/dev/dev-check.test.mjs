@@ -16,6 +16,7 @@ const validEnv = {
   NEXT_PUBLIC_SPACETIME_URI: "ws://127.0.0.1:5372",
   NEXT_PUBLIC_SPACETIME_MODULE: "mistake-watch-rooms",
   SUPABASE_SECRET_KEY: "server-only",
+  SPACETIME_SERVER_AUTH_TOKEN: "server-only",
   YOUTUBE_API_KEY: "server-only",
 };
 

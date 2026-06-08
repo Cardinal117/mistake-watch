@@ -12,11 +12,17 @@ TASK-002.3 Seamless Next Item Loading is implemented pending manual live-room tr
 
 TASK-002.4 YouTube Availability Hardening is complete. The earlier SpacetimeDB CLI blocker was resolved by calling the installed executable directly at `C:\Users\Admin\AppData\Local\SpacetimeDB\spacetime.exe`; build with `--module-path .\spacetime`, generate, local publish, and Maincloud publish all succeeded.
 
+TASK-002.5A Adaptive Listen Card Drift is closed. The autonomous drift experiment was removed after user QA found it annoying; manual carousel arrows and normal horizontal scrolling remain.
+
+TASK-002.5C Live Room Authority Hardening is implemented pending manual multi-client live-room QA.
+
+TASK-002.5D Queue Authority And Add Media UX Stabilization was added from local multi-client QA. It is the next implementation slice before TASK-002.5B.
+
 Baseline handoff docs now exist at `docs/HANDOFF.md` and `docs/COMMANDS.md` so future agents can continue from TASK-002 without relying on chat memory.
 
 ## Canonical Next Task
 
-Next implementation task after TASK-002.5 QA: TASK-002.5A Adaptive Listen Card Drift.
+Next checkpoint: TASK-002.5C QA/review, then TASK-002.5D Queue Authority And Add Media UX Stabilization, then TASK-002.5B Cinematic Watch Room Purpose Pass.
 
 ## Decisions Locked
 
@@ -25,15 +31,100 @@ Next implementation task after TASK-002.5 QA: TASK-002.5A Adaptive Listen Card D
 - Work proceeds in numeric TASK-002 order unless the user explicitly changes it.
 - Each subtask needs a focused implementation report after completion.
 - TASK-002.4 was inserted after TASK-002.3 because YouTube playback failures need classification before Provider Recommendations and Room Picks add more YouTube-driven discovery.
+- Source-to-R2 downloads are owner-only. Normal users can add YouTube links/playlists, but only the project owner account can enqueue external source ingestion into R2.
+- YouTube video IDs are source-match lookup keys, not automatic download permission.
+- If a ready owner-authorized first-party Stream/R2 asset exists for a YouTube source, playback should prefer the first-party asset; otherwise YouTube iframe playback remains the fallback.
+- Real waveform/audio analysis must target direct, HLS, or first-party media. YouTube iframe audio must stay on honest fallback visuals unless a matched first-party asset exists.
+- TASK-002.5C hardens live room authority before more queue, voting, media-library, or social features depend on it.
+- TASK-002.6 prepares the waveform resolver and future first-party media peak contract. TASK-002.8A implements Google OAuth, profiles, and owner authority. TASK-002.8 implements the Cloudflare Stream/R2 media library and authorized upload/ingestion pipeline. TASK-002.10 implements friends, invites, social rooms, and account-backed listening history.
+- Movie/direct-media ingestion means owner uploads or authorized direct media URLs only. Do not add hidden-stream scraping, DRM bypass, ad circumvention, anti-bot circumvention, or piracy-site automation.
+- TASK-002.5B is the next watch-room UI/personality slice after TASK-002.5D. It should make watch mode focused, cinematic, synchronized, and media-first before later upload/library features depend on the watch layout.
+- Cloudflare Stream is the approved fast video processing/playback path for uploaded watch-room video. R2 remains available for raw/source archive, waveform/analysis JSON, supporting artifacts, and future non-Stream media needs.
+- TASK-002.8A was inserted before TASK-002.8 because owner-only Stream/R2 upload and source ingestion require a server-verifiable account/owner role before implementation.
+- TASK-002.5D is inserted before TASK-002.5B because local QA found queue permission mismatches, silent duplicate handling, previous/back history gaps, and Add Media stacking problems that should be fixed before the cinematic watch queue/library surfaces are redesigned.
 
 ## Important Assumptions
 
 - Existing working systems are preserved by default.
 - Chat comes before recommendations because it is a clear missing room feature.
-- R2, voting, accounts/friends, shared browser, and hardening are later system-level tasks.
-- Real waveform work must be technically honest: direct/HLS/R2 sources can support real analysis, YouTube iframe sources cannot be sampled directly.
+- Cloudflare Stream/R2, voting, accounts/friends, shared browser, and hardening are later system-level tasks.
+- Watch-room upload/library UI should not be built before the watch room has its purpose/layout foundation.
+- Real waveform work must be technically honest: direct/HLS/first-party media sources can support real analysis where technically permitted, YouTube iframe sources cannot be sampled directly.
 - Provider recommendations must not fake personalized, provider-trending, or listening-history data.
 - YouTube availability hardening cannot make every video embeddable. It should prevent known-bad items from looking playable, classify runtime failures, and keep autoplay moving when possible.
+- Live room authority must not rely on browser-provided role or host-member fields when seeding a SpacetimeDB room session.
+- Google OAuth starts with basic profile identity in TASK-002.8A. Playlist/history scopes and offline access are added only when the related account features are implemented and consent boundaries are clear.
+- The owner role for Stream/R2 upload and source ingestion must be server-verifiable before TASK-002.8 starts. Client UI flags are not an acceptable authorization boundary.
+- Queue add permission, queue management permission, playback permission, and host authority should be treated as distinct capabilities in TASK-002.5D.
+- Duplicate queue policy should default to warn-first and allow explicit add-anyway. The `Remember my choice` preference is local-only until accounts/preferences exist.
+
+## Live Authority Inspection Notes
+
+- Current SpacetimeDB live session seeding accepts a browser-provided `host_member_id` when no session exists. That creates a front-run risk after a live database reset, expired session, or first-connect race.
+- Current queue play-now behavior has a permission mismatch: client code can let playback-permitted guests request `playQueueItemNow`, while the `play_queue_item` reducer is host-only.
+- Playlist import currently sends one reducer call per imported item. UI duplicate filtering is snapshot-local, so reducer-level duplicate protection is needed for repeated or concurrent imports.
+- Playlist and recommendation API routes use server-side YouTube keys and should not become unauthenticated quota-burn surfaces once room/member context is available.
+
+## TASK-002.5D Planning Notes
+
+- Local QA after the private seed-grant work confirmed that the room can run locally with SpacetimeDB, but queue permissions still do not match the visible member permission model.
+- A guest granted full access could control playback and add non-duplicate songs, but queue-management actions remained blocked or ineffective. Current SpacetimeDB permission state exposes add-queue, playback, and browser controls, while durable Supabase types already include a `can_manage_queue` concept. TASK-002.5D should close that mismatch.
+- Previous/back currently does not represent actual playback history. It must use server-authoritative played order so users can move backward through the exact sequence they heard.
+- Duplicate handling should not silently block user intent. The user should see duplicate detection, choose whether to add anyway, and optionally remember that choice locally.
+- The current Add Media popout can visually collide with the queue drawer and control surfaces, especially on vertical monitor layouts. TASK-002.5D should replace it with a centered modal rendered above drawers and panels.
+- The Add Media modal should auto-preview single-song URLs and playlist URLs before mutation. Playlist review needs search, sort, select all, add all, add selected, and a duration filter behind a more-options menu.
+- A visible room notification system is needed so queue outcomes are not hidden in reducer errors or console-only state. Notifications should cover song added, playlist count added, duplicate detected, duplicate added anyway, permission denied, and preview/provider failure.
+- Console observations from local QA should be triaged in this task: React hydration mismatch and modal z-index/layout issues are app cleanup items; YouTube local `postMessage` warnings are non-blocking unless playback fails.
+
+Implementation test expectations:
+
+- Add SpacetimeDB authority tests for queue-management permission on move, remove, clear, pin, and play-next.
+- Add reducer denial tests for missing queue-management permission.
+- Add playback-history tests for previous/back order.
+- Add duplicate policy tests for warn/add-anyway behavior and local duplicate preference.
+- Add client/unit tests for Add Media modal state transitions and playlist review controls.
+- Run `npm run typecheck`, `npm run lint`, `npm run test:spacetime`, `npm run test:queue`, `npm run test:sync`, `npm run test:youtube`, and `npm run build`.
+
+## TASK-002.5C Implementation Notes
+
+- Added a server-issued private SpacetimeDB seed grant derived from verified durable host membership. The room snapshot now exposes the one-time raw seed token only to the current durable host member.
+- `seed_room_session` now requires `seed_token` and refuses to create a new live session unless a matching private `room_seed_grant` exists. Browser-provided `host_member_id` alone is no longer enough to establish live host authority.
+- `issue_room_seed_grant` can only be called by a SpacetimeDB identity listed in the private `trusted_seed_issuer` table. The matching auth token is stored only as `SPACETIME_SERVER_AUTH_TOKEN` in `.env.local` or Vercel.
+- The client hook now calls `seedRoomSession` only for the durable host. Guests still join live rooms through `joinRoom`, but they cannot seed host authority.
+- `play_queue_item` now uses playback-authorized reducer authority instead of host-only authority, matching the existing permission model where playback-granted members can select and immediately play a queued item.
+- `add_queue_item` now rejects duplicate active queue items by normalized source type and URL at reducer level, preventing repeated or concurrent playlist imports from flooding the live queue with duplicate rows.
+- Playlist preview and YouTube recommendation API routes now require room-member context from the existing guest membership cookie and apply per-room/member rate limits before provider quota is used.
+- Playlist and recommendation client helpers now include `roomId` and keep their local in-flight/cache keys room-scoped.
+- Spacetime generated bindings were refreshed after the reducer payload change.
+- Added `tests/spacetime/authority.test.mjs` for seed-token contract, playback-authorized queue selection, and reducer duplicate-protection coverage.
+
+Verification:
+
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run test:spacetime` passed.
+- `npm run test:queue` passed.
+- `npm run test:sync` passed.
+- `npm run test:youtube` passed.
+- `npm run build` passed.
+- `spacetime build --module-path .\spacetime` passed.
+- `spacetime generate` passed.
+
+Manual review pending:
+
+- Two-client live-room QA should confirm a guest cannot seed host authority after a fresh SpacetimeDB room state.
+- Two-client QA should confirm playback-granted guests can select/play queued items while guests without playback permission cannot.
+- Two-client QA should confirm queue-add permission revocation blocks new queue additions during an active room.
+- Playlist QA should confirm repeated playlist imports do not create duplicate live queue rows.
+- Environment QA should confirm `SPACETIME_SERVER_AUTH_TOKEN` is configured in `.env.local` and Vercel, and that the matching identity hex exists in SpacetimeDB's private `trusted_seed_issuer` table. SpacetimeDB no longer needs `SPACETIME_ROOM_SEED_SECRET`.
+
+## Future Watch Room Notes
+
+- TASK-002.5B should make watch mode feel like a private theater, screening room, movie night, or premiere event rather than a YouTube page or dashboard.
+- The watch room should prioritize attention: less information, less activity, less analytics, and fewer persistent side panels than listen mode.
+- Target layout: top Signal Room band, dominant center video, minimal grounded transport, compact Up Next surface, and members/queue drawers.
+- Ambient glow should feel like cinematic screen spill. Direct/HLS/first-party Stream media can use sampled or precomputed palette data where permitted; YouTube should use thumbnail/provider-derived palette fallback.
+- The expanded watch queue drawer is the future home for library browsing, drag-and-drop upload, processing status, source-match badges, and Add to Queue / Play Now actions. That upload/library behavior belongs to TASK-002.8, not TASK-002.5B.
 
 ## Future Accounts/Friends Notes
 
@@ -101,6 +192,7 @@ Next implementation task after TASK-002.5 QA: TASK-002.5A Adaptive Listen Card D
 - TASK-002.4 can accidentally overpromise YouTube reliability. Keep the task focused on availability checks, clear failure states, and safe skipping.
 - TASK-002.5 can drift into fake recommendation content if provider data is unavailable.
 - TASK-002.5A can become distracting if implemented as a marquee. It needs measured overflow thresholds, interaction pauses, and reduced-motion handling.
+- TASK-002.5D can become too broad if it absorbs the future media library. Keep it focused on queue authority, add-media modal UX, duplicates, notifications, and playback history.
 - TASK-002.8 and TASK-002.10 likely need extra Supabase, Cloudflare, and security review before implementation.
 - TASK-002.10A should not let fun local effects mutate shared room state or create duplicate account achievement records.
 - TASK-002.10B should not introduce persistent taste memory before account/profile consent exists.
@@ -183,6 +275,19 @@ Manual review pending:
 - Live listen-room visual QA for all four tabs.
 - Multi-client permission QA for recommendation card load/play, add-to-queue, and play-next actions.
 - Provider-limited state QA by testing with missing or invalid YouTube provider configuration.
+
+## TASK-002.5A Closed Implementation Notes
+
+- Added desktop-only adaptive drift to the listen room-picks rail for desktop/fine-pointer viewports, including narrower vertical-monitor widths.
+- The drift uses the existing scrollable recommendation cards rather than cloned decorative cards, so card actions, permission states, and queue/playback behavior stay unchanged.
+- Motion only runs when the rail has horizontal overflow to move without blank gaps. Mobile, coarse-pointer layouts, and reduced-motion users keep the normal static/snap carousel.
+- Drift is a one-way sweep through the rail rather than a reversing ping-pong motion. The playlist tab uses the same one-way traversal so long playlist rails can be scanned end to end.
+- Drift pauses on pointer, wheel, touch, keyboard, and focus interaction, and playlist review overlays block drift while open.
+- Follow-up decision: user QA found the autonomous drift annoying, so the autonomous drift loop was removed. Manual carousel arrows and normal horizontal scrolling remain.
+
+Manual review outcome:
+
+- The ambient drift experiment did not meet the desired feel and is no longer the next implementation target.
 
 ## TASK-002.3 Implementation Notes
 
@@ -311,6 +416,10 @@ Manual review pending:
 - Follow-up mobile correction moves the Room/Members tools panel into the visible mobile top/player flow instead of burying it below the full player and center content. The mobile player shell now drops the desktop-style panel background, border, and artwork glow wrapper so the media player reads as the mobile surface rather than a nested sidebar card.
 - Follow-up mobile regression repair restores playback-control priority by moving the full mobile Room/Members tools below the current-player controls and capping the mobile YouTube/artwork viewport. Queue drawer height settings now render as an attached settings row instead of a floating overlay that can collide with queue rows.
 - Follow-up mobile scroll repair removes the desktop app-shell height/overflow trap from mobile. The listen room now uses normal vertical document flow below `xl`, so player controls, Room/Members tools, Room Picks, and Recently Added can occupy the scroll area instead of leaving a black void.
+- Follow-up vertical-monitor correction: listen mode now treats fine-pointer screens at `900px+` as a desktop room shell instead of forcing them into the mobile/tablet flow until Tailwind `xl`. This keeps portrait monitors in the fixed left-player / scrollable-center / right-members / bottom-drawer layout while phones and coarse-pointer devices stay media-first.
+- Follow-up vertical-monitor correction: the listen header, left player shell, right members panel, center scroll area, and queue drawer now follow the same runtime `desktopShell` decision instead of mixing runtime shell state with `xl:` visibility. This prevents portrait desktop widths from showing mobile stats, mobile tools, or phone drawer offsets.
+- Follow-up discovery drift correction: room-pick auto drift no longer pauses at the end of the rail before resetting. It now continues left-to-right without the previous end delay. A future refinement can replace scroll-position drift with a duplicated transform track if we need a mathematically seamless loop with no reset point.
+- Follow-up discovery drift decision: user QA found the ambient card drift annoying, so the autonomous drift loop was removed for now. Manual carousel arrows and normal horizontal scrolling remain, with no background `requestAnimationFrame` drift work running.
 
 Verification:
 

@@ -205,8 +205,8 @@
         </p>
         <div class="summary-grid">
           <div class="card">
-            <strong>Current task</strong>
-            <p>TASK-002.4 YouTube Availability Hardening</p>
+            <strong>Current checkpoint</strong>
+            <p>TASK-002.5C QA/review, then TASK-002.5D, then TASK-002.5B</p>
           </div>
           <div class="card">
             <strong>Rule</strong>
@@ -268,13 +268,13 @@
             </div>
             <span class="status">Done</span>
           </article>
-          <article class="task next">
+          <article class="task">
             <div class="num">002.4</div>
             <div>
               <h3>YouTube Availability Hardening</h3>
               <p>Pre-check, classify, display, and safely skip YouTube items that cannot play in an embedded room.</p>
             </div>
-            <span class="status">Next</span>
+            <span class="status">Done</span>
           </article>
           <article class="task">
             <div class="num">002.5</div>
@@ -282,21 +282,45 @@
               <h3>Provider Recommendations and Room Picks</h3>
               <p>Make discovery tabs honest and provider-safe without fake personalization.</p>
             </div>
-            <span class="status future">Queued</span>
+            <span class="status">Implemented</span>
           </article>
           <article class="task">
             <div class="num">002.5A</div>
             <div>
               <h3>Adaptive Listen Card Drift</h3>
-              <p>Add subtle viewport-aware ambient drift to listen recommendation cards without changing queue or playback state.</p>
+              <p>Closed the listen-room autonomous drift experiment after user QA rejected the motion; manual carousel behavior remains.</p>
             </div>
-            <span class="status future">UI extra</span>
+            <span class="status">Closed</span>
+          </article>
+          <article class="task">
+            <div class="num">002.5C</div>
+            <div>
+              <h3>Live Room Authority Hardening</h3>
+              <p>Implemented trusted session seeding, reducer permission alignment, duplicate queue protection, and guarded provider routes; manual two-client QA remains.</p>
+            </div>
+            <span class="status">Implemented</span>
+          </article>
+          <article class="task next">
+            <div class="num">002.5D</div>
+            <div>
+              <h3>Queue Authority And Add Media UX Stabilization</h3>
+              <p>Fix queue-management permissions, previous/back history, duplicate handling, Add Media modal stacking, playlist review controls, and queue notifications before watch queue/library surfaces depend on them.</p>
+            </div>
+            <span class="status">Next</span>
+          </article>
+          <article class="task">
+            <div class="num">002.5B</div>
+            <div>
+              <h3>Cinematic Watch Room Purpose Pass</h3>
+              <p>Make watch mode focused, cinematic, synchronized, and media-first with a quiet Signal Room band, dominant video stage, minimal transport, drawers, and slow content ambience.</p>
+            </div>
+            <span class="status future">Queued</span>
           </article>
           <article class="task">
             <div class="num">002.6</div>
             <div>
               <h3>Real Audio-Reactive Waveform Architecture</h3>
-              <p>Use real analysis for accessible sources and honest fallback visuals for YouTube iframe sources.</p>
+              <p>Use real analysis for accessible sources, first-party media paths, and honest fallback visuals for YouTube iframe sources.</p>
             </div>
             <span class="status future">Queued</span>
           </article>
@@ -309,10 +333,18 @@
             <span class="status future">Queued</span>
           </article>
           <article class="task">
+            <div class="num">002.8A</div>
+            <div>
+              <h3>Google OAuth and Owner Authority Foundation</h3>
+              <p>Add Google-backed Supabase auth, profiles, and server-verifiable owner/member roles before owner-only Stream/R2 media work.</p>
+            </div>
+            <span class="status future">Pre-media foundation</span>
+          </article>
+          <article class="task">
             <div class="num">002.8</div>
             <div>
-              <h3>Cloudflare R2 Media Upload Pipeline</h3>
-              <p>Add owner-uploaded media storage while keeping Supabase as metadata storage.</p>
+              <h3>Cloudflare Stream + R2 Media Library</h3>
+              <p>Use Stream for fast uploaded-video processing/playback and R2 for raw archive or supporting media artifacts.</p>
             </div>
             <span class="status future">Later system</span>
           </article>
@@ -327,8 +359,8 @@
           <article class="task">
             <div class="num">002.10</div>
             <div>
-              <h3>Accounts, Friends, and Friend Invites</h3>
-              <p>Add Supabase auth, profiles, friends, invite popups, and notification drawer behavior.</p>
+              <h3>Accounts, Friends, Invites, Listening History, and Social Rooms</h3>
+              <p>Build friend relationships, invites, notifications, social rooms, and listening history on the account foundation from TASK-002.8A.</p>
             </div>
             <span class="status future">Later system</span>
           </article>
@@ -388,11 +420,19 @@
           </div>
           <div class="card">
             <strong>Ambient motion</strong>
-            <p>Adaptive card drift must only run with enough overflow, pause during interaction, and respect reduced-motion.</p>
+            <p>Watch-room ambience must shift slowly, respect reduced-motion, and use YouTube thumbnail/provider fallback instead of iframe frame sampling.</p>
+          </div>
+          <div class="card">
+            <strong>Authority boundary</strong>
+            <p>Host authority must come from verified membership, not browser-provided reducer payload fields or client UI state.</p>
+          </div>
+          <div class="card">
+            <strong>Queue interaction debt</strong>
+            <p>Full queue access, duplicate behavior, previous/back history, and Add Media stacking need a dedicated stabilization pass before the cinematic watch queue/library drawer is redesigned.</p>
           </div>
           <div class="card">
             <strong>Future systems</strong>
-            <p>R2, accounts, achievements, AI DJ, browser mode, and hardening may need deeper design review before implementation.</p>
+            <p>Cloudflare Stream/R2, social rooms, achievements, AI DJ, browser mode, and broad hardening may need deeper design review before implementation.</p>
           </div>
         </div>
       </section>

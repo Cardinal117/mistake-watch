@@ -63,12 +63,52 @@
 - The drift does not mutate queue order, playback state, provider data, or SpacetimeDB room state.
 - The animation feels subtle, premium, and room-native rather than like a marquee.
 
+## TASK-002.5C Live Room Authority Hardening
+
+- A malicious browser client cannot become host by seeding a known room ID.
+- Live host authority is derived from verified durable membership, not arbitrary reducer payload fields.
+- Guest-first room joins still work.
+- Queue add, queue manage, and playback-control permissions behave consistently across UI and SpacetimeDB reducers.
+- Playback-permitted users either can select and play queue items through reducers, or the UI does not expose play-now queue selection to them.
+- Duplicate playlist import attempts cannot flood the live queue with repeated items.
+- Playlist preview and recommendation API routes have appropriate room/member context or abuse protection where needed.
+- Existing host playback, guest queue add, YouTube playback, direct media, and HLS behavior continue to work.
+
+## TASK-002.5D Queue Authority And Add Media UX Stabilization
+
+- A guest granted full queue access can reorder, remove, clear, pin, play-next, and manage queue items without being blocked by host-only reducers.
+- A guest without queue-management permission cannot perform queue-management actions, and the UI clearly disables, hides, or explains those actions.
+- Playback-granted users can still play, pause, skip, and control playback according to the current playback permission model.
+- Previous/back returns to the actual prior played item, then earlier played items in order.
+- Add Media appears as a centered modal above queue drawers, room panels, listen surfaces, and watch surfaces.
+- Pasting a single URL shows preview metadata before adding.
+- Pasting a playlist URL shows a searchable/selectable playlist review before importing.
+- Duplicate items are not silently ignored. The user sees a duplicate warning and can choose to add anyway.
+- Successful add/import actions produce visible confirmation with useful titles or counts.
+- The Add Media modal works on mobile, vertical monitor layouts, and regular desktop without overlapping queue controls.
+- Hydration mismatch and z-index/layout issues found during local QA are logged as cleanup checks for this task. YouTube local `postMessage` warnings remain non-blocking unless playback fails.
+
+## TASK-002.5B Cinematic Watch Room Purpose Pass
+
+- Watch mode has a distinct focused private-theater identity instead of reading as a generic room dashboard.
+- The active video is visually dominant on desktop and mobile.
+- Room identity, controls, members, queue, and sync status remain accessible without competing with the video.
+- Members and Up Next use drawer or compact surfaces where practical instead of permanent dashboard-style panels.
+- The transport bar is grounded, minimal, and exposes only essential playback/sync controls by default.
+- Ambient watch-room glow changes slowly and supports reduced-motion.
+- YouTube ambience uses thumbnail/provider-derived fallback rather than claiming live iframe frame sampling.
+- No media-library upload/storage, recommendation analytics, or broad runtime media pipeline changes are implemented in this UI task.
+
 ## TASK-002.6 Real Audio-Reactive Waveform Architecture
 
+- A waveform source resolver distinguishes `youtube_embed`, `direct_media`, `hls_media`, future `stream_media`, and future `r2_media` sources.
 - Direct/HLS/R2-capable sources can use real analysis where technically permitted.
-- YouTube sources use a clearly scoped fallback visualizer.
+- YouTube iframe sources use a clearly scoped fallback visualizer unless a matched ready first-party Stream/R2 asset exists.
+- Future R2 waveform metadata has a defined contract: `waveform_peaks_url`, `waveform_peaks_key`, and `waveform_status`.
+- Ready first-party media matches can consume precomputed waveform peaks or honest lightweight fallbacks when TASK-002.8 provides them.
 - Reduced-motion users get non-animated equivalents.
-- Mobile performance constraints are documented and respected.
+- Mobile performance constraints are documented and respected, with no heavy real-time analysis by default.
+- TASK-002.6 does not implement Stream/R2 upload or ingestion.
 
 ## TASK-002.7 Avatar Motion Polish
 
@@ -77,12 +117,32 @@
 - Host crown remains a separate role overlay.
 - Motion causes no layout shift in dense room/member surfaces.
 
-## TASK-002.8 Cloudflare R2 Media Upload Pipeline
+## TASK-002.8A Google OAuth and Owner Authority Foundation
 
+- Supabase Auth with Google OAuth exists.
+- App profile data is stored in public profile tables, not directly in Supabase `auth.users`.
+- A durable `profiles.role = owner | member` model exists.
+- The app can distinguish owner and member roles server-side.
+- Stream/R2 upload and source-ingestion permissions have a reliable server-side authorization primitive before TASK-002.8 starts.
+- Signed-in account identity can connect to room membership while guest-first rooms still work.
+- Guest-to-account migration behavior is documented for display name, avatar, saved rooms, and room memberships.
+- Initial Google login requests basic profile identity only; YouTube playlist/history scopes are not requested until a later feature explicitly needs them.
+
+## TASK-002.8 Cloudflare Stream + R2 Media Library and Authorized Upload Pipeline
+
+- Cloudflare Stream is used as the primary uploaded-video processing and playback layer.
+- R2 is used for raw/source archive, supporting artifacts, waveform/analysis JSON, and future non-Stream media needs where appropriate.
 - Uploaded media is stored outside Supabase Postgres.
-- Supabase stores durable metadata/access records.
+- Supabase stores durable metadata, access records, source matches, Stream/R2 identifiers, and upload/ingestion job status through `media_assets`, `media_ingestion_jobs`, and `media_source_matches`.
 - Existing YouTube/direct media flows remain working.
-- Future waveform peak storage has a defined metadata path.
+- Owner-only upload/source ingestion is enforced server-side through the TASK-002.8A owner authority foundation. Non-owner users can add YouTube links/playlists but cannot upload first-party media or trigger first-party source ingestion.
+- A dev/test owner bypass, if added, is explicit env-gated and never enabled as the public default.
+- The expanded watch queue/library drawer supports drag-and-drop upload, stored video browsing, processing states, source-match badges, and Add to Queue / Play Now actions.
+- Playlist import prefers ready first-party source matches and falls back to YouTube embed items when no ready first-party asset exists.
+- YouTube video IDs and source URL hashes are lookup keys, not automatic permission to download.
+- Custom media workers run outside Vercel only where Cloudflare Stream does not cover required artifacts or ingestion needs, and update job status through pending, processing, ready, and failed states.
+- Supported first-party media has waveform peak generation, queueing, or an explicit unsupported state.
+- Movie/direct-media support is limited to owner uploads and authorized direct media URLs. No hidden-stream scraping, DRM bypass, ad circumvention, anti-bot circumvention, or piracy-site automation is included.
 
 ## TASK-002.9 Voting and Suggested Next
 
@@ -91,9 +151,11 @@
 - Random suggestion action exists.
 - Host retains override authority.
 
-## TASK-002.10 Accounts, Friends, and Friend Invites
+## TASK-002.10 Accounts, Friends, Invites, Listening History, and Social Rooms
 
-- Supabase auth/profile layer exists.
+- The social account layer builds on the Google OAuth/profile foundation from TASK-002.8A.
+- Playlist/history-related Google scopes are requested only through explicit incremental consent if this task implements features that require them.
+- Provider token storage and offline access behavior are explicitly documented before any refresh-token style access is used.
 - Friend invites can appear as popup and notification drawer items.
 - Friend rooms can be discovered according to privacy rules.
 - Guest identity migration path is clear.

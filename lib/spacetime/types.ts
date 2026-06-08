@@ -123,8 +123,16 @@ export type JoinRoomReducerPayload = {
 export type SeedRoomSessionPayload = {
   roomId: string;
   hostMemberId: string;
+  seedToken: string;
   mode: LiveRoomMode;
   roomName: string;
+};
+
+export type IssueRoomSeedGrantPayload = {
+  expiresMs: bigint;
+  hostMemberId: string;
+  roomId: string;
+  seedToken: string;
 };
 
 export type SetMemberPermissionsPayload = {

@@ -89,6 +89,17 @@ export const RoomPermission = __t.object("RoomPermission", {
 });
 export type RoomPermission = __Infer<typeof RoomPermission>;
 
+export const RoomSeedGrant = __t.object("RoomSeedGrant", {
+  createdByIdentity: __t.identity(),
+  createdMs: __t.i64(),
+  expiresMs: __t.i64(),
+  grantKey: __t.string(),
+  hostMemberId: __t.string(),
+  roomId: __t.string(),
+  seedToken: __t.string(),
+});
+export type RoomSeedGrant = __Infer<typeof RoomSeedGrant>;
+
 export const RoomSession = __t.object("RoomSession", {
   activeQueueItemId: __t.option(__t.string()),
   controllerIdentity: __t.option(__t.identity()),
@@ -109,4 +120,11 @@ export const RoomSession = __t.object("RoomSession", {
   queueMode: __t.string(),
 });
 export type RoomSession = __Infer<typeof RoomSession>;
+
+export const TrustedSeedIssuer = __t.object("TrustedSeedIssuer", {
+  createdMs: __t.i64(),
+  identityHex: __t.string(),
+  label: __t.string(),
+});
+export type TrustedSeedIssuer = __Infer<typeof TrustedSeedIssuer>;
 

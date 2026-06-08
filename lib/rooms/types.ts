@@ -56,6 +56,7 @@ export type RoomSnapshot = {
   code: string;
   inviteUrl?: string;
   isSaved: boolean;
+  liveSeedToken?: string | null;
   mode: "watch" | "listen";
   host: string;
   hostMemberId: string | null;
