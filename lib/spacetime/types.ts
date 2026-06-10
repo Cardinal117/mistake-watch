@@ -45,6 +45,7 @@ export type LivePermission = {
   canAddQueue: boolean;
   canControlPlayback: boolean;
   canControlBrowser: boolean;
+  canManageQueue: boolean;
   updatedByMemberId: string;
   updatedMs: number;
 };
@@ -63,6 +64,7 @@ export type LiveQueueItem = {
   isPinned: boolean;
   isPlayNext: boolean;
   isUnavailable: boolean;
+  playedSequence: number;
   playlistId: string | null;
   playlistTitle: string | null;
   addedByMemberId: string;
@@ -140,6 +142,7 @@ export type SetMemberPermissionsPayload = {
   roomId: string;
   targetMemberId: string;
   canAddQueue: boolean;
+  canManageQueue: boolean;
   canControlPlayback: boolean;
   canControlBrowser: boolean;
 };
@@ -199,12 +202,21 @@ export type AddQueueItemPayload = {
   isPinned: boolean;
   isPlayNext: boolean;
   isUnavailable: boolean;
+  allowDuplicate?: boolean;
   playlistId?: string;
   playlistTitle?: string;
   roomId: string;
   sourceTitle: string;
   sourceType: "direct" | "hls" | "youtube";
   sourceUrl: string;
+};
+
+export type AdvanceQueueItemPayload = {
+  actorMemberId: string;
+  autoplay?: boolean;
+  expectedActiveQueueItemId?: string;
+  expectedSourceUrl?: string;
+  roomId: string;
 };
 
 export type QueueItemReducerPayload = {

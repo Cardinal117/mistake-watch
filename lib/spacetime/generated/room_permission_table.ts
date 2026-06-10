@@ -19,4 +19,5 @@ export default __t.row({
   roomId: __t.string().name("room_id"),
   updatedByMemberId: __t.string().name("updated_by_member_id"),
   updatedMs: __t.i64().name("updated_ms"),
+  canManageQueue: __t.bool().name("can_manage_queue"),
 });

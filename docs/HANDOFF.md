@@ -38,9 +38,9 @@ TASK-003 Dev Environment Parity: implemented
 TASK-002.4 YouTube Availability Hardening: complete; SpacetimeDB build/generate/local publish/Maincloud publish completed after CLI path recovery
 TASK-002.5 Provider Recommendations and Room Picks: implemented pending live-room visual and permission QA
 TASK-002.5A Adaptive Listen Card Drift: closed; autonomous drift removed after user QA found it annoying
-TASK-002.5C Live Room Authority Hardening: implemented pending manual two-client QA
-TASK-002.5D Queue Authority And Add Media UX Stabilization: next implementation task after TASK-002.5C QA/review
-TASK-002.5B Cinematic Watch Room Purpose Pass: follows TASK-002.5D
+TASK-002.5C Live Room Authority Hardening: implemented; local manual QA confirmed by user
+TASK-002.5D Queue Authority And Add Media UX Stabilization: implemented with corrective autoplay/filter-bar follow-up pending manual two-client QA
+TASK-002.5B Cinematic Watch Room Purpose Pass: next implementation task after TASK-002.5D QA/review
 ```
 
 Product clarification:
@@ -74,7 +74,7 @@ npm run dev:check
 
 ## Current Next Checkpoint
 
-Proceed to TASK-002.5C QA/review, then TASK-002.5D Queue Authority And Add Media UX Stabilization, then TASK-002.5B Cinematic Watch Room Purpose Pass.
+Proceed to TASK-002.5D autoplay/filter-bar QA review, then TASK-002.5B Cinematic Watch Room Purpose Pass.
 
 TASK-002.5C implemented scope:
 
@@ -86,13 +86,15 @@ TASK-002.5C implemented scope:
 - add reducer-level duplicate protection for playlist imports;
 - add appropriate abuse/quota protection around playlist preview and recommendation API routes.
 
-TASK-002.5D planned scope:
+TASK-002.5D implemented scope:
 
 - add explicit queue-management authority so full queue access matches reducer behavior;
 - align enabled queue controls with reducer permissions;
 - add server-authoritative playback history for the previous/back transport;
 - replace Add Media with a centered modal above drawers and panels;
 - add URL preview, duplicate warning/add-anyway behavior, local duplicate preference, playlist review controls, and visible queue notifications.
+- add a corrective atomic SpacetimeDB autoplay advancement reducer plus YouTube client guards so backgrounded tabs cannot repeatedly advance/reload the same active item;
+- reserve playlist More options duration filters above the scrollable playlist rows so the controls do not overlap songs.
 
 Expected verification:
 

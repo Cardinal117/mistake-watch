@@ -28,6 +28,7 @@ export type RoomQueueItem = {
   isPinned?: boolean;
   isPlayNext?: boolean;
   isUnavailable?: boolean;
+  playedSequence?: number;
   playlistId?: string;
   playlistTitle?: string;
   sourceType?: "direct" | "hls" | "youtube";
@@ -45,6 +46,7 @@ export type RoomParticipant = {
   isController?: boolean;
   permissions: {
     queue: boolean;
+    manageQueue: boolean;
     playback: boolean;
     browser: boolean;
   };

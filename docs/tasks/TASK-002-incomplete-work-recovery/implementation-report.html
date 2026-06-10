@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TASK-002.5C Implementation Report</title>
+    <title>TASK-002.5D Implementation Report</title>
     <style>
       :root {
         color-scheme: dark;
@@ -223,34 +223,28 @@
   <body>
     <main>
       <header>
-        <p class="eyebrow">TASK-002.5C / Implementation Report</p>
-        <h1>Live Room Authority Hardening</h1>
+        <p class="eyebrow">TASK-002.5D / Implementation Report</p>
+        <h1>Queue Authority And Add Media UX Stabilization</h1>
         <p class="summary">
-          This slice closes the browser-authoritative live-session seed path, aligns queue-item play-now with playback permission, adds reducer-level duplicate queue protection, and guards provider-backed room routes behind verified room membership.
+          This corrective pass makes the visible QUEUE permission match real reducer authority, records actual playback history order, turns Add Media into a URL-driven centered modal, finishes playlist review controls, adds playlist duplicate handling, and surfaces visible queue feedback.
         </p>
       </header>
 
       <section class="grid cols-3" aria-label="Status summary">
         <article class="card">
           <span class="status verified">Implemented</span>
-          <h2 style="margin-top: 12px">Authority Boundary</h2>
-          <p style="margin-top: 8px; color: var(--muted)">
-            SpacetimeDB session seeding now requires a server-issued seed token for the durable host member.
-          </p>
+          <h2 style="margin-top: 12px">Queue Authority</h2>
+          <p style="margin-top: 8px; color: var(--muted)">SpacetimeDB keeps add/manage fields internally, while the current member UI maps the visible QUEUE permission to both queue add and queue management authority.</p>
         </article>
         <article class="card">
           <span class="status verified">Verified</span>
           <h2 style="margin-top: 12px">Automated Checks</h2>
-          <p style="margin-top: 8px; color: var(--muted)">
-            Typecheck, lint, Spacetime tests, queue tests, sync tests, YouTube tests, Next build, Spacetime build, and code generation passed.
-          </p>
+          <p style="margin-top: 8px; color: var(--muted)">Typecheck, lint, targeted tests, Next build, Spacetime build, and codegen passed.</p>
         </article>
         <article class="card">
           <span class="status pending">Manual QA Pending</span>
-          <h2 style="margin-top: 12px">Live Room Review</h2>
-          <p style="margin-top: 8px; color: var(--muted)">
-            Two-client room QA is still needed for fresh-session seeding, permission revocation, and duplicate playlist imports.
-          </p>
+          <h2 style="margin-top: 12px">Two-Client Review</h2>
+          <p style="margin-top: 8px; color: var(--muted)">Guest QUEUE authority, duplicate/import behavior, and responsive modal layout still need host plus guest browser confirmation after local publish.</p>
         </article>
       </section>
 
@@ -258,21 +252,23 @@
         <h2>What Changed</h2>
         <div class="grid cols-2" style="margin-top: 14px">
           <article class="card">
-            <h3>Trusted Session Seeding</h3>
+            <h3>Authority And History</h3>
             <ul>
-              <li>Added a server-issued private SpacetimeDB seed grant derived from verified durable host membership.</li>
-              <li>Exposed the one-time token only on the host's room snapshot.</li>
-              <li>Required `seed_token` plus a matching private `room_seed_grant` in the SpacetimeDB `seed_room_session` reducer.</li>
-              <li>Stopped guests from attempting to seed a live room session from the browser.</li>
+              <li>Added `can_manage_queue` to SpacetimeDB live permissions while keeping one visible QUEUE permission in the member UI.</li>
+              <li>Mapped the visible QUEUE permission to both queue add and queue management reducer payload fields.</li>
+              <li>Moved move, remove, clear, pin, and play-next reducers to queue-management authority.</li>
+              <li>Kept playback control separate so playback-granted users do not automatically get queue powers.</li>
+              <li>Added `played_sequence` to live queue rows so previous/back can follow actual played order.</li>
             </ul>
           </article>
           <article class="card">
-            <h3>Permissions And Queue Safety</h3>
+            <h3>Add Media UX</h3>
             <ul>
-              <li>`play_queue_item` now accepts playback-authorized actors instead of host-only actors.</li>
-              <li>`add_queue_item` now ignores duplicate active source URLs at reducer level.</li>
-              <li>Playlist/recommendation routes now require active room membership and rate limit requests.</li>
-              <li>Provider request clients pass `roomId` and keep caches room-scoped.</li>
+              <li>Replaced the embedded/anchored Add Media surfaces with centered portal modals above room panels and queue drawers.</li>
+              <li>Removed the manual Add single song / Review playlist mode cards; URL input now auto-loads single or playlist preview.</li>
+              <li>Added duplicate detection before single and playlist mutation, an explicit Add anyway path, an Add without duplicates path, and a local remember-my-choice preference.</li>
+              <li>Expanded playlist review with search, duplicate-aware sort, select visible, select all, clear selection, add all, add selected, duplicate badges, and duration filters.</li>
+              <li>Added local queue notifications for add, duplicate, playlist import, load, and warning outcomes.</li>
             </ul>
           </article>
         </div>
@@ -281,71 +277,67 @@
       <section>
         <h2>Acceptance Status</h2>
         <table style="margin-top: 14px">
-          <thead>
-            <tr>
-              <th>Criterion</th>
-              <th>Status</th>
-              <th>Evidence</th>
-            </tr>
-          </thead>
+          <thead><tr><th>Criterion</th><th>Status</th><th>Evidence</th></tr></thead>
           <tbody>
-            <tr>
-              <td>Malicious browser client cannot become host by seeding a known room ID.</td>
-              <td><span class="status verified">Implemented</span></td>
-              <td>`seed_room_session` requires a matching private seed grant for the durable host member and consumes it after successful seeding.</td>
-            </tr>
-            <tr>
-              <td>Live authority derives from verified durable membership.</td>
-              <td><span class="status verified">Implemented</span></td>
-              <td>Only `getRoomSnapshotForGuest` can mint the host seed token after cookie-backed membership reclaim.</td>
-            </tr>
-            <tr>
-              <td>Guest-first room joins still work.</td>
-              <td><span class="status pending">Needs Live QA</span></td>
-              <td>Guests still call `joinRoom`; automated build/type/test checks pass.</td>
-            </tr>
-            <tr>
-              <td>Playback permission and queue selection are consistent.</td>
-              <td><span class="status verified">Implemented</span></td>
-              <td>`play_queue_item` uses `getAuthorizedPlaybackActor`; listen/watch play-now UI already checks playback permission.</td>
-            </tr>
-            <tr>
-              <td>Duplicate playlist imports cannot flood the live queue.</td>
-              <td><span class="status verified">Implemented</span></td>
-              <td>Reducer-level duplicate active source protection returns before insert.</td>
-            </tr>
-            <tr>
-              <td>Playlist preview and recommendation routes have abuse protection.</td>
-              <td><span class="status verified">Implemented</span></td>
-              <td>Routes require room-member context and apply per-room/member rate limits.</td>
-            </tr>
+            <tr><td>Full queue access can reorder, remove, clear, pin, and play-next.</td><td><span class="status verified">Implemented</span></td><td>Reducers now use `getAuthorizedQueueManager`; the visible QUEUE permission maps to both `can_add_queue` and `can_manage_queue`.</td></tr>
+            <tr><td>Guests without queue-management permission cannot manage queue rows.</td><td><span class="status verified">Implemented</span></td><td>UI gates use `canManageQueue`; reducers deny missing `can_manage_queue` and queue tests cover the permission mapping.</td></tr>
+            <tr><td>Playback-granted users can still control playback.</td><td><span class="status verified">Preserved</span></td><td>`play_queue_item` remains playback-authorized from TASK-002.5C.</td></tr>
+            <tr><td>Previous/back returns through actual played order.</td><td><span class="status verified">Implemented</span></td><td>Played rows receive server `played_sequence`; listen back selects the highest played sequence.</td></tr>
+            <tr><td>Add Media appears centered above drawers and panels.</td><td><span class="status pending">Manual QA Pending</span></td><td>The modal renders through `document.body` at z-index 120+; corrected browser QA is still pending.</td></tr>
+            <tr><td>Single and playlist URLs preview before mutation.</td><td><span class="status verified">Implemented</span></td><td>URL input now auto-detects single media versus playlists and loads preview state before add/import actions.</td></tr>
+            <tr><td>Duplicates warn and can be added anyway.</td><td><span class="status verified">Implemented</span></td><td>Single and playlist duplicate flows prompt before mutation; reducer accepts `allow_duplicate` only when explicit.</td></tr>
+            <tr><td>Successful add/import actions produce visible feedback.</td><td><span class="status verified">Implemented</span></td><td>Queue notifications show added titles, duplicate-added warnings, playlist counts, and load success.</td></tr>
           </tbody>
         </table>
+      </section>
+
+      <section>
+        <h2>Corrective Follow-up</h2>
+        <div class="grid cols-2" style="margin-top: 14px">
+          <article class="card">
+            <h3>Autoplay Stability</h3>
+            <ul>
+              <li>Added SpacetimeDB `advance_queue_item` so queue autoplay advances the queue and session atomically.</li>
+              <li>Moved autoplay next-item selection from the client snapshot to server state.</li>
+              <li>Guarded stale hidden-tab calls with expected active queue item and source URL checks.</li>
+              <li>Updated YouTube ended/error/fallback/visibility paths to share one in-flight guarded advance request.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Playlist Filter Bar</h3>
+            <ul>
+              <li>Changed the More options duration filters into a reserved toolbar band above the scrollable playlist rows.</li>
+              <li>Kept the filter section opaque and separated from row content so it cannot appear as translucent controls over songs.</li>
+              <li>Added queue UI regression coverage for the reserved filter/list layout.</li>
+            </ul>
+          </article>
+        </div>
       </section>
 
       <section>
         <h2>Files To Review</h2>
         <div class="grid cols-2" style="margin-top: 14px">
           <article class="card">
-            <h3>Authority And Sync</h3>
+            <h3>Authority And Generated Bindings</h3>
             <div class="file-list">
               <div class="file">spacetime/src/index.ts</div>
-              <div class="file">lib/rooms/live-authority.ts</div>
-              <div class="file">lib/rooms/data.ts</div>
               <div class="file">lib/spacetime/use-live-room.ts</div>
-              <div class="file">lib/spacetime/generated/seed_room_session_reducer.ts</div>
+              <div class="file">lib/spacetime/types.ts</div>
+              <div class="file">lib/spacetime/generated/*</div>
+              <div class="file">components/room/youtube-media-player.tsx</div>
+              <div class="file">components/room/permission-toggles.tsx</div>
             </div>
           </article>
           <article class="card">
-            <h3>Provider Guards And UI Call Sites</h3>
+            <h3>Add Media And History UI</h3>
             <div class="file-list">
-              <div class="file">lib/rooms/request-guards.ts</div>
-              <div class="file">app/api/youtube/playlist/route.ts</div>
-              <div class="file">app/api/youtube/recommendations/route.ts</div>
-              <div class="file">lib/youtube/playlist-client.ts</div>
-              <div class="file">lib/youtube/recommendations-client.ts</div>
               <div class="file">components/room/queue-panel.tsx</div>
               <div class="file">components/room/listen-mode-layout.tsx</div>
+              <div class="file">components/room/room-sidebar.tsx</div>
+              <div class="file">lib/rooms/types.ts</div>
+              <div class="file">tests/player/youtube-autoplay-atomic.test.mjs</div>
+              <div class="file">tests/queue/add-media-ui.test.mjs</div>
+              <div class="file">tests/spacetime/authority.test.mjs</div>
             </div>
           </article>
         </div>
@@ -354,22 +346,20 @@
       <section>
         <h2>Verification</h2>
         <table style="margin-top: 14px">
-          <thead>
-            <tr>
-              <th>Command</th>
-              <th>Result</th>
-            </tr>
-          </thead>
+          <thead><tr><th>Command / Check</th><th>Result</th></tr></thead>
           <tbody>
             <tr><td><code>npm run typecheck</code></td><td><span class="status verified">Passed</span></td></tr>
             <tr><td><code>npm run lint</code></td><td><span class="status verified">Passed</span></td></tr>
             <tr><td><code>npm run test:spacetime</code></td><td><span class="status verified">Passed</span></td></tr>
             <tr><td><code>npm run test:queue</code></td><td><span class="status verified">Passed</span></td></tr>
-            <tr><td><code>npm run test:sync</code></td><td><span class="status verified">Passed</span></td></tr>
+            <tr><td><code>node --test --test-concurrency=1 tests/player/*.test.mjs</code></td><td><span class="status verified">Passed</span></td></tr>
             <tr><td><code>npm run test:youtube</code></td><td><span class="status verified">Passed</span></td></tr>
             <tr><td><code>npm run build</code></td><td><span class="status verified">Passed</span></td></tr>
-            <tr><td><code>spacetime build --module-path .\spacetime</code></td><td><span class="status verified">Passed</span></td></tr>
             <tr><td><code>spacetime generate</code></td><td><span class="status verified">Passed</span></td></tr>
+            <tr><td><code>spacetime build --module-path .\spacetime</code></td><td><span class="status verified">Passed</span></td></tr>
+            <tr><td><code>npm run dev:check</code></td><td><span class="status verified">20 pass, 0 warn, 0 fail</span></td></tr>
+            <tr><td>Local Spacetime publish</td><td><span class="status verified">Passed against http://127.0.0.1:5372</span></td></tr>
+            <tr><td>Browser QA</td><td><span class="status pending">Pending corrected two-client QA</span></td></tr>
           </tbody>
         </table>
       </section>
@@ -378,11 +368,13 @@
         <h2>Manual QA Still Needed</h2>
         <div class="card" style="margin-top: 14px">
           <ul>
-            <li>Fresh live-room state: confirm a guest cannot front-run and seed host authority for a known room ID.</li>
-            <li>Playback grant: confirm a playback-granted guest can select and play a queue item without queue-management permission.</li>
-            <li>Permission revocation: confirm revoked queue permission blocks new queue additions during an active session.</li>
-            <li>Playlist import: import the same playlist twice from one or two clients and confirm duplicate rows are ignored.</li>
-            <li>Environment: configure `SPACETIME_SERVER_AUTH_TOKEN` in `.env.local` and Vercel, then add its identity hex to SpacetimeDB's private `trusted_seed_issuer` table. SpacetimeDB no longer needs a room seed env secret.</li>
+            <li>Two clients: grant a guest QUEUE permission and confirm add, reorder, remove, clear, pin, play-next, and requeue work.</li>
+            <li>Two clients: remove QUEUE permission and confirm controls are disabled or reducer-denied without hidden mutation.</li>
+            <li>Playlist flow: import duplicates, use Add anyway, and confirm the duplicate preference is remembered locally.</li>
+            <li>Playback history: play at least three songs, use previous/back twice, and confirm it walks the exact played order.</li>
+            <li>Autoplay stability: background the active controller tab and confirm YouTube advances once without reload loops or replaying the previous song.</li>
+            <li>Playlist filter bar: confirm More options expands without overlapping playlist rows on desktop, vertical monitor, and mobile widths.</li>
+            <li>Publish required: SpacetimeDB reducer changes must be published before production can use `can_manage_queue`, `played_sequence`, `allow_duplicate`, and `advance_queue_item`.</li>
           </ul>
         </div>
       </section>

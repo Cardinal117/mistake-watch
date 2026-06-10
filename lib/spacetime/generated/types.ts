@@ -28,6 +28,7 @@ export const LiveQueueItem = __t.object("LiveQueueItem", {
   playlistId: __t.option(__t.string()),
   playlistTitle: __t.option(__t.string()),
   thumbnailUrl: __t.option(__t.string()),
+  playedSequence: __t.u32(),
 });
 export type LiveQueueItem = __Infer<typeof LiveQueueItem>;
 
@@ -86,6 +87,7 @@ export const RoomPermission = __t.object("RoomPermission", {
   roomId: __t.string(),
   updatedByMemberId: __t.string(),
   updatedMs: __t.i64(),
+  canManageQueue: __t.bool(),
 });
 export type RoomPermission = __Infer<typeof RoomPermission>;
 

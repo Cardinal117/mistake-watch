@@ -1,0 +1,115 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import test from "node:test";
+import { fileURLToPath } from "node:url";
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const youtubePlayerSource = await readFile(
+  path.join(root, "components/room/youtube-media-player.tsx"),
+  "utf8",
+);
+const directPlayerSource = await readFile(
+  path.join(root, "components/room/direct-media-player.tsx"),
+  "utf8",
+);
+const liveRoomSource = await readFile(
+  path.join(root, "lib/spacetime/use-live-room.ts"),
+  "utf8",
+);
+
+function sectionBetween(source, start, end) {
+  const startIndex = source.indexOf(start);
+  const endIndex = source.indexOf(end, startIndex + start.length);
+
+  assert.notEqual(startIndex, -1, `${start} section should exist`);
+  assert.notEqual(endIndex, -1, `${end} section should exist`);
+
+  return source.slice(startIndex, endIndex);
+}
+
+test("live room autoplay uses the atomic advance reducer", () => {
+  const advance = sectionBetween(
+    liveRoomSource,
+    "async function advanceToNextQueueItem",
+    "function moveQueueItem",
+  );
+
+  assert.match(advance, /reducers\.advanceQueueItem/);
+  assert.match(advance, /const session = snapshot\.session/);
+  assert.match(advance, /expectedActiveQueueItemId:\s*session\.activeQueueItemId/);
+  assert.match(advance, /expectedSourceUrl:\s*session\.sourceUrl/);
+  assert.doesNotMatch(advance, /getNextQueueItemIdForMode/);
+  assert.doesNotMatch(advance, /reducers\.playQueueItem/);
+  assert.doesNotMatch(advance, /reducers\.setPlaybackState/);
+});
+
+test("youtube ended event advances before publishing ended when autoplay can continue", () => {
+  const ended = sectionBetween(
+    youtubePlayerSource,
+    "if (event.data === yt.PlayerState.ENDED)",
+    "useEffect(() => {",
+  );
+
+  assert.match(ended, /queueAutoplayEnabledRef\.current/);
+  assert.match(ended, /hasNextQueueItemRef\.current/);
+  assert.match(ended, /requestAutoplayAdvance\(\)/);
+  assert.match(ended, /publishPlaybackState\("ended"\)/);
+  assert.ok(
+    ended.indexOf("requestAutoplayAdvance()") <
+      ended.indexOf('publishPlaybackState("ended")'),
+    "autoplay advance should be requested before falling back to ended",
+  );
+});
+
+test("youtube autoplay advance is guarded per active playback key", () => {
+  assert.match(youtubePlayerSource, /autoplayAdvanceInFlightKeyRef/);
+  assert.match(
+    youtubePlayerSource,
+    /autoplayAdvanceInFlightKeyRef\.current === activeKey/,
+  );
+  assert.match(
+    youtubePlayerSource,
+    /autoplayAdvanceInFlightKeyRef\.current = activeKey/,
+  );
+  assert.match(
+    youtubePlayerSource,
+    /autoplayAdvanceInFlightKeyRef\.current !== activePlaybackKey/,
+  );
+});
+
+test("autoplay in-flight guard expires so stale no-op advances can retry", () => {
+  for (const source of [youtubePlayerSource, directPlayerSource]) {
+    assert.match(source, /AUTOPLAY_ADVANCE_IN_FLIGHT_TIMEOUT_MS = 6_000/);
+    assert.match(source, /const inFlightExpired =/);
+    assert.match(source, /Date\.now\(\) - autoplayAdvanceInFlightAtMsRef\.current/);
+    assert.match(source, /autoplayAdvanceInFlightAtMsRef\.current = Date\.now\(\)/);
+  }
+});
+
+test("direct media ended event uses atomic advance before publishing ended", () => {
+  const ended = sectionBetween(
+    directPlayerSource,
+    "function handleEnded()",
+    "const Element = mode",
+  );
+
+  assert.match(ended, /requestAutoplayAdvance\(\)/);
+  assert.match(ended, /publishMediaState\("ended"\)/);
+  assert.ok(
+    ended.indexOf("requestAutoplayAdvance()") <
+      ended.indexOf('publishMediaState("ended")'),
+    "direct media should advance before falling back to ended",
+  );
+});
+
+test("youtube iframe errors skip to next without publishing error when autoplay can continue", () => {
+  const errorHandler = sectionBetween(
+    youtubePlayerSource,
+    "onError: (event: YoutubePlayerEvent)",
+    "onReady: () =>",
+  );
+
+  assert.match(errorHandler, /requestAutoplayAdvance\(\)/);
+  assert.match(errorHandler, /else\s*{\s*publishPlaybackState\("error"\);/);
+});

@@ -14,15 +14,15 @@ TASK-002.4 YouTube Availability Hardening is complete. The earlier SpacetimeDB C
 
 TASK-002.5A Adaptive Listen Card Drift is closed. The autonomous drift experiment was removed after user QA found it annoying; manual carousel arrows and normal horizontal scrolling remain.
 
-TASK-002.5C Live Room Authority Hardening is implemented pending manual multi-client live-room QA.
+TASK-002.5C Live Room Authority Hardening is implemented. User manual QA confirmed it is working well in local live-room testing.
 
-TASK-002.5D Queue Authority And Add Media UX Stabilization was added from local multi-client QA. It is the next implementation slice before TASK-002.5B.
+TASK-002.5D Queue Authority And Add Media UX Stabilization is implemented pending manual two-client queue-management QA.
 
 Baseline handoff docs now exist at `docs/HANDOFF.md` and `docs/COMMANDS.md` so future agents can continue from TASK-002 without relying on chat memory.
 
 ## Canonical Next Task
 
-Next checkpoint: TASK-002.5C QA/review, then TASK-002.5D Queue Authority And Add Media UX Stabilization, then TASK-002.5B Cinematic Watch Room Purpose Pass.
+Next checkpoint: TASK-002.5D QA/review, then TASK-002.5B Cinematic Watch Room Purpose Pass.
 
 ## Decisions Locked
 
@@ -84,6 +84,73 @@ Implementation test expectations:
 - Add duplicate policy tests for warn/add-anyway behavior and local duplicate preference.
 - Add client/unit tests for Add Media modal state transitions and playlist review controls.
 - Run `npm run typecheck`, `npm run lint`, `npm run test:spacetime`, `npm run test:queue`, `npm run test:sync`, `npm run test:youtube`, and `npm run build`.
+
+## TASK-002.5D Implementation Notes
+
+- Added explicit SpacetimeDB `can_manage_queue` live permission state, while keeping the current user-facing `QUEUE` permission as the single queue authority control.
+- Mapped the visible `QUEUE` permission to both SpacetimeDB `can_add_queue` and `can_manage_queue`, so a guest granted queue access can add, reorder, remove, clear, pin, play-next, and requeue as intended.
+- Moved queue-management reducers (`move_queue_item`, `remove_queue_item`, `clear_queue`, and `set_queue_item_priority`) from host-only checks to `getAuthorizedQueueManager`.
+- Preserved playback authority for play/pause/skip/source load behavior, while queue row mutation stays behind the visible `QUEUE` permission.
+- Added `played_sequence` to live queue rows. When a playing item becomes played, SpacetimeDB assigns the next sequence number; listen previous/back now uses this played order instead of inferred array order.
+- Added explicit `allow_duplicate` support to `add_queue_item`. Duplicate reducer protection remains default, but the UI can now add duplicates only after an explicit add-anyway decision.
+- Replaced the general queue Add Media surface with a centered `document.body` portal modal rendered above room panels and queue drawers.
+- Converted the listen header/mobile Add Media popout into the same centered overlay pattern so it no longer collides with vertical-monitor queue drawers.
+- Removed the manual Add single song / Review playlist mode cards. Add Media is now URL-driven: paste/input triggers automatic single or playlist preview.
+- Added duplicate detection before single-song and playlist queue mutation, plus an Add anyway confirmation and local `mw_queue_duplicate_preference` remember-my-choice setting.
+- Added queue notifications for successful single adds, duplicate-added warnings, playlist import counts, source load success, and duplicate detection warnings.
+- Expanded playlist review controls with search, duplicate-aware sort, select visible, select all, clear selection, add all, add selected, duplicate badges, and duration filters for shorter-track selection.
+- Regenerated SpacetimeDB TypeScript bindings after schema/reducer changes.
+
+Verification:
+
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run test:spacetime` passed.
+- `npm run test:queue` passed.
+- `npm run test:sync` passed.
+- `npm run test:youtube` passed.
+- `npm run build` passed.
+- `npm run dev:check` passed with 20 pass, 0 warn, 0 fail.
+- `spacetime generate` passed.
+- `spacetime build --module-path .\spacetime` passed.
+- Local SpacetimeDB publish to `http://127.0.0.1:5372` passed for database `mistake-watch-rooms`.
+- Browser QA for the corrected URL-driven modal and two-client queue permissions is still pending.
+
+Manual review pending:
+
+- Two-client QA should confirm a guest granted `QUEUE` can add, reorder, remove, clear, pin, play-next, and requeue rows.
+- Two-client QA should confirm a guest without `QUEUE` sees disabled controls or receives reducer-denied behavior without hidden mutation.
+- Playlist QA should confirm duplicate detection, Add anyway, and remembered duplicate preference.
+- Playback-history QA should play multiple songs and confirm previous/back walks the actual played sequence.
+- Production requires publishing the SpacetimeDB module before `can_manage_queue`, `played_sequence`, and `allow_duplicate` are available on Maincloud.
+
+### TASK-002.5D Corrective Follow-up: Autoplay Stability And Playlist Filter Bar
+
+- Fixed the playlist review More options layout so duration filters occupy a reserved toolbar band above the scrollable rows instead of visually overlapping the first playlist item.
+- Added SpacetimeDB `advance_queue_item`, an atomic playback reducer for queue autoplay. It validates playback authority, queue autoplay state, expected active queue item/source, chooses the next item from server state, marks the previous item played, marks the next item playing, and updates `room_session` to `playing` in one reducer transaction.
+- Changed `useLiveRoom.advanceToNextQueueItem` to call `advanceQueueItem` instead of computing the next queue item from the client snapshot and then calling `playQueueItem` plus `setPlaybackState`.
+- Updated the YouTube player so `ENDED`, iframe error fallback, interval fallback, and visibility recovery share a guarded autoplay-advance path. When queue autoplay can continue, the player now requests atomic advance instead of publishing `ended`/`error` first.
+- Added an active-playback-key in-flight guard so hidden-tab or delayed YouTube events cannot issue repeated advance attempts for the same active item.
+- Regenerated SpacetimeDB bindings after adding the reducer.
+
+Verification:
+
+- `npm run typecheck` passed with `NODE_OPTIONS=--max-old-space-size=4096`.
+- `npm run lint` passed.
+- `npm run test:spacetime` passed.
+- `npm run test:queue` passed.
+- `node --test --test-concurrency=1 tests/player/*.test.mjs` passed. The normal `npm run test:sync` glob hit local V8 out-of-memory when run in parallel in this Windows session.
+- `npm run build` passed with `NODE_OPTIONS=--max-old-space-size=4096`.
+- `spacetime build --module-path .\spacetime` passed.
+- `spacetime generate` passed.
+- Local SpacetimeDB publish to `http://127.0.0.1:5372` passed for database `mistake-watch-rooms`.
+- `npm run dev:check` passed with 20 pass, 0 warn, 0 fail after starting the local Next dev server.
+
+Manual review pending:
+
+- Two-browser QA should confirm backgrounded YouTube autoplay advances once per song without reload loops or replaying the just-finished song.
+- Playlist review QA should confirm the More options filter bar no longer overlaps playlist rows at the desktop/vertical-monitor viewport shown in user QA.
+- Maincloud requires a separate SpacetimeDB publish before production can use `advance_queue_item`.
 
 ## TASK-002.5C Implementation Notes
 

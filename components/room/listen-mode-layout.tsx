@@ -82,7 +82,7 @@ import {
   type ListenDiscoveryTab,
 } from "@/lib/recommendations/listen-discovery";
 import type { RoomQueueItem, RoomSnapshot } from "@/lib/rooms";
-import type { LiveQueueItem, LiveRoomState } from "@/lib/spacetime";
+import type { LiveQueueItem, LiveRoomError, LiveRoomState } from "@/lib/spacetime";
 import { cx } from "@/lib/ui";
 import { fetchPlaylistPreview } from "@/lib/youtube/playlist-client";
 import { fetchYouTubeMetadata } from "@/lib/youtube/metadata-client";
@@ -121,6 +121,7 @@ type QueueAddInput = SourceLoadInput & {
   isPinned?: boolean;
   isPlayNext?: boolean;
   isUnavailable?: boolean;
+  allowDuplicate?: boolean;
   playlistId?: string;
   playlistTitle?: string;
   thumbnailUrl?: string;
@@ -128,6 +129,11 @@ type QueueAddInput = SourceLoadInput & {
 
 type PlaylistPreview = YouTubePlaylistPreviewResponse;
 type PlaylistPreviewItem = YouTubePlaylistItem;
+type ListenNotification = {
+  id: string;
+  message: string;
+  tone: "error" | "info" | "success" | "warning";
+};
 type ListenTheme = {
   primary: string;
   secondary: string;
@@ -137,6 +143,15 @@ type ListenTheme = {
 
 const MIN_LISTEN_DRAWER_HEIGHT = 34;
 const MAX_LISTEN_DRAWER_HEIGHT = 88;
+const roomErrorToneBySeverity = {
+  error: "error",
+  info: "info",
+  warning: "warning",
+} satisfies Record<LiveRoomError["severity"], ListenNotification["tone"]>;
+
+function playlistItemKey(item: PlaylistPreviewItem) {
+  return `${item.videoId}:${item.position}`;
+}
 const DEFAULT_LISTEN_DRAWER_HEIGHT = 56;
 const DEFAULT_LISTEN_VOLUME = 100;
 const DEFAULT_RIGHT_SIDEBAR_COLLAPSED = false;
@@ -160,7 +175,9 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
       )
     : null;
   const queuedItems = liveQueueItems.filter((item) => item.status === "queued");
-  const previousItems = liveQueueItems.filter((item) => item.status === "played");
+  const previousItems = liveQueueItems
+    .filter((item) => item.status === "played")
+    .sort((a, b) => (a.playedSequence ?? 0) - (b.playedSequence ?? 0));
   const activeArtworkUrl =
     currentItem?.thumbnailUrl ??
     (session?.sourceType === "youtube" && session.sourceUrl
@@ -249,7 +266,9 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
   }
 
   function playPrevious() {
-    const previous = previousItems.at(-1);
+    const previous = [...previousItems]
+      .sort((a, b) => (a.playedSequence ?? 0) - (b.playedSequence ?? 0))
+      .at(-1);
 
     if (previous) {
       liveRoom.playQueueItemNow(previous.id);
@@ -339,10 +358,12 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
               connectionStatus={liveRoom.connectionStatus}
               controllerMemberId={controllerMemberId}
               currentMemberId={room.currentMember?.id}
+              items={liveQueueItems}
               liveRoom={liveRoom}
               onAddQueueItem={liveRoom.addQueueItem}
               onLoadSource={liveRoom.loadMediaSource}
               onTabChange={setMobileToolsTab}
+              roomErrors={liveRoom.snapshot.errors}
               room={room}
             />
           }
@@ -388,6 +409,7 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
             liveRoom={liveRoom}
             onAddQueueItem={liveRoom.addQueueItem}
             onLoadSource={liveRoom.loadMediaSource}
+            queueItems={liveQueueItems}
             queueCount={queuedItems.length}
             remainingSeconds={remainingQueueSeconds}
             room={room}
@@ -761,6 +783,7 @@ function ListenTechnicalRoomHeader({
   liveRoom,
   onAddQueueItem,
   onLoadSource,
+  queueItems,
   queueCount,
   remainingSeconds,
   room,
@@ -773,6 +796,7 @@ function ListenTechnicalRoomHeader({
   liveRoom: LiveRoomState;
   onAddQueueItem(input: QueueAddInput): void;
   onLoadSource(input: SourceLoadInput): void;
+  queueItems: RoomQueueItem[];
   queueCount: number;
   remainingSeconds: number | null;
   room: RoomSnapshot;
@@ -937,8 +961,10 @@ function ListenTechnicalRoomHeader({
               canAddQueue={canAddQueue}
               canLoadSource={canLoadSource}
               connectionStatus={connectionStatus}
+              items={queueItems}
               onAddQueueItem={onAddQueueItem}
               onLoadSource={onLoadSource}
+              roomErrors={liveRoom.snapshot.errors}
               roomId={room.id}
             />
             <ListenSavedRoomToggle
@@ -1009,10 +1035,12 @@ function ListenMobileRoomTools({
   connectionStatus,
   controllerMemberId,
   currentMemberId,
+  items,
   liveRoom,
   onAddQueueItem,
   onLoadSource,
   onTabChange,
+  roomErrors,
   room,
 }: {
   activeTab: "members" | "room";
@@ -1021,10 +1049,12 @@ function ListenMobileRoomTools({
   connectionStatus: string;
   controllerMemberId: string | null;
   currentMemberId?: string | null;
+  items: RoomQueueItem[];
   liveRoom: LiveRoomState;
   onAddQueueItem(input: QueueAddInput): void;
   onLoadSource(input: SourceLoadInput): void;
   onTabChange(tab: "members" | "room"): void;
+  roomErrors: LiveRoomError[];
   room: RoomSnapshot;
 }) {
   const onlineCount = liveRoom.participants.filter(
@@ -1070,8 +1100,10 @@ function ListenMobileRoomTools({
               canAddQueue={canAddQueue}
               canLoadSource={canLoadSource}
               connectionStatus={connectionStatus}
+              items={items}
               onAddQueueItem={onAddQueueItem}
               onLoadSource={onLoadSource}
+              roomErrors={roomErrors}
               roomId={room.id}
             />
             <div className="grid gap-2">
@@ -1411,30 +1443,196 @@ function ListenAddMediaPopover({
   canAddQueue,
   canLoadSource,
   connectionStatus,
+  items,
   onAddQueueItem,
   onLoadSource,
+  roomErrors,
   roomId,
 }: {
   canAddQueue: boolean;
   canLoadSource: boolean;
   connectionStatus: string;
+  items: RoomQueueItem[];
   onAddQueueItem(input: QueueAddInput): void;
   onLoadSource(input: SourceLoadInput): void;
+  roomErrors: LiveRoomError[];
   roomId: string;
 }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [importSummary, setImportSummary] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isImportingPlaylist, setIsImportingPlaylist] = useState(false);
+  const [notifications, setNotifications] = useState<ListenNotification[]>([]);
+  const [pendingDuplicateInput, setPendingDuplicateInput] =
+    useState<QueueAddInput | null>(null);
+  const [pendingDuplicatePlaylist, setPendingDuplicatePlaylist] = useState<{
+    items: PlaylistPreviewItem[];
+    label: string;
+  } | null>(null);
   const [playlistPreview, setPlaylistPreview] =
     useState<PlaylistPreview | null>(null);
   const [playlistReviewOpen, setPlaylistReviewOpen] = useState(false);
+  const [singlePreview, setSinglePreview] = useState<QueueAddInput | null>(
+    null,
+  );
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [selectedPlaylistIds, setSelectedPlaylistIds] = useState<Set<string>>(
     () => new Set(),
   );
+  const notifiedRoomErrorIds = useRef<Set<string> | null>(null);
   const [url, setUrl] = useState("");
   const addDisabled = !canAddQueue || connectionStatus !== "connected";
   const loadDisabled = !canLoadSource || connectionStatus !== "connected";
+  const duplicateSourceUrls = useMemo(
+    () =>
+      new Set(
+        items
+          .map((item) => item.sourceUrl)
+          .filter((sourceUrl): sourceUrl is string => Boolean(sourceUrl)),
+      ),
+    [items],
+  );
+  const duplicateVideoIds = useMemo(
+    () =>
+      new Set(
+        items
+          .map((item) => item.videoId)
+          .filter((videoId): videoId is string => Boolean(videoId)),
+      ),
+    [items],
+  );
+  const [duplicatePreference, setDuplicatePreference] = useState<
+    "allow" | "warn"
+  >(() =>
+    typeof window !== "undefined" &&
+    window.localStorage.getItem("mw_queue_duplicate_preference") === "allow"
+      ? "allow"
+      : "warn",
+  );
+  const hasPreviewState = Boolean(url.trim() || singlePreview || playlistPreview);
+
+  useEffect(() => {
+    if (notifiedRoomErrorIds.current === null) {
+      notifiedRoomErrorIds.current = new Set(
+        roomErrors.map((error) => error.errorId),
+      );
+      return;
+    }
+
+    const seen = notifiedRoomErrorIds.current;
+
+    for (const error of roomErrors) {
+      if (seen.has(error.errorId)) {
+        continue;
+      }
+
+      seen.add(error.errorId);
+      notify(error.message, roomErrorToneBySeverity[error.severity]);
+    }
+  }, [roomErrors]);
+
+  function notify(
+    message: string,
+    tone: ListenNotification["tone"] = "info",
+  ) {
+    const id = window.crypto.randomUUID();
+
+    setNotifications((current) => [...current.slice(-3), { id, message, tone }]);
+    window.setTimeout(() => {
+      setNotifications((current) =>
+        current.filter((notification) => notification.id !== id),
+      );
+    }, 4200);
+  }
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const trimmedUrl = url.trim();
+
+    if (!trimmedUrl) {
+      const resetTimer = window.setTimeout(() => {
+        setSinglePreview(null);
+        setPlaylistPreview(null);
+        setSelectedPlaylistIds(new Set());
+        setPreviewLoading(false);
+      }, 0);
+
+      return () => window.clearTimeout(resetTimer);
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      setErrorMessage(null);
+      setImportSummary(null);
+      setPreviewLoading(true);
+
+      if (detectUrlType(trimmedUrl) === "youtube-playlist") {
+        setSinglePreview(null);
+        void detectPlaylist(trimmedUrl, false).finally(() => {
+          if (!cancelled) {
+            setPreviewLoading(false);
+          }
+        });
+        return;
+      }
+
+      setPlaylistPreview(null);
+      setSelectedPlaylistIds(new Set());
+      const result = validateMediaSourceForMode(trimmedUrl, "listen");
+
+      if (!result.valid) {
+        setSinglePreview(null);
+        setErrorMessage(result.message);
+        notify(result.message, "error");
+        setPreviewLoading(false);
+        return;
+      }
+
+      void checkYouTubeInput({
+        sourceTitle: result.title,
+        sourceType: result.kind,
+        sourceUrl: result.url,
+      })
+        .then((checkedInput) => {
+          if (!cancelled) {
+            setSinglePreview(checkedInput);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setSinglePreview(null);
+            setErrorMessage("Preview failed. Check the URL and try again.");
+            notify("Provider preview failed.", "error");
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setPreviewLoading(false);
+          }
+        });
+    }, 450);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, url]);
+
+  function clearAddMediaState() {
+    setUrl("");
+    setSinglePreview(null);
+    setPendingDuplicateInput(null);
+    setPendingDuplicatePlaylist(null);
+    setErrorMessage(null);
+    setImportSummary(null);
+    setPlaylistPreview(null);
+    setPlaylistReviewOpen(false);
+    setSelectedPlaylistIds(new Set());
+  }
 
   async function detectPlaylist(input: string, openReview = false) {
     const parsed = parseYouTubePlaylist(input);
@@ -1474,6 +1672,7 @@ function ListenAddMediaPopover({
       return payload;
     } catch {
       setErrorMessage("Playlist import failed. Try the playlist again.");
+      notify("Playlist preview failed.", "error");
       setPlaylistPreview(null);
       setSelectedPlaylistIds(new Set());
       return null;
@@ -1529,54 +1728,104 @@ function ListenAddMediaPopover({
 
   async function addSingle(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const input = parseMediaUrl();
+    const input = singlePreview ?? parseMediaUrl();
 
     if (!input) {
       return;
     }
 
-    const checkedInput = await checkYouTubeInput(input);
+    const checkedInput = singlePreview ?? (await checkYouTubeInput(input));
 
     if (!checkedInput) {
       return;
     }
 
-    onAddQueueItem(checkedInput);
-    setUrl("");
-    setPlaylistPreview(null);
-    setSelectedPlaylistIds(new Set());
+    if (
+      duplicateSourceUrls.has(checkedInput.sourceUrl) &&
+      duplicatePreference === "warn"
+    ) {
+      setPendingDuplicateInput(checkedInput);
+      setErrorMessage(
+        "Duplicate detected. Add anyway only if you want this source repeated.",
+      );
+      notify("Duplicate detected. Confirm whether to add it again.", "warning");
+      return;
+    }
+
+    onAddQueueItem({
+      ...checkedInput,
+      allowDuplicate: duplicateSourceUrls.has(checkedInput.sourceUrl),
+    });
+    notify(`Added to queue: ${checkedInput.sourceTitle}`, "success");
+    clearAddMediaState();
+    setIsOpen(false);
   }
 
   async function loadSingle() {
-    const input = parseMediaUrl();
+    const input = singlePreview ?? parseMediaUrl();
 
     if (!input) {
       return;
     }
 
-    const checkedInput = await checkYouTubeInput(input);
+    const checkedInput = singlePreview ?? (await checkYouTubeInput(input));
 
     if (!checkedInput) {
       return;
     }
 
     onLoadSource(checkedInput);
-    setUrl("");
-    setPlaylistPreview(null);
-    setSelectedPlaylistIds(new Set());
+    notify(`Loaded source: ${checkedInput.sourceTitle}`, "success");
+    clearAddMediaState();
     setIsOpen(false);
   }
 
-  function importPlaylistItems(items: PlaylistPreviewItem[], label: string) {
+  function isDuplicatePlaylistItem(item: PlaylistPreviewItem) {
+    return (
+      duplicateSourceUrls.has(item.sourceUrl) ||
+      duplicateVideoIds.has(item.videoId)
+    );
+  }
+
+  function importPlaylistItems(
+    items: PlaylistPreviewItem[],
+    label: string,
+    options: { allowDuplicates?: boolean; skipDuplicates?: boolean } = {},
+  ) {
     if (!playlistPreview || addDisabled) {
       return;
     }
 
-    const playableItems = items.filter((item) => !item.isUnavailable);
+    const duplicates = items.filter(
+      (item) => !item.isUnavailable && isDuplicatePlaylistItem(item),
+    );
+
+    if (
+      duplicates.length > 0 &&
+      duplicatePreference === "warn" &&
+      !options.allowDuplicates &&
+      !options.skipDuplicates
+    ) {
+      setPendingDuplicatePlaylist({ items, label });
+      setErrorMessage(
+        `${duplicates.length} duplicate playlist item${
+          duplicates.length === 1 ? "" : "s"
+        } detected.`,
+      );
+      notify(`${duplicates.length} duplicate playlist items detected.`, "warning");
+      return;
+    }
+
+    const playableItems = items.filter(
+      (item) =>
+        !item.isUnavailable &&
+        (!options.skipDuplicates || !isDuplicatePlaylistItem(item)),
+    );
     let added = 0;
 
     playableItems.forEach((item) => {
       onAddQueueItem({
+        allowDuplicate: isDuplicatePlaylistItem(item),
         artist: item.channelTitle ?? undefined,
         channelName: item.channelTitle ?? undefined,
         durationSeconds: item.durationSeconds ?? undefined,
@@ -1592,8 +1841,11 @@ function ListenAddMediaPopover({
     });
 
     setImportSummary(
-      `Added ${added} ${label} from playlist. Skipped ${items.length - playableItems.length} unavailable.`,
+      `Added ${added} ${label} from playlist. Skipped ${
+        items.length - playableItems.length
+      } unavailable or duplicate.`,
     );
+    notify(`Added ${added} ${label} from playlist.`, "success");
     setUrl("");
     setPlaylistPreview(null);
     setPlaylistReviewOpen(false);
@@ -1614,7 +1866,7 @@ function ListenAddMediaPopover({
     }
 
     const selectedItems = playlistPreview.items.filter((item) =>
-      selectedPlaylistIds.has(item.videoId),
+      selectedPlaylistIds.has(playlistItemKey(item)),
     );
 
     importPlaylistItems(selectedItems, "selected tracks");
@@ -1632,8 +1884,35 @@ function ListenAddMediaPopover({
         <Plus className="h-5 w-5" aria-hidden />
         Add Media
       </Button>
-      {isOpen ? (
-        <div className="absolute right-0 top-12 z-40 grid w-[min(24rem,calc(100vw-2rem))] gap-3 rounded-md border border-white/10 bg-surface/95 p-4 shadow-[0_0_36px_rgb(255_186_32_/_0.12)] backdrop-blur-xl">
+      {notifications.length > 0 ? (
+        <div
+          aria-live="polite"
+          className="fixed bottom-4 right-4 z-[130] grid w-[min(22rem,calc(100vw-2rem))] gap-2"
+        >
+          {notifications.map((notification) => (
+            <div
+              className={cx(
+                "rounded-md border bg-surface/95 p-3 text-label-sm shadow-[0_0_32px_rgb(0_0_0_/_0.38)] backdrop-blur-xl",
+                notification.tone === "success" &&
+                  "border-primary-fixed-dim/35 text-primary-fixed-dim",
+                notification.tone === "warning" &&
+                  "border-secondary-fixed-dim/35 text-secondary-fixed-dim",
+                notification.tone === "error" && "border-error/40 text-error",
+                notification.tone === "info" &&
+                  "border-white/10 text-on-surface-variant",
+              )}
+              key={notification.id}
+              role={notification.tone === "error" ? "alert" : "status"}
+            >
+              {notification.message}
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {isOpen && typeof document !== "undefined"
+        ? createPortal(
+            <div className="fixed inset-0 z-[120] grid place-items-center bg-background/72 p-4 backdrop-blur-xl">
+        <div className="grid max-h-[min(42rem,calc(100dvh-2rem))] w-full max-w-2xl gap-3 overflow-y-auto rounded-lg border border-white/10 bg-surface/95 p-4 shadow-[0_0_48px_rgb(0_0_0_/_0.42)] backdrop-blur-xl">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h3 className="text-body-lg font-semibold text-on-surface">
@@ -1657,14 +1936,10 @@ function ListenAddMediaPopover({
               <input
                 className="h-11 rounded-sm border border-white/10 bg-surface-container-low px-3 text-body-md text-on-surface outline-none transition placeholder:text-on-surface-variant/55 focus:border-secondary-fixed-dim focus:ring-2 focus:ring-secondary-fixed-dim/15"
                 disabled={!canAddQueue && !canLoadSource}
-                onBlur={() => {
-                  if (detectUrlType(url) === "youtube-playlist") {
-                    void detectPlaylist(url);
-                  }
-                }}
                 onChange={(event) => {
                   setUrl(event.target.value);
                   setImportSummary(null);
+                  setSinglePreview(null);
                   if (detectUrlType(event.target.value) !== "youtube-playlist") {
                     setPlaylistPreview(null);
                     setSelectedPlaylistIds(new Set());
@@ -1673,80 +1948,104 @@ function ListenAddMediaPopover({
                 placeholder="YouTube / YouTube Music link"
                 value={url}
               />
-              <Button disabled={addDisabled || isImportingPlaylist} type="submit">
-                <ArrowRight className="h-5 w-5" aria-hidden />
-              </Button>
+              {hasPreviewState ? (
+                <Button onClick={clearAddMediaState} type="button" variant="ghost">
+                  Clear
+                </Button>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-label-sm text-on-surface-variant">
+                Links preview automatically before changing the queue.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  disabled={addDisabled || isImportingPlaylist || !singlePreview}
+                  size="sm"
+                  type="submit"
+                >
+                  <Plus className="h-4 w-4" aria-hidden />
+                  Add to Queue
+                </Button>
+                <Button
+                  disabled={loadDisabled || isImportingPlaylist || !singlePreview}
+                  onClick={() => void loadSingle()}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  <Play className="h-4 w-4" aria-hidden />
+                  Load Now
+                </Button>
+              </div>
             </div>
           </form>
-          {isImportingPlaylist ? (
+          {isImportingPlaylist || previewLoading ? (
             <p className="inline-flex items-center gap-2 text-label-sm text-on-surface-variant">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              Loading playlist preview
+              Loading preview
             </p>
           ) : null}
-          <div className="grid gap-2 rounded-sm bg-surface-container-low p-2">
-            <button
-              className="grid grid-cols-[2.5rem_minmax(0,1fr)] items-center gap-3 rounded-sm p-2 text-left hover:bg-surface-variant/30"
-              disabled={addDisabled}
-              onClick={() => {
-                const input = parseMediaUrl();
-                if (input) {
-                  void checkYouTubeInput(input).then((checkedInput) => {
-                    if (checkedInput) {
-                      onAddQueueItem(checkedInput);
-                      setUrl("");
-                    }
-                  });
-                }
-              }}
-              type="button"
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-sm bg-secondary-fixed-dim/10 text-secondary-fixed-dim">
-                <Headphones className="h-5 w-5" aria-hidden />
-              </span>
-              <span>
-                <span className="block text-body-md font-semibold text-on-surface">
-                  Add single song
-                </span>
-                <span className="text-label-sm text-on-surface-variant">
-                  Add one song to queue
-                </span>
-              </span>
-            </button>
-            <button
-              className="grid grid-cols-[2.5rem_minmax(0,1fr)] items-center gap-3 rounded-sm p-2 text-left hover:bg-surface-variant/30"
-              disabled={addDisabled || !playlistPreview}
-              onClick={() => {
-                setIsOpen(false);
-                setPlaylistReviewOpen(true);
-              }}
-              type="button"
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-sm bg-secondary-fixed-dim/10 text-secondary-fixed-dim">
-                <ListMusic className="h-5 w-5" aria-hidden />
-              </span>
-              <span>
-                <span className="block text-body-md font-semibold text-on-surface">
-                  Review playlist
-                </span>
-                <span className="text-label-sm text-on-surface-variant">
-                  {playlistPreview
-                    ? `${playlistPreview.items.length} tracks detected`
-                    : "Paste a playlist link first"}
-                </span>
-              </span>
-            </button>
-            <Button
-              disabled={loadDisabled}
-              onClick={() => void loadSingle()}
-              size="sm"
-              type="button"
-              variant="ghost"
-            >
-              <Play className="h-4 w-4" aria-hidden />
-              Load now
-            </Button>
-          </div>
+          {singlePreview ? (
+            <div className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-3 rounded-md border border-white/10 bg-surface-container-low p-3">
+              <QueueArtwork
+                className="h-14 w-14"
+                thumbnailUrl={singlePreview.thumbnailUrl}
+                title={singlePreview.sourceTitle}
+              />
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge tone="amber">Single preview</Badge>
+                  {duplicateSourceUrls.has(singlePreview.sourceUrl) ? (
+                    <Badge tone="amber">Duplicate</Badge>
+                  ) : null}
+                </div>
+                <p className="mt-2 truncate text-body-md font-semibold text-on-surface">
+                  {singlePreview.sourceTitle}
+                </p>
+                <p className="truncate text-label-sm text-on-surface-variant">
+                  {singlePreview.channelName ??
+                    singlePreview.artist ??
+                    singlePreview.sourceType}
+                  {singlePreview.durationSeconds
+                    ? ` / ${formatDurationSeconds(singlePreview.durationSeconds)}`
+                    : ""}
+                </p>
+              </div>
+            </div>
+          ) : null}
+          {playlistPreview ? (
+            <div className="grid gap-3 rounded-md border border-secondary-fixed-dim/25 bg-surface-container-low p-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <Badge tone="amber">Playlist detected</Badge>
+                  <p className="mt-2 truncate text-body-md font-semibold text-on-surface">
+                    {playlistPreview.playlistTitle ?? "YouTube playlist"}
+                  </p>
+                  <p className="text-label-sm text-on-surface-variant">
+                    {selectedPlaylistIds.size} selected /{" "}
+                    {
+                      playlistPreview.items.filter((item) => !item.isUnavailable)
+                        .length
+                    }{" "}
+                    playable
+                  </p>
+                </div>
+                <Button
+                  disabled={addDisabled || playlistPreview.items.length === 0}
+                  onClick={() => {
+                    setIsOpen(false);
+                    setPlaylistReviewOpen(true);
+                  }}
+                  size="sm"
+                  type="button"
+                >
+                  <ListMusic className="h-4 w-4" aria-hidden />
+                  Review Playlist
+                </Button>
+              </div>
+            </div>
+          ) : null}
           {importSummary ? (
             <p className="text-label-sm text-primary-fixed-dim" role="status">
               {importSummary}
@@ -1757,11 +2056,135 @@ function ListenAddMediaPopover({
               {errorMessage}
             </p>
           ) : null}
+          {pendingDuplicateInput ? (
+            <div className="grid gap-3 rounded-md border border-secondary-fixed-dim/35 bg-secondary-fixed-dim/10 p-3">
+              <p className="text-body-md font-semibold text-on-surface">
+                {pendingDuplicateInput.sourceTitle} is already in the queue.
+              </p>
+              <label className="inline-flex items-center gap-2 text-label-sm text-on-surface-variant">
+                <input
+                  className="accent-secondary-fixed-dim"
+                  onChange={(event) => {
+                    if (event.currentTarget.checked) {
+                      window.localStorage.setItem(
+                        "mw_queue_duplicate_preference",
+                        "allow",
+                      );
+                      setDuplicatePreference("allow");
+                    }
+                  }}
+                  type="checkbox"
+                />
+                Remember my choice
+              </label>
+              <div className="flex justify-end gap-2">
+                <Button
+                  onClick={() => setPendingDuplicateInput(null)}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    onAddQueueItem({
+                      ...pendingDuplicateInput,
+                      allowDuplicate: true,
+                    });
+                    notify(
+                      `Duplicate added: ${pendingDuplicateInput.sourceTitle}`,
+                      "warning",
+                    );
+                    setPendingDuplicateInput(null);
+                    setErrorMessage(null);
+                    setUrl("");
+                    setIsOpen(false);
+                  }}
+                  size="sm"
+                  type="button"
+                >
+                  Add anyway
+                </Button>
+              </div>
+            </div>
+          ) : null}
+          {pendingDuplicatePlaylist ? (
+            <div className="grid gap-3 rounded-md border border-secondary-fixed-dim/35 bg-secondary-fixed-dim/10 p-3">
+              <p className="text-body-md font-semibold text-on-surface">
+                Duplicate playlist entries detected.
+              </p>
+              <p className="text-label-sm text-on-surface-variant">
+                Add the clean playlist items only, or add duplicates anyway.
+              </p>
+              <label className="inline-flex items-center gap-2 text-label-sm text-on-surface-variant">
+                <input
+                  className="accent-secondary-fixed-dim"
+                  onChange={(event) => {
+                    if (event.currentTarget.checked) {
+                      window.localStorage.setItem(
+                        "mw_queue_duplicate_preference",
+                        "allow",
+                      );
+                      setDuplicatePreference("allow");
+                    }
+                  }}
+                  type="checkbox"
+                />
+                Remember my choice
+              </label>
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button
+                  onClick={() => setPendingDuplicatePlaylist(null)}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    importPlaylistItems(
+                      pendingDuplicatePlaylist.items,
+                      pendingDuplicatePlaylist.label,
+                      { skipDuplicates: true },
+                    );
+                    setPendingDuplicatePlaylist(null);
+                  }}
+                  size="sm"
+                  type="button"
+                  variant="secondary"
+                >
+                  Add without duplicates
+                </Button>
+                <Button
+                  onClick={() => {
+                    importPlaylistItems(
+                      pendingDuplicatePlaylist.items,
+                      pendingDuplicatePlaylist.label,
+                      { allowDuplicates: true },
+                    );
+                    notify("Duplicate playlist items added anyway.", "warning");
+                    setPendingDuplicatePlaylist(null);
+                  }}
+                  size="sm"
+                  type="button"
+                >
+                  Add anyway
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </div>
-      ) : null}
+            </div>,
+            document.body,
+          )
+        : null}
       {playlistReviewOpen && playlistPreview ? (
         <ListenPlaylistReviewOverlay
           addDisabled={addDisabled}
+          duplicateSourceUrls={duplicateSourceUrls}
+          duplicateVideoIds={duplicateVideoIds}
           onClose={() => setPlaylistReviewOpen(false)}
           onImportAll={importPlaylist}
           onImportSelected={importSelectedPlaylistItems}
@@ -1776,6 +2199,8 @@ function ListenAddMediaPopover({
 
 function ListenPlaylistReviewOverlay({
   addDisabled,
+  duplicateSourceUrls,
+  duplicateVideoIds,
   onClose,
   onImportAll,
   onImportSelected,
@@ -1784,6 +2209,8 @@ function ListenPlaylistReviewOverlay({
   selectedIds,
 }: {
   addDisabled: boolean;
+  duplicateSourceUrls: Set<string>;
+  duplicateVideoIds: Set<string>;
   onClose(): void;
   onImportAll(): void;
   onImportSelected(): void;
@@ -1791,20 +2218,65 @@ function ListenPlaylistReviewOverlay({
   preview: PlaylistPreview;
   selectedIds: Set<string>;
 }) {
+  const [durationFilter, setDurationFilter] = useState("all");
+  const [moreOptionsOpen, setMoreOptionsOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [sortMode, setSortMode] = useState<
+    "duplicate" | "duration" | "original" | "title"
+  >("original");
   const portalRoot =
     typeof document === "undefined" ? null : document.body;
   const playableItems = preview.items.filter((item) => !item.isUnavailable);
+  const isDuplicateItem = (item: PlaylistPreviewItem) =>
+    duplicateSourceUrls.has(item.sourceUrl) ||
+    duplicateVideoIds.has(item.videoId);
+  const duplicateCount = playableItems.filter(isDuplicateItem).length;
+  const visibleItems = playableItems
+    .filter((item) => {
+      const searchable =
+        `${item.title} ${item.channelTitle ?? ""}`.toLowerCase();
+      const durationLimit =
+        durationFilter === "short"
+          ? 180
+          : durationFilter === "medium"
+            ? 360
+            : durationFilter === "long"
+              ? 600
+              : null;
+
+      return (
+        searchable.includes(query.toLowerCase()) &&
+        (durationLimit === null ||
+          !item.durationSeconds ||
+          item.durationSeconds <= durationLimit)
+      );
+    })
+    .sort((first, second) => {
+      if (sortMode === "title") {
+        return first.title.localeCompare(second.title);
+      }
+
+      if (sortMode === "duration") {
+        return (first.durationSeconds ?? 0) - (second.durationSeconds ?? 0);
+      }
+
+      if (sortMode === "duplicate") {
+        return Number(isDuplicateItem(second)) - Number(isDuplicateItem(first));
+      }
+
+      return first.position - second.position;
+    });
   const allSelected =
     playableItems.length > 0 &&
-    playableItems.every((item) => selectedIds.has(item.videoId));
+    playableItems.every((item) => selectedIds.has(playlistItemKey(item)));
 
-  function toggleItem(videoId: string) {
+  function toggleItem(itemKey: string) {
     const next = new Set(selectedIds);
 
-    if (next.has(videoId)) {
-      next.delete(videoId);
+    if (next.has(itemKey)) {
+      next.delete(itemKey);
     } else {
-      next.add(videoId);
+      next.add(itemKey);
     }
 
     onSelectionChange(next);
@@ -1813,7 +2285,7 @@ function ListenPlaylistReviewOverlay({
   function setAllSelected(selected: boolean) {
     onSelectionChange(
       selected
-        ? new Set(playableItems.map((item) => item.videoId))
+        ? new Set(playableItems.map((item) => playlistItemKey(item)))
         : new Set(),
     );
   }
@@ -1836,6 +2308,7 @@ function ListenPlaylistReviewOverlay({
               {preview.skippedUnavailable
                 ? ` / ${preview.skippedUnavailable} unavailable skipped`
                 : ""}
+              {duplicateCount ? ` / ${duplicateCount} duplicate` : ""}
             </p>
           </div>
           <button
@@ -1855,15 +2328,49 @@ function ListenPlaylistReviewOverlay({
         ) : (
           <>
             <div className="flex min-h-0 flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-surface-container-lowest/75 p-3">
-              <button
-                className="inline-flex h-9 items-center gap-2 rounded-sm border border-white/10 px-3 text-label-sm font-semibold text-on-surface-variant transition hover:bg-surface-variant/35 hover:text-on-surface"
-                onClick={() => setAllSelected(!allSelected)}
-                type="button"
-              >
-                <Check className="h-4 w-4" aria-hidden />
-                {allSelected ? "Clear selection" : "Select all"}
-              </button>
+              <div className="grid min-w-0 flex-1 gap-2 md:grid-cols-[minmax(0,1fr)_auto_auto]">
+                <label className="relative min-w-0">
+                  <Search
+                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant"
+                    aria-hidden
+                  />
+                  <input
+                    className="h-9 w-full rounded-sm border border-white/10 bg-surface-container px-9 text-label-sm text-on-surface outline-none placeholder:text-on-surface-variant/55 focus:border-secondary-fixed-dim"
+                    onChange={(event) => setQuery(event.currentTarget.value)}
+                    placeholder="Search playlist"
+                    value={query}
+                  />
+                </label>
+                <select
+                  className="h-9 rounded-sm border border-white/10 bg-surface-container px-2 text-label-sm text-on-surface outline-none focus:border-secondary-fixed-dim"
+                  onChange={(event) =>
+                    setSortMode(event.currentTarget.value as typeof sortMode)
+                  }
+                  value={sortMode}
+                >
+                  <option value="original">Original</option>
+                  <option value="title">Title</option>
+                  <option value="duration">Duration</option>
+                  <option value="duplicate">Duplicates</option>
+                </select>
+                <button
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-sm border border-white/10 px-3 text-label-sm font-semibold text-on-surface-variant transition hover:bg-surface-variant/35 hover:text-on-surface"
+                  onClick={() => setMoreOptionsOpen((open) => !open)}
+                  type="button"
+                >
+                  <SlidersHorizontal className="h-4 w-4" aria-hidden />
+                  More
+                </button>
+              </div>
               <div className="flex flex-wrap gap-2">
+                <button
+                  className="inline-flex h-9 items-center gap-2 rounded-sm border border-white/10 px-3 text-label-sm font-semibold text-on-surface-variant transition hover:bg-surface-variant/35 hover:text-on-surface"
+                  onClick={() => setAllSelected(!allSelected)}
+                  type="button"
+                >
+                  <Check className="h-4 w-4" aria-hidden />
+                  {allSelected ? "Clear selection" : "Select all"}
+                </button>
                 <Button
                   disabled={addDisabled || playableItems.length === 0}
                   onClick={onImportAll}
@@ -1885,11 +2392,45 @@ function ListenPlaylistReviewOverlay({
                 </Button>
               </div>
             </div>
+            {moreOptionsOpen ? (
+              <div className="border-b border-white/10 bg-surface-container p-3 shadow-[0_12px_28px_rgba(0,0,0,0.28)]">
+                <div className="grid gap-2 rounded-sm border border-secondary-fixed-dim/25 bg-surface-container-low p-3">
+                <span className="technical-label text-secondary-fixed-dim">
+                  Duration filter
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                {[
+                  ["all", "Any length"],
+                  ["short", "Under 3 min"],
+                  ["medium", "Under 6 min"],
+                  ["long", "Under 10 min"],
+                ].map(([value, label]) => (
+                  <button
+                    aria-pressed={durationFilter === value}
+                    className={cx(
+                      "rounded-sm border px-2 py-1 text-label-sm transition",
+                      durationFilter === value
+                        ? "border-secondary-fixed-dim/40 bg-secondary-fixed-dim/10 text-secondary-fixed-dim"
+                        : "border-white/10 text-on-surface-variant hover:bg-surface-variant/35 hover:text-on-surface",
+                    )}
+                    key={value}
+                    onClick={() => setDurationFilter(value)}
+                    type="button"
+                  >
+                    {label}
+                  </button>
+                ))}
+                </div>
+                </div>
+              </div>
+            ) : null}
             <div className="min-h-0 overflow-y-auto p-3">
               <div className="grid gap-2">
-                {preview.items.map((item, index) => {
-                  const selected = selectedIds.has(item.videoId);
+                {visibleItems.map((item) => {
+                  const itemKey = playlistItemKey(item);
+                  const selected = selectedIds.has(itemKey);
                   const unavailable = item.isUnavailable;
+                  const duplicate = isDuplicateItem(item);
 
                   return (
                     <label
@@ -1901,7 +2442,7 @@ function ListenPlaylistReviewOverlay({
                           ? "border-secondary-fixed-dim/35 bg-secondary-fixed-dim/10"
                           : "border-white/10 bg-surface-container-low hover:border-white/20",
                       )}
-                      key={item.videoId}
+                      key={itemKey}
                     >
                       <input
                         checked={selected}
@@ -1909,7 +2450,7 @@ function ListenPlaylistReviewOverlay({
                         disabled={unavailable}
                         onChange={() => {
                           if (!unavailable) {
-                            toggleItem(item.videoId);
+                            toggleItem(itemKey);
                           }
                         }}
                         type="checkbox"
@@ -1929,12 +2470,14 @@ function ListenPlaylistReviewOverlay({
                       </span>
                       <span className="grid justify-items-end gap-1 text-right">
                         <span className="technical-label text-on-surface-variant">
-                          {index + 1}
+                          {item.position}
                         </span>
                         {unavailable ? (
                           <Badge tone="amber">
                             {getYouTubeAvailabilityLabel(item.availability)}
                           </Badge>
+                        ) : duplicate ? (
+                          <Badge tone="amber">Duplicate</Badge>
                         ) : null}
                       </span>
                     </label>
@@ -3065,6 +3608,13 @@ function QueueArtwork({
   );
 }
 
+function formatDurationSeconds(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
 function IconQueueButton({
   disabled,
   icon,
@@ -3310,6 +3860,7 @@ function useListenQueueItems(liveRoom: LiveRoomState, room: RoomSnapshot) {
       isPinned: item.isPinned,
       isPlayNext: item.isPlayNext,
       isUnavailable: item.isUnavailable,
+      playedSequence: item.playedSequence,
       playlistId: item.playlistId ?? undefined,
       playlistTitle: item.playlistTitle ?? undefined,
       sourceType: item.sourceType,

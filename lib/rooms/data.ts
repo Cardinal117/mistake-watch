@@ -316,6 +316,7 @@ function mapParticipant(
     name: member.display_name,
     permissions: {
       browser: isHost,
+      manageQueue: isHost,
       playback: isHost,
       queue: isHost || Boolean(settings?.guest_can_add_queue),
     },

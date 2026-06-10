@@ -12,7 +12,7 @@ import {
   setRoomModeAction,
   touchRoomActivityAction,
 } from "@/lib/rooms/actions";
-import { getNextQueueItemIdForMode, type QueueMode } from "@/lib/queue/model";
+import type { QueueMode } from "@/lib/queue/model";
 import type { RoomParticipant, RoomSnapshot } from "@/lib/rooms";
 import { DbConnection } from "./generated";
 import type {
@@ -66,6 +66,7 @@ type LiveReducers = {
     isPinned: boolean;
     isPlayNext: boolean;
     isUnavailable: boolean;
+    allowDuplicate?: boolean;
     playlistId?: string;
     playlistTitle?: string;
     roomId: string;
@@ -73,6 +74,13 @@ type LiveReducers = {
     sourceType: "direct" | "hls" | "youtube";
     sourceUrl: string;
     thumbnailUrl?: string;
+  }): Promise<void>;
+  advanceQueueItem(params: {
+    actorMemberId: string;
+    autoplay?: boolean;
+    expectedActiveQueueItemId?: string;
+    expectedSourceUrl?: string;
+    roomId: string;
   }): Promise<void>;
   clearQueue(params: { actorMemberId: string; roomId: string }): Promise<void>;
   grantRoomControl(params: {
@@ -144,6 +152,7 @@ type LiveReducers = {
     canAddQueue: boolean;
     canControlBrowser: boolean;
     canControlPlayback: boolean;
+    canManageQueue: boolean;
     roomId: string;
     targetMemberId: string;
   }): Promise<void>;
@@ -197,6 +206,7 @@ export type LiveRoomState = {
     isPinned?: boolean;
     isPlayNext?: boolean;
     isUnavailable?: boolean;
+    allowDuplicate?: boolean;
     playlistId?: string;
     playlistTitle?: string;
     sourceTitle: string;
@@ -291,7 +301,14 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       currentLiveParticipant.status === "online" &&
       currentLivePermission?.canAddQueue,
     );
-  const canManageQueue = canManageAuthority;
+  const canManageQueue =
+    currentMember?.role === "host" ||
+    Boolean(
+      currentLiveParticipant &&
+      currentLiveParticipant.status === "online" &&
+      (currentLivePermission?.canAddQueue ||
+        currentLivePermission?.canManageQueue),
+    );
 
   const currentMemberKick = currentMember
     ? snapshot.kicks.find((kick) => kick.memberId === currentMember.id)
@@ -520,12 +537,14 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       ...participant.permissions,
       [permission]: value,
     };
+    const queueAuthority = nextPermissions.queue;
 
     void reducers.setMemberPermissions({
       actorMemberId: currentMember.id,
-      canAddQueue: nextPermissions.queue,
+      canAddQueue: queueAuthority,
       canControlBrowser: nextPermissions.browser,
       canControlPlayback: nextPermissions.playback,
+      canManageQueue: queueAuthority,
       roomId: room.id,
       targetMemberId: memberId,
     });
@@ -633,6 +652,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     isPinned?: boolean;
     isPlayNext?: boolean;
     isUnavailable?: boolean;
+    allowDuplicate?: boolean;
     playlistId?: string;
     playlistTitle?: string;
     sourceTitle: string;
@@ -649,6 +669,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       artist: input.artist ?? "",
       channelName: input.channelName,
       durationSeconds: input.durationSeconds,
+      allowDuplicate: input.allowDuplicate ?? false,
       isPinned: input.isPinned ?? false,
       isPlayNext: input.isPlayNext ?? false,
       isUnavailable: input.isUnavailable ?? false,
@@ -695,44 +716,25 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
   }
 
   async function advanceToNextQueueItem(input?: { autoplay?: boolean }) {
+    const session = snapshot.session;
+
     if (
       !currentMember ||
       !canControlPlayback ||
       !reducers ||
-      !snapshot.session?.queueAutoplayEnabled
+      !session ||
+      (input?.autoplay !== false && !session.queueAutoplayEnabled)
     ) {
       return;
     }
 
-    const nextQueueItemId = getNextQueueItemIdForMode(
-      snapshot.queue.map((item) => ({
-        isUnavailable: item.isUnavailable,
-        position: item.position,
-        queueItemId: item.queueItemId,
-        status: item.status,
-      })),
-      snapshot.session.queueMode,
-    );
-
-    if (!nextQueueItemId) {
-      return;
-    }
-
-    await reducers.playQueueItem({
+    await reducers.advanceQueueItem({
       actorMemberId: currentMember.id,
-      queueItemId: nextQueueItemId,
+      autoplay: input?.autoplay ?? false,
+      expectedActiveQueueItemId: session.activeQueueItemId ?? undefined,
+      expectedSourceUrl: session.sourceUrl ?? undefined,
       roomId: room.id,
     });
-
-    if (input?.autoplay) {
-      await reducers.setPlaybackState({
-        actorMemberId: currentMember.id,
-        playbackRate: 1,
-        positionSeconds: 0,
-        roomId: room.id,
-        status: "playing",
-      });
-    }
   }
 
   function moveQueueItem(queueItemId: string, position: number) {
@@ -965,6 +967,7 @@ function buildFallbackSnapshot(room: RoomSnapshot): LiveRoomSnapshot {
       canAddQueue: participant.permissions.queue,
       canControlBrowser: participant.permissions.browser,
       canControlPlayback: participant.permissions.playback,
+      canManageQueue: participant.permissions.manageQueue,
       memberId: participant.id,
       permissionKey: `${room.id}:${participant.id}`,
       roomId: room.id,
@@ -981,6 +984,7 @@ function buildFallbackSnapshot(room: RoomSnapshot): LiveRoomSnapshot {
       isPinned: item.isPinned ?? false,
       isPlayNext: item.isPlayNext ?? false,
       isUnavailable: item.isUnavailable ?? false,
+      playedSequence: 0,
       playlistId: item.playlistId ?? null,
       playlistTitle: item.playlistTitle ?? null,
       position: index,
@@ -1066,6 +1070,7 @@ function readLiveSnapshot(liveDb: LiveDb): LiveRoomSnapshot {
       canAddQueue: permission.canAddQueue,
       canControlBrowser: permission.canControlBrowser,
       canControlPlayback: permission.canControlPlayback,
+      canManageQueue: permission.canManageQueue,
       memberId: permission.memberId,
       permissionKey: permission.permissionKey,
       roomId: permission.roomId,
@@ -1090,6 +1095,10 @@ function readLiveSnapshot(liveDb: LiveDb): LiveRoomSnapshot {
           }
         }
 
+        if (a.status === "played" && b.status === "played") {
+          return (a.playedSequence ?? 0) - (b.playedSequence ?? 0);
+        }
+
         return a.position - b.position;
       })
       .map((item) => ({
@@ -1103,6 +1112,7 @@ function readLiveSnapshot(liveDb: LiveDb): LiveRoomSnapshot {
         isPinned: item.isPinned ?? false,
         isPlayNext: item.isPlayNext ?? false,
         isUnavailable: item.isUnavailable ?? false,
+        playedSequence: item.playedSequence ?? 0,
         playlistId: item.playlistId ?? null,
         playlistTitle: item.playlistTitle ?? null,
         position: item.position,
@@ -1186,6 +1196,10 @@ function mapLiveParticipants(
           const isHost =
             participant.role === "host" ||
             participant.memberId === snapshot.session?.hostMemberId;
+          const hasQueueAuthority =
+            isHost ||
+            permissions?.canAddQueue === true ||
+            fallback?.permissions.queue === true;
 
           return {
             id: participant.memberId,
@@ -1200,7 +1214,8 @@ function mapLiveParticipants(
             permissions: {
               browser: isHost || Boolean(permissions?.canControlBrowser),
               playback: isHost || Boolean(permissions?.canControlPlayback),
-              queue: isHost || permissions?.canAddQueue !== false,
+              queue: hasQueueAuthority,
+              manageQueue: hasQueueAuthority,
             },
             role: isHost ? "host" : "guest",
             status: participant.status,

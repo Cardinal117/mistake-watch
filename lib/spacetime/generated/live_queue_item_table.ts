@@ -28,4 +28,5 @@ export default __t.row({
   playlistId: __t.option(__t.string()).name("playlist_id"),
   playlistTitle: __t.option(__t.string()).name("playlist_title"),
   thumbnailUrl: __t.option(__t.string()).name("thumbnail_url"),
+  playedSequence: __t.u32().name("played_sequence"),
 });

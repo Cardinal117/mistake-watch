@@ -56,6 +56,7 @@ export const roomMock = {
       status: "online",
       permissions: {
         queue: true,
+        manageQueue: true,
         playback: true,
         browser: true,
       },
@@ -67,6 +68,7 @@ export const roomMock = {
       status: "online",
       permissions: {
         queue: true,
+        manageQueue: false,
         playback: false,
         browser: false,
       },
@@ -78,6 +80,7 @@ export const roomMock = {
       status: "online",
       permissions: {
         queue: true,
+        manageQueue: false,
         playback: false,
         browser: false,
       },
@@ -89,6 +92,7 @@ export const roomMock = {
       status: "idle",
       permissions: {
         queue: true,
+        manageQueue: false,
         playback: false,
         browser: false,
       },

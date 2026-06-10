@@ -21,6 +21,8 @@ type DirectMediaPlayerProps = {
   mode: PlaybackMode;
 };
 
+const AUTOPLAY_ADVANCE_IN_FLIGHT_TIMEOUT_MS = 6_000;
+
 export function DirectMediaPlayer({
   className,
   liveRoom,
@@ -58,7 +60,16 @@ function DirectMediaPlayerCore({
   const hlsRef = useRef<Hls | null>(null);
   const applyingRemoteState = useRef(false);
   const advanceToNextQueueItemRef = useRef(liveRoom.advanceToNextQueueItem);
+  const autoplayAdvanceInFlightKeyRef = useRef<string | null>(null);
+  const autoplayAdvanceInFlightAtMsRef = useRef(0);
   const canControlPlaybackRef = useRef(liveRoom.canControlPlayback);
+  const canonicalStateRef = useRef<CanonicalPlaybackState | null>(
+    canonicalState,
+  );
+  const hasNextQueueItemRef = useRef(false);
+  const queueAutoplayEnabledRef = useRef(
+    liveRoom.snapshot.session?.queueAutoplayEnabled ?? true,
+  );
   const setPlaybackStateRef = useRef(liveRoom.setPlaybackState);
   const updateMediaTitleRef = useRef(liveRoom.updateMediaTitle);
   const activeSourceUrlRef = useRef(liveRoom.snapshot.session?.sourceUrl);
@@ -72,16 +83,63 @@ function DirectMediaPlayerCore({
   useLayoutEffect(() => {
     advanceToNextQueueItemRef.current = liveRoom.advanceToNextQueueItem;
     canControlPlaybackRef.current = liveRoom.canControlPlayback;
+    canonicalStateRef.current = canonicalState;
+    hasNextQueueItemRef.current = liveRoom.snapshot.queue.some(
+      (item) =>
+        item.status === "queued" ||
+        (liveRoom.snapshot.session?.queueMode === "loop" &&
+          item.status === "played"),
+    );
+    queueAutoplayEnabledRef.current =
+      liveRoom.snapshot.session?.queueAutoplayEnabled ?? true;
     setPlaybackStateRef.current = liveRoom.setPlaybackState;
     updateMediaTitleRef.current = liveRoom.updateMediaTitle;
     activeSourceUrlRef.current = liveRoom.snapshot.session?.sourceUrl;
+
+    const activePlaybackKey = getActivePlaybackKey(canonicalState);
+
+    if (
+      autoplayAdvanceInFlightKeyRef.current &&
+      autoplayAdvanceInFlightKeyRef.current !== activePlaybackKey
+    ) {
+      autoplayAdvanceInFlightKeyRef.current = null;
+      autoplayAdvanceInFlightAtMsRef.current = 0;
+    }
   }, [
     liveRoom.advanceToNextQueueItem,
     liveRoom.canControlPlayback,
+    canonicalState,
+    liveRoom.snapshot.queue,
+    liveRoom.snapshot.session?.queueAutoplayEnabled,
+    liveRoom.snapshot.session?.queueMode,
     liveRoom.setPlaybackState,
     liveRoom.snapshot.session?.sourceUrl,
     liveRoom.updateMediaTitle,
   ]);
+
+  function requestAutoplayAdvance() {
+    const activeKey = getActivePlaybackKey(canonicalStateRef.current);
+    const inFlightKey = autoplayAdvanceInFlightKeyRef.current;
+    const inFlightExpired =
+      inFlightKey === activeKey &&
+      Date.now() - autoplayAdvanceInFlightAtMsRef.current >
+        AUTOPLAY_ADVANCE_IN_FLIGHT_TIMEOUT_MS;
+
+    if (
+      !activeKey ||
+      (inFlightKey === activeKey && !inFlightExpired) ||
+      !canControlPlaybackRef.current ||
+      !queueAutoplayEnabledRef.current ||
+      !hasNextQueueItemRef.current
+    ) {
+      return false;
+    }
+
+    autoplayAdvanceInFlightKeyRef.current = activeKey;
+    autoplayAdvanceInFlightAtMsRef.current = Date.now();
+    advanceToNextQueueItemRef.current({ autoplay: true });
+    return true;
+  }
 
   useEffect(() => {
     const media = mediaRef.current;
@@ -246,6 +304,14 @@ function DirectMediaPlayerCore({
 
   function publishMediaState(status: PlaybackStatus) {
     const media = mediaRef.current;
+    const activePlaybackKey = getActivePlaybackKey(canonicalStateRef.current);
+
+    if (
+      activePlaybackKey &&
+      autoplayAdvanceInFlightKeyRef.current === activePlaybackKey
+    ) {
+      return;
+    }
 
     if (
       !media ||
@@ -285,8 +351,11 @@ function DirectMediaPlayerCore({
   }
 
   function handleEnded() {
+    if (requestAutoplayAdvance()) {
+      return;
+    }
+
     publishMediaState("ended");
-    advanceToNextQueueItemRef.current({ autoplay: true });
   }
 
   const Element = mode === "listen" ? "audio" : "video";
@@ -348,6 +417,14 @@ function DirectMediaPlayerCore({
       ) : null}
     </>
   );
+}
+
+function getActivePlaybackKey(state: CanonicalPlaybackState | null) {
+  if (!state?.source?.url) {
+    return null;
+  }
+
+  return `${state.activeQueueItemId ?? "source"}:${state.source.url}`;
 }
 
 function buildCanonicalPlaybackState(

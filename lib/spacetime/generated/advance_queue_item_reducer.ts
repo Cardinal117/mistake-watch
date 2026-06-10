@@ -12,10 +12,8 @@ import {
 
 export default {
   actorMemberId: __t.string(),
-  canAddQueue: __t.bool(),
-  canControlBrowser: __t.bool(),
-  canControlPlayback: __t.bool(),
-  canManageQueue: __t.bool(),
+  autoplay: __t.bool(),
+  expectedActiveQueueItemId: __t.option(__t.string()),
+  expectedSourceUrl: __t.option(__t.string()),
   roomId: __t.string(),
-  targetMemberId: __t.string(),
 };

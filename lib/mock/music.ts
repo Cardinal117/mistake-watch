@@ -68,6 +68,7 @@ export const musicRoomMock = {
       status: "online",
       permissions: {
         queue: true,
+        manageQueue: true,
         playback: true,
         browser: false,
       },
@@ -79,6 +80,7 @@ export const musicRoomMock = {
       status: "online",
       permissions: {
         queue: true,
+        manageQueue: false,
         playback: false,
         browser: false,
       },
@@ -90,6 +92,7 @@ export const musicRoomMock = {
       status: "online",
       permissions: {
         queue: true,
+        manageQueue: false,
         playback: false,
         browser: false,
       },
@@ -101,6 +104,7 @@ export const musicRoomMock = {
       status: "idle",
       permissions: {
         queue: true,
+        manageQueue: false,
         playback: false,
         browser: false,
       },

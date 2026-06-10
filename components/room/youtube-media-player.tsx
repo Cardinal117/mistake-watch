@@ -41,6 +41,8 @@ type YoutubeMediaPlayerProps = {
   mode: PlaybackMode;
 };
 
+const AUTOPLAY_ADVANCE_IN_FLIGHT_TIMEOUT_MS = 6_000;
+
 export function YoutubeMediaPlayer({
   className,
   liveRoom,
@@ -50,6 +52,8 @@ export function YoutubeMediaPlayer({
   const playerRef = useRef<YoutubePlayer | null>(null);
   const applyingRemoteState = useRef(false);
   const advanceToNextQueueItemRef = useRef(liveRoom.advanceToNextQueueItem);
+  const autoplayAdvanceInFlightKeyRef = useRef<string | null>(null);
+  const autoplayAdvanceInFlightAtMsRef = useRef(0);
   const canControlPlaybackRef = useRef(liveRoom.canControlPlayback);
   const canonicalStateRef = useRef<CanonicalPlaybackState | null>(null);
   const fallbackAdvancedKeyRef = useRef<string | null>(null);
@@ -81,19 +85,33 @@ export function YoutubeMediaPlayer({
     canControlPlaybackRef.current = liveRoom.canControlPlayback;
     canonicalStateRef.current = canonicalState;
     hasNextQueueItemRef.current = liveRoom.snapshot.queue.some(
-      (item) => item.status === "queued",
+      (item) =>
+        item.status === "queued" ||
+        (liveRoom.snapshot.session?.queueMode === "loop" &&
+          item.status === "played"),
     );
     queueAutoplayEnabledRef.current =
       liveRoom.snapshot.session?.queueAutoplayEnabled ?? true;
     setPlaybackStateRef.current = liveRoom.setPlaybackState;
     updateMediaTitleRef.current = liveRoom.updateMediaTitle;
     activeSourceUrlRef.current = liveRoom.snapshot.session?.sourceUrl;
+
+    const activePlaybackKey = getActivePlaybackKey(canonicalState);
+
+    if (
+      autoplayAdvanceInFlightKeyRef.current &&
+      autoplayAdvanceInFlightKeyRef.current !== activePlaybackKey
+    ) {
+      autoplayAdvanceInFlightKeyRef.current = null;
+      autoplayAdvanceInFlightAtMsRef.current = 0;
+    }
   }, [
     liveRoom.advanceToNextQueueItem,
     liveRoom.canControlPlayback,
     liveRoom.setPlaybackState,
     canonicalState,
     liveRoom.snapshot.queue,
+    liveRoom.snapshot.session?.queueMode,
     liveRoom.snapshot.session?.sourceUrl,
     liveRoom.snapshot.session?.queueAutoplayEnabled,
     liveRoom.updateMediaTitle,
@@ -101,12 +119,26 @@ export function YoutubeMediaPlayer({
 
   const requestAutoplayAdvance = useCallback(() => {
     const activeKey = getActivePlaybackKey(canonicalStateRef.current);
+    const inFlightKey = autoplayAdvanceInFlightKeyRef.current;
+    const inFlightExpired =
+      inFlightKey === activeKey &&
+      Date.now() - autoplayAdvanceInFlightAtMsRef.current >
+        AUTOPLAY_ADVANCE_IN_FLIGHT_TIMEOUT_MS;
 
-    if (!activeKey || fallbackAdvancedKeyRef.current === activeKey) {
+    if (
+      !activeKey ||
+      (fallbackAdvancedKeyRef.current === activeKey && !inFlightExpired)
+    ) {
+      return;
+    }
+
+    if (inFlightKey === activeKey && !inFlightExpired) {
       return;
     }
 
     fallbackAdvancedKeyRef.current = activeKey;
+    autoplayAdvanceInFlightKeyRef.current = activeKey;
+    autoplayAdvanceInFlightAtMsRef.current = Date.now();
     advanceToNextQueueItemRef.current({ autoplay: true });
   }, []);
 
@@ -310,6 +342,13 @@ export function YoutubeMediaPlayer({
     const activePlaybackKey = getActivePlaybackKey(canonicalState);
 
     if (
+      activePlaybackKey &&
+      autoplayAdvanceInFlightKeyRef.current === activePlaybackKey
+    ) {
+      return;
+    }
+
+    if (
       !isUsableYouTubePlayer(player) ||
       !playerSourceUrlRef.current ||
       activeSourceUrlRef.current !== playerSourceUrlRef.current ||
@@ -383,8 +422,16 @@ export function YoutubeMediaPlayer({
       }
 
       if (event.data === yt.PlayerState.ENDED) {
+        if (
+          queueAutoplayEnabledRef.current &&
+          hasNextQueueItemRef.current &&
+          canControlPlaybackRef.current
+        ) {
+          requestAutoplayAdvance();
+          return;
+        }
+
         publishPlaybackState("ended");
-        requestAutoplayAdvance();
       }
     },
     [publishPlaybackState, requestAutoplayAdvance, scheduleMetadataRefresh],
@@ -416,7 +463,6 @@ export function YoutubeMediaPlayer({
               const availability = classifyYouTubeIframeError(event.data);
 
               setLocalError(availability.reason);
-              publishPlaybackState("error");
 
               if (
                 queueAutoplayEnabledRef.current &&
@@ -424,6 +470,8 @@ export function YoutubeMediaPlayer({
                 canControlPlaybackRef.current
               ) {
                 window.setTimeout(() => requestAutoplayAdvance(), 900);
+              } else {
+                publishPlaybackState("error");
               }
             },
             onReady: () => {
@@ -533,6 +581,15 @@ export function YoutubeMediaPlayer({
         return;
       }
 
+      const activeKey = getActivePlaybackKey(canonicalStateRef.current);
+
+      if (
+        activeKey &&
+        autoplayAdvanceInFlightKeyRef.current === activeKey
+      ) {
+        return;
+      }
+
       applyCanonicalVideoToPlayer(player);
       resyncPlayerToCanonicalState(player, { forcePlayAttempt: true });
     }
@@ -564,6 +621,13 @@ export function YoutubeMediaPlayer({
         Date.now(),
       );
       const activeKey = getActivePlaybackKey(canonicalState);
+
+      if (
+        activeKey &&
+        autoplayAdvanceInFlightKeyRef.current === activeKey
+      ) {
+        return;
+      }
 
       if (
         !isNearYouTubeEnd({

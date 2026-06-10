@@ -7,6 +7,7 @@ import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
 import AddQueueItemReducer from "../add_queue_item_reducer";
+import AdvanceQueueItemReducer from "../advance_queue_item_reducer";
 import ClearQueueReducer from "../clear_queue_reducer";
 import GrantRoomControlReducer from "../grant_room_control_reducer";
 import HeartbeatReducer from "../heartbeat_reducer";
@@ -32,6 +33,7 @@ import UpdateRoomModeReducer from "../update_room_mode_reducer";
 import UpdateRoomNameReducer from "../update_room_name_reducer";
 
 export type AddQueueItemParams = __Infer<typeof AddQueueItemReducer>;
+export type AdvanceQueueItemParams = __Infer<typeof AdvanceQueueItemReducer>;
 export type ClearQueueParams = __Infer<typeof ClearQueueReducer>;
 export type GrantRoomControlParams = __Infer<typeof GrantRoomControlReducer>;
 export type HeartbeatParams = __Infer<typeof HeartbeatReducer>;

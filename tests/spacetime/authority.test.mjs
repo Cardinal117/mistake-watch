@@ -126,6 +126,43 @@ test("play queue item reducer uses playback authority", () => {
   assert.doesNotMatch(reducer, /getAuthorizedHost\(ctx,\s*room_id,\s*actor_member_id\)/);
 });
 
+test("queue management reducers use queue-management authority", () => {
+  for (const [name, nextName] of [
+    ["export const set_queue_item_priority", "export const play_queue_item"],
+    ["export const move_queue_item", "export const remove_queue_item"],
+    ["export const remove_queue_item", "export const clear_queue"],
+    ["export const clear_queue", "export const set_member_permissions"],
+  ]) {
+    const reducer = sectionBetween(spacetimeSource, name, nextName);
+
+    assert.match(
+      reducer,
+      /getAuthorizedQueueManager\(ctx,\s*room_id,\s*actor_member_id\)/,
+      `${name} must use queue-management authority`,
+    );
+  }
+});
+
+test("member queue permission grants add and manage authority together", () => {
+  const permissionTable = sectionBetween(
+    spacetimeSource,
+    "const roomPermission = table(",
+    "const liveQueueItem = table(",
+  );
+  const reducer = sectionBetween(
+    spacetimeSource,
+    "export const set_member_permissions",
+    "export const grant_room_control",
+  );
+
+  assert.match(permissionTable, /can_manage_queue/);
+  assert.match(reducer, /can_manage_queue:\s*t\.bool\(\)/);
+  assert.match(
+    reducer,
+    /canManageQueue:\s*targetIsHost\s*\|\|\s*can_add_queue\s*\|\|\s*can_manage_queue/,
+  );
+});
+
 test("add queue item prevents duplicate active sources", () => {
   const reducer = sectionBetween(
     spacetimeSource,
@@ -135,4 +172,60 @@ test("add queue item prevents duplicate active sources", () => {
 
   assert.match(reducer, /findDuplicateActiveQueueItem\(ctx,\s*room_id,\s*source_type,\s*trimmedUrl\)/);
   assert.match(reducer, /queue_duplicate_ignored/);
+});
+
+test("duplicate queue protection allows explicit add-anyway override", () => {
+  const reducer = sectionBetween(
+    spacetimeSource,
+    "export const add_queue_item",
+    "export const send_room_chat_message",
+  );
+
+  assert.match(reducer, /allow_duplicate:\s*t\.bool\(\)\.default\(false\)/);
+  assert.match(reducer, /!allow_duplicate\s*&&\s*findDuplicateActiveQueueItem/);
+});
+
+test("played queue items receive server-authoritative history sequence", () => {
+  const helper = sectionBetween(
+    spacetimeSource,
+    "function nextPlayedSequence",
+    "function playNextQueuePosition",
+  );
+  const reducer = sectionBetween(
+    spacetimeSource,
+    "export const play_queue_item",
+    "export const move_queue_item",
+  );
+
+  assert.match(helper, /played_sequence/);
+  assert.match(reducer, /played_sequence:\s*nextPlayedSequence\(ctx,\s*room_id\)/);
+  assert.match(reducer, /played_sequence:\s*0/);
+});
+
+test("autoplay queue advancement is atomic and stale-safe", () => {
+  const helper = sectionBetween(
+    spacetimeSource,
+    "function nextPlaybackQueueItem",
+    "function playNextQueuePosition",
+  );
+  const reducer = sectionBetween(
+    spacetimeSource,
+    "export const advance_queue_item",
+    "export const play_queue_item",
+  );
+
+  assert.match(helper, /queueMode/);
+  assert.match(helper, /status === "queued"/);
+  assert.match(helper, /normalizeQueueMode\(queueMode\) !== "loop"/);
+  assert.match(helper, /status === "played"/);
+  assert.match(reducer, /expected_active_queue_item_id:\s*t\.option\(t\.string\(\)\)/);
+  assert.match(reducer, /expected_source_url:\s*t\.option\(t\.string\(\)\)/);
+  assert.match(reducer, /authority\.session\.queue_autoplay_enabled/);
+  assert.match(
+    reducer,
+    /nextPlaybackQueueItem\([\s\S]*ctx,[\s\S]*room_id,[\s\S]*authority\.session\.queue_mode/,
+  );
+  assert.match(reducer, /active_queue_item_id:\s*nextQueueItem\.queue_item_id/);
+  assert.match(reducer, /status:\s*"playing"/);
+  assert.match(reducer, /played_sequence:\s*nextPlayedSequence\(ctx,\s*room_id\)/);
 });

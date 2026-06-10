@@ -75,6 +75,7 @@ export function RoomSidebar({
     isPinned: item.isPinned,
     isPlayNext: item.isPlayNext,
     isUnavailable: item.isUnavailable,
+    playedSequence: item.playedSequence,
     playlistId: item.playlistId ?? undefined,
     playlistTitle: item.playlistTitle ?? undefined,
     sourceType: item.sourceType,
@@ -189,6 +190,7 @@ export function RoomSidebar({
         onQueueItemPriorityChange={liveRoom.setQueueItemPriority}
         onRemoveQueueItem={liveRoom.removeQueueItem}
         queueMode={liveRoom.snapshot.session?.queueMode ?? "normal"}
+        roomErrors={liveRoom.snapshot.errors}
         roomId={room.id}
       />
     ),
