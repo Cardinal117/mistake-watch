@@ -237,6 +237,34 @@ Safe commit point:
 
 - Watch mode has a clear product personality and layout foundation before media-library/upload features are added.
 
+## TASK-002.5E: Vertical Listen AI DJ Placement Shell
+
+Source task: vertical listen layout follow-up from user QA after TASK-002.5D and TASK-002.5B.
+
+Work:
+
+- Move the existing advisory future AI DJ/session-intelligence card into the unused space below the left player card on tall desktop and vertical-monitor listen layouts.
+- Keep this as a layout-only shell task:
+  - no AI chat;
+  - no voice generation;
+  - no speech waveform;
+  - no queue mutation;
+  - no account-backed memory.
+- Preserve the current center discovery surface on wide desktop when that layout is stronger, but prefer below-player placement when the left column has meaningful unused vertical space.
+- Keep mobile and tablet layouts in normal single-column flow without burying player controls or queue access.
+- Keep the card compact, advisory, and clearly marked as future session intelligence.
+- Prepare the visual structure for later prompt, voice, and waveform affordances without implementing those behaviors.
+
+Review checkpoint:
+
+- Vertical listen layouts no longer leave the large below-player space feeling wasted.
+- The AI DJ shell feels like a native DJ console placeholder without implying shipped AI behavior.
+- Player controls, room controls, recommendations, members, and queue drawer remain usable and uncluttered.
+
+Safe commit point:
+
+- Listen mode has a clear responsive home for the future AI DJ surface before real AI/session-intelligence work begins later.
+
 ## TASK-002.6: Real Audio-Reactive Waveform Architecture
 
 Source task: TASK-001 Task 16.D.
@@ -459,12 +487,16 @@ Work:
 - After accounts/profiles exist, optionally add consent-aware user memory for taste patterns and recurring room preferences.
 - Surface technical, evidence-backed readouts such as `Signal Analysis`, `Current Mood`, `Room Energy`, `Current Session`, `Songs Added`, `Top Contributor`, and `Current Pattern Detected`.
 - Support an `Odysseus DJ` style module that can explain detected patterns and suggest a direction such as `Dark Orchestral Metal`.
+- On tall desktop and vertical-monitor listen layouts, reserve the unused space below the left player card as the preferred home for the AI DJ/session-intelligence card.
+- Keep that vertical placement responsive: the player remains first priority, the AI DJ card sits below it only where there is meaningful empty left-column space, and mobile/tablet layouts keep the normal single-column flow.
+- Prepare the card for future interaction affordances such as prompt input, spoken-response state, and an audio-reactive waveform, but do not implement AI chat, voice generation, or speech visualization until this task is explicitly active.
 - Keep AI output advisory by default; it must not mutate the queue, override host authority, or pretend unavailable provider data exists.
 - Feed future suggestions into provider recommendations, suggested-next voting, or host-controlled add/play-next actions only after explicit user action.
 
 Review checkpoint:
 
 - AI DJ feels native to the listen center surface and reads like session intelligence, not generic chatbot copy.
+- On vertical listen layouts, AI DJ uses the otherwise empty below-player column space without crowding the media player, room controls, recommendations, or queue drawer.
 - Personalization is clearly separated from room-session analysis and only appears after accounts/profiles make it legitimate.
 
 Safe commit point:

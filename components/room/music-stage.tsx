@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Disc3,
   Headphones,
@@ -10,6 +10,7 @@ import {
   PictureInPicture2,
 } from "lucide-react";
 import { Badge, Button } from "@/components/ui";
+import { resolveWaveformSource } from "@/lib/player";
 import { getYouTubeThumbnailUrl } from "@/lib/player/source";
 import type { RoomSnapshot } from "@/lib/rooms";
 import type { LiveRoomState } from "@/lib/spacetime";
@@ -18,6 +19,7 @@ import { AudioVisualizer } from "./audio-visualizer";
 import { DirectMediaPlayer } from "./direct-media-player";
 import { IdleMediaTube } from "./idle-media-tube";
 import { YoutubeMediaPlayer } from "./youtube-media-player";
+import { useWaveformEnvironment } from "./use-waveform-environment";
 import { YouTubeMetadataLine } from "./youtube-metadata-line";
 
 type MusicStageProps = {
@@ -43,6 +45,18 @@ export function MusicStage({ liveRoom, room }: MusicStageProps) {
   const youtubeThumbnailUrl =
     youtubeSource && liveSource ? getYouTubeThumbnailUrl(liveSource) : null;
   const artist = activeQueueItem?.artist ?? room.nowPlaying.artist;
+  const waveformEnvironment = useWaveformEnvironment();
+  const waveformPlan = useMemo(
+    () =>
+      resolveWaveformSource(
+        {
+          sourceType: liveSourceType,
+          sourceUrl: liveSource,
+        },
+        waveformEnvironment,
+      ),
+    [liveSource, liveSourceType, waveformEnvironment],
+  );
 
   return (
     <div className="relative min-w-0 lg:h-full lg:min-h-0">
@@ -88,7 +102,7 @@ export function MusicStage({ liveRoom, room }: MusicStageProps) {
                   </div>
                 </div>
               )}
-              <AudioVisualizer />
+              <AudioVisualizer active={isPlaying} plan={waveformPlan} />
             </div>
 
             <div className="text-center lg:text-left">

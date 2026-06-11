@@ -103,6 +103,31 @@ test("direct media ended event uses atomic advance before publishing ended", () 
   );
 });
 
+test("passive player pause and buffer events do not publish canonical room state", () => {
+  const youtubeEvents = sectionBetween(
+    youtubePlayerSource,
+    "const handlePlayerStateChange = useCallback",
+    "useEffect(() => {",
+  );
+  const directElement = sectionBetween(
+    directPlayerSource,
+    "<Element",
+    "{autoplayBlocked ?",
+  );
+
+  assert.match(youtubeEvents, /yt\.PlayerState\.PAUSED/);
+  assert.match(youtubeEvents, /yt\.PlayerState\.BUFFERING/);
+  assert.doesNotMatch(youtubeEvents, /publishPlaybackState\("paused"\)/);
+  assert.doesNotMatch(youtubeEvents, /publishPlaybackState\("buffering"\)/);
+  assert.doesNotMatch(youtubeEvents, /publishPlaybackState\("playing"\)/);
+  assert.doesNotMatch(directElement, /onPause=/);
+  assert.doesNotMatch(directElement, /onWaiting=/);
+  assert.doesNotMatch(directElement, /onSeeked=/);
+  assert.doesNotMatch(directElement, /publishMediaState\("paused"\)/);
+  assert.doesNotMatch(directElement, /publishMediaState\("buffering"\)/);
+  assert.doesNotMatch(directElement, /publishMediaState\("playing"\)/);
+});
+
 test("youtube iframe errors skip to next without publishing error when autoplay can continue", () => {
   const errorHandler = sectionBetween(
     youtubePlayerSource,

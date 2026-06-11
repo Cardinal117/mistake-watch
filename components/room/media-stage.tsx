@@ -17,11 +17,11 @@ export function MediaStage({ liveRoom, room }: MediaStageProps) {
   const awaitingMedia = !liveSource;
 
   return (
-    <div className="relative min-w-0 lg:h-full lg:min-h-0">
+    <div className="relative h-full min-h-0 min-w-0">
       {awaitingMedia ? <IdleMediaTube mode={room.mode} /> : null}
       <section
         aria-labelledby="media-stage-heading"
-        className="screen-glow relative min-h-[30rem] min-w-0 overflow-hidden rounded-xl border border-white/10 bg-surface-container-lowest md:min-h-[34rem] lg:h-full lg:min-h-0 lg:rounded-none lg:border-y-0"
+        className="screen-glow relative h-full min-h-0 min-w-0 overflow-hidden rounded-xl border border-white/10 bg-surface-container-lowest"
       >
         {awaitingMedia ? (
           <>
@@ -51,7 +51,7 @@ export function MediaStage({ liveRoom, room }: MediaStageProps) {
         ) : null}
 
         {awaitingMedia ? (
-          <div className="relative z-10 flex min-h-[30rem] items-center justify-center px-4 pb-36 pt-16 md:min-h-[34rem] md:px-5 lg:h-full lg:min-h-0 lg:pb-16">
+          <div className="relative z-10 flex h-full min-h-0 items-center justify-center px-4 py-10 md:px-5">
             <div className="grid max-w-xl place-items-center gap-5 text-center">
               <div className="flex h-20 w-20 items-center justify-center rounded-xl border border-white/10 bg-surface-container/70 text-primary-fixed-dim backdrop-blur-xl">
                 <Film className="h-9 w-9" aria-hidden />

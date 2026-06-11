@@ -25,6 +25,7 @@ type RoomSidebarProps = {
   liveRoom: LiveRoomState;
   onActiveTabChange?: (tab: RoomTabId) => void;
   room: RoomSnapshot;
+  variant?: "drawer" | "panel";
 };
 
 export const roomTabs = [
@@ -40,6 +41,7 @@ export function RoomSidebar({
   liveRoom,
   onActiveTabChange,
   room,
+  variant = "panel",
 }: RoomSidebarProps) {
   const [uncontrolledActiveTab, setUncontrolledActiveTab] =
     useState<RoomTabId>("queue");
@@ -197,8 +199,20 @@ export function RoomSidebar({
   } satisfies Record<RoomTabId, ReactNode>;
 
   return (
-    <aside className="grid min-w-0 grid-rows-[auto_minmax(0,1fr)] content-start overflow-hidden rounded-xl border border-white/10 bg-surface-container-lowest lg:sticky lg:top-0 lg:h-[calc(100vh-8rem)] lg:min-h-0 lg:rounded-none lg:border-y-0 lg:border-r-0">
-      <TabsList className="hidden grid-cols-3 rounded-none border-0 border-b border-white/10 lg:grid">
+    <aside
+      className={
+        variant === "drawer"
+          ? "grid h-full min-w-0 grid-rows-[auto_minmax(0,1fr)] content-start overflow-hidden bg-surface-container-lowest"
+          : "grid min-w-0 grid-rows-[auto_minmax(0,1fr)] content-start overflow-hidden rounded-xl border border-white/10 bg-surface-container-lowest lg:sticky lg:top-0 lg:h-[calc(100vh-8rem)] lg:min-h-0 lg:rounded-none lg:border-y-0 lg:border-r-0"
+      }
+    >
+      <TabsList
+        className={
+          variant === "drawer"
+            ? "grid grid-cols-3 rounded-none border-0 border-b border-white/10"
+            : "hidden grid-cols-3 rounded-none border-0 border-b border-white/10 lg:grid"
+        }
+      >
         {roomTabs.map((tab) => (
           <TabButton
             active={activeTab === tab.id}

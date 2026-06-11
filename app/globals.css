@@ -554,6 +554,11 @@
     animation: music-progress-pulse 1150ms ease-in-out infinite alternate;
   }
 
+  .music-waveform-static .music-progress-bar {
+    opacity: 0.78;
+    transform: scaleY(0.82);
+  }
+
   .music-waveform-input {
     appearance: none;
     cursor: pointer;

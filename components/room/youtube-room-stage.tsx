@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Film,
   Headphones,
@@ -10,11 +10,13 @@ import {
 } from "lucide-react";
 
 import { Badge, Button } from "@/components/ui";
+import { resolveWaveformSource } from "@/lib/player";
 import { getYouTubeThumbnailUrl } from "@/lib/player/source";
 import type { RoomSnapshot } from "@/lib/rooms";
 import type { LiveRoomState } from "@/lib/spacetime";
 import { cx } from "@/lib/ui";
 import { AudioVisualizer } from "./audio-visualizer";
+import { useWaveformEnvironment } from "./use-waveform-environment";
 import { YouTubeMetadataLine } from "./youtube-metadata-line";
 import { YoutubeMediaPlayer } from "./youtube-media-player";
 
@@ -42,13 +44,28 @@ export function YoutubeRoomStage({
   const thumbnailUrl = liveSource ? getYouTubeThumbnailUrl(liveSource) : null;
   const listenMode = mode === "listen";
   const isPlaying = liveStatus === "playing";
+  const waveformEnvironment = useWaveformEnvironment();
+  const waveformPlan = useMemo(
+    () =>
+      resolveWaveformSource(
+        {
+          sourceType: "youtube",
+          sourceUrl: liveSource,
+        },
+        waveformEnvironment,
+      ),
+    [liveSource, waveformEnvironment],
+  );
 
   return (
-    <div className="relative min-w-0 lg:h-full lg:min-h-0">
+    <div className="relative h-full min-h-0 min-w-0">
       <section
         aria-labelledby="youtube-stage-heading"
         className={cx(
-          "relative min-h-[30rem] min-w-0 overflow-hidden rounded-xl border border-white/10 bg-surface-container-lowest md:min-h-[34rem] lg:h-full lg:min-h-0 lg:rounded-none lg:border-y-0",
+          "relative min-w-0 overflow-hidden rounded-xl border border-white/10 bg-surface-container-lowest",
+          listenMode
+            ? "min-h-[30rem] md:min-h-[34rem] lg:h-full lg:min-h-0 lg:rounded-none lg:border-y-0"
+            : "h-full min-h-0",
           listenMode ? "amber-glow" : "screen-glow",
         )}
       >
@@ -137,7 +154,7 @@ export function YoutubeRoomStage({
                     </Button>
                   </div>
                 </div>
-                <AudioVisualizer />
+                <AudioVisualizer active={isPlaying} plan={waveformPlan} />
               </div>
 
               <div className="text-center lg:text-left">
@@ -178,7 +195,7 @@ export function YoutubeRoomStage({
             </div>
           </div>
         ) : (
-          <div className="relative z-10 flex min-h-[30rem] items-center justify-center px-4 pb-36 pt-16 md:min-h-[34rem] md:px-5 lg:h-full lg:min-h-0 lg:pb-16">
+          <div className="relative z-10 flex h-full min-h-0 items-center justify-center px-4 py-10 md:px-5">
             <div className="pointer-events-none absolute left-5 top-5 z-20 rounded-md border border-white/10 bg-surface/80 px-3 py-2 backdrop-blur-xl">
               <Badge>Watch Mode</Badge>
               <h2

@@ -195,6 +195,7 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
     "--listen-wave": listenTheme.wave,
   } as CSSProperties;
   const desktopShell = useDesktopListenShell();
+  const aiDjRailPlacement = useListenAiDjRailPlacement();
   const listenGridStyle = {
     "--listen-room-columns": rightSidebarCollapsed
       ? "400px minmax(0,1fr) 56px"
@@ -215,6 +216,10 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
   const isConnected = liveRoom.connectionStatus === "connected";
   const nextPreparation = useNextItemPreparation(liveRoom);
   const remainingQueueSeconds = useRemainingQueueSeconds(liveRoom);
+  const sessionInsights = useMemo(
+    () => buildListenSessionInsights(liveQueueItems),
+    [liveQueueItems],
+  );
 
   useEffect(() => {
     const timer = window.setInterval(() => setClockMs(Date.now()), 500);
@@ -349,7 +354,9 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
           currentPosition={currentPosition}
           desktopShell={desktopShell}
           durationSeconds={durationSeconds}
+          enableAiDjRail={aiDjRailPlacement}
           liveRoom={liveRoom}
+          sessionInsights={sessionInsights}
           mobileTools={
             <ListenMobileRoomTools
               activeTab={mobileToolsTab}
@@ -417,7 +424,8 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
           <div
             className={cx(
               "relative z-10 grid gap-4 px-4 py-4 [scrollbar-color:rgb(255_186_32_/_0.42)_transparent] [scrollbar-width:thin] sm:px-6",
-              desktopShell && "min-h-0 overflow-y-auto px-10 py-5",
+              desktopShell &&
+                "min-h-0 overflow-y-auto px-6 py-5 min-[1200px]:px-10",
             )}
           >
             <ListenDiscoveryPanel
@@ -425,6 +433,7 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
               canLoadSource={liveRoom.canManageAuthority && isConnected}
               canPlay={canControl && isConnected}
               currentItem={currentItem}
+              hideAiDjHome={aiDjRailPlacement}
               items={liveQueueItems}
               onAddQueueItem={liveRoom.addQueueItem}
               onLoadSource={liveRoom.loadMediaSource}
@@ -475,6 +484,7 @@ function ListenNowPlayingPanel({
   currentPosition,
   desktopShell,
   durationSeconds,
+  enableAiDjRail,
   liveRoom,
   mobileTools,
   nextPreparation,
@@ -486,6 +496,7 @@ function ListenNowPlayingPanel({
   onVolumeChange,
   queueAutoplayEnabled,
   room,
+  sessionInsights,
   volume,
 }: {
   canControl: boolean;
@@ -493,6 +504,7 @@ function ListenNowPlayingPanel({
   currentPosition: number;
   desktopShell: boolean;
   durationSeconds: number;
+  enableAiDjRail: boolean;
   liveRoom: LiveRoomState;
   mobileTools?: ReactNode;
   nextPreparation: ReturnType<typeof useNextItemPreparation>;
@@ -504,6 +516,7 @@ function ListenNowPlayingPanel({
   onVolumeChange(volume: number): void;
   queueAutoplayEnabled: boolean;
   room: RoomSnapshot;
+  sessionInsights: ReturnType<typeof buildListenSessionInsights>;
   volume: number;
 }) {
   const session = liveRoom.snapshot.session;
@@ -769,6 +782,12 @@ function ListenNowPlayingPanel({
         ) : null}
       </div>
 
+      {enableAiDjRail ? (
+        <div className="min-h-0 overflow-y-auto [scrollbar-color:rgb(255_186_32_/_0.34)_transparent] [scrollbar-width:thin]">
+          <ListenAiDjHome compact insights={sessionInsights} placement="rail" />
+        </div>
+      ) : null}
+
       {mobileTools && !desktopShell ? <div>{mobileTools}</div> : null}
     </aside>
   );
@@ -867,13 +886,14 @@ function ListenTechnicalRoomHeader({
       <div
         className={cx(
           "grid gap-2 px-4 py-2.5 sm:px-6",
-          desktopShell && "px-10",
+          desktopShell && "px-6 min-[1200px]:px-10",
         )}
       >
         <div
           className={cx(
             "grid gap-3",
-            desktopShell && "grid-cols-[minmax(0,1fr)_auto] items-center",
+            desktopShell &&
+              "items-start min-[1200px]:grid-cols-[minmax(0,1fr)_auto] min-[1200px]:items-center",
           )}
         >
           <div className="min-w-0">
@@ -954,7 +974,9 @@ function ListenTechnicalRoomHeader({
           <div
             className={cx(
               "flex-wrap items-center gap-2",
-              desktopShell ? "flex justify-end" : "hidden",
+              desktopShell
+                ? "flex justify-start min-[1200px]:justify-end"
+                : "hidden",
             )}
           >
             <ListenAddMediaPopover
@@ -1156,6 +1178,7 @@ function ListenDiscoveryPanel({
   canLoadSource,
   canPlay,
   currentItem,
+  hideAiDjHome,
   items,
   onAddQueueItem,
   onLoadSource,
@@ -1166,6 +1189,7 @@ function ListenDiscoveryPanel({
   canLoadSource: boolean;
   canPlay: boolean;
   currentItem: RoomQueueItem | null;
+  hideAiDjHome: boolean;
   items: RoomQueueItem[];
   onAddQueueItem(input: QueueAddInput): void;
   onLoadSource(input: SourceLoadInput): void;
@@ -1304,7 +1328,7 @@ function ListenDiscoveryPanel({
   }
 
   return (
-    <div className="grid gap-5">
+    <div className="grid auto-rows-max content-start gap-5">
       <section className="overflow-hidden rounded-md border border-white/10 bg-surface-container-lowest/58 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.035)]">
         <div className="grid gap-3 border-b border-white/10 bg-surface-container-lowest/42 px-3 py-3 sm:px-4">
           <div className="flex items-center justify-between gap-3">
@@ -1406,7 +1430,7 @@ function ListenDiscoveryPanel({
         ) : null}
       </section>
 
-      <ListenAiDjHome insights={sessionInsights} />
+      {!hideAiDjHome ? <ListenAiDjHome insights={sessionInsights} /> : null}
 
       <div className="grid gap-3">
         <div className="flex items-center justify-between gap-3">
@@ -3231,28 +3255,61 @@ function ListenSavedRoomToggle({
 }
 
 function ListenAiDjHome({
+  compact = false,
   insights,
+  placement = "center",
 }: {
+  compact?: boolean;
   insights: ReturnType<typeof buildListenSessionInsights>;
+  placement?: "center" | "rail";
 }) {
   return (
-    <section className="overflow-hidden rounded-md border border-white/10 bg-surface-container-lowest/52 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.035)]">
-      <div className="grid gap-3 border-b border-white/10 bg-surface-container-lowest/36 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+    <section
+      className={cx(
+        "overflow-hidden rounded-md border border-white/10 bg-surface-container-lowest/52 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.035)]",
+        placement === "rail" &&
+          "border-secondary-fixed-dim/18 bg-surface-container-lowest/46",
+      )}
+    >
+      <div
+        className={cx(
+          "grid gap-3 border-b border-white/10 bg-surface-container-lowest/36 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center",
+          compact && "px-3 py-3 sm:grid-cols-1",
+        )}
+      >
         <div className="min-w-0">
           <span className="technical-label border-secondary-fixed-dim/30 text-secondary-fixed-dim">
             Future AI DJ
           </span>
-          <h3 className="mt-2 text-title-md font-semibold text-on-surface">
-            Session intelligence home
+          <h3
+            className={cx(
+              "mt-2 font-semibold text-on-surface",
+              compact ? "text-body-md leading-tight" : "text-title-md",
+            )}
+          >
+            {placement === "rail"
+              ? "Session intelligence dock"
+              : "Session intelligence home"}
           </h3>
-          <p className="mt-1 max-w-2xl text-label-sm text-on-surface-variant">
-            This area is reserved for future advisory room intelligence. For
-            now it only reads queue and history signals.
+          <p
+            className={cx(
+              "mt-1 text-label-sm text-on-surface-variant",
+              compact ? "max-w-none" : "max-w-2xl",
+            )}
+          >
+            {placement === "rail"
+              ? "Reserved for future advisory room intelligence. Reads queue and history signals only."
+              : "This area is reserved for future advisory room intelligence. For now it only reads queue and history signals."}
           </p>
         </div>
         <Badge tone="neutral">Advisory only</Badge>
       </div>
-      <div className="grid gap-2 p-3 sm:grid-cols-3 sm:p-4">
+      <div
+        className={cx(
+          "grid gap-2 p-3 sm:p-4",
+          compact ? "grid-cols-1" : "sm:grid-cols-3",
+        )}
+      >
         {insights.map((insight) => (
           <div
             className="rounded-sm border border-white/10 bg-background/45 p-3"
@@ -3915,6 +3972,29 @@ function useDesktopListenShell() {
   }, []);
 
   return desktopShell;
+}
+
+function useListenAiDjRailPlacement() {
+  const [railPlacement, setRailPlacement] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(
+      "(min-width: 900px) and (max-width: 1180px) and (min-height: 760px) and (pointer: fine)",
+    );
+
+    function updateRailPlacement() {
+      setRailPlacement(mediaQuery.matches);
+    }
+
+    updateRailPlacement();
+    mediaQuery.addEventListener("change", updateRailPlacement);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updateRailPlacement);
+    };
+  }, []);
+
+  return railPlacement;
 }
 
 function useRemainingQueueSeconds(liveRoom: LiveRoomState) {

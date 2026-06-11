@@ -368,8 +368,8 @@ function DirectMediaPlayerCore({
         }
         className={className}
         onCanPlay={() => {
-          if (canonicalState?.status === "buffering") {
-            publishMediaState("paused");
+          if (canonicalState?.status === "buffering" && mediaRef.current) {
+            void playMedia(mediaRef.current, setAutoplayBlocked);
           }
         }}
         onEnded={handleEnded}
@@ -378,15 +378,9 @@ function DirectMediaPlayerCore({
           publishMediaState("error");
         }}
         onLoadedMetadata={publishMediaMetadata}
-        onPause={() => publishMediaState("paused")}
         onPlay={() => {
           setAutoplayBlocked(false);
-          publishMediaState("playing");
         }}
-        onSeeked={() =>
-          publishMediaState(mediaRef.current?.paused ? "paused" : "playing")
-        }
-        onWaiting={() => publishMediaState("buffering")}
         playsInline
         ref={(element) => {
           mediaRef.current = element;

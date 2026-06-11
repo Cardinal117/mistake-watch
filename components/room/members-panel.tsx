@@ -19,6 +19,7 @@ type MembersPanelProps = {
     value: boolean,
   ) => void;
   participants: RoomParticipant[];
+  presentation?: "audience" | "default";
   removeIdleMember?: (memberId: string) => void;
   revokeControl?: () => void;
 };
@@ -40,9 +41,11 @@ export function MembersPanel({
   kickMember,
   onPermissionChange,
   participants,
+  presentation = "default",
   removeIdleMember,
   revokeControl,
 }: MembersPanelProps) {
+  const audience = presentation === "audience";
   const groupedParticipants = useMemo(() => {
     const sorted = [...participants].sort((left, right) => {
       if (left.role !== right.role) {
@@ -63,7 +66,14 @@ export function MembersPanel({
   }, [participants]);
 
   return (
-    <div className="grid min-w-0 gap-3" id={id}>
+    <div
+      className={cx(
+        "grid min-w-0 gap-3",
+        audience &&
+          "h-full min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden rounded-lg border border-white/10 bg-background/18 p-2 shadow-[inset_0_0_18px_rgb(0_219_233_/_0.03)] backdrop-blur-[3px] lg:rounded-l-none",
+      )}
+      id={id}
+    >
       <div className="flex flex-wrap items-center gap-2">
         <Badge tone="neutral">Members</Badge>
         <Badge tone={connectionStatus === "connected" ? "cyan" : "neutral"}>
@@ -74,40 +84,84 @@ export function MembersPanel({
         ) : null}
       </div>
 
-      <MemberSection
-        canManageAuthority={canManageAuthority}
-        controllerMemberId={controllerMemberId}
-        currentMemberId={currentMemberId}
-        grantControl={grantControl}
-        heading="Active"
-        onPermissionChange={onPermissionChange}
-        participants={groupedParticipants.active}
-        removeIdleMember={removeIdleMember}
-        revokeControl={revokeControl}
-        kickMember={kickMember}
-      />
+      {audience ? <MemberChipRail participants={participants} /> : null}
 
-      {groupedParticipants.idle.length > 0 ? (
+      <div
+        className={cx(
+          "grid gap-3",
+          audience &&
+            "min-h-0 overflow-y-auto pr-1 [scrollbar-color:rgb(0_219_233_/_0.32)_transparent] [scrollbar-width:thin]",
+        )}
+      >
         <MemberSection
           canManageAuthority={canManageAuthority}
           controllerMemberId={controllerMemberId}
           currentMemberId={currentMemberId}
           grantControl={grantControl}
-          heading="Idle"
-          idle
+          heading="Active"
+          compact={audience}
           onPermissionChange={onPermissionChange}
-          participants={groupedParticipants.idle}
+          participants={groupedParticipants.active}
           removeIdleMember={removeIdleMember}
           revokeControl={revokeControl}
           kickMember={kickMember}
         />
-      ) : null}
+
+        {groupedParticipants.idle.length > 0 ? (
+          <MemberSection
+            canManageAuthority={canManageAuthority}
+            controllerMemberId={controllerMemberId}
+            currentMemberId={currentMemberId}
+            grantControl={grantControl}
+            heading="Idle"
+            idle
+            compact={audience}
+            onPermissionChange={onPermissionChange}
+            participants={groupedParticipants.idle}
+            removeIdleMember={removeIdleMember}
+            revokeControl={revokeControl}
+            kickMember={kickMember}
+          />
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function MemberChipRail({ participants }: { participants: RoomParticipant[] }) {
+  if (participants.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="min-w-0 overflow-x-auto [scrollbar-width:none]">
+      <div className="flex w-max max-w-full gap-2">
+        {participants.map((participant) => (
+          <div
+            className="inline-flex max-w-36 items-center gap-1.5 rounded-md border border-white/10 bg-background/18 px-1.5 py-1"
+            key={participant.id}
+          >
+            <Avatar
+              avatarKey={participant.avatarKey}
+              className="h-6 w-6"
+              crowned={participant.role === "host"}
+              name={participant.name}
+              seed={participant.id}
+              status={participant.status}
+            />
+            <span className="truncate text-label-sm font-semibold text-on-surface">
+              {participant.name}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
 function MemberSection({
   canManageAuthority,
+  compact = false,
   controllerMemberId,
   currentMemberId,
   grantControl,
@@ -120,6 +174,7 @@ function MemberSection({
   revokeControl,
 }: {
   canManageAuthority: boolean;
+  compact?: boolean;
   controllerMemberId?: string | null;
   currentMemberId?: string | null;
   grantControl?: (memberId: string) => void;
@@ -140,11 +195,12 @@ function MemberSection({
   }
 
   return (
-    <section className="overflow-hidden rounded-md border border-white/10 bg-surface/50">
+    <section className="overflow-hidden rounded-md border border-white/10 bg-background/14">
       <div
         className={cx(
-          "flex items-center justify-between border-b border-white/10 px-3 py-2",
-          idle ? "bg-surface-container-lowest/80" : "bg-surface-container/45",
+          "flex items-center justify-between border-b border-white/10 px-3",
+          compact ? "py-1.5" : "py-2",
+          idle ? "bg-background/22" : "bg-surface-container/24",
         )}
       >
         <span className="technical-label border-0 p-0 text-on-surface-variant">
@@ -158,6 +214,7 @@ function MemberSection({
         {participants.map((participant) => (
           <MemberRow
             canManageAuthority={canManageAuthority}
+            compact={compact}
             controllerMemberId={controllerMemberId}
             currentMemberId={currentMemberId}
             grantControl={grantControl}
@@ -176,6 +233,7 @@ function MemberSection({
 
 function MemberRow({
   canManageAuthority,
+  compact = false,
   controllerMemberId,
   currentMemberId,
   grantControl,
@@ -186,6 +244,7 @@ function MemberRow({
   revokeControl,
 }: {
   canManageAuthority: boolean;
+  compact?: boolean;
   controllerMemberId?: string | null;
   currentMemberId?: string | null;
   grantControl?: (memberId: string) => void;
@@ -204,18 +263,28 @@ function MemberRow({
   const canEditMember = canManageAuthority && !isHost && !isSelf;
 
   return (
-    <li className="grid gap-2 px-3 py-3 transition hover:bg-surface-container-low/45">
+    <li
+      className={cx(
+        "grid transition hover:bg-surface-container-low/45",
+        compact ? "gap-1.5 px-2.5 py-2" : "gap-2 px-3 py-3",
+      )}
+    >
       <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
         <Avatar
           avatarKey={participant.avatarKey}
-          className="h-9 w-9"
+          className={compact ? "h-8 w-8" : "h-9 w-9"}
           crowned={isHost}
           name={participant.name}
           seed={participant.id}
           status={participant.status}
         />
         <div className="min-w-0">
-          <p className="truncate text-body-md font-semibold text-on-surface">
+          <p
+            className={cx(
+              "truncate font-semibold text-on-surface",
+              compact ? "text-label-sm" : "text-body-md",
+            )}
+          >
             {participant.name}
           </p>
           <p className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1.5 text-label-sm text-on-surface-variant">
@@ -245,6 +314,7 @@ function MemberRow({
         <span
           className={cx(
             "rounded-sm border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em]",
+            compact && "px-1.5 py-0.5 text-[9px]",
             participant.status === "online"
               ? "border-primary-fixed-dim/35 bg-primary-fixed-dim/10 text-primary-fixed-dim"
               : "border-white/10 bg-surface-container-lowest text-on-surface-variant",
@@ -263,6 +333,7 @@ function MemberRow({
               aria-pressed={active}
               className={cx(
                 "rounded-sm border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] transition disabled:cursor-not-allowed disabled:opacity-65",
+                compact && "px-1.5 py-0.5 text-[9px]",
                 active
                   ? "border-primary-fixed-dim/30 bg-primary-fixed-dim/8 text-primary-fixed-dim"
                   : "border-white/10 bg-surface-container-lowest text-on-surface-variant",

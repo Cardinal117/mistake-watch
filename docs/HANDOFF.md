@@ -39,8 +39,10 @@ TASK-002.4 YouTube Availability Hardening: complete; SpacetimeDB build/generate/
 TASK-002.5 Provider Recommendations and Room Picks: implemented pending live-room visual and permission QA
 TASK-002.5A Adaptive Listen Card Drift: closed; autonomous drift removed after user QA found it annoying
 TASK-002.5C Live Room Authority Hardening: implemented; local manual QA confirmed by user
-TASK-002.5D Queue Authority And Add Media UX Stabilization: implemented with corrective autoplay/filter-bar follow-up pending manual two-client QA
-TASK-002.5B Cinematic Watch Room Purpose Pass: next implementation task after TASK-002.5D QA/review
+TASK-002.5D Queue Authority And Add Media UX Stabilization: complete after user QA confirmed the corrective pass
+TASK-002.5B Cinematic Watch Room Purpose Pass: complete after user-confirmed watch UI and functionality QA
+TASK-002.5E Vertical Listen AI DJ Placement Shell: complete after vertical, wide desktop, and mobile browser QA
+TASK-002.6 Real Audio-Reactive Waveform Architecture: complete after resolver, UI wiring, build, and dev-check verification
 ```
 
 Product clarification:
@@ -74,7 +76,9 @@ npm run dev:check
 
 ## Current Next Checkpoint
 
-Proceed to TASK-002.5D autoplay/filter-bar QA review, then TASK-002.5B Cinematic Watch Room Purpose Pass.
+Proceed to TASK-002.8A Account And Owner Authority Foundation before TASK-002.8 Stream/R2 upload and media-library work.
+
+Future listen-layout note: when TASK-002.10B AI DJ / Session Intelligence becomes active, prefer placing the AI DJ card in the unused below-player space on tall desktop and vertical-monitor listen layouts. This is a reserved layout direction only; AI chat, voice, and waveform interaction remain later explicit scope.
 
 TASK-002.5C implemented scope:
 

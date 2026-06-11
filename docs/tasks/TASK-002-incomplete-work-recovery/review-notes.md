@@ -2,7 +2,7 @@
 
 ## Current Status
 
-Status: TASK-002.5 Provider Recommendations and Room Picks is implemented pending live-room visual and permission QA.
+Status: TASK-002.6 Real Audio-Reactive Waveform Architecture is complete after resolver, UI wiring, build, and dev-check verification.
 
 TASK-002.1 Listen Mode Quality Pass is complete pending manual visual review in a live room.
 
@@ -16,13 +16,19 @@ TASK-002.5A Adaptive Listen Card Drift is closed. The autonomous drift experimen
 
 TASK-002.5C Live Room Authority Hardening is implemented. User manual QA confirmed it is working well in local live-room testing.
 
-TASK-002.5D Queue Authority And Add Media UX Stabilization is implemented pending manual two-client queue-management QA.
+TASK-002.5D Queue Authority And Add Media UX Stabilization is complete. User QA confirmed the queue authority, notifications, auto-preview, playlist filter bar, and autoplay corrective pass are working.
+
+TASK-002.5B Cinematic Watch Room Purpose Pass is complete after user-confirmed watch UI and functionality QA.
+
+TASK-002.5E Vertical Listen AI DJ Placement Shell is complete after vertical, wide desktop, and mobile browser QA.
+
+TASK-002.6 Real Audio-Reactive Waveform Architecture is complete after resolver, UI wiring, build, and dev-check verification.
 
 Baseline handoff docs now exist at `docs/HANDOFF.md` and `docs/COMMANDS.md` so future agents can continue from TASK-002 without relying on chat memory.
 
 ## Canonical Next Task
 
-Next checkpoint: TASK-002.5D QA/review, then TASK-002.5B Cinematic Watch Room Purpose Pass.
+Next checkpoint after TASK-002.6 verification: TASK-002.8A Account And Owner Authority Foundation.
 
 ## Decisions Locked
 
@@ -42,6 +48,7 @@ Next checkpoint: TASK-002.5D QA/review, then TASK-002.5B Cinematic Watch Room Pu
 - Cloudflare Stream is the approved fast video processing/playback path for uploaded watch-room video. R2 remains available for raw/source archive, waveform/analysis JSON, supporting artifacts, and future non-Stream media needs.
 - TASK-002.8A was inserted before TASK-002.8 because owner-only Stream/R2 upload and source ingestion require a server-verifiable account/owner role before implementation.
 - TASK-002.5D is inserted before TASK-002.5B because local QA found queue permission mismatches, silent duplicate handling, previous/back history gaps, and Add Media stacking problems that should be fixed before the cinematic watch queue/library surfaces are redesigned.
+- TASK-002.5E is inserted after TASK-002.5B because the AI DJ vertical placement request is a small listen-layout shell correction, not the later full TASK-002.10B AI/session-intelligence system.
 
 ## Important Assumptions
 
@@ -73,6 +80,34 @@ Next checkpoint: TASK-002.5D QA/review, then TASK-002.5B Cinematic Watch Room Pu
 - Duplicate handling should not silently block user intent. The user should see duplicate detection, choose whether to add anyway, and optionally remember that choice locally.
 - The current Add Media popout can visually collide with the queue drawer and control surfaces, especially on vertical monitor layouts. TASK-002.5D should replace it with a centered modal rendered above drawers and panels.
 - The Add Media modal should auto-preview single-song URLs and playlist URLs before mutation. Playlist review needs search, sort, select all, add all, add selected, and a duration filter behind a more-options menu.
+
+## TASK-002.6 Implementation Notes
+
+- Added `lib/player/waveform-source.ts`, a pure waveform source resolver for explicit analysis paths: `youtube_embed`, `direct_media`, `hls_media`, future `stream_media`, and future `r2_media`.
+- Added the future first-party waveform metadata contract: `waveform_peaks_url`, `waveform_peaks_key`, and `waveform_status` with `missing`, `pending`, `ready`, and `failed` states.
+- Locked in the honest YouTube behavior: YouTube iframe playback resolves to fallback/progress visuals because iframe audio cannot be sampled directly. If a future matched first-party Stream/R2 asset is supplied, that first-party source can resolve to precomputed peaks instead.
+- Direct and HLS sources now have an explicit `browser_analyser` path when the client has opted into live analysis and CORS/browser support permit it.
+- Future R2 assets prefer ready precomputed waveform peaks; R2 may only fall back to live analysis when the client explicitly allows it and mobile constraints do not apply.
+- Future Cloudflare Stream assets use ready precomputed peaks when available, otherwise lightweight progress visuals because Stream playback should not imply raw analyzable audio access.
+- Added shared client waveform environment detection for reduced-motion and mobile-constrained clients. Live analysis remains opt-in; mobile defaults to precomputed/static/progress visuals instead of heavy runtime analysis.
+- Wired listen-mode visualizers and the listen transport waveform to carry resolver-backed `data-waveform-source` and `data-waveform-mode` attributes. Existing visual design remains intact, but source behavior is now inspectable and technically honest.
+- Added static/non-animated waveform styling so reduced-motion and precomputed/static plans do not look like live sampled audio.
+- Added `tests/player/waveform-source.test.mjs` covering YouTube fallback, matched R2 peaks, Stream fallback, direct/HLS analyzer eligibility, mobile constraints, reduced motion, and metadata readiness.
+- Did not implement Cloudflare Stream/R2 upload, Google Drive ingestion, media-library browsing, durable media matching, schema changes, or WebAudio node plumbing. Those remain later TASK-002.8/TASK-002.8A work.
+
+Verification:
+
+- `node --test tests\player\waveform-source.test.mjs` passed.
+- `npm run lint` passed.
+- `npm run typecheck` passed with `NODE_OPTIONS=--max-old-space-size=4096`.
+- `npm run build` passed with `NODE_OPTIONS=--max-old-space-size=8192`.
+- `npm run dev:check` passed with 20 pass, 0 warn, 0 fail.
+
+Manual review pending:
+
+- Browser QA should confirm listen-mode YouTube still reads as the same fallback visual experience, without UI text implying real iframe audio analysis.
+- Browser QA should confirm reduced-motion clients receive stable/non-animated waveform behavior.
+- Future TASK-002.8 QA should verify that ready first-party R2/Stream metadata can feed `waveform_peaks_url` or `waveform_peaks_key` into this resolver before any uploaded-media waveform UI claims real analysis.
 - A visible room notification system is needed so queue outcomes are not hidden in reducer errors or console-only state. Notifications should cover song added, playlist count added, duplicate detected, duplicate added anyway, permission denied, and preview/provider failure.
 - Console observations from local QA should be triaged in this task: React hydration mismatch and modal z-index/layout issues are app cleanup items; YouTube local `postMessage` warnings are non-blocking unless playback fails.
 
@@ -152,6 +187,107 @@ Manual review pending:
 - Playlist review QA should confirm the More options filter bar no longer overlaps playlist rows at the desktop/vertical-monitor viewport shown in user QA.
 - Maincloud requires a separate SpacetimeDB publish before production can use `advance_queue_item`.
 
+## TASK-002.5B Implementation Notes
+
+- Replaced the old watch-mode dashboard grid with a dedicated cinematic watch layout in `WatchModeLayout`.
+- Removed the permanent left navigation column and permanent right sidebar from watch mode. Watch now uses a quiet top Signal Room band, dominant central stage, compact drawer triggers, and a grounded bottom transport.
+- Reused the existing `MediaStage`, `YoutubeRoomStage`, `RoomSidebar`, `QueuePanel`, `MembersPanel`, and `RoomChatPanel` so playback, queue authority, permissions, Add Media, and chat behavior remain on the same underlying logic.
+- Added drawer-style watch access for Queue, Members, and Chat. The drawer uses the existing sidebar tabs and content, but it is no longer permanently competing with the video.
+- Added a compact Up Next panel next to the stage on wide screens. It shows current screening context, the next queued item, queue count, and a direct queue drawer action.
+- Added a thumbnail/provider-derived ambient watch backdrop. YouTube ambience uses thumbnail metadata only; it does not sample iframe frames.
+- Added a cinematic presentation mode for `TransportControls` so watch mode no longer reserves space for the old right sidebar and the transport reads as a grounded full-width control surface.
+- Kept listen mode on its existing `ListenModeLayout`. No AI DJ, media-library upload, Cloudflare Stream/R2, recommendation analytics, or account behavior was implemented in this task.
+
+Verification:
+
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run test:sync` passed.
+- `npm run test:queue` passed.
+- `npm run test:spacetime` passed.
+- `npm run test:youtube` passed.
+- `npm run build` passed.
+- `npm run dev:check` passed with 20 pass, 0 warn, 0 fail.
+- In-app browser smoke QA passed for a local watch room at desktop viewport: Signal Room band, watch stage, Up Next panel, queue drawer, Add Media access, and grounded transport rendered without obvious overlap.
+
+Manual review pending:
+
+- Browser QA should still confirm the watch stage with actual YouTube/direct media loaded on desktop, vertical monitor, and mobile widths.
+- Browser QA should confirm Queue, Members, and Chat drawers open above the stage and transport without hiding critical controls.
+- Browser QA should confirm Add Media remains reachable through the Queue drawer and still uses the completed TASK-002.5D modal behavior.
+- Browser QA should confirm YouTube thumbnail ambience is slow/quiet and does not read as live iframe frame sampling.
+- Two-client QA should confirm the watch drawer model remains comfortable while another member joins, receives permissions, and uses queue controls.
+
+### TASK-002.5B Corrective Follow-up: Watch Room Layout Refinement
+
+- Simplified the watch Signal HUD so it no longer carries navbar Add Media, separate Members/Chat buttons, played totals, or the previous cramped multi-stat line.
+- Removed the permanent wide `Up Next` side panel. Compact next-item context now lives in the grounded cinematic transport bar.
+- Replaced watch-mode `RoomTabId` drawer usage with watch-specific `queue` and `audience` surfaces.
+- Added a watch queue sheet that opens from the top on desktop and from the bottom on mobile while still rendering the existing `QueuePanel`, preserving Add Media, duplicate detection, playlist review, queue permissions, and queue reducer behavior.
+- Added a combined watch Audience panel that renders chat and members together. Desktop uses a right-side audience panel with chat on the left and members/permissions on the right; mobile uses a bottom sheet.
+- Added audience presentation hooks to `RoomChatPanel` and `MembersPanel`: chat now supports translucent watch styling and deterministic member accent colors, while members now show a compact member chip rail above the existing full permission controls.
+- Relaxed watch-stage internal min-heights in `MediaStage` and watch-mode `YoutubeRoomStage` so the stage can fit inside the available `100dvh` shell between the Signal HUD and transport.
+- Follow-up screenshot correction: member chips were removed from the Signal HUD so member presence belongs to the right Audience rail/sidebar, not the navbar.
+- Follow-up screenshot correction: the expanded Audience system now overlays the content from the right instead of reserving layout width and shrinking the video.
+- Follow-up screenshot correction: the persistent right Audience rail is attached to the right edge and uses the available room height above the transport, similar to the listen-room compact member rail.
+- Follow-up screenshot correction: the Audience panel only switches to a right-side two-panel system at large desktop widths; narrower layouts keep a bottom-sheet shape.
+- Follow-up screenshot correction: Audience chat rows now use the requested live-chat identity-line format: avatar, member name, `--_>`, and message content with deterministic member accent styling.
+- Follow-up screenshot correction: Audience chat now uses a near-transparent glass treatment with slight backdrop blur, faint border, and subtle inner glow so it reads like chat over the stream instead of a solid app panel.
+- Follow-up screenshot correction: Audience chat now supports `Ctrl+Enter` to send while preserving normal Enter/newline behavior.
+- Follow-up screenshot correction: Audience chat blur was reduced further and the member/permissions column was compacted in audience mode only.
+- Follow-up screenshot correction: the cinematic transport no longer uses the earlier centered max-width cap, removes redundant `Now Playing` and `Preparing next` copy, and gives the right-side `Next` context a thumbnail preview.
+- Follow-up screenshot correction: the watch queue surface now presents as a translucent `Watch media hub` with left-side media/discovery/storage sections, the existing live queue on the right, and a bottom search/upload/drag strip. Stream/R2 upload behavior remains deferred to TASK-002.8.
+- Follow-up screenshot correction: the cinematic bottom transport now has the same compact translucent HUD treatment as the top Signal band, with current media, playback controls, Next preview, sound controls, and progress in a tighter bordered strip.
+- Follow-up screenshot correction: the Watch Media Hub top/right queue column was compacted with a hub presentation so Add Media, queue controls, and tabs are easier to use in the overlay.
+- Follow-up screenshot correction: Watch Media Hub cards now populate from active queue/history items where available; queued cards can trigger the existing play-now action. Cloud Storage and Shared Media remain explicit `Coming soon` sections.
+- Follow-up screenshot correction: Watch Media Hub cards now expose listen-mode-style action controls: add to queue, play next, and play now. Queued cards use existing priority/play-now callbacks; history/recommended cards use existing add/load callbacks when permissions allow.
+- Console follow-up: fixed the watch transport hydration mismatch by making the first render deterministic for volume and playback clock; stored volume is now applied after hydration.
+- Kept listen mode, SpacetimeDB reducers, Supabase schema, Cloudflare Stream/R2 media-library scope, upload behavior, and chat wire data unchanged.
+
+Verification:
+
+- `npm run typecheck` passed with `NODE_OPTIONS=--max-old-space-size=4096` after the default Windows heap run hit V8 out-of-memory.
+- `npm run lint` passed.
+- `npm run build` passed with `NODE_OPTIONS=--max-old-space-size=8192` after a smaller heap run hit a Next.js build worker out-of-memory.
+- `npm run dev:check` passed with 20 pass, 0 warn, 0 fail.
+- Latest corrective pass also passed `npm run lint`, `npm run typecheck` with `NODE_OPTIONS=--max-old-space-size=4096`, `npm run build` with `NODE_OPTIONS=--max-old-space-size=8192`, and `npm run dev:check` with 20 pass, 0 warn, 0 fail.
+- Latest transport/media-hub refinement passed `npm run lint`, `npm run typecheck` with `NODE_OPTIONS=--max-old-space-size=4096`, `npm run build` with `NODE_OPTIONS=--max-old-space-size=8192`, and `npm run dev:check` with 20 pass, 0 warn, 0 fail.
+- Latest hub-card action refinement passed `npm run lint`, `npm run typecheck` with `NODE_OPTIONS=--max-old-space-size=4096`, `npm run build` with `NODE_OPTIONS=--max-old-space-size=8192`, and `npm run dev:check` with 20 pass, 0 warn, 0 fail.
+- Hydration console follow-up passed `npm run lint`, `npm run typecheck` with `NODE_OPTIONS=--max-old-space-size=4096`, `npm run build` with `NODE_OPTIONS=--max-old-space-size=8192`, and `npm run dev:check` with 20 pass, 0 warn, 0 fail.
+
+Manual review pending:
+
+Manual review outcome:
+
+- User confirmed watch-room UI and functionality QA after the cinematic layout, Audience overlay, media hub, transport, chat, and hub-card action refinements.
+- Release-gate QA should still include two-client regression coverage for chat messages, member chips, permission controls, and queue controls before a broader release checkpoint.
+
+## TASK-002.5E Implementation Notes
+
+- Added a vertical/tall desktop listen layout breakpoint for the future AI DJ/session-intelligence shell: `900px` to `1180px` wide, at least `760px` tall, fine pointer.
+- On that layout, the existing advisory AI DJ card now renders below the left now-playing/player card, using the otherwise empty left-column space.
+- On mobile/tablet and wide desktop layouts, the AI DJ card remains in the center discovery flow so the existing single-column and wide-room layouts do not regress.
+- Kept the card strictly advisory and local-layout-only. No AI chat, voice generation, speech waveform, account memory, model calls, recommendations mutation, or queue mutation were added.
+- Made the rail version more compact with a `Session intelligence dock` title and single-column insight readouts so it fits below the player without crowding transport controls.
+- During vertical browser QA, tightened the listen header at 900px to 1199px desktop widths so room actions stack instead of overlapping the room identity/stat line. Wider desktop still uses the two-column header.
+- Fixed the tall/vertical center-column stretch where `Room picks` could reserve a large empty area before `Recently added`. `ListenDiscoveryPanel` now uses content-sized grid rows so recommendation sections collapse to actual content height.
+
+Verification:
+
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
+- `npm run dev:check` passed with 20 pass, 0 warn, 0 fail.
+- In-app browser QA at 1000x1200 confirmed the compact `Session intelligence dock` appears below the player, the center `Session intelligence home` is hidden, and the listen header no longer overlaps.
+- In-app browser QA at 1000x1200 confirmed `Room picks` no longer stretches into an empty panel and `Recently added` follows with a normal section gap.
+- In-app browser QA at 1440x900 confirmed wide desktop keeps `Session intelligence home` in the center discovery flow.
+- In-app browser QA at 390x844 confirmed mobile keeps `Session intelligence home` in the normal single-column flow.
+
+Manual review notes:
+
+- No AI chat, voice, waveform, account memory, model calls, recommendation mutation, or queue mutation were added.
+- Future QA with actual loaded media should still confirm the vertical rail remains comfortable below real artwork/video metadata, but the placement shell itself is complete.
+
 ## TASK-002.5C Implementation Notes
 
 - Added a server-issued private SpacetimeDB seed grant derived from verified durable host membership. The room snapshot now exposes the one-time raw seed token only to the current durable host member.
@@ -209,6 +345,7 @@ Manual review pending:
 - Personal user memory belongs after accounts/profiles and consent boundaries exist. Before then, AI/session intelligence can only use current room/session history and queue data.
 - AI DJ suggestions should remain advisory by default and should feed host-approved queue actions, suggested-next voting, or provider recommendations rather than silently mutating the queue.
 - TASK-002.5 added a future AI DJ/session-intelligence home in the listen discovery surface. It is intentionally non-autonomous: it reads queue/history session signals only and does not imply account memory, fake mood data, or queue mutation.
+- Vertical layout refinement logged on 2026-06-11: for tall desktop and vertical-monitor listen layouts, the future AI DJ/session-intelligence card should move into the unused space below the left player card where it can feel like a dedicated DJ console. The player remains the priority; this is a placement/responsive-layout note, not approval for AI chat, voice generation, or waveform speech visualization yet.
 - The user wants Mistake Watch to eventually replace Spotify-like personal listening value with first-party account history. TASK-002.10 should include durable listening history foundations and a future original recap experience, similar in purpose to a wrapped-style year/month recap but branded and modeled as Mistake Watch's own feature.
 
 ## Future Easter Egg And Achievement Notes

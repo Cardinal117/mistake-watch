@@ -73,6 +73,7 @@ type QueuePanelProps = {
   ): void;
   onQueueModeChange?(mode: QueueMode): void;
   onRemoveQueueItem?(queueItemId: string): void;
+  presentation?: "default" | "hub";
   queueMode?: QueueMode;
   roomErrors?: LiveRoomError[];
   roomId: string;
@@ -150,6 +151,7 @@ export function QueuePanel({
   onQueueItemPriorityChange,
   onQueueModeChange,
   onRemoveQueueItem,
+  presentation = "default",
   queueMode = "normal",
   roomErrors = [],
   roomId,
@@ -215,6 +217,7 @@ export function QueuePanel({
   const hasPreviewState = Boolean(
     queueUrl.trim() || singlePreview || playlistPreview,
   );
+  const hub = presentation === "hub";
 
   useEffect(() => {
     if (notifiedRoomErrorIds.current === null) {
@@ -695,24 +698,52 @@ export function QueuePanel({
   }
 
   return (
-    <div className="grid min-w-0 gap-4" id={id}>
-      <div>
-        <Badge tone={mode === "listen" ? "amber" : "cyan"}>Queue</Badge>
-        <h2 className="mt-3 text-headline-md font-semibold text-on-surface">
+    <div className={cx("grid min-w-0", hub ? "gap-3" : "gap-4")} id={id}>
+      <div
+        className={cx(
+          hub
+            ? "flex min-w-0 flex-wrap items-center justify-between gap-3"
+            : undefined,
+        )}
+      >
+        <div className="min-w-0">
+          <Badge tone={mode === "listen" ? "amber" : "cyan"}>Queue</Badge>
+          <h2
+            className={cx(
+              "font-semibold text-on-surface",
+              hub ? "mt-2 text-body-lg" : "mt-3 text-headline-md",
+            )}
+          >
           Up next
-        </h2>
+          </h2>
+        </div>
+        {hub ? (
+          <Button
+            className="shrink-0"
+            disabled={!isConnected || (!canAddQueue && !canLoadSource)}
+            onClick={() => setAddMediaOpen(true)}
+            size="sm"
+            type="button"
+            variant={mode === "listen" ? "secondary" : "primary"}
+          >
+            <Plus className="h-4 w-4" aria-hidden />
+            Add Media
+          </Button>
+        ) : null}
       </div>
 
-      <Button
-        className="w-full"
-        disabled={!isConnected || (!canAddQueue && !canLoadSource)}
-        onClick={() => setAddMediaOpen(true)}
-        type="button"
-        variant={mode === "listen" ? "secondary" : "primary"}
-      >
-        <Plus className="h-4 w-4" aria-hidden />
-        Add Media
-      </Button>
+      {hub ? null : (
+        <Button
+          className="w-full"
+          disabled={!isConnected || (!canAddQueue && !canLoadSource)}
+          onClick={() => setAddMediaOpen(true)}
+          type="button"
+          variant={mode === "listen" ? "secondary" : "primary"}
+        >
+          <Plus className="h-4 w-4" aria-hidden />
+          Add Media
+        </Button>
+      )}
 
       {addMediaOpen && typeof document !== "undefined"
         ? createPortal(
@@ -899,11 +930,11 @@ export function QueuePanel({
       <div
         className={cx(
           "overflow-hidden rounded-md border border-white/10 bg-surface-container-low/80 transition-[max-height,background-color,border-color] duration-200",
-          queueControlsOpen ? "max-h-72" : "max-h-9",
+          queueControlsOpen ? (hub ? "max-h-56" : "max-h-72") : "max-h-9",
         )}
       >
         {queueControlsOpen ? (
-          <div className="grid gap-3 p-3 pb-2">
+          <div className={cx("grid gap-3 p-3 pb-2", hub && "gap-2 p-2")}>
             <div className="flex items-center justify-between gap-2">
               <span className="technical-label text-on-surface-variant">
                 Queue controls
@@ -916,9 +947,12 @@ export function QueuePanel({
                 <Badge tone="amber">Related</Badge>
               ) : null}
             </div>
-            <div className="grid gap-2">
+            <div className={cx("grid gap-2", hub && "gap-1.5")}>
               <select
-                className="h-10 rounded-md border border-white/10 bg-surface-container px-3 text-body-md text-on-surface outline-none focus:border-primary-fixed-dim disabled:opacity-45"
+                className={cx(
+                  "rounded-md border border-white/10 bg-surface-container px-3 text-on-surface outline-none focus:border-primary-fixed-dim disabled:opacity-45",
+                  hub ? "h-9 text-label-sm" : "h-10 text-body-md",
+                )}
                 disabled={manageDisabled}
                 onChange={(event) =>
                   handleQueueModeChange(event.target.value as QueueMode)

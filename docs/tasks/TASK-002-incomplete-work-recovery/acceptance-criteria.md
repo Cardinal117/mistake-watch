@@ -99,6 +99,15 @@
 - YouTube ambience uses thumbnail/provider-derived fallback rather than claiming live iframe frame sampling.
 - No media-library upload/storage, recommendation analytics, or broad runtime media pipeline changes are implemented in this UI task.
 
+## TASK-002.5E Vertical Listen AI DJ Placement Shell
+
+- On tall desktop and vertical-monitor listen layouts, the existing advisory AI DJ/session-intelligence card appears in the otherwise unused space below the left player card.
+- The player, transport controls, room controls, recommendations, members panel, and queue drawer remain usable without overlap or visual crowding.
+- Mobile and tablet layouts keep the existing single-column flow and do not bury core playback controls below the AI DJ shell.
+- The card remains advisory/future-facing and does not imply AI chat, voice generation, speech waveform, account memory, or autonomous queue control.
+- Wide desktop may keep the AI DJ card in the center discovery surface if the below-player placement is not the strongest layout for that viewport.
+- The implementation prepares a clean visual home for future AI DJ interactivity without implementing the later AI/session-intelligence system.
+
 ## TASK-002.6 Real Audio-Reactive Waveform Architecture
 
 - A waveform source resolver distinguishes `youtube_embed`, `direct_media`, `hls_media`, future `stream_media`, and future `r2_media` sources.
@@ -181,6 +190,8 @@
 - Account/user memory is unavailable until Supabase auth/profile and consent boundaries exist.
 - AI DJ suggestions are advisory unless the host or an authorized user explicitly adds or plays an item.
 - The surface can explain detected patterns and suggested direction without overriding host authority.
+- On tall desktop and vertical-monitor listen layouts, the AI DJ surface can occupy the empty space below the player card while preserving player priority and avoiding overlap with the queue drawer.
+- Future prompt, voice, and waveform affordances are visually reserved but not implemented until explicit AI interaction scope is approved.
 - Provider/API failures produce unavailable or limited states instead of invented recommendations.
 
 ## TASK-002.11 Shared Browser Prototype

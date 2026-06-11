@@ -49,8 +49,9 @@ Current TASK-002 status:
 - `TASK-002.5` Provider Recommendations and Room Picks: implemented pending live-room visual and permission QA.
 - `TASK-002.5A` Adaptive Listen Card Drift: closed after user QA rejected autonomous drift.
 - `TASK-002.5C` Live Room Authority Hardening: implemented; local manual QA confirmed by user.
-- `TASK-002.5D` Queue Authority And Add Media UX Stabilization: implemented with corrective autoplay/filter-bar follow-up pending manual two-client QA.
-- `TASK-002.5B` Cinematic Watch Room Purpose Pass: next implementation task after TASK-002.5D QA/review so the watch queue/library surfaces inherit stable queue authority, Add Media behavior, and autoplay stability.
+- `TASK-002.5D` Queue Authority And Add Media UX Stabilization: complete after user QA confirmed the corrective pass.
+- `TASK-002.5B` Cinematic Watch Room Purpose Pass: implemented pending browser visual QA.
+- `TASK-002.5E` Vertical Listen AI DJ Placement Shell: complete after vertical, wide desktop, and mobile browser QA.
 
 Do not treat future features as shipped until the TASK-002 packet marks them complete.
 
@@ -272,4 +273,6 @@ Before implementing the next task, read:
 6. `docs/tasks/TASK-002-incomplete-work-recovery/review-notes.md`
 7. `docs/tasks/TASK-002-incomplete-work-recovery/acceptance-criteria.md`
 
-The next expected checkpoint is TASK-002.5D autoplay/filter-bar QA review, then `TASK-002.5B: Cinematic Watch Room Purpose Pass`.
+The next expected checkpoint is `TASK-002.6: Real Audio-Reactive Waveform Architecture`.
+
+Future listen-layout note: `TASK-002.10B AI DJ / Session Intelligence` should use the unused below-player space on tall desktop and vertical-monitor listen layouts as the preferred AI DJ card home. Keep this as advisory placement only until the AI interaction task is active.

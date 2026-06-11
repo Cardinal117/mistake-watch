@@ -24,10 +24,11 @@ Implementation rules:
 7. Live room authority hardening comes before additional watch-room, voting, media-library, or social work because queue, playback, permissions, and host authority must not depend on browser-provided role fields.
 8. Queue authority and Add Media UX stabilization comes before cinematic watch-room work because the watch queue/library drawer should not inherit known permission mismatches, silent duplicate behavior, or broken previous/back history.
 9. Cinematic watch-room work comes before waveform and media-library work because the upload/library surfaces need a watch layout that already has a clear purpose, drawer model, and media-first hierarchy.
-10. Real waveform architecture comes after listen/watch room surface stabilization because it can affect playback, performance, and mobile behavior. It prepares a resolver for YouTube fallback visuals, direct/HLS analysis, Cloudflare Stream media, and future R2 precomputed peaks, but it does not implement media ingestion.
-11. Avatar motion stays after core room features because it is identity polish, not room functionality.
-12. Google OAuth and owner authority must precede Cloudflare Stream/R2 media-library work because owner-only upload and source ingestion need a server-verifiable account role before implementation.
-13. Cloudflare Stream/R2 media library work, voting, full friends/social features, achievements, AI DJ, browser mode, and broad hardening remain later because they are larger systems with storage, auth, security, provider, or infrastructure consequences.
+10. Vertical Listen AI DJ placement comes after the watch-room pass because it is a small listen-layout shell correction, not the full AI DJ system.
+11. Real waveform architecture comes after listen/watch room surface stabilization because it can affect playback, performance, and mobile behavior. It prepares a resolver for YouTube fallback visuals, direct/HLS analysis, Cloudflare Stream media, and future R2 precomputed peaks, but it does not implement media ingestion.
+12. Avatar motion stays after core room features because it is identity polish, not room functionality.
+13. Google OAuth and owner authority must precede Cloudflare Stream/R2 media-library work because owner-only upload and source ingestion need a server-verifiable account role before implementation.
+14. Cloudflare Stream/R2 media library work, voting, full friends/social features, achievements, AI DJ, browser mode, and broad hardening remain later because they are larger systems with storage, auth, security, provider, or infrastructure consequences.
 
 ## Shared Systems
 
@@ -211,6 +212,18 @@ Implementation direction:
 - members: presence should read as people gathered around the screening, not as a dashboard occupying permanent screen real estate;
 - chat remains watch-room-only but should not dominate the default cinematic layout.
 
+### Vertical Listen AI DJ Placement Shell
+
+The vertical AI DJ placement task is a layout shell correction, not the full AI system.
+
+Implementation direction:
+
+- use the unused below-player area on tall desktop and vertical-monitor listen layouts as the preferred home for the existing advisory future AI DJ card;
+- keep the player, transport controls, room controls, members panel, and queue drawer higher priority than the placeholder card;
+- keep mobile/tablet layouts in the current single-column flow;
+- visually reserve future prompt, voice, and waveform affordances only as structure, without implementing model calls, speech, waveform analysis, memory, or queue mutation;
+- continue marking the surface as advisory/future session intelligence.
+
 ### AI DJ / Session Intelligence
 
 The AI DJ task is intentionally later than accounts/friends. It should begin with room-session intelligence and only add personal memory after profile and consent boundaries exist.
@@ -219,6 +232,8 @@ Implementation direction:
 
 - analyze real session inputs such as playback history, queue shape, duration, contributors, provider metadata, and room energy signals;
 - label unavailable or low-confidence analysis clearly;
+- prefer the unused below-player region on tall desktop and vertical-monitor listen layouts for the AI DJ card, turning dead space into a focused session-intelligence home without reducing the media player's priority;
+- keep the AI DJ card compact and advisory in early versions, with future-ready slots for prompt input, spoken-response state, and waveform visualization only after the AI task is active;
 - keep suggestions advisory unless an authorized user acts;
 - do not mutate the queue automatically;
 - never present invented mood, energy, or personalization as verified fact.

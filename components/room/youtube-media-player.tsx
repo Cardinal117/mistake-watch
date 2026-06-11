@@ -404,12 +404,10 @@ export function YoutubeMediaPlayer({
         if (isUsableYouTubePlayer(event.target)) {
           scheduleMetadataRefresh(event.target);
         }
-        publishPlaybackState("playing");
         return;
       }
 
       if (event.data === yt.PlayerState.PAUSED) {
-        publishPlaybackState("paused");
         return;
       }
 
@@ -417,7 +415,6 @@ export function YoutubeMediaPlayer({
         if (isUsableYouTubePlayer(event.target)) {
           scheduleMetadataRefresh(event.target);
         }
-        publishPlaybackState("buffering");
         return;
       }
 
