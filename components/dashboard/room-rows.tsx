@@ -1,4 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import {
+  BookmarkX,
   Headphones,
   Lock,
   Monitor,
@@ -10,6 +14,7 @@ import {
 import { Badge, Button, Panel, PendingLink, buttonClassName } from "@/components/ui";
 import { cx } from "@/lib/ui";
 import type { DashboardRoomSummary } from "@/lib/rooms";
+import { setRoomSavedAction } from "@/lib/rooms/actions";
 import { DashboardYouTubeMetadata } from "./dashboard-youtube-metadata";
 
 type RoomRowsProps = {
@@ -20,6 +25,7 @@ type RoomRowsProps = {
   emptyDescription: string;
   actionLabel?: string;
   gated?: boolean;
+  removableSavedRooms?: boolean;
 };
 
 const modeConfig = {
@@ -73,12 +79,48 @@ function privacyLabel(room: DashboardRoomSummary) {
   return room.privacy === "friends" ? "Friends" : "Invite";
 }
 
-function RoomCard({ room }: { room: DashboardRoomSummary }) {
+function RoomCard({
+  onRemoved,
+  removableSavedRooms = false,
+  room,
+}: {
+  onRemoved?(): void;
+  removableSavedRooms?: boolean;
+  room: DashboardRoomSummary;
+}) {
   const config = modeConfig[room.mode];
   const ModeIcon = config.icon;
   const disabled =
     room.joinState === "account-required" || room.joinState === "locked";
   const active = room.participants > 0;
+  const [removingSavedRoom, setRemovingSavedRoom] = useState(false);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+
+  async function removeSavedRoom() {
+    if (removingSavedRoom) {
+      return;
+    }
+
+    setRemovingSavedRoom(true);
+    setRemoveError(null);
+
+    try {
+      const result = await setRoomSavedAction({
+        roomId: room.id,
+        saved: false,
+      });
+
+      if (!result.isSaved) {
+        onRemoved?.();
+      }
+    } catch (error) {
+      setRemoveError(
+        error instanceof Error ? error.message : "Saved-room update failed.",
+      );
+    } finally {
+      setRemovingSavedRoom(false);
+    }
+  }
 
   return (
     <Panel
@@ -182,27 +224,46 @@ function RoomCard({ room }: { room: DashboardRoomSummary }) {
           <span className="technical-label min-w-0 truncate text-on-surface-variant">
             {room.updatedAt}
           </span>
-          {disabled ? (
-            <Badge className="shrink-0" tone="neutral">
-              <Lock className="h-4 w-4" aria-hidden />
-              {joinLabel(room)}
-            </Badge>
-          ) : (
-            <PendingLink
-              className={buttonClassName({
-                className: "shrink-0",
-                size: "sm",
-              })}
-              href={`/rooms/${room.id}`}
-              loadingDetail="Opening the room and restoring your local session."
-              loadingLabel="Joining room"
-              tone={room.mode === "listen" ? "amber" : "cyan"}
-            >
-              <Play className="h-4 w-4" aria-hidden />
-              {joinLabel(room)}
-            </PendingLink>
-          )}
+          <span className="flex shrink-0 items-center gap-2">
+            {removableSavedRooms && room.isSaved ? (
+              <button
+                aria-label={`Remove ${room.name} from saved rooms`}
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-sm border border-white/10 px-3 text-label-sm font-semibold text-on-surface-variant transition hover:border-error/35 hover:bg-error/10 hover:text-error disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={removingSavedRoom}
+                onClick={removeSavedRoom}
+                type="button"
+              >
+                <BookmarkX className="h-4 w-4" aria-hidden />
+                Remove
+              </button>
+            ) : null}
+            {disabled ? (
+              <Badge className="shrink-0" tone="neutral">
+                <Lock className="h-4 w-4" aria-hidden />
+                {joinLabel(room)}
+              </Badge>
+            ) : (
+              <PendingLink
+                className={buttonClassName({
+                  className: "shrink-0",
+                  size: "sm",
+                })}
+                href={`/rooms/${room.id}`}
+                loadingDetail="Opening the room and restoring your local session."
+                loadingLabel="Joining room"
+                tone={room.mode === "listen" ? "amber" : "cyan"}
+              >
+                <Play className="h-4 w-4" aria-hidden />
+                {joinLabel(room)}
+              </PendingLink>
+            )}
+          </span>
         </div>
+        {removeError ? (
+          <p className="text-label-sm text-error" role="alert">
+            {removeError}
+          </p>
+        ) : null}
       </div>
     </Panel>
   );
@@ -253,8 +314,15 @@ export function RoomRows({
   gated,
   rooms,
   title,
+  removableSavedRooms,
 }: RoomRowsProps) {
   const headingId = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-heading`;
+  const [removedRoomIds, setRemovedRoomIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const visibleRooms = removableSavedRooms
+    ? rooms.filter((room) => !removedRoomIds.has(room.id))
+    : rooms;
 
   return (
     <section aria-labelledby={headingId} className="space-y-4">
@@ -270,17 +338,24 @@ export function RoomRows({
             {description}
           </p>
         </div>
-        {rooms.length > 0 ? (
+        {visibleRooms.length > 0 ? (
           <span className="technical-label text-on-surface-variant">
-            {rooms.length} {rooms.length === 1 ? "room" : "rooms"}
+            {visibleRooms.length} {visibleRooms.length === 1 ? "room" : "rooms"}
           </span>
         ) : null}
       </div>
 
-      {rooms.length > 0 ? (
+      {visibleRooms.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {rooms.map((room) => (
-            <RoomCard key={room.id} room={room} />
+          {visibleRooms.map((room) => (
+            <RoomCard
+              key={room.id}
+              onRemoved={() =>
+                setRemovedRoomIds((current) => new Set(current).add(room.id))
+              }
+              removableSavedRooms={removableSavedRooms}
+              room={room}
+            />
           ))}
         </div>
       ) : (

@@ -3,218 +3,212 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TASK-002 Recovery Roadmap - Mistake Watch</title>
+    <title>TASK-002 Account Roadmap Split - Mistake Watch</title>
     <style>
       :root {
+        color-scheme: dark;
         --bg: #0e0e0f;
         --surface: #131314;
         --panel: #1c1b1c;
         --panel-high: #252426;
         --text: #e5e2e3;
         --muted: #b9cacb;
-        --line: rgba(255, 255, 255, 0.1);
+        --line: rgb(255 255 255 / 0.1);
         --cyan: #00dbe9;
         --gold: #ffba20;
+        --green: #77d982;
         --danger: #ffb4ab;
       }
 
-      * {
-        box-sizing: border-box;
-      }
+      * { box-sizing: border-box; }
 
       body {
         margin: 0;
         background:
-          radial-gradient(circle at 14% 6%, rgba(0, 219, 233, 0.14), transparent 34rem),
-          radial-gradient(circle at 86% 18%, rgba(255, 186, 32, 0.12), transparent 30rem),
+          radial-gradient(circle at 14% 4%, rgb(0 219 233 / 0.14), transparent 34rem),
+          radial-gradient(circle at 86% 18%, rgb(255 186 32 / 0.12), transparent 30rem),
           var(--bg);
         color: var(--text);
-        font-family:
-          Inter, Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-family: Inter, Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
 
       main {
         width: min(1180px, calc(100% - 32px));
         margin: 0 auto;
-        padding: 32px 0 48px;
+        padding: 32px 0 52px;
+      }
+
+      header, section, .card, .task {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgb(19 19 20 / 0.86);
+        backdrop-filter: blur(18px);
       }
 
       header {
         display: grid;
         gap: 18px;
         padding: 28px;
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: rgba(19, 19, 20, 0.88);
-        backdrop-filter: blur(18px);
       }
 
-      h1,
-      h2,
-      h3,
-      p {
-        margin: 0;
+      section {
+        margin-top: 18px;
+        padding: 22px;
       }
+
+      h1, h2, h3, p { margin: 0; }
 
       h1 {
-        max-width: 840px;
-        font-size: clamp(2rem, 5vw, 4rem);
-        line-height: 1.02;
+        max-width: 880px;
+        font-size: clamp(2rem, 5vw, 3.8rem);
+        line-height: 1.03;
         letter-spacing: 0;
       }
 
-      h2 {
-        font-size: 1.25rem;
-      }
+      h2 { font-size: 1.25rem; }
+      h3 { font-size: 1rem; }
 
-      h3 {
-        font-size: 1rem;
-      }
-
-      p {
+      p, li {
         color: var(--muted);
         line-height: 1.6;
       }
 
-      a {
-        color: var(--cyan);
+      ul { margin: 12px 0 0; padding-left: 20px; }
+      li + li { margin-top: 7px; }
+
+      a { color: var(--cyan); }
+      code, .label, .badge {
+        font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
       }
 
-      .label {
+      .label, .badge {
         display: inline-flex;
         width: fit-content;
         align-items: center;
-        gap: 8px;
-        border: 1px solid rgba(0, 219, 233, 0.34);
+        border: 1px solid rgb(0 219 233 / 0.34);
         border-radius: 6px;
-        padding: 6px 10px;
         color: var(--cyan);
-        font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
         font-size: 12px;
         letter-spacing: 0.05em;
         text-transform: uppercase;
       }
 
-      .summary-grid,
-      .files-grid,
-      .risk-grid {
+      .label { padding: 6px 10px; }
+      .badge { padding: 4px 8px; }
+      .badge.gold { border-color: rgb(255 186 32 / 0.34); color: var(--gold); }
+      .badge.green { border-color: rgb(119 217 130 / 0.34); color: var(--green); }
+      .badge.danger { border-color: rgb(255 180 171 / 0.38); color: var(--danger); }
+
+      .summary-grid, .task-grid, .files-grid, .decision-grid {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 14px;
-        margin-top: 18px;
       }
 
-      .card,
+      .summary-grid, .files-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .task-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-items: stretch;
+      }
+
+      .decision-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .card, .task {
+        padding: 18px;
+        background: rgb(28 27 28 / 0.82);
+      }
+
       .task {
+        display: grid;
+        grid-template-rows: auto auto 1fr;
+        gap: 12px;
+      }
+
+      .task-number {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .timeline {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 0;
+        overflow: hidden;
         border: 1px solid var(--line);
         border-radius: 10px;
-        background: rgba(28, 27, 28, 0.82);
       }
 
-      .card {
-        padding: 18px;
+      .timeline div {
+        padding: 14px;
+        background: rgb(28 27 28 / 0.74);
+        border-right: 1px solid var(--line);
       }
 
-      .card strong {
-        display: block;
-        margin-bottom: 6px;
-        color: var(--text);
-      }
+      .timeline div:last-child { border-right: 0; }
 
-      section {
-        margin-top: 28px;
-      }
-
-      .task-list {
+      .split-rule {
         display: grid;
         gap: 10px;
-        margin-top: 14px;
+        padding: 14px;
+        border: 1px solid rgb(0 219 233 / 0.2);
+        border-radius: 10px;
+        background: rgb(0 219 233 / 0.045);
       }
 
-      .task {
-        display: grid;
-        grid-template-columns: 96px minmax(0, 1fr) 150px;
-        gap: 16px;
-        align-items: start;
-        padding: 16px;
+      .warning {
+        border-color: rgb(255 186 32 / 0.28);
+        background: rgb(255 186 32 / 0.055);
       }
 
-      .num {
-        color: var(--gold);
-        font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
-        font-weight: 700;
+      .danger-zone {
+        border-color: rgb(255 180 171 / 0.32);
+        background: rgb(255 180 171 / 0.055);
       }
 
-      .status {
-        justify-self: end;
-        border: 1px solid rgba(255, 186, 32, 0.3);
-        border-radius: 6px;
-        padding: 5px 8px;
-        color: var(--gold);
-        font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
-        font-size: 12px;
-        text-transform: uppercase;
-      }
-
-      .status.future {
-        border-color: var(--line);
-        color: var(--muted);
-      }
-
-      .files-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      ul {
-        margin: 10px 0 0;
-        padding-left: 18px;
-        color: var(--muted);
-        line-height: 1.6;
-      }
-
-      .next {
-        border-color: rgba(0, 219, 233, 0.35);
-        background: linear-gradient(135deg, rgba(0, 219, 233, 0.12), rgba(28, 27, 28, 0.82));
-      }
-
-      @media (max-width: 820px) {
-        .summary-grid,
-        .files-grid,
-        .risk-grid {
+      @media (max-width: 920px) {
+        .summary-grid, .task-grid, .files-grid, .decision-grid, .timeline {
           grid-template-columns: 1fr;
         }
 
-        .task {
-          grid-template-columns: 1fr;
+        .timeline div {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
         }
 
-        .status {
-          justify-self: start;
-        }
+        .timeline div:last-child { border-bottom: 0; }
       }
     </style>
   </head>
   <body>
     <main>
       <header>
-        <span class="label">Mistake Watch / TASK-002</span>
-        <h1>Incomplete Work Recovery Roadmap</h1>
+        <span class="label">TASK-002 roadmap update</span>
+        <h1>Account work is now split into identity, first-party value, and social/provider consent.</h1>
         <p>
-          This review surface is the first-open guide for the new recovery packet. TASK-002 preserves the
-          implementation order for incomplete or partially complete work from TASK-001.
+          This review dashboard summarizes the updated task packet. The Markdown files remain the durable source of truth; this page is the first-open approval surface for the revised account roadmap.
         </p>
         <div class="summary-grid">
           <div class="card">
-            <strong>Current checkpoint</strong>
-            <p>TASK-002.6 waveform architecture</p>
+            <span class="badge green">Now</span>
+            <h3>TASK-002.8A</h3>
+            <p>Account identity, minimal Google OAuth, guest migration, and server-side owner authority.</p>
           </div>
           <div class="card">
-            <strong>Rule</strong>
-            <p>Work in numeric order unless the user explicitly changes the order.</p>
+            <span class="badge gold">Later</span>
+            <h3>TASK-002.10</h3>
+            <p>Personalization, saved rooms, profile previews, and first-party Mistake Watch history.</p>
           </div>
           <div class="card">
-            <strong>Boundary</strong>
-            <p>This packet is a recovery roadmap, not a rewrite of the working foundation.</p>
+            <span class="badge gold">Later</span>
+            <h3>TASK-002.10C</h3>
+            <p>Signed-in-only friends, room invites, notifications, and incremental provider permissions.</p>
           </div>
         </div>
       </header>
@@ -223,226 +217,138 @@
         <h2>Files To Review</h2>
         <div class="files-grid">
           <div class="card">
-            <strong>Must review</strong>
+            <span class="badge green">Must review</span>
             <ul>
-              <li><code>tasks.md</code> for the canonical order.</li>
-              <li><code>acceptance-criteria.md</code> for completion rules.</li>
-              <li><code>review-notes.md</code> for next-task status and risks.</li>
+              <li><code>docs/tasks/TASK-002-incomplete-work-recovery/tasks.md</code></li>
+              <li><code>docs/tasks/TASK-002-incomplete-work-recovery/acceptance-criteria.md</code></li>
+              <li><code>docs/tasks/TASK-002-incomplete-work-recovery/review-notes.md</code></li>
             </ul>
           </div>
           <div class="card">
-            <strong>Background</strong>
+            <span class="badge gold">Review surface</span>
             <ul>
-              <li><code>proposal.md</code> for why TASK-002 exists.</li>
-              <li><code>design.md</code> for dependency order and system boundaries.</li>
-              <li><code>brain-dump.md</code> for the raw audit context.</li>
+              <li><code>docs/tasks/TASK-002-incomplete-work-recovery/review.html</code></li>
             </ul>
+            <p>This HTML file is for scanning decisions and approval flow. It is not a separate source of truth.</p>
+          </div>
+          <div class="card">
+            <span class="badge">Background</span>
+            <ul>
+              <li><code>docs/HANDOFF.md</code></li>
+              <li><code>DESIGN.md</code></li>
+              <li><code>AGENTS.md</code></li>
+            </ul>
+            <p>No app source files were changed for this spec update.</p>
           </div>
         </div>
       </section>
 
       <section>
-        <h2>Canonical Recovery Order</h2>
-        <div class="task-list">
+        <h2>Three-Task Split</h2>
+        <div class="task-grid">
           <article class="task">
-            <div class="num">002.1</div>
-            <div>
-              <h3>Listen Mode Quality Pass</h3>
-              <p>Finish drawer configuration, stronger dynamic theme, listen playlist overlay, and waveform color alignment.</p>
+            <div class="task-number">
+              <span class="badge green">Task 1</span>
+              <code>TASK-002.8A</code>
             </div>
-            <span class="status">Done</span>
+            <h3>Account Identity and Owner Authority</h3>
+            <ul>
+              <li>Google OAuth with minimal identity scopes only: <code>openid</code>, email, profile.</li>
+              <li>Profiles, RLS, role model, and server-side owner helper.</li>
+              <li>Guest-to-account migration with explicit confirmation.</li>
+              <li>Global account/avatar button and Account Command Panel shell.</li>
+              <li>No YouTube, Drive, friends, history aggregation, upload, or provider recommendations.</li>
+            </ul>
           </article>
+
           <article class="task">
-            <div class="num">002.2</div>
-            <div>
-              <h3>Room Chat</h3>
-              <p>Replace the placeholder Chat tab with live room-scoped SpacetimeDB chat.</p>
+            <div class="task-number">
+              <span class="badge gold">Task 2</span>
+              <code>TASK-002.10</code>
             </div>
-            <span class="status">Done</span>
+            <h3>Personalization and First-Party History</h3>
+            <ul>
+              <li>Durable profile preferences and controlled theme presets.</li>
+              <li>Watch/listen settings that improve repeated use.</li>
+              <li>Saved, recent, and owned rooms.</li>
+              <li>First-party Mistake Watch history for real <code>Most listened</code>, <code>Recently played</code>, profile previews, and recommendation seeds.</li>
+              <li>No friends and no external provider data scopes.</li>
+            </ul>
           </article>
+
           <article class="task">
-            <div class="num">002.3</div>
-            <div>
-              <h3>Seamless Next Item Loading</h3>
-              <p>Add safe next-item prediction, metadata prefetch, direct/HLS preload, and transition instrumentation.</p>
+            <div class="task-number">
+              <span class="badge gold">Task 3</span>
+              <code>TASK-002.10C</code>
             </div>
-            <span class="status">Done</span>
-          </article>
-          <article class="task">
-            <div class="num">002.4</div>
-            <div>
-              <h3>YouTube Availability Hardening</h3>
-              <p>Pre-check, classify, display, and safely skip YouTube items that cannot play in an embedded room.</p>
-            </div>
-            <span class="status">Done</span>
-          </article>
-          <article class="task">
-            <div class="num">002.5</div>
-            <div>
-              <h3>Provider Recommendations and Room Picks</h3>
-              <p>Make discovery tabs honest and provider-safe without fake personalization.</p>
-            </div>
-            <span class="status">Implemented</span>
-          </article>
-          <article class="task">
-            <div class="num">002.5A</div>
-            <div>
-              <h3>Adaptive Listen Card Drift</h3>
-              <p>Closed the listen-room autonomous drift experiment after user QA rejected the motion; manual carousel behavior remains.</p>
-            </div>
-            <span class="status">Closed</span>
-          </article>
-          <article class="task">
-            <div class="num">002.5C</div>
-            <div>
-              <h3>Live Room Authority Hardening</h3>
-              <p>Implemented trusted session seeding, reducer permission alignment, duplicate queue protection, and guarded provider routes; user local QA confirmed the slice is working well.</p>
-            </div>
-            <span class="status">QA confirmed</span>
-          </article>
-          <article class="task">
-            <div class="num">002.5D</div>
-            <div>
-              <h3>Queue Authority And Add Media UX Stabilization</h3>
-              <p>Implemented queue-management permission, previous/back history sequencing, duplicate add-anyway handling, centered Add Media modal stacking, playlist review controls, queue notifications, and corrective autoplay/filter-bar stabilization.</p>
-            </div>
-            <span class="status">QA confirmed</span>
-          </article>
-          <article class="task">
-            <div class="num">002.5B</div>
-            <div>
-              <h3>Cinematic Watch Room Purpose Pass</h3>
-              <p>Implemented a dedicated cinematic watch layout with a quiet Signal Room band, dominant media stage, drawer-based Queue/Members/Chat, compact Up Next context, thumbnail-derived ambience, and grounded transport presentation.</p>
-            </div>
-            <span class="status">Visual QA</span>
-          </article>
-          <article class="task">
-            <div class="num">002.5E</div>
-            <div>
-              <h3>Vertical Listen AI DJ Placement Shell</h3>
-              <p>Completed a layout-only rail placement for the existing advisory AI DJ card on tall vertical listen layouts, while keeping mobile and wide desktop flows unchanged.</p>
-            </div>
-            <span class="status">Done</span>
-          </article>
-          <article class="task next">
-            <div class="num">002.6</div>
-            <div>
-              <h3>Real Audio-Reactive Waveform Architecture</h3>
-              <p>Use real analysis for accessible sources, first-party media paths, and honest fallback visuals for YouTube iframe sources.</p>
-            </div>
-            <span class="status future">Queued</span>
-          </article>
-          <article class="task">
-            <div class="num">002.7</div>
-            <div>
-              <h3>Avatar Motion Polish</h3>
-              <p>Add subtle reduced-motion-aware motion to existing hardware avatars without changing identity persistence.</p>
-            </div>
-            <span class="status future">Queued</span>
-          </article>
-          <article class="task">
-            <div class="num">002.8A</div>
-            <div>
-              <h3>Google OAuth and Owner Authority Foundation</h3>
-              <p>Add Google-backed Supabase auth, profiles, and server-verifiable owner/member roles before owner-only Stream/R2 media work.</p>
-            </div>
-            <span class="status future">Pre-media foundation</span>
-          </article>
-          <article class="task">
-            <div class="num">002.8</div>
-            <div>
-              <h3>Cloudflare Stream + R2 Media Library</h3>
-              <p>Use Stream for fast uploaded-video processing/playback and R2 for raw archive or supporting media artifacts.</p>
-            </div>
-            <span class="status future">Later system</span>
-          </article>
-          <article class="task">
-            <div class="num">002.9</div>
-            <div>
-              <h3>Voting and Suggested Next</h3>
-              <p>Add the 75% progress suggested-next voting flow with host override.</p>
-            </div>
-            <span class="status future">Later system</span>
-          </article>
-          <article class="task">
-            <div class="num">002.10</div>
-            <div>
-              <h3>Accounts, Friends, Invites, Listening History, and Social Rooms</h3>
-              <p>Build friend relationships, invites, notifications, social rooms, and listening history on the account foundation from TASK-002.8A.</p>
-            </div>
-            <span class="status future">Later system</span>
-          </article>
-          <article class="task">
-            <div class="num">002.10A</div>
-            <div>
-              <h3>Easter Eggs and Account Achievements</h3>
-              <p>Add account-backed achievements and a local `cardinal mistake` cinematic failure easter egg.</p>
-            </div>
-            <span class="status future">Post-accounts</span>
-          </article>
-          <article class="task">
-            <div class="num">002.10B</div>
-            <div>
-              <h3>AI DJ / Session Intelligence</h3>
-              <p>Define the later Signal Analysis and Odysseus DJ layer using real room history first, then account-backed memory. On tall desktop and vertical listen layouts, reserve the empty below-player space as the preferred AI DJ card home.</p>
-            </div>
-            <span class="status future">Later AI</span>
-          </article>
-          <article class="task">
-            <div class="num">002.11</div>
-            <div>
-              <h3>Shared Browser Prototype</h3>
-              <p>Build browser mode as an isolated subsystem with worker/container boundaries.</p>
-            </div>
-            <span class="status future">Later system</span>
-          </article>
-          <article class="task">
-            <div class="num">002.12</div>
-            <div>
-              <h3>Hardening and Abuse Controls</h3>
-              <p>Review rate limits, invite safety, RLS, reducers, moderation hooks, and failure handling.</p>
-            </div>
-            <span class="status future">Later system</span>
-          </article>
-          <article class="task">
-            <div class="num">002.13</div>
-            <div>
-              <h3>Final QA and Release Gate</h3>
-              <p>Run full regression, production env verification, mobile QA, and release reporting.</p>
-            </div>
-            <span class="status future">Final gate</span>
+            <h3>Social Graph and Provider Permissions</h3>
+            <ul>
+              <li>Friend requests only between signed-in accounts.</li>
+              <li>Guests never become durable friend graph nodes.</li>
+              <li>Friend room visibility, invites, notifications, privacy, and blocking.</li>
+              <li>Optional Google/YouTube scopes only through incremental consent for concrete features.</li>
+              <li>First-party history remains the primary recommendation source.</li>
+            </ul>
           </article>
         </div>
       </section>
 
       <section>
-        <h2>Key Risks</h2>
-        <div class="risk-grid">
-          <div class="card">
-            <strong>Playback stability</strong>
-            <p>Listen quality and preload work must not remount players or mutate SpacetimeDB playback state unexpectedly.</p>
+        <h2>Implementation Order</h2>
+        <div class="timeline">
+          <div>
+            <span class="badge green">1</span>
+            <h3>Identity first</h3>
+            <p>TASK-002.8A must land before owner-only upload work because Stream/R2 ingestion needs a trusted server-side owner check.</p>
           </div>
-          <div class="card">
-            <strong>Provider truth</strong>
-            <p>Recommendations and metadata must show unavailable states rather than fake personal, provider-trending, or listening-history data.</p>
+          <div>
+            <span class="badge gold">2</span>
+            <h3>Upload can proceed</h3>
+            <p>TASK-002.8 can proceed after 8A. It does not need social graph or history, only owner authority.</p>
           </div>
-          <div class="card">
-            <strong>Ambient motion</strong>
-            <p>Watch-room ambience must shift slowly, respect reduced-motion, and use YouTube thumbnail/provider fallback instead of iframe frame sampling.</p>
-          </div>
-          <div class="card">
-            <strong>Authority boundary</strong>
-            <p>Host authority must come from verified membership, not browser-provided reducer payload fields or client UI state.</p>
-          </div>
-          <div class="card">
-            <strong>Queue interaction debt</strong>
-            <p>Full queue access, duplicate behavior, previous/back history, and Add Media stacking need a dedicated stabilization pass before the cinematic watch queue/library drawer is redesigned.</p>
-          </div>
-          <div class="card">
-            <strong>Future systems</strong>
-            <p>Cloudflare Stream/R2, social rooms, achievements, AI DJ, browser mode, and broad hardening may need deeper design review before implementation.</p>
+          <div>
+            <span class="badge gold">3</span>
+            <h3>Account value then social</h3>
+            <p>TASK-002.10 should establish first-party account value before TASK-002.10C adds friends and external provider consent.</p>
           </div>
         </div>
+      </section>
+
+      <section>
+        <h2>Decisions Locked In This Spec</h2>
+        <div class="decision-grid">
+          <div class="split-rule">
+            <span class="badge green">Guest-first</span>
+            <p>Guests remain valid room participants. They can create/join rooms, queue/chat/control where permissions allow, and keep temporary identity without signing in.</p>
+          </div>
+          <div class="split-rule">
+            <span class="badge green">Account-enhanced</span>
+            <p>Accounts add durability: profile, preferences, saved rooms, owner authority, first-party history, and later social/provider features.</p>
+          </div>
+          <div class="split-rule warning">
+            <span class="badge gold">Minimal Google auth</span>
+            <p>Initial Google login is identity only. No YouTube, Drive, playlist, history, contacts, calendar, or offline access scopes in TASK-002.8A.</p>
+          </div>
+          <div class="split-rule warning">
+            <span class="badge gold">Friends require accounts</span>
+            <p>Friend relationships require signed-in accounts on both sides. Guests are session participants, not durable social identities.</p>
+          </div>
+          <div class="split-rule">
+            <span class="badge">Recommendations</span>
+            <p>Mistake Watch first-party history is the default recommendation source. Provider data is optional and scoped later.</p>
+          </div>
+          <div class="split-rule danger-zone">
+            <span class="badge danger">Do not collapse roles</span>
+            <p>App/media owner, room host, signed-in member, and guest identity are separate concepts and must not become one frontend role flag.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Approval Checkpoint</h2>
+        <p>
+          Approving this spec means TASK-002.8A should be implemented as the identity and owner-authority foundation only. Personalization/history and social/provider permissions remain separate follow-up tasks.
+        </p>
       </section>
     </main>
   </body>

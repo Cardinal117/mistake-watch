@@ -12,6 +12,67 @@ export type Database = {
   };
   public: {
     Tables: {
+      account_guest_migrations: {
+        Row: {
+          created_at: string;
+          guest_identity_id: string;
+          id: string;
+          migrated_avatar_key: string | null;
+          migrated_display_name: string | null;
+          ownership_transferred: boolean;
+          room_id: string;
+          room_member_id: string | null;
+          saved_room_transferred: boolean;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          guest_identity_id: string;
+          id?: string;
+          migrated_avatar_key?: string | null;
+          migrated_display_name?: string | null;
+          ownership_transferred?: boolean;
+          room_id: string;
+          room_member_id?: string | null;
+          saved_room_transferred?: boolean;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          guest_identity_id?: string;
+          id?: string;
+          migrated_avatar_key?: string | null;
+          migrated_display_name?: string | null;
+          ownership_transferred?: boolean;
+          room_id?: string;
+          room_member_id?: string | null;
+          saved_room_transferred?: boolean;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "account_guest_migrations_guest_identity_id_fkey";
+            columns: ["guest_identity_id"];
+            isOneToOne: false;
+            referencedRelation: "guest_identities";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "account_guest_migrations_room_id_fkey";
+            columns: ["room_id"];
+            isOneToOne: false;
+            referencedRelation: "rooms";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "account_guest_migrations_room_member_id_fkey";
+            columns: ["room_member_id"];
+            isOneToOne: false;
+            referencedRelation: "room_members";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       guest_identities: {
         Row: {
           created_at: string;
@@ -43,6 +104,350 @@ export type Database = {
             columns: ["room_id"];
             isOneToOne: false;
             referencedRelation: "rooms";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      media_assets: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          duration_seconds: number | null;
+          episode_number: number | null;
+          file_size_bytes: number;
+          folder_id: string | null;
+          id: string;
+          inspection_result: Json;
+          is_live: boolean;
+          media_kind: string;
+          mime_type: string;
+          owner_user_id: string;
+          estimated_credits: number | null;
+          owner_approval_required: boolean;
+          owner_approved_at: string | null;
+          poster_status: string;
+          processed_object_key: string | null;
+          processing_completed_at: string | null;
+          processing_error_message: string | null;
+          processing_job_id: string | null;
+          processing_provider: string | null;
+          processing_started_at: string | null;
+          processing_status: string;
+          processing_strategy: string;
+          public_url: string;
+          r2_bucket: string;
+          r2_object_key: string;
+          season_number: number | null;
+          sort_index: number;
+          source_file_size_bytes: number | null;
+          source_mime_type: string | null;
+          source_object_key: string | null;
+          source_type: string;
+          status: string;
+          thumbnail_object_key: string | null;
+          thumbnail_url: string | null;
+          title: string;
+          updated_at: string;
+          visibility: string;
+          waveform_peaks_key: string | null;
+          waveform_peaks_url: string | null;
+          waveform_status: string;
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          duration_seconds?: number | null;
+          episode_number?: number | null;
+          file_size_bytes: number;
+          folder_id?: string | null;
+          id?: string;
+          inspection_result?: Json;
+          is_live?: boolean;
+          media_kind?: string;
+          mime_type: string;
+          owner_user_id: string;
+          estimated_credits?: number | null;
+          owner_approval_required?: boolean;
+          owner_approved_at?: string | null;
+          poster_status?: string;
+          processed_object_key?: string | null;
+          processing_completed_at?: string | null;
+          processing_error_message?: string | null;
+          processing_job_id?: string | null;
+          processing_provider?: string | null;
+          processing_started_at?: string | null;
+          processing_status?: string;
+          processing_strategy?: string;
+          public_url: string;
+          r2_bucket: string;
+          r2_object_key: string;
+          season_number?: number | null;
+          sort_index?: number;
+          source_file_size_bytes?: number | null;
+          source_mime_type?: string | null;
+          source_object_key?: string | null;
+          source_type?: string;
+          status?: string;
+          thumbnail_object_key?: string | null;
+          thumbnail_url?: string | null;
+          title: string;
+          updated_at?: string;
+          visibility?: string;
+          waveform_peaks_key?: string | null;
+          waveform_peaks_url?: string | null;
+          waveform_status?: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          duration_seconds?: number | null;
+          episode_number?: number | null;
+          file_size_bytes?: number;
+          folder_id?: string | null;
+          id?: string;
+          inspection_result?: Json;
+          is_live?: boolean;
+          media_kind?: string;
+          mime_type?: string;
+          owner_user_id?: string;
+          estimated_credits?: number | null;
+          owner_approval_required?: boolean;
+          owner_approved_at?: string | null;
+          poster_status?: string;
+          processed_object_key?: string | null;
+          processing_completed_at?: string | null;
+          processing_error_message?: string | null;
+          processing_job_id?: string | null;
+          processing_provider?: string | null;
+          processing_started_at?: string | null;
+          processing_status?: string;
+          processing_strategy?: string;
+          public_url?: string;
+          r2_bucket?: string;
+          r2_object_key?: string;
+          season_number?: number | null;
+          sort_index?: number;
+          source_file_size_bytes?: number | null;
+          source_mime_type?: string | null;
+          source_object_key?: string | null;
+          source_type?: string;
+          status?: string;
+          thumbnail_object_key?: string | null;
+          thumbnail_url?: string | null;
+          title?: string;
+          updated_at?: string;
+          visibility?: string;
+          waveform_peaks_key?: string | null;
+          waveform_peaks_url?: string | null;
+          waveform_status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "media_assets_folder_id_fkey";
+            columns: ["folder_id"];
+            isOneToOne: false;
+            referencedRelation: "media_folders";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      media_folders: {
+        Row: {
+          created_at: string;
+          default_sort_direction: string;
+          default_sort_key: string;
+          description: string | null;
+          folder_type: string;
+          id: string;
+          name: string;
+          owner_user_id: string;
+          slug: string;
+          sort_order: number;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          default_sort_direction?: string;
+          default_sort_key?: string;
+          description?: string | null;
+          folder_type?: string;
+          id?: string;
+          name: string;
+          owner_user_id: string;
+          slug: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          default_sort_direction?: string;
+          default_sort_key?: string;
+          description?: string | null;
+          folder_type?: string;
+          id?: string;
+          name?: string;
+          owner_user_id?: string;
+          slug?: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      media_processing_events: {
+        Row: {
+          created_at: string;
+          id: string;
+          job_id: string | null;
+          media_asset_id: string;
+          message: string | null;
+          payload: Json | null;
+          provider: string;
+          status: string;
+          task_name: string | null;
+          task_operation: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          job_id?: string | null;
+          media_asset_id: string;
+          message?: string | null;
+          payload?: Json | null;
+          provider?: string;
+          status: string;
+          task_name?: string | null;
+          task_operation?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          job_id?: string | null;
+          media_asset_id?: string;
+          message?: string | null;
+          payload?: Json | null;
+          provider?: string;
+          status?: string;
+          task_name?: string | null;
+          task_operation?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "media_processing_events_media_asset_id_fkey";
+            columns: ["media_asset_id"];
+            isOneToOne: false;
+            referencedRelation: "media_assets";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      media_source_matches: {
+        Row: {
+          created_at: string;
+          id: string;
+          media_asset_id: string;
+          normalized_source_url: string | null;
+          source_id: string;
+          source_type: string;
+          status: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          media_asset_id: string;
+          normalized_source_url?: string | null;
+          source_id: string;
+          source_type: string;
+          status?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          media_asset_id?: string;
+          normalized_source_url?: string | null;
+          source_id?: string;
+          source_type?: string;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "media_source_matches_media_asset_id_fkey";
+            columns: ["media_asset_id"];
+            isOneToOne: false;
+            referencedRelation: "media_assets";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      media_upload_sessions: {
+        Row: {
+          bytes_uploaded: number;
+          completed_parts: Json;
+          created_at: string;
+          error_message: string | null;
+          expires_at: string;
+          file_size_bytes: number;
+          id: string;
+          media_asset_id: string | null;
+          mime_type: string;
+          multipart_upload_id: string | null;
+          object_key: string;
+          original_filename: string;
+          owner_user_id: string;
+          part_count: number | null;
+          part_size_bytes: number | null;
+          resumable_until: string | null;
+          status: string;
+          updated_at: string;
+          upload_mode: string;
+        };
+        Insert: {
+          bytes_uploaded?: number;
+          completed_parts?: Json;
+          created_at?: string;
+          error_message?: string | null;
+          expires_at: string;
+          file_size_bytes: number;
+          id?: string;
+          media_asset_id?: string | null;
+          mime_type: string;
+          multipart_upload_id?: string | null;
+          object_key: string;
+          original_filename: string;
+          owner_user_id: string;
+          part_count?: number | null;
+          part_size_bytes?: number | null;
+          resumable_until?: string | null;
+          status?: string;
+          updated_at?: string;
+          upload_mode?: string;
+        };
+        Update: {
+          bytes_uploaded?: number;
+          completed_parts?: Json;
+          created_at?: string;
+          error_message?: string | null;
+          expires_at?: string;
+          file_size_bytes?: number;
+          id?: string;
+          media_asset_id?: string | null;
+          mime_type?: string;
+          multipart_upload_id?: string | null;
+          object_key?: string;
+          original_filename?: string;
+          owner_user_id?: string;
+          part_count?: number | null;
+          part_size_bytes?: number | null;
+          resumable_until?: string | null;
+          status?: string;
+          updated_at?: string;
+          upload_mode?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "media_upload_sessions_media_asset_id_fkey";
+            columns: ["media_asset_id"];
+            isOneToOne: false;
+            referencedRelation: "media_assets";
             referencedColumns: ["id"];
           },
         ];
@@ -160,24 +565,42 @@ export type Database = {
       };
       profiles: {
         Row: {
+          account_status: string;
+          avatar_key: string | null;
+          avatar_source: string;
           avatar_url: string | null;
           created_at: string;
           display_name: string;
+          google_avatar_url: string | null;
+          handle: string | null;
           id: string;
+          role: string;
           updated_at: string;
         };
         Insert: {
+          account_status?: string;
+          avatar_key?: string | null;
+          avatar_source?: string;
           avatar_url?: string | null;
           created_at?: string;
           display_name: string;
+          google_avatar_url?: string | null;
+          handle?: string | null;
           id: string;
+          role?: string;
           updated_at?: string;
         };
         Update: {
+          account_status?: string;
+          avatar_key?: string | null;
+          avatar_source?: string;
           avatar_url?: string | null;
           created_at?: string;
           display_name?: string;
+          google_avatar_url?: string | null;
+          handle?: string | null;
           id?: string;
+          role?: string;
           updated_at?: string;
         };
         Relationships: [];
@@ -255,6 +678,7 @@ export type Database = {
           id: string;
           joined_at: string;
           last_seen_at: string | null;
+          linked_from_guest_identity_id: string | null;
           role: string;
           room_id: string;
           user_id: string | null;
@@ -265,6 +689,7 @@ export type Database = {
           id?: string;
           joined_at?: string;
           last_seen_at?: string | null;
+          linked_from_guest_identity_id?: string | null;
           role?: string;
           room_id: string;
           user_id?: string | null;
@@ -275,6 +700,7 @@ export type Database = {
           id?: string;
           joined_at?: string;
           last_seen_at?: string | null;
+          linked_from_guest_identity_id?: string | null;
           role?: string;
           room_id?: string;
           user_id?: string | null;

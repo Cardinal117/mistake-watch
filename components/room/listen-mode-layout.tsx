@@ -47,6 +47,7 @@ import {
 } from "lucide-react";
 
 import { SignalApertureLockup } from "@/components/brand";
+import { AccountCommandPanel } from "@/components/account";
 import {
   Avatar,
   Badge,
@@ -55,6 +56,7 @@ import {
   PendingLink,
   Slider,
 } from "@/components/ui";
+import type { AccountSummary } from "@/lib/account/types";
 import { setRoomSavedAction } from "@/lib/rooms/actions";
 import {
   dispatchPlayerFullscreenRequest,
@@ -104,6 +106,8 @@ import { YoutubeMediaPlayer } from "./youtube-media-player";
 import { YouTubeMetadataLine } from "./youtube-metadata-line";
 
 type ListenModeLayoutProps = {
+  account: AccountSummary;
+  accountNotice?: "guest-room-attached";
   liveRoom: LiveRoomState;
   room: RoomSnapshot;
 };
@@ -156,7 +160,12 @@ const DEFAULT_LISTEN_DRAWER_HEIGHT = 56;
 const DEFAULT_LISTEN_VOLUME = 100;
 const DEFAULT_RIGHT_SIDEBAR_COLLAPSED = false;
 
-export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
+export function ListenModeLayout({
+  account,
+  accountNotice,
+  liveRoom,
+  room,
+}: ListenModeLayoutProps) {
   const [clockMs, setClockMs] = useState(0);
   const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(
     DEFAULT_RIGHT_SIDEBAR_COLLAPSED,
@@ -360,6 +369,8 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
           mobileTools={
             <ListenMobileRoomTools
               activeTab={mobileToolsTab}
+              account={account}
+              accountNotice={accountNotice}
               canAddQueue={liveRoom.canAddQueue}
               canLoadSource={liveRoom.canManageAuthority}
               connectionStatus={liveRoom.connectionStatus}
@@ -408,6 +419,8 @@ export function ListenModeLayout({ liveRoom, room }: ListenModeLayoutProps) {
             />
           ) : null}
           <ListenTechnicalRoomHeader
+            account={account}
+            accountNotice={accountNotice}
             canAddQueue={liveRoom.canAddQueue}
             canLoadSource={liveRoom.canManageAuthority}
             connectionStatus={liveRoom.connectionStatus}
@@ -794,6 +807,8 @@ function ListenNowPlayingPanel({
 }
 
 function ListenTechnicalRoomHeader({
+  account,
+  accountNotice,
   canAddQueue,
   canLoadSource,
   connectionStatus,
@@ -807,6 +822,8 @@ function ListenTechnicalRoomHeader({
   remainingSeconds,
   room,
 }: {
+  account: AccountSummary;
+  accountNotice?: "guest-room-attached";
   canAddQueue: boolean;
   canLoadSource: boolean;
   connectionStatus: string;
@@ -824,6 +841,8 @@ function ListenTechnicalRoomHeader({
     (participant) => participant.status === "online",
   ).length;
   const roomName = liveRoom.snapshot.session?.roomName ?? room.name;
+  const roomAttached =
+    account.status === "signed-in" && room.currentMember?.userId === account.id;
   const canRename =
     liveRoom.canManageAuthority && liveRoom.connectionStatus === "connected";
   const [editingName, setEditingName] = useState(roomName);
@@ -1000,6 +1019,14 @@ function ListenTechnicalRoomHeader({
               inviteUrl={room.inviteUrl}
               roomCode={room.code}
             />
+            <AccountCommandPanel
+              account={account}
+              compact
+              notice={accountNotice}
+              nextPath={`/rooms/${room.id}`}
+              roomAttached={roomAttached}
+              roomId={room.id}
+            />
           </div>
         </div>
         {desktopShell ? (
@@ -1052,6 +1079,8 @@ function ListenPreparingNextStrip({
 
 function ListenMobileRoomTools({
   activeTab,
+  account,
+  accountNotice,
   canAddQueue,
   canLoadSource,
   connectionStatus,
@@ -1066,6 +1095,8 @@ function ListenMobileRoomTools({
   room,
 }: {
   activeTab: "members" | "room";
+  account: AccountSummary;
+  accountNotice?: "guest-room-attached";
   canAddQueue: boolean;
   canLoadSource: boolean;
   connectionStatus: string;
@@ -1082,6 +1113,8 @@ function ListenMobileRoomTools({
   const onlineCount = liveRoom.participants.filter(
     (participant) => participant.status === "online",
   ).length;
+  const roomAttached =
+    account.status === "signed-in" && room.currentMember?.userId === account.id;
 
   return (
     <section className="relative z-20 overflow-hidden rounded-md border border-white/10 bg-surface/82 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.035)] backdrop-blur-xl xl:hidden">
@@ -1139,6 +1172,13 @@ function ListenMobileRoomTools({
                 compact
                 inviteUrl={room.inviteUrl}
                 roomCode={room.code}
+              />
+              <AccountCommandPanel
+                account={account}
+                notice={accountNotice}
+                nextPath={`/rooms/${room.id}`}
+                roomAttached={roomAttached}
+                roomId={room.id}
               />
             </div>
           </div>

@@ -653,30 +653,6 @@ export function YoutubeMediaPlayer({
         return;
       }
 
-      if (
-        !canControlPlaybackRef.current &&
-        shouldForceUnauthorizedCorrection({
-          expectedPositionSeconds,
-          localIsPlaying: isYouTubePlaying(localState),
-          localPositionSeconds,
-          state: canonicalState,
-        })
-      ) {
-        applyingRemoteState.current = true;
-        player.seekTo(expectedPositionSeconds, true);
-
-        if (canonicalState.status === "playing") {
-          player.playVideo();
-        } else {
-          player.pauseVideo();
-        }
-
-        window.setTimeout(() => {
-          applyingRemoteState.current = false;
-        }, 80);
-        return;
-      }
-
       const correction = chooseSyncCorrection({
         clientNowMs: Date.now(),
         local: {
@@ -865,28 +841,4 @@ function expectedYouTubePositionAt(
     0,
     state.positionSeconds + elapsedSeconds * state.playbackRate,
   );
-}
-
-function shouldForceUnauthorizedCorrection({
-  expectedPositionSeconds,
-  localIsPlaying,
-  localPositionSeconds,
-  state,
-}: {
-  expectedPositionSeconds: number;
-  localIsPlaying: boolean;
-  localPositionSeconds: number;
-  state: CanonicalPlaybackState;
-}) {
-  const driftSeconds = Math.abs(localPositionSeconds - expectedPositionSeconds);
-
-  if (state.status === "playing") {
-    return !localIsPlaying || driftSeconds > 0.25;
-  }
-
-  if (state.status === "paused" || state.status === "ended") {
-    return localIsPlaying || driftSeconds > 0.15;
-  }
-
-  return driftSeconds > 0.75;
 }

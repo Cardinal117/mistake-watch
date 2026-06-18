@@ -1,5 +1,7 @@
 import { schema, table, t } from "spacetimedb/server";
 
+const KICK_REJOIN_BLOCK_MS = 8_000;
+
 const roomSession = table(
   {
     name: "room_session",
@@ -835,7 +837,11 @@ export const join_room = spacetimedb.reducer(
         ? "host"
         : "guest";
 
-    if (kicked && resolvedRole !== "host") {
+    if (
+      kicked &&
+      resolvedRole !== "host" &&
+      nowMs() - kicked.created_ms < KICK_REJOIN_BLOCK_MS
+    ) {
       recordRoomError(ctx, {
         code: "member_removed",
         message: "Join ignored because this guest was removed by the host.",
@@ -843,6 +849,10 @@ export const join_room = spacetimedb.reducer(
         severity: "info",
       });
       return;
+    }
+
+    if (kicked) {
+      ctx.db.room_kick.delete(kicked);
     }
 
     if (existing) {

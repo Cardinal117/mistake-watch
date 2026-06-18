@@ -97,6 +97,18 @@ type QueueAddInput = SourceLoadInput & {
   playlistTitle?: string;
   thumbnailUrl?: string;
 };
+type MediaLibraryAsset = {
+  durationSeconds: number | null;
+  id: string;
+  publicUrl: string;
+  sourceMatches: Array<{
+    sourceId: string;
+    sourceType: string;
+    status: string;
+  }>;
+  thumbnailUrl: string | null;
+  title: string;
+};
 
 type PlaylistPreview = YouTubePlaylistPreviewResponse;
 type PlaylistPreviewItem = YouTubePlaylistItem;
@@ -446,6 +458,30 @@ export function QueuePanel({
     } satisfies QueueAddInput;
   }
 
+  async function preferFirstPartyMediaMatch(input: QueueAddInput) {
+    const videoId =
+      input.sourceType === "youtube" ? parseYouTubeVideoId(input.sourceUrl) : null;
+
+    if (!videoId) {
+      return input;
+    }
+
+    const matches = await fetchFirstPartyMediaMatches([videoId]);
+    const asset = matches.get(videoId);
+
+    if (!asset) {
+      return input;
+    }
+
+    return firstPartyAssetToQueueInput(asset, {
+      channelTitle: input.channelName ?? input.artist ?? null,
+      durationSeconds: input.durationSeconds ?? null,
+      sourceUrl: input.sourceUrl,
+      thumbnailUrl: input.thumbnailUrl ?? null,
+      title: input.sourceTitle,
+    });
+  }
+
   function isDuplicateQueueSource(input: Pick<QueueAddInput, "sourceUrl">) {
     const videoId = parseYouTubeVideoId(input.sourceUrl);
 
@@ -465,7 +501,7 @@ export function QueuePanel({
     );
   }
 
-  function importPlaylistItemsWithFeedback(
+  async function importPlaylistItemsWithFeedback(
     importItems: PlaylistPreviewItem[],
     options: {
       allowDuplicates: boolean;
@@ -476,11 +512,18 @@ export function QueuePanel({
   ) {
     let added = 0;
     let duplicatesAdded = 0;
+    const firstPartyMatches = await fetchFirstPartyMediaMatches(
+      importItems.map((item) => item.videoId),
+    );
 
     for (const item of importItems) {
+      const queueInput = firstPartyMatches.has(item.videoId)
+        ? firstPartyAssetToQueueInput(firstPartyMatches.get(item.videoId)!, item)
+        : playlistItemToQueueInput(item, options);
       const duplicate =
         duplicateVideoIds.has(item.videoId) ||
-        duplicateSourceUrls.has(item.sourceUrl);
+        duplicateSourceUrls.has(item.sourceUrl) ||
+        duplicateSourceUrls.has(queueInput.sourceUrl);
 
       if (duplicate && !options.allowDuplicates) {
         continue;
@@ -488,18 +531,7 @@ export function QueuePanel({
 
       added += 1;
       duplicatesAdded += duplicate ? 1 : 0;
-      onAddQueueItem?.({
-        allowDuplicate: duplicate,
-        artist: item.channelTitle ?? undefined,
-        channelName: item.channelTitle ?? undefined,
-        durationSeconds: item.durationSeconds ?? undefined,
-        playlistId: options.playlistId ?? undefined,
-        playlistTitle: options.playlistTitle ?? undefined,
-        sourceTitle: item.title,
-        sourceType: "youtube",
-        sourceUrl: item.sourceUrl,
-        thumbnailUrl: item.thumbnailUrl ?? undefined,
-      });
+      onAddQueueItem?.({ ...queueInput, allowDuplicate: duplicate });
     }
 
     const summary =
@@ -523,7 +555,11 @@ export function QueuePanel({
       return;
     }
 
-    const checkedInput = singlePreview ?? (await checkYouTubeInput(input));
+    const checkedInput = singlePreview
+      ? await preferFirstPartyMediaMatch(singlePreview)
+      : await checkYouTubeInput(input).then((checked) =>
+          checked ? preferFirstPartyMediaMatch(checked) : null,
+        );
 
     if (!checkedInput) {
       return;
@@ -550,7 +586,11 @@ export function QueuePanel({
       return;
     }
 
-    const checkedInput = singlePreview ?? (await checkYouTubeInput(input));
+    const checkedInput = singlePreview
+      ? await preferFirstPartyMediaMatch(singlePreview)
+      : await checkYouTubeInput(input).then((checked) =>
+          checked ? preferFirstPartyMediaMatch(checked) : null,
+        );
 
     if (!checkedInput) {
       return;
@@ -562,7 +602,9 @@ export function QueuePanel({
     setAddMediaOpen(false);
   }
 
-  function importPlaylist(strategy: "all" | "selected" | "shuffle" | "smart") {
+  async function importPlaylist(
+    strategy: "all" | "selected" | "shuffle" | "smart",
+  ) {
     if (!playlistPreview || addDisabled) {
       return;
     }
@@ -652,7 +694,7 @@ export function QueuePanel({
       return;
     }
 
-    importPlaylistItemsWithFeedback(importItems, {
+    await importPlaylistItemsWithFeedback(importItems, {
       allowDuplicates: true,
       playlistId: playlistPreview.playlistId,
       playlistTitle: playlistPreview.playlistTitle,
@@ -858,7 +900,9 @@ export function QueuePanel({
             duplicateVideoIds={duplicateVideoIds}
             mode={mode}
             onCancel={clearPlaylistPreview}
-            onImport={importPlaylist}
+            onImport={(strategy) => {
+              void importPlaylist(strategy);
+            }}
             onSelectionChange={setSelectedPlaylistIds}
             preview={playlistPreview}
             selectedIds={selectedPlaylistIds}
@@ -887,12 +931,15 @@ export function QueuePanel({
                   allowDuplicate: true,
                 });
               } else {
-                importPlaylistItemsWithFeedback(pendingDuplicateAdd.items, {
-                  allowDuplicates: true,
-                  playlistId: pendingDuplicateAdd.playlistId,
-                  playlistTitle: pendingDuplicateAdd.playlistTitle,
-                  skippedUnavailable: pendingDuplicateAdd.skippedUnavailable,
-                });
+                void importPlaylistItemsWithFeedback(
+                  pendingDuplicateAdd.items,
+                  {
+                    allowDuplicates: true,
+                    playlistId: pendingDuplicateAdd.playlistId,
+                    playlistTitle: pendingDuplicateAdd.playlistTitle,
+                    skippedUnavailable: pendingDuplicateAdd.skippedUnavailable,
+                  },
+                );
               }
 
               setPendingDuplicateAdd(null);
@@ -903,13 +950,16 @@ export function QueuePanel({
             onConfirmWithoutDuplicates={
               pendingDuplicateAdd.kind === "playlist"
                 ? () => {
-                    importPlaylistItemsWithFeedback(pendingDuplicateAdd.items, {
-                      allowDuplicates: false,
-                      playlistId: pendingDuplicateAdd.playlistId,
-                      playlistTitle: pendingDuplicateAdd.playlistTitle,
-                      skippedUnavailable:
-                        pendingDuplicateAdd.skippedUnavailable,
-                    });
+                    void importPlaylistItemsWithFeedback(
+                      pendingDuplicateAdd.items,
+                      {
+                        allowDuplicates: false,
+                        playlistId: pendingDuplicateAdd.playlistId,
+                        playlistTitle: pendingDuplicateAdd.playlistTitle,
+                        skippedUnavailable:
+                          pendingDuplicateAdd.skippedUnavailable,
+                      },
+                    );
                     setPendingDuplicateAdd(null);
                     clearAddMediaState();
                     setAddMediaOpen(false);
@@ -1154,6 +1204,86 @@ export function QueuePanel({
       )}
     </div>
   );
+}
+
+async function fetchFirstPartyMediaMatches(videoIds: string[]) {
+  const uniqueVideoIds = Array.from(
+    new Set(videoIds.filter((videoId) => /^[a-zA-Z0-9_-]{11}$/.test(videoId))),
+  );
+
+  if (uniqueVideoIds.length === 0) {
+    return new Map<string, MediaLibraryAsset>();
+  }
+
+  const response = await fetch("/api/media/source-matches", {
+    body: JSON.stringify({
+      sources: uniqueVideoIds.map((videoId) => ({
+        sourceId: videoId,
+        sourceType: "youtube",
+      })),
+    }),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+  const payload = (await response.json()) as {
+    assets?: MediaLibraryAsset[];
+  };
+
+  if (!response.ok || !payload.assets) {
+    return new Map<string, MediaLibraryAsset>();
+  }
+
+  const matches = new Map<string, MediaLibraryAsset>();
+
+  for (const asset of payload.assets) {
+    for (const match of asset.sourceMatches) {
+      if (match.sourceType === "youtube") {
+        matches.set(match.sourceId, asset);
+      }
+    }
+  }
+
+  return matches;
+}
+
+function playlistItemToQueueInput(
+  item: PlaylistPreviewItem,
+  options: {
+    playlistId?: string | null;
+    playlistTitle?: string | null;
+  },
+): QueueAddInput {
+  return {
+    artist: item.channelTitle ?? undefined,
+    channelName: item.channelTitle ?? undefined,
+    durationSeconds: item.durationSeconds ?? undefined,
+    playlistId: options.playlistId ?? undefined,
+    playlistTitle: options.playlistTitle ?? undefined,
+    sourceTitle: item.title,
+    sourceType: "youtube",
+    sourceUrl: item.sourceUrl,
+    thumbnailUrl: item.thumbnailUrl ?? undefined,
+  };
+}
+
+function firstPartyAssetToQueueInput(
+  asset: MediaLibraryAsset,
+  item: Pick<
+    PlaylistPreviewItem,
+    "channelTitle" | "durationSeconds" | "sourceUrl" | "thumbnailUrl" | "title"
+  >,
+): QueueAddInput {
+  return {
+    artist: item.channelTitle ?? "Mistake Watch Library",
+    channelName: item.channelTitle ?? undefined,
+    durationSeconds: asset.durationSeconds ?? item.durationSeconds ?? undefined,
+    playlistId: undefined,
+    playlistTitle: "Matched first-party media",
+    sourceTitle: asset.title || item.title,
+    sourceType: "direct",
+    sourceUrl: asset.publicUrl,
+    thumbnailUrl: asset.thumbnailUrl ?? item.thumbnailUrl ?? undefined,
+  };
 }
 
 function SinglePreviewCard({

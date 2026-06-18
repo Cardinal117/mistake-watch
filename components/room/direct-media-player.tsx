@@ -75,6 +75,8 @@ function DirectMediaPlayerCore({
   const activeSourceUrlRef = useRef(liveRoom.snapshot.session?.sourceUrl);
   const mediaSourceUrlRef = useRef<string | null>(null);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
+  const [fullscreenControlsActive, setFullscreenControlsActive] =
+    useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const source = canonicalState?.source;
   const sourceKind = source?.kind ?? null;
@@ -244,6 +246,29 @@ function DirectMediaPlayerCore({
   }, []);
 
   useEffect(() => {
+    function handleFullscreenChange() {
+      const media = mediaRef.current;
+      const fullscreenElement = document.fullscreenElement;
+
+      setFullscreenControlsActive(
+        mode === "watch" &&
+          Boolean(
+            media &&
+              fullscreenElement &&
+              (fullscreenElement === media ||
+                fullscreenElement.contains(media)),
+          ),
+      );
+    }
+
+    handleFullscreenChange();
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    return () =>
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, [mode]);
+
+  useEffect(() => {
     const media = mediaRef.current;
 
     if (!media || !canonicalState || !source) {
@@ -367,6 +392,7 @@ function DirectMediaPlayerCore({
           mode === "listen" ? "Synced audio player" : "Synced video player"
         }
         className={className}
+        controls={fullscreenControlsActive}
         onCanPlay={() => {
           if (canonicalState?.status === "buffering" && mediaRef.current) {
             void playMedia(mediaRef.current, setAutoplayBlocked);
@@ -378,8 +404,15 @@ function DirectMediaPlayerCore({
           publishMediaState("error");
         }}
         onLoadedMetadata={publishMediaMetadata}
+        onPause={() => publishMediaState("paused")}
         onPlay={() => {
           setAutoplayBlocked(false);
+          publishMediaState("playing");
+        }}
+        onSeeked={() => {
+          const media = mediaRef.current;
+
+          publishMediaState(media?.paused ? "paused" : "playing");
         }}
         playsInline
         ref={(element) => {

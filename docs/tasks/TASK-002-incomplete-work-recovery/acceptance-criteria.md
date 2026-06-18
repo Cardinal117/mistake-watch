@@ -126,32 +126,46 @@
 - Host crown remains a separate role overlay.
 - Motion causes no layout shift in dense room/member surfaces.
 
-## TASK-002.8A Google OAuth and Owner Authority Foundation
+## TASK-002.8A Account Identity and Owner Authority Foundation
 
-- Supabase Auth with Google OAuth exists.
+- Supabase Auth with Google OAuth exists using minimal identity scopes only: `openid`, email, and profile.
 - App profile data is stored in public profile tables, not directly in Supabase `auth.users`.
 - A durable `profiles.role = owner | member` model exists.
 - The app can distinguish owner and member roles server-side.
 - Stream/R2 upload and source-ingestion permissions have a reliable server-side authorization primitive before TASK-002.8 starts.
 - Signed-in account identity can connect to room membership while guest-first rooms still work.
-- Guest-to-account migration behavior is documented for display name, avatar, saved rooms, and room memberships.
-- Initial Google login requests basic profile identity only; YouTube playlist/history scopes are not requested until a later feature explicitly needs them.
+- Guests can still create rooms, join rooms, queue where allowed, chat where allowed, and receive room permissions without signing in.
+- Durable room membership supports exactly one identity path per member: signed-in `user_id` or guest `guest_id`, not both.
+- Guest-to-account migration behavior is implemented or documented for display name, avatar, current room memberships, saved rooms, and temporary ownership transfer.
+- The Account Command Panel shell exists with clear guest, signed-in, and owner states.
+- Initial Google login does not request YouTube, Google Drive, playlist, history, contacts, calendar, or offline-access scopes.
+- Provider token handling and consent boundaries are documented before any future provider-data task starts.
 
-## TASK-002.8 Cloudflare Stream + R2 Media Library and Authorized Upload Pipeline
+## TASK-002.8 R2 Media Library and Authorized Upload Pipeline
 
-- Cloudflare Stream is used as the primary uploaded-video processing and playback layer.
-- R2 is used for raw/source archive, supporting artifacts, waveform/analysis JSON, and future non-Stream media needs where appropriate.
+- R2 is used as the primary first-party uploaded-media storage and playback source for the private small-room phase.
+- Cloudflare Stream, transcoding, adaptive bitrate playback, automatic thumbnail extraction, and background waveform generation are deferred unless separately approved.
+- First-party uploaded video is constrained to browser-playable formats, with `.mp4` H.264/AAC as the preferred first supported path.
 - Uploaded media is stored outside Supabase Postgres.
-- Supabase stores durable metadata, access records, source matches, Stream/R2 identifiers, and upload/ingestion job status through `media_assets`, `media_ingestion_jobs`, and `media_source_matches`.
+- Supabase stores durable metadata, access records, source matches, R2 object keys/public URLs, and upload/ingestion status through `media_assets`, `media_upload_sessions` or `media_ingestion_jobs`, and `media_source_matches`.
 - Existing YouTube/direct media flows remain working.
 - Owner-only upload/source ingestion is enforced server-side through the TASK-002.8A owner authority foundation. Non-owner users can add YouTube links/playlists but cannot upload first-party media or trigger first-party source ingestion.
 - A dev/test owner bypass, if added, is explicit env-gated and never enabled as the public default.
 - The expanded watch queue/library drawer supports drag-and-drop upload, stored video browsing, processing states, source-match badges, and Add to Queue / Play Now actions.
 - Playlist import prefers ready first-party source matches and falls back to YouTube embed items when no ready first-party asset exists.
 - YouTube video IDs and source URL hashes are lookup keys, not automatic permission to download.
-- Custom media workers run outside Vercel only where Cloudflare Stream does not cover required artifacts or ingestion needs, and update job status through pending, processing, ready, and failed states.
-- Supported first-party media has waveform peak generation, queueing, or an explicit unsupported state.
+- Server-generated signed R2 upload URLs are short-lived, scoped to one object key, and never expose Cloudflare/R2 secrets to the browser.
+- R2 CORS supports production, Vercel alias, and local dev upload/playback origins.
+- Supported first-party media can consume existing waveform peaks, queue future waveform work, or show an explicit unsupported state.
 - Movie/direct-media support is limited to owner uploads and authorized direct media URLs. No hidden-stream scraping, DRM bypass, ad circumvention, anti-bot circumvention, or piracy-site automation is included.
+- Uploaded media management supports explicit folder creation, folder-first browsing, normalized partial search, grid/list views, persistent folder sorting, card settings menus, owner-only visibility toggles, and folder-level queue actions.
+- Hidden uploaded media is excluded from non-owner uploaded-library listing, search, and folder discovery while remaining visible/manageable to the owner.
+- Folder-level Play/Add Next/Add Queue actions use the current folder sort order without changing SpacetimeDB queue reducer contracts.
+- Owner uploads show actual byte-based progress as one clear progress bar for both single PUT and multipart uploads.
+- Large owner-uploaded MP4 files use R2 multipart upload with server-created part URLs, part ETag tracking, retryable part uploads, and server-side completion.
+- Media assets are finalized only after R2 accepts completion and object size verification succeeds.
+- Multipart upload state is stored in Supabase without exposing R2 secrets to the browser.
+- R2 CORS must expose `ETag`; if it does not, the UI reports a clear upload-part ETag error.
 
 ## TASK-002.9 Voting and Suggested Next
 
@@ -160,17 +174,33 @@
 - Random suggestion action exists.
 - Host retains override authority.
 
-## TASK-002.10 Accounts, Friends, Invites, Listening History, and Social Rooms
+## TASK-002.10 Account Personalization and First-Party History
 
-- The social account layer builds on the Google OAuth/profile foundation from TASK-002.8A.
-- Playlist/history-related Google scopes are requested only through explicit incremental consent if this task implements features that require them.
-- Provider token storage and offline access behavior are explicitly documented before any refresh-token style access is used.
-- Friend invites can appear as popup and notification drawer items.
-- Friend rooms can be discovered according to privacy rules.
-- Guest identity migration path is clear.
-- Account-backed listening history stores enough data to support real Most listened calculations later.
-- Listening history can support a future first-party Mistake Watch recap without relying on Spotify exports or branding.
-- Recap data remains original to Mistake Watch and avoids copying Spotify Wrapped presentation or naming.
+- The personalization/history layer builds on the Google OAuth/profile foundation from TASK-002.8A.
+- Signed-in users can persist profile preferences across sessions.
+- Guests keep local-only preferences and remain fully usable without sign-in.
+- Theme support uses controlled presets and safe accent/preferences rather than arbitrary custom CSS.
+- Account settings include useful quality-of-life controls for general profile, personalization, watch room, listen room, rooms, privacy, and account state.
+- Saved, recent, and owned room surfaces exist for signed-in accounts where the underlying data is available.
+- Account-backed first-party history stores enough Mistake Watch data to support real `Most listened`, `Recently played`, and room-aware recommendation seeds later.
+- First-party history includes source identity, room/session context, queue/play contribution, play/listen/watch time where technically reliable, and timestamps.
+- Profile previews expose only public-safe fields and never expose email or private account data to other users.
+- No playlist/history-related Google scopes, Google Drive scopes, contacts scopes, or offline access are requested in this task.
+- Future recap data remains original to Mistake Watch and avoids copying Spotify Wrapped presentation or naming.
+
+## TASK-002.10C Social Graph and Incremental Provider Permissions
+
+- Friend relationships work only between signed-in accounts.
+- Guests cannot send, receive, or persist as friend graph nodes.
+- Friend request states support pending, accepted, declined, blocked, and duplicate/idempotency protection.
+- Friend room visibility and friend invites respect profile/room privacy settings.
+- Account notification surfaces can show friend requests, friend acceptances, and room invites without covering media controls.
+- Privacy and abuse controls exist for friend requests, online status, room visibility, blocking, and invite/request rate limits.
+- Provider data permissions are requested only through explicit incremental consent tied to a visible feature.
+- Any YouTube/Google provider scope request uses the narrowest feasible scope and explains what will be accessed before redirecting to consent.
+- Users who never grant provider data permissions can still use rooms, accounts, friends, first-party history, and first-party recommendations where available.
+- Mistake Watch first-party account history remains the primary recommendation source unless an official provider API supports a specific additional data path.
+- Provider token storage, refresh-token behavior, revocation, and user-facing consent copy are documented before any long-lived provider access is used.
 
 ## TASK-002.10A Easter Eggs and Account Achievements
 

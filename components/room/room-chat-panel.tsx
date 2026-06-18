@@ -231,13 +231,22 @@ export function RoomChatPanel({
         ref={scrollRef}
       >
         {visibleMessages.length > 0 ? (
-          <ol className={cx("grid", audience ? "gap-2" : "gap-3")}>
-            {visibleMessages.map((message) => (
+          <ol className={cx("grid", audience ? "gap-0.5" : "gap-3")}>
+            {visibleMessages.map((message, index) => {
+              const previousMessage = visibleMessages[index - 1];
+              const showIdentity =
+                !audience || previousMessage?.memberId !== message.memberId;
+              const accentColor =
+                getMemberAccentColor?.(message.memberId) ?? undefined;
+
+              return (
               <li
                 className={cx(
                   audience
-                    ? "grid grid-cols-[auto_minmax(0,1fr)] gap-2 rounded-sm border border-white/10 bg-background/5 p-2 shadow-[inset_0_0_10px_rgb(255_255_255_/_0.014)]"
+                    ? "grid grid-cols-[2rem_minmax(0,1fr)] gap-2 px-1 py-0.5 text-body-md leading-6"
                     : "grid gap-2 rounded-md border p-3",
+                  audience &&
+                    (showIdentity ? "mt-2 first:mt-0" : "mt-0"),
                   !audience &&
                     (message.isCurrentMember
                       ? "border-primary-fixed-dim/25 bg-primary-fixed-dim/10"
@@ -245,51 +254,63 @@ export function RoomChatPanel({
                 )}
                 key={message.clientMessageId}
                 style={{
-                  borderColor: message.isCurrentMember
-                    ? undefined
-                    : getMemberAccentColor
-                      ? `${getMemberAccentColor(message.memberId)}55`
+                  borderColor:
+                    !audience && !message.isCurrentMember && accentColor
+                      ? `${accentColor}55`
                       : undefined,
                 }}
               >
                 {audience ? (
-                  <Avatar
-                    avatarKey={message.avatarKey}
-                    className="h-7 w-7 shrink-0"
-                    crowned={message.isHost}
-                    name={message.displayName}
-                    seed={message.memberId}
-                  />
+                  showIdentity ? (
+                    <Avatar
+                      avatarKey={message.avatarKey}
+                      className="mt-0.5 h-8 w-8 shrink-0"
+                      crowned={message.isHost}
+                      name={message.displayName}
+                      seed={message.memberId}
+                    />
+                  ) : (
+                    <span aria-hidden className="h-8 w-8" />
+                  )
                 ) : null}
                 {audience ? (
-                  <div className="min-w-0 text-body-md leading-6">
-                    <span
-                      className="font-semibold"
-                      style={{
-                        color:
-                          getMemberAccentColor?.(message.memberId) ??
-                          undefined,
-                      }}
-                    >
-                      {message.isCurrentMember ? "You" : message.displayName}
-                    </span>
-                    <span className="text-on-surface-variant">: </span>
-                    <span
-                      className="font-semibold"
-                      style={{
-                        color:
-                          getMemberAccentColor?.(message.memberId) ??
-                          undefined,
-                      }}
-                    >
-                      --_&gt;
-                    </span>{" "}
-                    <span className="break-words text-on-surface">
+                  <div className="min-w-0">
+                    {showIdentity ? (
+                      <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+                        <span
+                          className="truncate text-body-md font-semibold text-on-surface"
+                          style={{ color: accentColor }}
+                        >
+                          {message.isCurrentMember
+                            ? "You"
+                            : message.displayName}
+                        </span>
+                        <span className="text-label-sm text-on-surface-variant/75">
+                          {message.isHost ? "host" : "guest"} at{" "}
+                          {formatChatTime(message.createdMs)}
+                        </span>
+                        {message.status !== "sent" ? (
+                          <span
+                            className={cx(
+                              "technical-label text-[0.65rem]",
+                              message.status === "sending" &&
+                                "text-primary-fixed-dim",
+                              message.status === "failed" && "text-error",
+                            )}
+                          >
+                            {message.status}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    <p className="break-words text-on-surface">
                       {message.text}
-                    </span>
-                    <span className="ml-2 whitespace-nowrap text-label-sm text-on-surface-variant">
-                      {formatChatTime(message.createdMs)}
-                    </span>
+                      {!showIdentity ? (
+                        <span className="ml-2 text-label-sm text-on-surface-variant/55">
+                          {formatChatTime(message.createdMs)}
+                        </span>
+                      ) : null}
+                    </p>
                   </div>
                 ) : (
                   <>
@@ -341,7 +362,10 @@ export function RoomChatPanel({
                 )}
                 {message.status === "failed" ? (
                   <button
-                    className="inline-flex w-fit items-center gap-1.5 rounded-sm border border-error/35 px-2 py-1 text-label-sm font-semibold text-error transition hover:bg-error/10"
+                    className={cx(
+                      "inline-flex w-fit items-center gap-1.5 rounded-sm border border-error/35 px-2 py-1 text-label-sm font-semibold text-error transition hover:bg-error/10",
+                      audience && "col-start-2 mt-1",
+                    )}
                     onClick={() =>
                       void sendPendingMessage({
                         clientMessageId: message.clientMessageId,
@@ -357,7 +381,8 @@ export function RoomChatPanel({
                   </button>
                 ) : null}
               </li>
-            ))}
+              );
+            })}
           </ol>
         ) : (
           <div className="grid h-full min-h-48 place-items-center rounded-md border border-dashed border-white/10 text-center">

@@ -12,6 +12,7 @@ export function SavedRooms({ rooms }: SavedRoomsProps) {
       description="Reusable rooms for regular watch nights, listening sessions, or family invite links."
       emptyDescription="Saved rooms will become useful once room persistence is wired. For now, they model the dashboard layout and future workflow."
       emptyTitle="No saved rooms"
+      removableSavedRooms
       rooms={rooms}
       title="Saved Rooms"
     />

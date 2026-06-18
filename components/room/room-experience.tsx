@@ -6,6 +6,7 @@ import { ShieldX } from "lucide-react";
 
 import { Button } from "@/components/ui";
 import { completeRoomTransition } from "@/lib/performance/room-transition";
+import type { AccountSummary } from "@/lib/account/types";
 import type { RoomSnapshot } from "@/lib/rooms";
 import { PLAYER_FULLSCREEN_EVENT } from "@/lib/player/local-controls";
 import { useLiveRoom } from "@/lib/spacetime";
@@ -13,10 +14,16 @@ import { ListenModeLayout } from "./listen-mode-layout";
 import { WatchModeLayout } from "./watch-mode-layout";
 
 type RoomExperienceProps = {
+  account: AccountSummary;
+  accountNotice?: "guest-room-attached";
   room: RoomSnapshot;
 };
 
-export function RoomExperience({ room }: RoomExperienceProps) {
+export function RoomExperience({
+  account,
+  accountNotice,
+  room,
+}: RoomExperienceProps) {
   const router = useRouter();
   const liveRoom = useLiveRoom(room);
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -58,6 +65,12 @@ export function RoomExperience({ room }: RoomExperienceProps) {
   }, [liveRoom.connectionStatus]);
 
   useEffect(() => {
+    if (accountNotice === "guest-room-attached") {
+      router.replace(`/rooms/${room.id}`, { scroll: false });
+    }
+  }, [accountNotice, room.id, router]);
+
+  useEffect(() => {
     if (!liveRoom.removalNotice) {
       return;
     }
@@ -74,11 +87,20 @@ export function RoomExperience({ room }: RoomExperienceProps) {
   }
 
   if (liveRoomSnapshot.mode === "listen") {
-    return <ListenModeLayout liveRoom={liveRoom} room={liveRoomSnapshot} />;
+    return (
+      <ListenModeLayout
+        account={account}
+        accountNotice={accountNotice}
+        liveRoom={liveRoom}
+        room={liveRoomSnapshot}
+      />
+    );
   }
 
   return (
     <WatchModeLayout
+      account={account}
+      accountNotice={accountNotice}
       liveRoom={liveRoom}
       room={liveRoomSnapshot}
       stageRef={stageRef}

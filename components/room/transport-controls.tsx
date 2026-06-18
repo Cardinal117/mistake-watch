@@ -9,6 +9,8 @@ import {
   Repeat2,
   RotateCcw,
   RotateCw,
+  SkipBack,
+  SkipForward,
   Volume2,
   VolumeX,
 } from "lucide-react";
@@ -70,6 +72,13 @@ export function TransportControls({
   const nextQueueItem = liveRoom.snapshot.queue
     .filter((item) => item.status === "queued")
     .sort((left, right) => left.position - right.position)[0];
+  const previousQueueItem = liveRoom.snapshot.queue
+    .filter((item) => item.status === "played")
+    .sort(
+      (left, right) =>
+        (left.playedSequence ?? 0) - (right.playedSequence ?? 0),
+    )
+    .at(-1);
   const nextTitle = nextQueueItem
     ? getSourceDisplayTitle({
         sourceType: nextQueueItem.sourceType,
@@ -139,6 +148,18 @@ export function TransportControls({
     });
   }
 
+  function playPreviousQueueItem() {
+    if (previousQueueItem) {
+      liveRoom.playQueueItemNow(previousQueueItem.queueItemId);
+    }
+  }
+
+  function playNextQueueItem() {
+    if (nextQueueItem) {
+      liveRoom.playQueueItemNow(nextQueueItem.queueItemId);
+    }
+  }
+
   function setLocalVolume(nextVolume: number) {
     const safeVolume = Math.min(100, Math.max(0, nextVolume));
     setVolume(safeVolume);
@@ -191,6 +212,14 @@ export function TransportControls({
                 <SkipAmountIcon amount={5} direction="back" />
               </IconButton>
               <IconButton
+                disabled={!canControl || !previousQueueItem}
+                label="Previous queue item"
+                onClick={playPreviousQueueItem}
+                variant="ghost"
+              >
+                <SkipBack className="h-5 w-5" aria-hidden />
+              </IconButton>
+              <IconButton
                 disabled={awaitingMedia || !canControl}
                 label={session?.status === "playing" ? "Pause" : "Play"}
                 onClick={() =>
@@ -205,6 +234,14 @@ export function TransportControls({
                 ) : (
                   <Play className="h-5 w-5" aria-hidden />
                 )}
+              </IconButton>
+              <IconButton
+                disabled={!canControl || !nextQueueItem}
+                label="Next queue item"
+                onClick={playNextQueueItem}
+                variant="ghost"
+              >
+                <SkipForward className="h-5 w-5" aria-hidden />
               </IconButton>
               <IconButton
                 disabled={awaitingMedia || !canControl}
@@ -252,6 +289,16 @@ export function TransportControls({
                     </p>
                   ) : null}
                 </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 lg:hidden">
+                <IconButton
+                  label="Fullscreen"
+                  onClick={dispatchPlayerFullscreenRequest}
+                  variant="ghost"
+                >
+                  <Maximize2 className="h-4 w-4" aria-hidden />
+                </IconButton>
               </div>
 
               <div className="hidden min-w-0 items-center justify-end gap-2 lg:flex">
@@ -441,6 +488,14 @@ export function TransportControls({
                 <SkipAmountIcon amount={5} direction="back" />
               </IconButton>
               <IconButton
+                disabled={!canControl || !previousQueueItem}
+                label="Previous queue item"
+                onClick={playPreviousQueueItem}
+                variant="ghost"
+              >
+                <SkipBack className="h-5 w-5" aria-hidden />
+              </IconButton>
+              <IconButton
                 disabled={awaitingMedia || !canControl}
                 label={session?.status === "playing" ? "Pause" : "Play"}
                 onClick={() =>
@@ -455,6 +510,14 @@ export function TransportControls({
                 ) : (
                   <Play className="h-5 w-5" aria-hidden />
                 )}
+              </IconButton>
+              <IconButton
+                disabled={!canControl || !nextQueueItem}
+                label="Next queue item"
+                onClick={playNextQueueItem}
+                variant="ghost"
+              >
+                <SkipForward className="h-5 w-5" aria-hidden />
               </IconButton>
               <IconButton
                 disabled={awaitingMedia || !canControl}

@@ -67,6 +67,7 @@ export type RoomSnapshot = {
     id: string;
     name: string;
     role: "host" | "guest";
+    userId?: string | null;
   } | null;
   participants: number;
   nowPlaying: {

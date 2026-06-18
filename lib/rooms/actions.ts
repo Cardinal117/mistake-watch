@@ -10,7 +10,11 @@ import {
   joinRoomAsGuestByInviteLink,
   reclaimGuestMembership,
 } from "@/lib/identity";
-import { createSupabaseAdminClient } from "@/lib/supabase";
+import {
+  createSupabaseAdminClient,
+  createSupabaseServerClient,
+  type Tables,
+} from "@/lib/supabase";
 
 import { buildRoomInvitePath, parseRoomInviteInput } from "./invite";
 
@@ -96,23 +100,10 @@ export async function renameRoomAction(input: {
   roomName: string;
 }) {
   const roomName = normalizeRoomName(input.roomName);
-  const cookieStore = await cookies();
-  const token = cookieStore.get(
-    getGuestIdentityCookieName(input.roomId),
-  )?.value;
-
-  if (!token) {
-    throw new Error("You need to be in the room before renaming it.");
-  }
-
-  const session = await reclaimGuestMembership({
-    roomId: input.roomId,
-    token,
-  });
-
-  if (!session || session.member.role !== "host") {
-    throw new Error("Only the host can rename the room.");
-  }
+  await requireRoomHostAuthority(
+    input.roomId,
+    "Only the host can rename the room.",
+  );
 
   const supabase = createSupabaseAdminClient();
   const { error } = await supabase
@@ -134,7 +125,10 @@ export async function setRoomSavedAction(input: {
   roomId: string;
   saved: boolean;
 }) {
-  const session = await requireHostSession(input.roomId);
+  const authority = await requireRoomHostAuthority(
+    input.roomId,
+    "Only the host can save this room.",
+  );
   const supabase = createSupabaseAdminClient();
   const now = new Date();
   const { error } = await supabase
@@ -143,8 +137,12 @@ export async function setRoomSavedAction(input: {
       idle_deadline_at: input.saved ? null : addHoursIso(now, 1),
       is_saved: input.saved,
       last_active_at: now.toISOString(),
-      saved_by_guest_identity_id: input.saved ? session.guestIdentity.id : null,
-      saved_by_user_id: null,
+      saved_by_guest_identity_id:
+        input.saved && authority.kind === "guest"
+          ? authority.guestIdentityId
+          : null,
+      saved_by_user_id:
+        input.saved && authority.kind === "account" ? authority.userId : null,
     })
     .eq("id", input.roomId);
 
@@ -159,7 +157,10 @@ export async function setRoomModeAction(input: {
   mode: "listen" | "watch";
   roomId: string;
 }) {
-  await requireHostSession(input.roomId);
+  await requireRoomHostAuthority(
+    input.roomId,
+    "Only the host can change room mode.",
+  );
 
   const mode: "listen" | "watch" = input.mode === "listen" ? "listen" : "watch";
   const supabase = createSupabaseAdminClient();
@@ -196,24 +197,94 @@ export async function touchRoomActivityAction(input: { roomId: string }) {
   return { touched: Boolean(session) };
 }
 
-async function requireHostSession(roomId: string) {
+async function requireRoomHostAuthority(roomId: string, deniedMessage: string) {
   const cookieStore = await cookies();
   const token = cookieStore.get(getGuestIdentityCookieName(roomId))?.value;
 
-  if (!token) {
-    throw new Error("You need to be in the room before changing saved state.");
+  if (token) {
+    const session = await reclaimGuestMembership({
+      roomId,
+      token,
+    });
+
+    if (session?.member.role === "host") {
+      return {
+        guestIdentityId: session.guestIdentity.id,
+        kind: "guest" as const,
+        memberId: session.member.id,
+      };
+    }
   }
 
-  const session = await reclaimGuestMembership({
-    roomId,
-    token,
-  });
+  const accountAuthority = await getSignedInHostAuthority(roomId);
 
-  if (!session || session.member.role !== "host") {
-    throw new Error("Only the host can save this room.");
+  if (accountAuthority) {
+    return accountAuthority;
   }
 
-  return session;
+  throw new Error(deniedMessage);
+}
+
+async function getSignedInHostAuthority(roomId: string) {
+  const serverClient = await createSupabaseServerClient();
+  const { data, error } = await serverClient.auth.getUser();
+
+  if (error || !data.user) {
+    return null;
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { data: room, error: roomError } = await supabase
+    .from("rooms")
+    .select("id, owner_user_id, status")
+    .eq("id", roomId)
+    .maybeSingle();
+
+  if (roomError) {
+    throw roomError;
+  }
+
+  if (!room || room.status !== "open") {
+    return null;
+  }
+
+  const { data: member, error: memberError } = await supabase
+    .from("room_members")
+    .select("id, role, user_id")
+    .eq("room_id", roomId)
+    .eq("user_id", data.user.id)
+    .maybeSingle();
+
+  if (memberError) {
+    throw memberError;
+  }
+
+  if (!member || !isHostAccountAuthority({ member, room, userId: data.user.id })) {
+    return null;
+  }
+
+  return {
+    kind: "account" as const,
+    memberId: member.id,
+    userId: data.user.id,
+  };
+}
+
+function isHostAccountAuthority({
+  member,
+  room,
+  userId,
+}: {
+  member: Pick<Tables<"room_members">, "id" | "role" | "user_id"> | null;
+  room: Pick<Tables<"rooms">, "owner_user_id">;
+  userId: string;
+}) {
+  return Boolean(
+    member &&
+      member.role === "host" &&
+      member.user_id === userId &&
+      room.owner_user_id === userId,
+  );
 }
 
 async function setGuestCookie(name: string, token: string) {

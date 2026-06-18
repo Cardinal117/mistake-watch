@@ -10,7 +10,11 @@ import {
   getSourceDisplayTitle,
   getYouTubeThumbnailUrl,
 } from "@/lib/player/source";
-import { createSupabaseAdminClient, type Tables } from "@/lib/supabase";
+import {
+  createSupabaseAdminClient,
+  createSupabaseServerClient,
+  type Tables,
+} from "@/lib/supabase";
 
 import { closeIdleUnsavedRooms } from "./lifecycle";
 import { createLiveRoomSeedToken } from "./live-authority";
@@ -88,20 +92,43 @@ export async function getRoomSnapshotForGuest(
     const cookieStore = await cookies();
     const token = cookieStore.get(getGuestIdentityCookieName(roomId))?.value;
 
-    if (!token) {
-      return null;
-    }
-
-    const session = await reclaimGuestMembership({ roomId, token });
+    const session = token
+      ? await reclaimGuestMembership({ roomId, token })
+      : null;
 
     if (!session || session.room.status !== "open") {
-      return null;
+      return getRoomSnapshotForSignedInMember(roomId);
     }
 
     return getRoomSnapshot(session.room.id, session.member.id);
   } catch {
     return null;
   }
+}
+
+async function getRoomSnapshotForSignedInMember(
+  roomId: string,
+): Promise<RoomSnapshot | null> {
+  const serverClient = await createSupabaseServerClient();
+  const { data, error } = await serverClient.auth.getUser();
+
+  if (error || !data.user) {
+    return null;
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { data: member, error: memberError } = await supabase
+    .from("room_members")
+    .select("id")
+    .eq("room_id", roomId)
+    .eq("user_id", data.user.id)
+    .maybeSingle();
+
+  if (memberError || !member) {
+    return null;
+  }
+
+  return getRoomSnapshot(roomId, member.id);
 }
 
 export async function getRoomJoinPreview(
@@ -247,6 +274,7 @@ async function mapRoomSnapshot({
           id: currentMember.id,
           name: currentMember.display_name,
           role: currentMember.role === "host" ? "host" : "guest",
+          userId: currentMember.user_id,
         }
       : null,
     host: hostMember?.display_name ?? "Host",

@@ -28,16 +28,20 @@ export function ModeSwitcher({
   const [pendingMode, setPendingMode] = useState<"listen" | "watch" | null>(
     null,
   );
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function handleSwitch(nextMode: "listen" | "watch") {
     if (!canSwitch || !onSwitchMode || nextMode === mode || pendingMode) {
       return;
     }
 
+    setErrorMessage(null);
     setPendingMode(nextMode);
 
     try {
       await onSwitchMode(nextMode);
+    } catch (error) {
+      setErrorMessage(getModeSwitchErrorMessage(error));
     } finally {
       window.setTimeout(() => setPendingMode(null), 300);
     }
@@ -95,6 +99,22 @@ export function ModeSwitcher({
           );
         })}
       </div>
+      {errorMessage ? (
+        <p
+          className="mt-2 rounded-sm border border-error/35 bg-error/10 px-3 py-2 text-label-sm font-semibold text-error"
+          role="alert"
+        >
+          {errorMessage}
+        </p>
+      ) : null}
     </>
   );
+}
+
+function getModeSwitchErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  return "Room mode could not be changed.";
 }

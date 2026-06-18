@@ -896,6 +896,29 @@
     filter: drop-shadow(0 0 8px var(--transition-accent));
     animation: room-transition-orbit 1500ms linear infinite;
   }
+
+  .watch-surface-scrim {
+    animation: watch-scrim-enter 160ms ease-out both;
+  }
+
+  .watch-queue-sheet {
+    animation: watch-sheet-enter-mobile 220ms cubic-bezier(0.2, 0.8, 0.2, 1)
+      both;
+  }
+
+  .watch-audience-panel {
+    animation: watch-audience-enter-mobile 220ms cubic-bezier(0.2, 0.8, 0.2, 1)
+      both;
+  }
+
+  .watch-menu-popover {
+    animation: watch-menu-enter 120ms ease-out both;
+    transform-origin: top right;
+  }
+
+  .watch-menu-popover[data-placement="top"] {
+    transform-origin: bottom right;
+  }
 }
 
 @keyframes audio-rise {
@@ -1047,6 +1070,52 @@
   }
 }
 
+@keyframes watch-scrim-enter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes watch-sheet-enter-mobile {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes watch-audience-enter-mobile {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes watch-menu-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @media (min-width: 900px) {
   .dashboard-shell-grid {
     grid-template-columns: 320px minmax(0, 1fr) 380px;
@@ -1164,7 +1233,47 @@
   .dashboard-live-bg__scan,
   .room-transition-orbit::after,
   .room-transition-sweep,
-  .room-stage-mode-panel {
+  .room-stage-mode-panel,
+  .watch-surface-scrim,
+  .watch-queue-sheet,
+  .watch-audience-panel,
+  .watch-menu-popover {
     animation: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .watch-queue-sheet {
+    animation-name: watch-sheet-enter-desktop;
+  }
+}
+
+@media (min-width: 1024px) {
+  .watch-audience-panel {
+    animation-name: watch-audience-enter-desktop;
+  }
+}
+
+@keyframes watch-sheet-enter-desktop {
+  from {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes watch-audience-enter-desktop {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }

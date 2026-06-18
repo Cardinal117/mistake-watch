@@ -319,23 +319,72 @@ Safe commit point:
 
 - Avatar identity feels more alive without changing identity persistence.
 
-## TASK-002.8A: Google OAuth and Owner Authority Foundation
+## TASK-002.8A: Account Identity and Owner Authority Foundation
 
 Source task: dependency correction for owner-only Stream/R2 media work and future social rooms.
 
 Work:
 
-- Add Supabase Auth with Google OAuth using basic profile identity first.
-- Store app profile data in public profile tables, not directly in Supabase `auth.users`.
-- Add a durable owner role model, starting with `profiles.role = owner | member`.
-- Add a server-side owner check helper for later Stream/R2 upload and source ingestion.
-- Connect signed-in account identity to room membership while preserving guest-first room joins.
-- Define guest-to-account migration behavior for display name, avatar, saved rooms, and room memberships.
-- Document Google provider token handling:
-  - request basic profile scopes first;
-  - add playlist/history-related Google or YouTube scopes only when the feature needs them;
-  - use offline access only where refresh-token behavior is required.
-- Do not implement friends, notifications, listening-history aggregation, achievements, or YouTube account playlist access in this foundation task.
+- Add Supabase Auth with Google OAuth using minimal identity scopes only:
+  - `openid`;
+  - email;
+  - profile.
+- Keep Google sign-in framed as identity and persistence only. The UI must explain that no YouTube, Google Drive, playlist, history, contacts, or calendar permissions are requested in this task.
+- Store app profile data in public app tables, not directly in Supabase `auth.users`.
+- Add a durable profile model:
+  - `profiles.id` references `auth.users(id)`;
+  - display name;
+  - handle or reserved handle field;
+  - avatar URL / avatar key / avatar source;
+  - role: `owner | member`;
+  - account status fields needed by the app;
+  - timestamps.
+- Add RLS for all public account tables. Public profile fields may be readable according to profile visibility rules, but private account details and email are self-only.
+- Add a lightweight guest identity model that preserves the current guest-first flow:
+  - guests can create and join rooms;
+  - guests can keep local display name/avatar identity;
+  - guests can receive room permissions;
+  - guests can be temporary room hosts/owners for rooms they create;
+  - guests are not forced to sign in.
+- Add or adapt durable room membership so a member is associated with exactly one identity path:
+  - signed-in `user_id`, or
+  - guest `guest_id`, never both for the same membership record.
+- Define and implement the guest-to-account migration prompt:
+  - ask before attaching the current guest session to the signed-in account;
+  - migrate display name/avatar preference where appropriate;
+  - connect current room memberships to the account;
+  - transfer temporary room ownership to the signed-in account when the guest created the room;
+  - allow the user to decline and continue as guest for the current session.
+- Add server-side owner authority helpers for later upload/source-ingestion APIs:
+  - require signed-in account ownership where owner-only first-party media actions are involved;
+  - separate app/media owner authority from current room host authority;
+  - do not rely on frontend role flags or user-editable metadata.
+- Add a global account/avatar entry point:
+  - dashboard top-right;
+  - watch Signal HUD / account area without crowding playback;
+  - listen room header/control area;
+  - compact mobile icon.
+- Add the Account Command Panel shell using the existing glass/translucent room overlay language:
+  - Overview;
+  - Profile;
+  - Personalization preview;
+  - Rooms preview;
+  - Privacy;
+  - Account.
+- Implement only foundation-level account panel behavior:
+  - sign in with Google;
+  - sign out;
+  - show guest/signed-in/owner state;
+  - edit local guest display/avatar where currently supported;
+  - show durable profile fields for signed-in users;
+  - show clear future placeholders only where they help explain the roadmap.
+- Document Google provider token handling and consent boundaries:
+  - basic profile scopes first;
+  - no YouTube playlist/history scopes in this task;
+  - no Google Drive scopes in this task;
+  - no offline access unless a later concrete feature requires refresh-token behavior;
+  - provider tokens must not be exposed to the browser or stored in public tables.
+- Do not implement friends, notifications, listening-history aggregation, achievements, Stream/R2 upload, Google Drive import, YouTube account playlist access, or broad provider recommendations in this foundation task.
 
 Review checkpoint:
 
@@ -343,21 +392,27 @@ Review checkpoint:
 - The app can distinguish `owner` and `member` roles server-side.
 - Stream/R2 owner-only upload and source ingestion have a reliable authorization primitive before TASK-002.8 starts.
 - Guest-first rooms still work.
-- No YouTube playlist/history OAuth scopes are requested in the initial login flow.
+- Guests are not forced to sign in and can still create/join rooms, queue, chat, and receive permissions where room rules allow.
+- The account panel makes the guest/signed-in/owner state clear without implying that provider account data has been connected.
+- No YouTube, Google Drive, playlist, history, contacts, calendar, or offline-access scopes are requested in the initial login flow.
 
 Safe commit point:
 
 - Mistake Watch has the account and owner-authority foundation needed for owner-only media work without pulling in the full friends/social feature set.
 
-## TASK-002.8: Cloudflare Stream + R2 Media Library and Authorized Upload Pipeline
+## TASK-002.8: R2 Media Library and Authorized Upload Pipeline
 
-Source task: TASK-001 later R2 direction, updated by the Cloudflare Stream/R2 hybrid decision.
+Source task: TASK-001 later R2 direction, updated by the TASK-002.8 preflight decision to ship an R2-first private media library before adding Cloudflare Stream.
 
 Work:
 
-- Use Cloudflare Stream as the primary uploaded-video processing and playback layer for fast owner uploads, transcoding, thumbnails, and streamable delivery.
-- Keep Cloudflare R2 available for raw original archive, supporting artifacts, waveform/analysis JSON, source files that should not live in Supabase, and future non-Stream media needs.
-- Add Supabase durable metadata tables for `media_assets`, `media_ingestion_jobs`, and `media_source_matches`.
+- Use Cloudflare R2 as the primary first-party uploaded-media storage and playback source for this private, small-room phase.
+- Defer Cloudflare Stream transcoding/adaptive delivery until actual usage, format diversity, or bandwidth needs justify it.
+- Require first-party uploaded video to be browser-playable without server transcoding:
+  - preferred: `.mp4` with H.264 video and AAC audio;
+  - later supported formats can be added only after playback QA proves browser compatibility;
+  - unsupported files should be rejected or marked unusable before they enter the playable library.
+- Add Supabase durable metadata tables for `media_assets`, `media_upload_sessions` or `media_ingestion_jobs`, and `media_source_matches`.
 - Keep large media files out of Supabase Postgres. Supabase stores durable identity, metadata, access, match, and ingestion status records only.
 - Add owner-only upload/ingestion:
   - only the project owner account can upload first-party video assets or enqueue external source ingestion;
@@ -372,30 +427,227 @@ Work:
 - Add source matching:
   - YouTube video ID is a lookup key, not automatic download permission;
   - playlist import checks each video ID against `media_source_matches`;
-  - if a ready first-party Stream/R2 asset exists, queue the first-party media;
+  - if a ready first-party R2 asset exists, queue the first-party media;
   - if no ready first-party asset exists, queue the normal YouTube embed fallback.
 - Add media processing/provider contracts:
-  - use Cloudflare Stream direct upload or equivalent server-authorized upload URLs for user-friendly drag-and-drop;
-  - store Cloudflare Stream asset IDs and playback details in Supabase metadata;
-  - run `yt-dlp` only for owner-authorized sources;
-  - use custom workers/jobs only where Cloudflare Stream does not cover the required artifact, such as waveform peaks or R2 archive handling;
-  - upload non-Stream artifacts to R2 through the S3-compatible API or a Worker/R2 binding path;
-  - update Supabase job status as `pending`, `processing`, `ready`, or `failed`.
-- Add the movie/direct-media path through owner uploads and authorized direct media URLs, with Stream-first playback where possible.
+  - use server-generated signed R2 upload URLs for user-friendly direct browser upload;
+  - store R2 object keys, public playback URLs, MIME type, size, upload status, and owner metadata in Supabase;
+  - optionally store poster/thumbnail/waveform artifacts in R2 when those artifacts exist;
+  - run source ingestion only for owner-authorized sources and only after explicit approval;
+  - update Supabase upload/job status as `pending`, `uploading`, `ready`, or `failed`.
+- Add R2 environment and access boundaries:
+  - server-only Cloudflare/R2 credentials are never exposed to browser code;
+  - signed upload URLs are short-lived and scoped to one generated object key;
+  - public playback URLs use the configured R2 custom domain;
+  - R2 CORS allows the production app, Vercel alias, and local dev origins for `GET`, `HEAD`, and `PUT`.
+- TASK-002.8 preflight results are accepted:
+  - bucket `watch2bucket` is reachable through the Cloudflare API;
+  - S3-compatible PUT/DELETE works with current credentials;
+  - public custom domain `https://r2.mistakestudios.com` can read uploaded objects;
+  - CORS preflight succeeds for production, Vercel alias, and local dev origins.
+- Defer the following to later tasks unless separately approved:
+  - Cloudflare Stream integration;
+  - transcoding;
+  - adaptive bitrate streaming;
+  - automatic thumbnail extraction;
+  - resumable multipart upload UI beyond the first signed-upload path;
+  - background waveform generation workers.
+- Add the movie/direct-media path through owner uploads and authorized direct media URLs, with R2-first playback where possible.
 - Do not include hidden-stream scraping, DRM bypass, ad circumvention, anti-bot circumvention, or piracy-site automation.
 - Keep YouTube and direct URL playback working.
+
+Implementation shape:
+
+- Supabase schema:
+  - `media_assets`: durable owner/media metadata, R2 object key, public URL, title, MIME type, file size, duration when known, status, source type, and timestamps.
+  - `media_upload_sessions` or `media_ingestion_jobs`: short-lived upload intent/status records for owner-created uploads.
+  - `media_source_matches`: maps YouTube video IDs or normalized source hashes to ready first-party `media_assets`.
+  - RLS keeps read access scoped to safe library metadata and write/update/delete access owner-only through server/admin paths.
+- Server modules:
+  - `lib/media/r2.ts`: validates R2 env, builds object keys, creates signed `PUT` URLs, and resolves public playback URLs.
+  - `lib/media/assets.ts`: creates upload sessions, completes media metadata, lists ready library assets, and checks source matches.
+  - Owner checks use `requireOwnerAccount()` from TASK-002.8A.
+- API routes:
+  - `POST /api/media/uploads`: owner-only; validates filename, MIME type, size, and media kind; returns signed upload URL plus generated object key/upload id.
+  - `POST /api/media/uploads/:id/complete` or equivalent: owner-only; marks uploaded object ready after metadata confirmation.
+  - `GET /api/media/assets`: room/library-safe listing for the Watch Media Hub.
+  - Optional source-match endpoint only if playlist/import code needs server-side lookup in this slice.
+- Watch Media Hub UI:
+  - owner sees drag-and-drop/upload controls and upload progress/status.
+  - non-owner sees stored ready media and normal queue actions but no upload controls.
+  - stored R2 media cards expose Add to Queue, Play Next, and Play Now where existing room permissions allow.
+  - unsupported files show clear rejection/status instead of entering the playable queue.
+- Playback contract:
+  - ready R2 video queues as first-party direct media with `sourceType`/metadata that existing player code can route to browser-native video playback.
+  - existing YouTube/direct media behavior remains unchanged.
+  - matched YouTube IDs prefer ready R2 assets; unmatched YouTube remains iframe fallback.
 
 Review checkpoint:
 
 - Existing YouTube and direct URL playback still works.
-- Ready first-party Stream/R2 assets are preferred automatically when a matched source is already available.
+- Ready first-party R2 assets are preferred automatically when a matched source is already available.
 - Only owner-authorized upload/ingestion can create first-party media assets.
-- Waveform peaks are generated, queued, or explicitly marked unsupported for supported first-party media.
+- Waveform peaks are consumed when already available, queued for later work, or explicitly marked unsupported for first-party media.
 - Access, metadata, source matching, and ingestion boundaries are clear.
 
 Safe commit point:
 
-- Mistake Watch has the foundation for an owner-controlled watch media library with Cloudflare Stream-first playback and R2-backed supporting storage.
+- Mistake Watch has the foundation for an owner-controlled watch media library with R2-backed upload, storage, metadata, and direct playback.
+
+## TASK-002.8B: Uploaded Library Organization, Posters, and Live Classification
+
+Source task: owner QA follow-up after the first R2 upload path successfully stored playable MP4 media.
+
+Work:
+
+- Add owner-managed uploaded-media organization:
+  - folder/collection records for owner-uploaded media;
+  - default `Unsorted` behavior for existing assets;
+  - owner-only create/move folder actions;
+  - optional episode/series sorting metadata for later richer series views.
+- Add automatic poster/thumbnail capture for uploaded MP4 assets:
+  - browser captures a frame after upload completes;
+  - poster image is uploaded to R2 through a signed URL;
+  - Supabase stores the thumbnail URL/object key on the media asset;
+  - failed poster capture falls back to the existing generated placeholder.
+- Split the Watch Media Hub into clearer areas:
+  - discovery tab for YouTube/direct/HLS room items such as For you, Recommended, Live, and Room history;
+  - uploaded tab for owner-uploaded folders/series and uploaded library cards;
+  - increase the watch queue drawer size so queue, discovery, and uploaded media do not compete for space.
+- Add live classification for link-based media:
+  - HLS streams and live-looking links appear in a `Live` discovery section;
+  - live media shows clear live context instead of fixed-duration assumptions where possible;
+  - deeper YouTube live-state metadata can be added later through provider metadata hardening.
+- Keep CloudConvert/transcoding, automatic MKV conversion, waveform generation, advanced series metadata editors, and user-owned uploaded libraries out of this slice unless separately approved.
+
+Review checkpoint:
+
+- Newly uploaded MP4 assets receive a poster thumbnail when browser capture is permitted.
+- Owner can choose or create a folder before upload and move existing uploaded assets into folders.
+- Uploaded media has a distinct library view separate from discovery/recommendation rows.
+- Live/HLS items are surfaced in a `Live` section without changing queue reducer contracts.
+- Non-owner users cannot manage folders or upload/poster metadata, but can still play ready uploaded media where existing room permissions allow.
+
+Safe commit point:
+
+- Uploaded media feels like an organized owner library with thumbnails and folders, while source discovery and live streams remain clearly separated.
+
+## TASK-002.8C: Uploaded Library Management Refinement
+
+Source task: owner QA follow-up after TASK-002.8B made uploaded media visible but still too utility-like for folder-based library management.
+
+Work:
+
+- Make folder creation explicit:
+  - owner can create a folder from the uploaded tab through a clear action button;
+  - folder creation validates names and shows loading/error state;
+  - new folders are immediately added to the folder list and selected.
+- Make the uploaded tab folder-first:
+  - show folders and quick views before media rows;
+  - support `All media`, `Unsorted`, `Live`, and specific folder views;
+  - add a `See all media` path so large libraries do not depend on the first folder row.
+- Add uploaded-library view controls:
+  - grid view for visual browsing;
+  - list view for operational management;
+  - normalized partial search across title, artist/source label, folder name, duration, and source type;
+  - search must be case-insensitive and resilient to spacing/number formatting differences.
+- Add persistent folder sorting:
+  - folder records store default sort key and direction;
+  - supported sort keys are name, recently added, oldest added, shortest duration, and longest duration;
+  - the active sort controls both visible ordering and folder-level queue insertion order.
+- Replace always-visible per-card folder dropdowns with a settings/actions menu:
+  - grid cards show a compact settings button;
+  - menu includes Play now, Add next, Add to queue, Move to folder, and visibility;
+  - list view shows Play, Next, and Queue as direct buttons, with management actions still under settings.
+- Add owner-only uploaded-media visibility management:
+  - owner can mark an uploaded asset visible to viewers or hidden from non-owners;
+  - non-owner library listing and search exclude hidden uploaded assets;
+  - existing assets remain visible by default.
+- Add folder-level queue actions:
+  - when viewing a folder, owner/user with queue permissions can add the current folder contents to the queue;
+  - support Play folder, Add folder next, and Add folder to queue;
+  - folder actions use the current persisted folder sort order.
+- Keep watch history, resume progress, CloudConvert/transcoding, MKV conversion, advanced episode parsing, bulk delete, and friend-only visibility out of this slice.
+
+Review checkpoint:
+
+- Owner can explicitly create folders and immediately browse/upload into them.
+- Uploaded media opens as a small library: folders first, quick views, grid/list, sort, and normalized search.
+- Grid cards stay visually clean with actions hidden behind settings; list view exposes direct playback/queue buttons.
+- Owner can move assets between existing folders and toggle viewer visibility from the card settings menu.
+- Non-owner users do not see owner-hidden uploaded media.
+- Folder-level queue actions add/play the folder contents in the active sort order without changing queue reducer contracts.
+
+Safe commit point:
+
+- Uploaded media behaves like a manageable owner library instead of a flat upload utility, while watch-history/resume remains a later architecture task.
+
+## TASK-002.8D: Multipart R2 Uploads And Progress
+
+Source task: owner QA follow-up after large MP4 upload planning for 3-4 GB and larger files.
+
+Work:
+
+- Add a large-file upload path for owner-uploaded browser-playable MP4 media:
+  - keep the existing single signed PUT path for smaller uploads;
+  - switch to R2 multipart upload for large files;
+  - use short-lived server-created part URLs;
+  - keep all Cloudflare/R2 credentials server-side.
+- Track multipart upload state in Supabase:
+  - upload mode;
+  - multipart upload id;
+  - part size/count;
+  - completed part ETags;
+  - uploaded bytes;
+  - active/completing/aborted status.
+- Show one clear upload progress bar for both paths:
+  - single PUT progress uses actual XHR upload bytes;
+  - multipart progress uses completed and in-flight part bytes;
+  - finalization and verification are visible states rather than looking stuck.
+- Retry failed part uploads without restarting the whole file.
+- Require R2 CORS to expose `ETag` so the browser can complete multipart uploads.
+- Abort incomplete multipart sessions when the user or server rejects/cancels the upload path where possible.
+- Keep transcoding, MKV conversion, background worker processing, cross-refresh resumable upload recovery, upload history, and non-owner upload libraries out of this slice.
+
+Review checkpoint:
+
+- A 3-4 GB browser-playable MP4 uses multipart upload instead of one long PUT.
+- The upload UI shows one easy-to-read progress bar with actual progress for small and large uploads.
+- Individual part failures retry without discarding successfully uploaded parts.
+- The media asset is only created after R2 accepts the upload and object size verification succeeds.
+- Owner-only upload authority remains enforced server-side.
+
+Safe commit point:
+
+- Owner uploads are reliable enough for large MP4 files while preserving the current R2-only, browser-playable media boundary.
+
+## TASK-002.8E: CloudConvert Credit Efficiency Update
+
+Source task: owner cost-control follow-up after CloudConvert processing became the normal upload pipeline.
+
+Work:
+
+- Add a media inspection and processing-strategy step before CloudConvert jobs are created.
+- Classify owner uploads as direct-ready, convert, needs-approval, or failed.
+- Let confidently browser-safe MP4/H.264/AAC uploads become ready directly from R2 without CloudConvert.
+- Continue converting unsupported or uncertain files through CloudConvert when they are small enough.
+- Require explicit owner approval before likely expensive conversions, including long, large, or unknown-duration large files.
+- Store inspection result, processing strategy, estimated credits, and approval state on the media asset.
+- Show upload lifecycle and uploaded-card badges for direct, converting, needs approval, and failed states.
+- Add owner-only conversion approval from the uploaded library.
+- Add CloudConvert efficiency stats to the owner account diagnostics.
+- Keep CloudConvert as the processing backend for this task; do not add VPS/worker processing.
+
+Review checkpoint:
+
+- Browser-safe MP4 uploads do not spend CloudConvert credits.
+- Expensive conversions are visible and owner-approved before the job starts.
+- Existing unsupported-format upload and CloudConvert processing still work.
+- Owners can see how many uploads were direct, converted, approval-required, and estimated credits avoided.
+
+Safe commit point:
+
+- Owner media upload processing is cost-aware without replacing the current R2/CloudConvert architecture.
 
 ## TASK-002.9: Voting and Suggested Next
 
@@ -417,36 +669,161 @@ Safe commit point:
 
 - Collaborative queue selection exists behind room-authoritative rules.
 
-## TASK-002.10: Accounts, Friends, Invites, Listening History, and Social Rooms
+## TASK-002.10: Account Personalization and First-Party History
 
-Source task: TASK-001 later accounts/friends direction.
+Source task: TASK-001 later accounts direction, split after TASK-002.8A to keep social/provider permissions separate from first-party account value.
 
 Work:
 
-- Extend the account and profile foundation created in TASK-002.8A.
-- Add friend relationships and friend room visibility.
-- Add friend invite popups from rooms.
-- Add notification bell/drawer support for room invites.
-- Migrate guest avatar/name behavior cleanly into account profiles.
-- Preserve guest-first rooms until account migration is ready.
-- Keep host crown role-based, not avatar-specific.
-- Add YouTube playlist/history-related Google scopes only if a concrete feature in this task needs them and the consent boundary is explicit.
-- Add account-backed listening history foundations for future real `Most listened` data.
-- Track per-account media identity, play count, completion count, total listened time, last played time, and source/provider metadata where available.
-- Prepare a first-party yearly/monthly recap direction, internally treated as a Mistake Watch wrapped-style recap, without depending on Spotify or external account exports.
-- Keep recap naming, visuals, and data model original to Mistake Watch; do not clone Spotify branding.
+- Extend the account/profile foundation created in TASK-002.8A.
+- Add durable profile preferences that sync across signed-in sessions while keeping guest preferences local:
+  - selected theme preset;
+  - accent preference;
+  - reduced-motion preference or inherit-system state;
+  - glow intensity;
+  - blur/transparency comfort;
+  - compact mode / density preference;
+  - data-saver / lightweight visuals preference.
+- Add controlled theme presets only. Do not add arbitrary custom CSS or unrestricted color picking:
+  - Obsidian Signal / default;
+  - Cardinal Red;
+  - Midnight Glass;
+  - Soft Studio.
+- Add room-mode preference groups in the Account Command Panel:
+  - General;
+  - Personalization;
+  - Rooms;
+  - Watch Room;
+  - Listen Room;
+  - Privacy;
+  - Account.
+- Watch room preferences should include only settings that improve repeated use:
+  - audience/chat overlay default;
+  - chat overlay opacity;
+  - member color visibility;
+  - queue drawer default behavior;
+  - ambient glow intensity;
+  - auto-hide controls preference where safe;
+  - cinematic controls preference.
+- Listen room preferences should include only settings that improve repeated use:
+  - queue drawer default height/density;
+  - visualizer visibility/intensity;
+  - dynamic thumbnail color strength;
+  - discovery panel density;
+  - autoplay preference where room rules allow;
+  - AI/session intelligence dock visibility when that feature exists.
+- Add saved/recent/owned room account surfaces:
+  - saved rooms for signed-in accounts;
+  - recent rooms;
+  - owned rooms;
+  - current guest rooms available for migration;
+  - leave room / remove from saved list where appropriate.
+- Add first-party Mistake Watch history, without relying on external provider history:
+  - queued items by profile;
+  - played items by profile where attribution is known;
+  - watch/listen participation time;
+  - room joins;
+  - contributor activity;
+  - source/provider metadata already available inside Mistake Watch;
+  - last played/listened timestamps;
+  - play count and completion count where technically reliable.
+- Use first-party account history to power real app-native surfaces:
+  - `Most listened`;
+  - `Recently played`;
+  - account profile preview stats;
+  - room-aware recommendation seeds;
+  - future recap foundations.
+- Add privacy controls for profile and activity visibility:
+  - profile visibility;
+  - activity visibility;
+  - online/active status visibility;
+  - room activity visibility;
+  - clear local guest session;
+  - clear local room history.
+- Add lightweight profile preview behavior for clicking avatars:
+  - guest preview shows temporary identity and current room role/permissions only;
+  - signed-in preview shows public profile fields and public-safe contribution stats only;
+  - never show email or private account fields to other users.
+- Preserve guest behavior:
+  - guests can continue with local-only settings;
+  - guests do not get durable cross-device history;
+  - guests are not inserted into friend/social graphs.
+- Do not request YouTube playlist/history scopes, Google Drive scopes, contacts, or offline access in this task.
+- Do not implement friends, friend invites, notifications, provider-account recommendations, Stream/R2 upload, achievements, or AI personalization in this task.
 
 Review checkpoint:
 
-- Friends can invite friends to rooms through visible notifications.
-- Guest-first behavior still works or has a clear migration path.
-- Google OAuth supports playlist/history integrations only after explicit incremental consent.
-- Real `Most listened` can later aggregate account listening history for members in the active room.
-- Account listening history can support a future Mistake Watch recap showing top songs, artists/channels, rooms, contributors, listening time, and session patterns.
+- Signed-in users have durable preferences and profile settings that persist across sessions.
+- Guests keep local-only preferences and remain usable without account pressure.
+- Account history is based on Mistake Watch first-party events, not external provider history.
+- Real `Most listened`, `Recently played`, and room-aware recommendation seeds can use account history without fake data.
+- Profile previews expose only public-safe fields.
+- No new Google/YouTube data scopes are requested.
 
 Safe commit point:
 
-- Mistake Watch supports account-backed social room discovery, invites, and durable listening-history foundations.
+- Mistake Watch accounts feel useful through personalization, saved rooms, and first-party history without pulling in the social graph or provider-data permissions.
+
+## TASK-002.10C: Social Graph and Incremental Provider Permissions
+
+Source task: follow-up split from the original accounts/friends direction after identity and first-party history are established.
+
+Work:
+
+- Add signed-in-only friend relationships:
+  - requester profile;
+  - addressee profile;
+  - status: pending, accepted, declined, blocked;
+  - timestamps;
+  - idempotency/duplicate prevention.
+- Guests cannot send friend requests, receive friend requests, appear in friend search, or persist as social graph nodes.
+- Add friend request and response flows:
+  - send request from profile preview or account/social surface;
+  - accept/decline/block;
+  - cancel outgoing request;
+  - show pending inbound/outbound states.
+- Add friend room visibility and invite behavior:
+  - friends can see rooms according to privacy settings;
+  - invite friends to active rooms;
+  - invite notifications appear in a notification drawer/bell;
+  - room invite links still work for guests and non-friends.
+- Add notification infrastructure only for account/social events needed here:
+  - friend request;
+  - friend accepted;
+  - room invite;
+  - invite accepted/expired/declined where useful.
+- Add privacy and abuse controls:
+  - who can send friend requests;
+  - who can see online status;
+  - who can see joined rooms;
+  - block list;
+  - rate limits for friend requests and invites;
+  - report/remove hooks if needed later.
+- Add optional incremental Google/YouTube provider permissions only when a concrete feature requires them:
+  - explain the exact feature before requesting access;
+  - request the narrowest scope possible;
+  - do not request Drive, playlist/history, or offline access in bulk;
+  - use incremental consent rather than expanding the initial Google sign-in.
+- Provider-connected features may include:
+  - importing a user's YouTube playlist when explicitly authorized;
+  - showing provider-account playlist context where API support and consent allow;
+  - provider-aware recommendation seeds where technically available.
+- Keep Mistake Watch first-party history as the primary recommendation source. Do not claim to expose the user's actual YouTube homepage recommendations unless an official API capability supports the exact data.
+- Document provider token storage, refresh-token behavior, revocation, and user-facing consent copy before any long-lived provider access is used.
+- Do not implement account achievements, recap presentation, AI DJ personalization, or Stream/R2 upload in this task unless separately approved.
+
+Review checkpoint:
+
+- Friend relationships work only between signed-in accounts.
+- Guests remain frictionless room participants but do not clog durable social data.
+- Friend room visibility and invites respect privacy settings.
+- Notification drawer/bell handles social events without covering media controls.
+- Any provider permission request is explicit, incremental, narrow, and tied to a visible user action.
+- The app still works for users who never grant provider data permissions.
+
+Safe commit point:
+
+- Mistake Watch has a durable account social graph and consent-safe provider-permission layer without forcing Google/YouTube data access into the core room experience.
 
 ## TASK-002.10A: Easter Eggs and Account Achievements
 

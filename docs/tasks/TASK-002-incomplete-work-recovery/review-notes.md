@@ -2,7 +2,7 @@
 
 ## Current Status
 
-Status: TASK-002.6 Real Audio-Reactive Waveform Architecture is complete after resolver, UI wiring, build, and dev-check verification.
+Status: TASK-002.8 R2 Media Library and Authorized Upload Pipeline is implemented through TASK-002.8E CloudConvert credit-efficiency support, pending manual owner upload/browser QA for direct-ready MP4 and approval-required conversion flows.
 
 TASK-002.1 Listen Mode Quality Pass is complete pending manual visual review in a live room.
 
@@ -28,7 +28,7 @@ Baseline handoff docs now exist at `docs/HANDOFF.md` and `docs/COMMANDS.md` so f
 
 ## Canonical Next Task
 
-Next checkpoint after TASK-002.6 verification: TASK-002.8A Account And Owner Authority Foundation.
+Next checkpoint after TASK-002.8 manual QA: TASK-002.9 Voting and Suggested Next.
 
 ## Decisions Locked
 
@@ -42,10 +42,10 @@ Next checkpoint after TASK-002.6 verification: TASK-002.8A Account And Owner Aut
 - If a ready owner-authorized first-party Stream/R2 asset exists for a YouTube source, playback should prefer the first-party asset; otherwise YouTube iframe playback remains the fallback.
 - Real waveform/audio analysis must target direct, HLS, or first-party media. YouTube iframe audio must stay on honest fallback visuals unless a matched first-party asset exists.
 - TASK-002.5C hardens live room authority before more queue, voting, media-library, or social features depend on it.
-- TASK-002.6 prepares the waveform resolver and future first-party media peak contract. TASK-002.8A implements Google OAuth, profiles, and owner authority. TASK-002.8 implements the Cloudflare Stream/R2 media library and authorized upload/ingestion pipeline. TASK-002.10 implements friends, invites, social rooms, and account-backed listening history.
+- TASK-002.6 prepares the waveform resolver and future first-party media peak contract. TASK-002.8A implements account identity and owner authority. TASK-002.8 implements the R2-first media library and authorized upload/ingestion pipeline, with Cloudflare Stream deferred. TASK-002.10 implements account personalization and first-party Mistake Watch history. TASK-002.10C implements signed-in-only friends, invites, social notifications, and incremental Google/YouTube provider permissions.
 - Movie/direct-media ingestion means owner uploads or authorized direct media URLs only. Do not add hidden-stream scraping, DRM bypass, ad circumvention, anti-bot circumvention, or piracy-site automation.
 - TASK-002.5B is the next watch-room UI/personality slice after TASK-002.5D. It should make watch mode focused, cinematic, synchronized, and media-first before later upload/library features depend on the watch layout.
-- Cloudflare Stream is the approved fast video processing/playback path for uploaded watch-room video. R2 remains available for raw/source archive, waveform/analysis JSON, supporting artifacts, and future non-Stream media needs.
+- R2 is the approved first implementation path for the private watch media library. Cloudflare Stream is deferred until usage, format diversity, bandwidth needs, or transcoding requirements justify it.
 - TASK-002.8A was inserted before TASK-002.8 because owner-only Stream/R2 upload and source ingestion require a server-verifiable account/owner role before implementation.
 - TASK-002.5D is inserted before TASK-002.5B because local QA found queue permission mismatches, silent duplicate handling, previous/back history gaps, and Add Media stacking problems that should be fixed before the cinematic watch queue/library surfaces are redesigned.
 - TASK-002.5E is inserted after TASK-002.5B because the AI DJ vertical placement request is a small listen-layout shell correction, not the later full TASK-002.10B AI/session-intelligence system.
@@ -62,6 +62,11 @@ Next checkpoint after TASK-002.6 verification: TASK-002.8A Account And Owner Aut
 - Live room authority must not rely on browser-provided role or host-member fields when seeding a SpacetimeDB room session.
 - Google OAuth starts with basic profile identity in TASK-002.8A. Playlist/history scopes and offline access are added only when the related account features are implemented and consent boundaries are clear.
 - The owner role for Stream/R2 upload and source ingestion must be server-verifiable before TASK-002.8 starts. Client UI flags are not an acceptable authorization boundary.
+- Guest-first remains a product rule after accounts. Guests can create/join rooms, queue/chat/control where room permissions allow, and preserve temporary display/avatar identity without signing in.
+- A signed-in account gives durable identity, preferences, saved rooms, first-party history, and later social/provider features. It is an enhancement layer, not an entry requirement.
+- Friending is signed-in-only. Guests must not be inserted into durable friend graphs, friend search, or friend request flows because guest identities are temporary session participants.
+- Mistake Watch first-party history is the primary source for account recommendations and stats. Google/YouTube provider scopes are later incremental consent features and must not be presented as access to the user's actual YouTube homepage recommendations unless an official API supports that exact data.
+- App/media owner authority, current room host authority, signed-in account membership, and guest session identity are separate concepts and must not be collapsed into one role flag.
 - Queue add permission, queue management permission, playback permission, and host authority should be treated as distinct capabilities in TASK-002.5D.
 - Duplicate queue policy should default to warn-first and allow explicit add-anyway. The `Remember my choice` preference is local-only until accounts/preferences exist.
 
@@ -108,17 +113,152 @@ Manual review pending:
 - Browser QA should confirm listen-mode YouTube still reads as the same fallback visual experience, without UI text implying real iframe audio analysis.
 - Browser QA should confirm reduced-motion clients receive stable/non-animated waveform behavior.
 - Future TASK-002.8 QA should verify that ready first-party R2/Stream metadata can feed `waveform_peaks_url` or `waveform_peaks_key` into this resolver before any uploaded-media waveform UI claims real analysis.
+
+## Account Roadmap Split Notes
+
+The account roadmap is intentionally split into three implementation tasks to prevent scope creep and preserve guest-first rooms:
+
+1. TASK-002.8A Account Identity and Owner Authority Foundation:
+   - Google OAuth with minimal identity scopes only.
+   - Profiles, roles, RLS, server-side owner checks, guest-to-account migration, global account entry, and Account Command Panel shell.
+   - No friends, first-party history aggregation, Stream/R2 upload, YouTube/Drive scopes, or provider-account recommendations.
+
+2. TASK-002.10 Account Personalization and First-Party History:
+   - Durable preferences, controlled themes, saved/recent/owned rooms, watch/listen settings, profile previews, and first-party Mistake Watch history.
+   - Real `Most listened`, `Recently played`, and recommendation seeds should come from Mistake Watch events first.
+   - No friend graph and no Google/YouTube data scopes.
+
+3. TASK-002.10C Social Graph and Incremental Provider Permissions:
+   - Friend requests, friend room visibility, friend invites, notification drawer, privacy controls, and abuse controls.
+   - Friends require signed-in accounts on both sides.
+   - Optional Google/YouTube provider scopes are requested only through explicit incremental consent for a concrete feature such as playlist import.
+
+Implementation implication:
+
+- TASK-002.8 can proceed after TASK-002.8A because owner-only Stream/R2 upload only needs server-verifiable owner authority, not the later personalization/history/social layers.
+- TASK-002.10 and TASK-002.10C can proceed later without blocking the owner-upload foundation, but TASK-002.10 should precede provider recommendation work so first-party history remains the primary recommendation source.
 - A visible room notification system is needed so queue outcomes are not hidden in reducer errors or console-only state. Notifications should cover song added, playlist count added, duplicate detected, duplicate added anyway, permission denied, and preview/provider failure.
 - Console observations from local QA should be triaged in this task: React hydration mismatch and modal z-index/layout issues are app cleanup items; YouTube local `postMessage` warnings are non-blocking unless playback fails.
+
+## TASK-002.8A Implementation Notes
+
+- Added Supabase migration `20260612092858_account_identity_owner_authority.sql`.
+- Extended `public.profiles` with handle, avatar key/source, Google avatar URL, `role`, and `account_status`.
+- Added column-level grants so authenticated users can maintain safe profile fields but cannot client-edit `profiles.role` or `profiles.account_status`.
+- Added `private.is_app_owner()` and `private.is_room_owner(room_id)` as server/database owner-authority primitives for TASK-002.8 Stream/R2 upload and source ingestion.
+- Added `private.handle_new_auth_user()` and the `on_auth_user_created` trigger so new Supabase Auth users get public app profiles.
+- Added `public.account_guest_migrations` plus `room_members.linked_from_guest_identity_id` to record explicit guest-to-account attachment.
+- Added server account helpers in `lib/account/server.ts`, including `getAccountSummary()`, `requireOwnerAccount()`, and `migrateCurrentGuestRoomToAccount()`.
+- Added OAuth routes:
+  - `/auth/sign-in` starts Google OAuth with `openid email profile` only.
+  - `/auth/callback` exchanges the auth code for the Supabase session.
+  - `/auth/sign-out` clears the Supabase session.
+  - `/account/migrate-guest-room` attaches the current guest room session after user confirmation from the Account Command Panel.
+- Added the Account Command Panel shell with Overview, Profile, Personalization, Rooms, Privacy, and Account sections.
+- Added compact account entry points to the dashboard nav, watch Signal HUD, listen desktop header, and listen mobile room tools.
+- Corrective UI pass: removed the dashboard's separate avatar/settings controls so the Account Command Panel is the single account entry point.
+- Corrective UI pass: moved browser-local avatar selection into the Account Command Panel Profile tab.
+- Corrective UI pass: rendered the Account Command Panel through a `document.body` portal so the account window centers against the viewport instead of inheriting dashboard/sidebar layout offsets.
+- Preserved guest-first create/join behavior. Signing in does not silently attach guest rooms, change room creation, or create social graph data.
+- Added signed-in room snapshot fallback so migrated account members can reload the room after their guest membership is converted to `user_id`.
+- Added `task-002.8a-account-auth-boundaries.md` to document Google consent, provider token boundaries, profile role authority, and guest-to-account migration behavior.
+- Updated `implementation-report.html` for TASK-002.8A review.
+
+Verification:
+
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
+- `npm run dev:check` passed with 20 pass, 0 warn, 0 fail after Next.js and SpacetimeDB were running.
+- `supabase migration list --local` ran but failed because local Supabase Postgres was not running on `127.0.0.1:54322`.
+- Supabase remote migration `20260612132118_account_identity_owner_authority` applied successfully.
+- Supabase remote advisor follow-up migration `20260612132354_account_guest_migration_fk_indexes` applied successfully.
+- Supabase security advisors pass with no lints after the migrations.
+- Supabase performance advisors no longer report unindexed foreign keys for `account_guest_migrations`; remaining performance notices are INFO-level unused-index notices on fresh/low-traffic tables.
+
+Manual review pending:
+
+- Confirm Google provider callback URLs and run live OAuth/account browser QA.
+- Configure/confirm Supabase Google provider callback URLs.
+- Sign in with Google and confirm the Account Command Panel shows signed-in/member state.
+- Promote one test profile to `owner` through server/admin tooling and confirm owner state appears.
+- Create a guest room, sign in, attach the current guest room, reload the room, and confirm membership still loads through the signed-in identity.
+- Confirm unsigned guests can still create/join rooms and use current queue/chat/permission flows.
 
 Implementation test expectations:
 
 - Add SpacetimeDB authority tests for queue-management permission on move, remove, clear, pin, and play-next.
+
+## TASK-002.8 R2 Preflight Notes
+
+- TASK-002.8 direction changed from Cloudflare Stream-first to R2-first for the private small-room phase.
+- Cloudflare Stream is deferred until actual usage, format diversity, bandwidth, adaptive playback, or transcoding needs justify it.
+- R2 bucket `watch2bucket` is configured with public base URL `https://r2.mistakestudios.com`.
+- Preflight confirmed required Cloudflare/R2 env vars are present locally.
+- Preflight confirmed Cloudflare API bucket lookup returns HTTP 200.
+- Preflight confirmed S3-compatible temporary PUT returns HTTP 200 and temporary DELETE returns HTTP 204.
+- Preflight confirmed a temporary uploaded object is reachable through the R2 custom domain with HTTP 200.
+- Preflight confirmed CORS OPTIONS returns HTTP 204 for:
+  - `https://watch.mistakestudios.com`
+  - `https://mistake-watch.vercel.app`
+  - `http://localhost:5371`
+  - `http://127.0.0.1:5371`
+- Current CORS allows `GET`, `HEAD`, and `PUT` with `content-type`, which is enough for the first signed browser upload path.
+- First implementation should constrain uploaded video to browser-playable files, preferably `.mp4` with H.264 video and AAC audio.
 - Add reducer denial tests for missing queue-management permission.
 - Add playback-history tests for previous/back order.
 - Add duplicate policy tests for warn/add-anyway behavior and local duplicate preference.
 - Add client/unit tests for Add Media modal state transitions and playlist review controls.
 - Run `npm run typecheck`, `npm run lint`, `npm run test:spacetime`, `npm run test:queue`, `npm run test:sync`, `npm run test:youtube`, and `npm run build`.
+
+## TASK-002.8 Implementation Notes
+
+- Added Supabase migrations:
+  - `20260613152000_r2_media_library.sql`
+  - `20260613154500_r2_media_library_advisor_fixes.sql`
+- Added `public.media_assets`, `public.media_upload_sessions`, and `public.media_source_matches` with RLS enabled.
+- RLS/read model:
+  - ready media assets are readable by `anon` and `authenticated`;
+  - authenticated owners can read their own upload/session records;
+  - public mutation is not granted; server/admin paths create and update upload/media rows.
+- Added advisor follow-up index `media_upload_sessions_media_asset_id_idx` and collapsed duplicate authenticated media-asset SELECT policies.
+- Added server-only R2 helpers in `lib/media/r2.ts` for environment validation, browser-playable MP4 validation, object key generation, public URL resolution, signed PUT URL creation, and uploaded-object HEAD verification.
+- Added media metadata service helpers in `lib/media/assets.ts` for owner-only upload creation, upload completion, ready asset listing, and source-match lookup.
+- Added API routes:
+  - `GET /api/media/assets`;
+  - `POST /api/media/uploads`;
+  - `POST /api/media/uploads/[uploadId]/complete`;
+  - `POST /api/media/source-matches`.
+- Updated the Watch Media Hub queue sheet:
+  - owner accounts can drag/drop or choose MP4 files;
+  - upload progress/status is shown inline;
+  - ready R2 assets render in the Cloud Storage section;
+  - ready assets expose Add to Queue, Play Next, and Play Now through existing room permission gates.
+- Updated Add Media and playlist import source matching:
+  - YouTube video IDs are checked against ready `media_source_matches`;
+  - matched media queues as first-party direct R2 media;
+  - unmatched items keep the normal YouTube fallback path.
+- Cloudflare Stream, transcoding, adaptive bitrate playback, automatic thumbnail extraction, multipart/resumable upload UX, cleanup jobs, and background waveform generation remain deferred.
+
+Verification:
+
+- Remote Supabase migration `r2_media_library` applied successfully to project `qzmivwhzotuleivzphhm`.
+- Remote Supabase migration `r2_media_library_advisor_fixes` applied successfully to project `qzmivwhzotuleivzphhm`.
+- Supabase security advisors show only the existing `auth_leaked_password_protection` warning.
+- Supabase performance advisors no longer show TASK-002.8 structural warnings. Remaining performance entries are INFO-level unused-index notices on fresh/low-traffic tables.
+- SQL sanity check confirmed RLS is enabled on `media_assets`, `media_upload_sessions`, and `media_source_matches`.
+- SQL sanity check confirmed the expected media table SELECT policies are present.
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
+- `npm run dev:check` failed because local Next.js and SpacetimeDB were not running. Attempts to launch the standard dev stack from this shell failed with a PowerShell `Start-Process` PATH casing issue and then SpacetimeDB `spawn EPERM` inside a background job. Treat browser/dev-check QA as pending, not failed product behavior.
+
+Manual review pending:
+
+- Owner browser QA: upload a small MP4 through the Watch Media Hub, confirm the object lands in R2, completion creates a ready media asset, and the card appears in Cloud Storage.
+- Playback QA: Add to Queue, Play Next, and Play Now on an R2 asset in a live watch room.
+- Permission QA: non-owner/guest can see ready library items but cannot upload; queue/play actions still follow room permissions.
+- Source-match QA: insert a test `media_source_matches` row for a known YouTube video ID and confirm single-add/playlist import prefers the R2 direct asset.
 
 ## TASK-002.5D Implementation Notes
 
@@ -603,6 +743,124 @@ Manual review pending:
 - Manual QA still needs two clients in one room exchanging messages live.
 - Manual QA still needs a cross-room leakage check with two different room IDs.
 - Manual QA should verify failed send/retry behavior by disconnecting or stopping the local SpacetimeDB server.
+
+## TASK-002.8C Implementation Notes
+
+- Added explicit owner folder creation in the Uploaded tab. New folders are created through `/api/media/folders`, added to local state, selected for browsing, and selected as the upload target.
+- Added uploaded-library quick views for all media, unsorted, live, and folder cards. The Uploaded tab now has normalized partial search and grid/list view controls.
+- Added persistent folder sort metadata on `media_folders` (`default_sort_key`, `default_sort_direction`) and a folder sort update route. Folder-level Play/Add Next/Add Queue actions use the current folder sort order.
+- Replaced the always-visible per-card folder dropdown with a compact settings menu. Grid cards keep Play/Add Next/Add Queue/Move/Visibility actions behind the menu, while list rows expose Play/Add Next/Add Queue as direct buttons and keep management actions in the menu.
+- Added `media_assets.visibility` with `public` default and `owner_only` support. Server listing and RLS policies now exclude hidden assets from non-owner/public access while preserving owner management.
+- Kept watch history/resume, CloudConvert/transcoding, MKV conversion, advanced episode parsing, bulk delete, and friend-only visibility out of this slice.
+
+Verification:
+
+- `npm run typecheck` passed before remote migration application.
+- `npm run lint` passed.
+- `npm run build` passed.
+- Supabase migration `media_library_management_refinement` applied to project `qzmivwhzotuleivzphhm`.
+- Supabase security advisor still reports only the existing leaked-password-protection warning.
+- Supabase performance advisor reports only INFO-level unused-index notices.
+
+Manual review pending:
+
+- Owner QA should create a folder, upload into it, switch grid/list, search with partial/case-insensitive terms, move media between folders from the settings menu, toggle visibility, and verify folder-level queue actions preserve the selected sort order.
+- Non-owner QA should confirm owner-hidden uploaded media does not appear in the Uploaded tab, search, folder cards, or playable library results.
+
+## TASK-002.8D Implementation Notes
+
+- Added Supabase migration `20260614101745_media_multipart_upload_progress.sql`.
+- Extended `media_upload_sessions` with multipart upload metadata: `upload_mode`, `multipart_upload_id`, `part_size_bytes`, `part_count`, `completed_parts`, `bytes_uploaded`, and `resumable_until`.
+- Kept single PUT upload support for smaller files and added automatic multipart mode for uploads at or above 500 MB.
+- Raised the default owner-upload limit to 10 GiB unless `MEDIA_UPLOAD_MAX_BYTES` overrides it.
+- Added R2 multipart helpers for create, sign part PUT URLs, complete, and abort while keeping R2 credentials server-only.
+- Added `/api/media/uploads/[uploadId]/parts` for part URL creation and completed part progress recording.
+- Added `/api/media/uploads/[uploadId]/abort` for aborting active multipart sessions where possible.
+- Updated `/api/media/uploads/[uploadId]/complete` so multipart completion requires reported part ETags before the asset row is created.
+- Updated the watch media hub upload UI so both single and multipart uploads show one visible byte-based progress bar. Multipart uploads use 64 MB parts, up to 3 concurrent uploads, and retry each failed part up to 3 times.
+- Multipart upload sessions stay valid for 24 hours while individual part URLs remain short-lived.
+- R2 CORS must expose the `ETag` response header for multipart completion. If it does not, the UI reports a clear ETag/CORS error.
+- Cross-refresh upload resume, background cleanup of abandoned multipart uploads, transcoding, and MKV conversion remain future work.
+
+Verification:
+
+- Supabase remote migration applied to project `qzmivwhzotuleivzphhm`.
+- Verified the new `media_upload_sessions` columns through `information_schema.columns`.
+- Supabase security advisor still reports only the existing leaked-password-protection warning.
+- Supabase performance advisor reports INFO-level unused-index notices, including the new fresh multipart index.
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
+- `npm run dev:check` passed with 20 pass, 0 warn, 0 fail.
+
+Manual review pending:
+
+- Owner QA should upload a small MP4 and confirm the single upload progress bar moves with actual progress.
+- Owner QA should upload a 3-4 GB browser-playable MP4 and confirm multipart progress advances, finalization completes, and the item appears playable in Uploaded media.
+- If multipart upload fails with missing ETag, confirm R2 bucket CORS includes `ExposeHeaders: ["ETag"]` for the production origin.
+
+## TASK-002.8D CloudConvert Processing Refinement Notes
+
+- Added Supabase migration `20260617064533_cloudconvert_processing_pipeline.sql`.
+- Added CloudConvert processing metadata to `media_assets`, including source object metadata, processed object metadata, provider status, job id, processing timestamps, and friendly error storage.
+- Added `media_processing_events` with owner-only RLS so CloudConvert job/task status can be inspected without exposing processing events publicly.
+- Replaced the MP4-only upload assumption with an owner upload flow that accepts normal video files, stores the source in R2, starts a CloudConvert job, and only marks the asset ready after the processed browser-safe MP4 is exported back to R2.
+- Added server-only CloudConvert helpers for job creation, diagnostics, webhook signature verification, job sync, event logging, success handling, and failure handling.
+- Added `/api/media/assets/[assetId]/processing`, `/api/media/cloudconvert/status`, and `/api/media/cloudconvert/webhook`.
+- Updated the watch media hub so upload progress continues from R2 upload into CloudConvert queued/processing/export phases. Processing and failed assets remain visible to owners, while play/queue actions stay disabled until the item is ready.
+- Added an owner-only CloudConvert diagnostics section to the Account tab. It shows configured state, masked token status, account/user fields returned by CloudConvert, usage fields when available, webhook state, and recent processing failures.
+- Kept CloudConvert token usage server-only. The browser only sees app-owned processing statuses and masked diagnostics.
+- Existing local ingest/repair scripts remain useful admin fallbacks; product upload now routes through CloudConvert.
+
+Verification:
+
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
+- `npm run dev:check` failed only because local Next.js `127.0.0.1:5371` and SpacetimeDB `127.0.0.1:5372` were not running. Environment checks inside `dev:check` passed.
+- Supabase remote migration `cloudconvert_processing_pipeline` applied successfully to project `qzmivwhzotuleivzphhm`.
+- SQL verification confirmed the new `media_assets` processing columns and `media_processing_events` table exist.
+- Supabase security advisor still reports only the existing leaked-password-protection warning.
+- Supabase performance advisor reports INFO-level unused-index notices, including fresh CloudConvert processing indexes.
+
+Manual review pending:
+
+- Add `CLOUDCONVERT_API_TOKEN`, `CLOUDCONVERT_WEBHOOK_SECRET`, and optionally `CLOUDCONVERT_WEBHOOK_URL` to Vercel before deploying this pipeline.
+- Owner QA should upload an MKV or H.265 MP4 and confirm it moves through upload, processing, thumbnail creation, and ready playback.
+- Owner QA should confirm the Account CloudConvert diagnostics section masks the token and shows graceful errors if CloudConvert is unreachable.
+
+## TASK-002.8E CloudConvert Credit Efficiency Notes
+
+- Added Supabase migration `20260617183000_cloudconvert_credit_efficiency.sql`.
+- Added `media_assets.inspection_result`, `processing_strategy`, `estimated_credits`, `owner_approval_required`, and `owner_approved_at`.
+- Added a pure media processing decision helper in `lib/media/processing-decision.ts`.
+- Owner uploads now run a conservative browser preflight for MP4/M4V files before completion:
+  - MP4 files with H.264/AVC and AAC markers become `direct_ready` and skip CloudConvert.
+  - Unsupported, uncertain, or non-MP4 files still use CloudConvert when small enough.
+  - Long, large, or unknown-duration large files become `needs_approval` before CloudConvert spends credits.
+- Removed the upload-start requirement that CloudConvert must be configured. Direct-ready MP4 uploads can complete without provider configuration.
+- Added owner approval through `POST /api/media/assets/[assetId]/processing`, reusing the existing CloudConvert processing and polling path.
+- Uploaded media cards now distinguish Direct, Converting, and Needs approval states. Approval-required assets show estimated CloudConvert credits and expose an owner-only approval action.
+- Account CloudConvert diagnostics now show direct-ready count, converted count, approval-required count, and estimated credits avoided.
+- Direct-ready assets remain compatible with the existing best-effort browser poster capture path, so thumbnail generation does not force full conversion.
+
+Verification:
+
+- `node --test tests\media\processing-decision.test.mjs` passed.
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
+- `npm run dev:check` reported 14 pass, 2 warn, 4 fail because local Next.js `127.0.0.1:5371` and SpacetimeDB `127.0.0.1:5372` were not running; environment and module parity checks passed.
+- Supabase remote migration `cloudconvert_credit_efficiency` applied successfully to project `qzmivwhzotuleivzphhm`.
+- Supabase security advisor still reports only the existing leaked-password-protection warning.
+- Supabase performance advisor reports INFO-level unused-index notices, including fresh credit-efficiency indexes.
+
+Manual review pending:
+
+- Owner QA should upload a known browser-safe MP4 and confirm no CloudConvert job is created.
+- Owner QA should upload a long/large MKV or HEVC file and confirm it waits for approval before processing.
+- Owner QA should approve a waiting conversion and confirm it enters normal CloudConvert status polling.
+- Owner QA should confirm Account CloudConvert efficiency stats update after direct and approval-required uploads.
 
 ## TASK-002.1 Implementation Notes
 

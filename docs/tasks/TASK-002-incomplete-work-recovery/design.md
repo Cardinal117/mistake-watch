@@ -89,7 +89,7 @@ Supabase remains the durable store for:
 - saved rooms;
 - future auth/profile/friend data;
 - future owner-role/account authority data;
-- future Cloudflare Stream/R2 media metadata, ingestion/upload jobs, and source matches;
+- future R2-first media metadata, ingestion/upload jobs, and source matches, with Cloudflare Stream deferred until needed;
 - future durable chat history only if explicitly enabled.
 
 ### YouTube
@@ -127,29 +127,28 @@ Ambient palette rules:
 - YouTube must use thumbnail or provider-metadata palette fallback because iframe frames cannot be sampled directly;
 - transitions should be slow, restrained, and reduced-motion aware.
 
-### Cloudflare Stream And R2
+### R2 Media Library
 
-Cloudflare Stream is the chosen fast video processing and playback path for uploaded watch-room video. R2 remains the owner-controlled object storage direction for raw/source archive, supporting artifacts, waveform/analysis JSON, and future non-Stream media needs.
+R2 is the chosen first implementation path for the private watch media library. Cloudflare Stream is deferred until actual usage, file-format diversity, bandwidth, adaptive playback, or transcoding requirements justify the added product and operational complexity.
 
-This hybrid direction should not be mixed into earlier listen, chat, preload, recommendation, or watch-room personality tasks unless a specific subtask requires it.
+This R2-first direction should not be mixed into earlier listen, chat, preload, recommendation, or watch-room personality tasks unless a specific subtask requires it.
 
 TASK-002.6 may prepare waveform abstractions for future first-party media peak files, but actual upload, storage, processing, and playback preference belong to TASK-002.8.
 
-TASK-002.8 should treat Cloudflare Stream as the primary store/playback service for:
+TASK-002.8 should treat R2 as the primary store/playback service for:
 
-- owner-uploaded watch videos;
-- processed playback renditions;
-- Stream-generated thumbnails/previews where available;
-- stable first-party playback identifiers.
+- owner-uploaded watch videos that are already browser-playable;
+- public playback URLs through the configured R2 custom domain;
+- optional supporting artifacts such as posters, waveform JSON, and analysis metadata;
+- stable first-party object keys and media identifiers.
 
-TASK-002.8 should treat R2 as object storage for:
+TASK-002.8 must constrain uploaded video formats because R2 does not transcode:
 
-- raw original archive where needed;
-- non-Stream supporting artifacts;
-- authorized source files that should not live in Supabase;
-- waveform peak JSON.
+- preferred first path: `.mp4` with H.264 video and AAC audio;
+- unsupported files should be rejected or clearly marked unusable before they enter the playable library;
+- adaptive bitrate playback, transcoding, automatic thumbnail extraction, and resumable upload UX are deferred.
 
-Supabase should remain the durable metadata and authorization layer through tables such as `media_assets`, `media_ingestion_jobs`, and `media_source_matches`.
+Supabase should remain the durable metadata and authorization layer through tables such as `media_assets`, `media_upload_sessions` or `media_ingestion_jobs`, and `media_source_matches`.
 
 Upload and source ingestion are owner-only:
 
@@ -157,13 +156,13 @@ Upload and source ingestion are owner-only:
 - non-owner users can add YouTube links and playlists, but cannot upload first-party media or trigger first-party source ingestion;
 - a dev/test bypass can exist only as an explicit environment-gated local testing path and must never be enabled by default in public production.
 
-Cloudflare Stream direct upload or an equivalent server-authorized upload flow should support drag-and-drop from the expanded watch queue/library drawer. Custom workers/jobs should be used only for gaps that Stream does not cover, such as R2 archive handling, waveform peaks, or owner-authorized external source ingestion. Any custom worker should run outside Vercel if it needs longer-running media jobs.
+Server-generated signed R2 upload URLs should support drag-and-drop from the expanded Watch Media Hub. The browser uploads directly to R2; Next.js creates short-lived upload intent records, signs one scoped object key, and records final metadata after upload completion. Custom workers/jobs are deferred unless later source ingestion, waveform generation, or media processing requires longer-running work outside Vercel.
 
 Movie/direct-media ingestion means owner-uploaded files or authorized direct media URLs. Do not include hidden-stream scraping, DRM bypass, ad circumvention, anti-bot circumvention, or piracy-site automation.
 
 ### Google OAuth And Owner Authority
 
-The Google OAuth and owner-role foundation belongs in TASK-002.8A, before Cloudflare Stream/R2 media-library work. Full friends, invites, notifications, and listening-history product work remains in TASK-002.10.
+The Google OAuth and owner-role foundation belongs in TASK-002.8A, before R2 media-library work. Full friends, invites, notifications, and listening-history product work remains in TASK-002.10.
 
 Implementation direction:
 
@@ -172,7 +171,7 @@ Implementation direction:
 - start with basic profile scopes;
 - request YouTube playlist/history scopes only when those features are implemented and user consent is clear;
 - use offline access only when refresh-token behavior is actually required;
-- enforce Stream/R2 upload and source-ingestion authority through a server-verified owner role, not through client-side UI state;
+- enforce R2 upload and source-ingestion authority through a server-verified owner role, not through client-side UI state;
 - keep guest-first room participation working while account-backed identity becomes available for ownership, saved rooms, media authority, and later social features.
 
 ## UI/UX Direction

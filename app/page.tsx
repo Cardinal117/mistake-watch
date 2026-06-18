@@ -1,6 +1,8 @@
 import { DashboardLiveSections, DashboardShell } from "@/components/dashboard";
 import { getDashboardData } from "@/lib/rooms";
 
+export const dynamic = "force-dynamic";
+
 type DashboardPageProps = {
   searchParams: Promise<{
     error?: string;
@@ -21,6 +23,7 @@ export default async function DashboardPage({
 
   return (
     <DashboardShell
+      cleanUrlOnHydrate={Boolean(error || notice)}
       currentRoom={dashboardData.currentRoom}
       recentRooms={dashboardData.recentRooms}
       roomNotice={
