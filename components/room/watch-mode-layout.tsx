@@ -1371,7 +1371,7 @@ function WatchMediaHubDiscovery({
       {activeHubTab === "uploads" ? (
         <>
           {isOwner ? (
-            <div className="grid gap-2 rounded-md border border-white/10 bg-background/10 p-3">
+            <section className="grid gap-2">
               <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                 <label className="grid gap-1 text-label-sm text-on-surface-variant">
                   Upload into folder
@@ -1476,9 +1476,9 @@ function WatchMediaHubDiscovery({
                   type="file"
                 />
               </label>
-            </div>
+            </section>
           ) : (
-            <div className="grid gap-1 rounded-md border border-white/10 bg-background/10 p-3">
+            <section className="grid gap-1">
               <p className="technical-label text-primary-fixed-dim">
                 Uploaded media
               </p>
@@ -1486,7 +1486,7 @@ function WatchMediaHubDiscovery({
                 Owner-uploaded R2 media appears here when it is ready. Upload
                 and folder controls are owner-only.
               </p>
-            </div>
+            </section>
           )}
           {isOwner && resumableUploads.length > 0 ? (
             <ResumableUploadList
@@ -1664,7 +1664,7 @@ function ResumableUploadList({
   sessions: ResumableMediaUpload[];
 }) {
   return (
-    <section className="grid gap-2 rounded-md border border-secondary-fixed-dim/25 bg-secondary-fixed-dim/8 p-3">
+    <section className="grid gap-2 border-l border-secondary-fixed-dim/35 bg-secondary-fixed-dim/5 pl-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="technical-label text-secondary-fixed-dim">
@@ -1703,89 +1703,91 @@ function ResumableUploadList({
 
           return (
             <article
-              className="grid gap-2 rounded-sm border border-white/10 bg-background/18 p-2"
+              className="grid gap-2 rounded-sm border border-secondary-fixed-dim/25 bg-background/18 p-2"
               key={session.id}
             >
-            <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-              <div className="min-w-0">
-                <div className="flex min-w-0 flex-wrap items-center gap-2">
-                  <span className="truncate text-label-sm font-semibold text-on-surface">
-                    {session.fileName}
-                  </span>
-                  <span
-                    className={cx(
-                      "rounded-sm border px-1.5 py-0.5 text-[10px] uppercase tracking-[0.08em]",
-                      session.status === "failed"
-                        ? "border-error/30 text-error"
-                        : session.status === "expired"
-                          ? "border-white/10 text-on-surface-variant"
-                          : "border-secondary-fixed-dim/30 text-secondary-fixed-dim",
-                    )}
-                  >
-                    {statusLabel}
-                  </span>
+              <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                <div className="min-w-0">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <span className="truncate text-label-sm font-semibold text-on-surface">
+                      {session.fileName}
+                    </span>
+                    <span
+                      className={cx(
+                        "rounded-sm border px-1.5 py-0.5 text-[10px] uppercase tracking-[0.08em]",
+                        session.status === "failed"
+                          ? "border-error/30 text-error"
+                          : session.status === "expired"
+                            ? "border-white/10 text-on-surface-variant"
+                            : "border-secondary-fixed-dim/30 text-secondary-fixed-dim",
+                      )}
+                    >
+                      {statusLabel}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-on-surface-variant">
+                    {formatBytes(displayBytes)} of{" "}
+                    {formatBytes(session.fileSizeBytes)} uploaded
+                    {session.resumableUntil
+                      ? ` / resumable until ${formatDateTime(session.resumableUntil)}`
+                      : ""}
+                  </p>
+                  {activeProgress ? (
+                    <p
+                      className={cx(
+                        "mt-1 text-[11px]",
+                        activeProgress.tone === "error"
+                          ? "text-error"
+                          : activeProgress.tone === "success"
+                            ? "text-primary-fixed-dim"
+                            : "text-secondary-fixed-dim",
+                      )}
+                    >
+                      {activeProgress.detail}
+                    </p>
+                  ) : null}
+                  {session.errorMessage ? (
+                    <p className="mt-1 text-[11px] text-error">
+                      {session.errorMessage}
+                    </p>
+                  ) : null}
                 </div>
-                <p className="mt-1 text-[11px] text-on-surface-variant">
-                  {formatBytes(displayBytes)} of{" "}
-                  {formatBytes(session.fileSizeBytes)} uploaded
-                  {session.resumableUntil
-                    ? ` / resumable until ${formatDateTime(session.resumableUntil)}`
-                    : ""}
-                </p>
-                {activeProgress ? (
-                  <p
-                    className={cx(
-                      "mt-1 text-[11px]",
-                      activeProgress.tone === "error"
-                        ? "text-error"
-                        : activeProgress.tone === "success"
-                          ? "text-primary-fixed-dim"
-                          : "text-secondary-fixed-dim",
-                    )}
+                <div className="flex items-center gap-2">
+                  <button
+                    className="inline-flex h-8 items-center gap-2 rounded-sm border border-primary-fixed-dim/35 bg-primary-fixed-dim/10 px-2 text-label-sm font-semibold text-primary-fixed-dim transition hover:bg-primary-fixed-dim/15 disabled:cursor-not-allowed disabled:opacity-45"
+                    disabled={!session.resumable || Boolean(activeProgress)}
+                    onClick={() => onResumeUpload(session)}
+                    type="button"
                   >
-                    {activeProgress.detail}
-                  </p>
-                ) : null}
-                {session.errorMessage ? (
-                  <p className="mt-1 text-[11px] text-error">
-                    {session.errorMessage}
-                  </p>
-                ) : null}
+                    <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+                    Resume
+                  </button>
+                  <button
+                    className="inline-flex h-8 items-center gap-2 rounded-sm border border-error/30 bg-error/8 px-2 text-label-sm font-semibold text-error transition hover:bg-error/12"
+                    onClick={() => onCancelUpload(session)}
+                    type="button"
+                  >
+                    <X className="h-3.5 w-3.5" aria-hidden />
+                    Cancel
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  className="inline-flex h-8 items-center gap-2 rounded-sm border border-primary-fixed-dim/35 bg-primary-fixed-dim/10 px-2 text-label-sm font-semibold text-primary-fixed-dim transition hover:bg-primary-fixed-dim/15 disabled:cursor-not-allowed disabled:opacity-45"
-                  disabled={!session.resumable || Boolean(activeProgress)}
-                  onClick={() => onResumeUpload(session)}
-                  type="button"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-                  Resume
-                </button>
-                <button
-                  className="inline-flex h-8 items-center gap-2 rounded-sm border border-error/30 bg-error/8 px-2 text-label-sm font-semibold text-error transition hover:bg-error/12"
-                  onClick={() => onCancelUpload(session)}
-                  type="button"
-                >
-                  <X className="h-3.5 w-3.5" aria-hidden />
-                  Cancel
-                </button>
+              <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className={cx(
+                    "h-full transition-[width]",
+                    activeProgress?.tone === "error"
+                      ? "bg-error"
+                      : activeProgress?.tone === "success"
+                        ? "bg-primary-fixed-dim"
+                        : "bg-secondary-fixed-dim",
+                  )}
+                  style={{
+                    width: `${Math.max(0, Math.min(100, displayProgress))}%`,
+                  }}
+                />
               </div>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-              <div
-                className={cx(
-                  "h-full transition-[width]",
-                  activeProgress?.tone === "error"
-                    ? "bg-error"
-                    : activeProgress?.tone === "success"
-                      ? "bg-primary-fixed-dim"
-                      : "bg-secondary-fixed-dim",
-                )}
-                style={{ width: `${Math.max(0, Math.min(100, displayProgress))}%` }}
-              />
-            </div>
-          </article>
+            </article>
           );
         })}
       </div>
@@ -2000,7 +2002,7 @@ function UploadedMediaLibrary({
 
   return (
     <section className="grid gap-3">
-      <div className="grid gap-2 rounded-md border border-white/10 bg-background/10 p-3">
+      <div className="grid gap-2">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="technical-label text-primary-fixed-dim">Folders</p>
@@ -2051,90 +2053,90 @@ function UploadedMediaLibrary({
       <div className="grid gap-2">
         <p className="technical-label text-on-surface">Quick views</p>
         <div className="flex flex-wrap items-center gap-2">
-        <button
-          className={cx(
-            "inline-flex h-9 items-center gap-2 rounded-sm border px-3 text-label-sm transition",
-            selectedFolderId === "all"
-              ? "border-primary-fixed-dim/45 bg-primary-fixed-dim/12 text-primary-fixed-dim"
-              : "border-white/10 bg-background/18 text-on-surface-variant",
-          )}
-          onClick={() => setSelectedFolderId("all")}
-          type="button"
-        >
-          <Database className="h-3.5 w-3.5" aria-hidden />
-          See all media
-          <span className="text-[11px] opacity-70">{allAssets.length}</span>
-        </button>
-        <button
-          className={cx(
-            "inline-flex h-9 items-center gap-2 rounded-sm border px-3 text-label-sm transition",
-            selectedFolderId === "unsorted"
-              ? "border-primary-fixed-dim/45 bg-primary-fixed-dim/12 text-primary-fixed-dim"
-              : "border-white/10 bg-background/18 text-on-surface-variant",
-          )}
-          onClick={() => setSelectedFolderId("unsorted")}
-          type="button"
-        >
-          <Folder className="h-3.5 w-3.5" aria-hidden />
-          Unsorted
-          <span className="text-[11px] opacity-70">{unsortedCount}</span>
-        </button>
-        <button
-          className={cx(
-            "inline-flex h-9 items-center gap-2 rounded-sm border px-3 text-label-sm transition",
-            selectedFolderId === "live"
-              ? "border-primary-fixed-dim/45 bg-primary-fixed-dim/12 text-primary-fixed-dim"
-              : "border-white/10 bg-background/18 text-on-surface-variant",
-          )}
-          onClick={() => setSelectedFolderId("live")}
-          type="button"
-        >
-          <Radio className="h-3.5 w-3.5" aria-hidden />
-          Live
-          <span className="text-[11px] opacity-70">{liveCount}</span>
-        </button>
-        {isOwner && hiddenCount > 0 ? (
-          <span className="inline-flex h-9 items-center gap-2 rounded-sm border border-white/10 bg-background/12 px-3 text-label-sm text-on-surface-variant">
-            <EyeOff className="h-3.5 w-3.5" aria-hidden />
-            {hiddenCount} hidden
-          </span>
-        ) : null}
+          <button
+            className={cx(
+              "inline-flex h-9 items-center gap-2 rounded-sm border px-3 text-label-sm transition",
+              selectedFolderId === "all"
+                ? "border-primary-fixed-dim/45 bg-primary-fixed-dim/12 text-primary-fixed-dim"
+                : "border-white/10 bg-background/18 text-on-surface-variant",
+            )}
+            onClick={() => setSelectedFolderId("all")}
+            type="button"
+          >
+            <Database className="h-3.5 w-3.5" aria-hidden />
+            See all media
+            <span className="text-[11px] opacity-70">{allAssets.length}</span>
+          </button>
+          <button
+            className={cx(
+              "inline-flex h-9 items-center gap-2 rounded-sm border px-3 text-label-sm transition",
+              selectedFolderId === "unsorted"
+                ? "border-primary-fixed-dim/45 bg-primary-fixed-dim/12 text-primary-fixed-dim"
+                : "border-white/10 bg-background/18 text-on-surface-variant",
+            )}
+            onClick={() => setSelectedFolderId("unsorted")}
+            type="button"
+          >
+            <Folder className="h-3.5 w-3.5" aria-hidden />
+            Unsorted
+            <span className="text-[11px] opacity-70">{unsortedCount}</span>
+          </button>
+          <button
+            className={cx(
+              "inline-flex h-9 items-center gap-2 rounded-sm border px-3 text-label-sm transition",
+              selectedFolderId === "live"
+                ? "border-primary-fixed-dim/45 bg-primary-fixed-dim/12 text-primary-fixed-dim"
+                : "border-white/10 bg-background/18 text-on-surface-variant",
+            )}
+            onClick={() => setSelectedFolderId("live")}
+            type="button"
+          >
+            <Radio className="h-3.5 w-3.5" aria-hidden />
+            Live
+            <span className="text-[11px] opacity-70">{liveCount}</span>
+          </button>
+          {isOwner && hiddenCount > 0 ? (
+            <span className="inline-flex h-9 items-center gap-2 rounded-sm border border-white/10 bg-background/12 px-3 text-label-sm text-on-surface-variant">
+              <EyeOff className="h-3.5 w-3.5" aria-hidden />
+              {hiddenCount} hidden
+            </span>
+          ) : null}
         </div>
       </div>
 
       <div className="grid gap-2">
         <p className="technical-label text-on-surface">Folders</p>
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-3 xl:grid-cols-4">
-        {folders.map((folder) => (
-          <button
-            className={cx(
-              "grid min-h-20 gap-1 rounded-md border p-3 text-left transition",
-              selectedFolderId === folder.id
-                ? "border-primary-fixed-dim/45 bg-primary-fixed-dim/12 text-primary-fixed-dim"
-                : "border-white/10 bg-background/18 text-on-surface-variant",
-            )}
-            key={folder.id}
-            onClick={() => setSelectedFolderId(folder.id)}
-            type="button"
-          >
-            <span className="inline-flex items-center gap-2">
-              <Folder className="h-3.5 w-3.5" aria-hidden />
-              <span className="truncate font-semibold">{folder.name}</span>
-            </span>
-            <span className="text-[11px] text-on-surface-variant">
-              {allAssets.filter((item) => item.folderId === folder.id).length} items
-            </span>
-          </button>
-        ))}
-        {folders.length === 0 ? (
-          <div className="rounded-md border border-dashed border-white/10 bg-background/10 px-3 py-4 text-label-sm text-on-surface-variant">
-            No folders yet
-          </div>
-        ) : null}
+          {folders.map((folder) => (
+            <button
+              className={cx(
+                "grid min-h-20 gap-1 rounded-md border p-3 text-left transition",
+                selectedFolderId === folder.id
+                  ? "border-primary-fixed-dim/45 bg-primary-fixed-dim/12 text-primary-fixed-dim"
+                  : "border-white/10 bg-background/18 text-on-surface-variant",
+              )}
+              key={folder.id}
+              onClick={() => setSelectedFolderId(folder.id)}
+              type="button"
+            >
+              <span className="inline-flex items-center gap-2">
+                <Folder className="h-3.5 w-3.5" aria-hidden />
+                <span className="truncate font-semibold">{folder.name}</span>
+              </span>
+              <span className="text-[11px] text-on-surface-variant">
+                {allAssets.filter((item) => item.folderId === folder.id).length} items
+              </span>
+            </button>
+          ))}
+          {folders.length === 0 ? (
+            <div className="rounded-md border border-dashed border-white/10 bg-background/10 px-3 py-4 text-label-sm text-on-surface-variant">
+              No folders yet
+            </div>
+          ) : null}
         </div>
       </div>
 
-      <div className="grid gap-2 rounded-md border border-white/10 bg-background/10 p-3">
+      <div className="grid gap-2 border-t border-white/10 pt-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="technical-label text-primary-fixed-dim">
