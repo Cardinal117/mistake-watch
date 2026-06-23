@@ -31,6 +31,7 @@ import {
   getMediaUploadMaxBytes,
   getR2Config,
   getR2PublicUrl,
+  listR2MultipartUploadParts,
   multipartUploadPartSizeBytes,
   multipartUploadThresholdBytes,
   validateR2UploadInput,
@@ -590,10 +591,38 @@ export async function resumeMediaUpload(input: { uploadId: string }) {
     throw new MediaAssetError("Upload session is no longer resumable.", 409);
   }
 
+  const r2Parts = await listR2MultipartUploadParts({
+    multipartUploadId: session.multipart_upload_id!,
+    objectKey: session.object_key,
+  }).catch((error) => {
+    throw new MediaAssetError(
+      error instanceof Error
+        ? `Upload resume could not inspect R2 parts: ${error.message}`
+        : "Upload resume could not inspect R2 parts.",
+      502,
+    );
+  });
+  const completedParts = mergeCompletedParts(
+    normalizeMultipartParts(
+      r2Parts.map((part) => ({
+        etag: part.etag,
+        partNumber: part.partNumber,
+      })),
+      session.part_count ?? 0,
+    ),
+    readCompletedParts(session.completed_parts),
+  );
+  const bytesUploaded = calculateCompletedBytes({
+    completedParts,
+    fileSizeBytes: session.file_size_bytes,
+    partSizeBytes: session.part_size_bytes!,
+  });
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
     .from("media_upload_sessions")
     .update({
+      bytes_uploaded: bytesUploaded,
+      completed_parts: completedParts,
       error_message: null,
       status: "uploading",
     })

@@ -275,6 +275,60 @@ export async function abortR2MultipartUpload(input: {
   }
 }
 
+export async function listR2MultipartUploadParts(input: {
+  multipartUploadId: string;
+  objectKey: string;
+}) {
+  const config = getR2Config();
+  const parts: Array<{
+    etag: string;
+    partNumber: number;
+    size: number | null;
+  }> = [];
+  let partNumberMarker: string | null = null;
+
+  for (let page = 0; page < 20; page += 1) {
+    const queryParams: Array<[string, string]> = [
+      ["uploadId", input.multipartUploadId],
+      ["max-parts", "1000"],
+    ];
+
+    if (partNumberMarker) {
+      queryParams.push(["part-number-marker", partNumberMarker]);
+    }
+
+    const url = signR2Url({
+      config,
+      expiresSeconds: 60,
+      method: "GET",
+      objectKey: input.objectKey,
+      queryParams,
+    });
+    const response = await fetch(url, { method: "GET" });
+    const body = await response.text();
+
+    if (!response.ok) {
+      throw new Error(`R2 multipart parts could not be listed: ${response.status}`);
+    }
+
+    parts.push(...readXmlParts(body));
+
+    if (readXmlValue(body, "IsTruncated") !== "true") {
+      break;
+    }
+
+    partNumberMarker = readXmlValue(body, "NextPartNumberMarker");
+
+    if (!partNumberMarker) {
+      break;
+    }
+  }
+
+  return parts
+    .filter((part) => part.partNumber > 0 && part.etag)
+    .sort((left, right) => left.partNumber - right.partNumber);
+}
+
 export async function deleteR2Object(objectKey: string) {
   const config = getR2Config();
   const url = signR2Url({
@@ -331,7 +385,7 @@ function signR2Url(input: {
   config: R2Config;
   contentType?: string;
   expiresSeconds: number;
-  method: "DELETE" | "HEAD" | "POST" | "PUT";
+  method: "DELETE" | "GET" | "HEAD" | "POST" | "PUT";
   objectKey: string;
   queryParams?: Array<[string, string]>;
 }) {
@@ -456,6 +510,33 @@ function readXmlValue(xml: string, tagName: string) {
   return match?.[1] ?? null;
 }
 
+function readXmlParts(xml: string) {
+  const parts: Array<{
+    etag: string;
+    partNumber: number;
+    size: number | null;
+  }> = [];
+  const partPattern = /<Part>([\s\S]*?)<\/Part>/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = partPattern.exec(xml))) {
+    const block = match[1];
+    const partNumber = Number(readXmlValue(block, "PartNumber"));
+    const rawEtag = readXmlValue(block, "ETag") ?? "";
+    const size = Number(readXmlValue(block, "Size"));
+
+    if (Number.isInteger(partNumber) && partNumber > 0 && rawEtag) {
+      parts.push({
+        etag: unescapeXml(rawEtag),
+        partNumber,
+        size: Number.isFinite(size) ? size : null,
+      });
+    }
+  }
+
+  return parts;
+}
+
 function escapeXml(value: string) {
   return value
     .replace(/&/g, "&amp;")
@@ -463,6 +544,15 @@ function escapeXml(value: string) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
+}
+
+function unescapeXml(value: string) {
+  return value
+    .replace(/&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&gt;/g, ">")
+    .replace(/&lt;/g, "<")
+    .replace(/&amp;/g, "&");
 }
 
 function formatBytes(bytes: number) {
