@@ -99,6 +99,27 @@ export type MultipartUploadPart = {
   partNumber: number;
 };
 
+export type ResumableMediaUploadSession = {
+  bytesUploaded: number;
+  completedParts: MultipartUploadPart[];
+  createdAt: string;
+  errorMessage: string | null;
+  fileName: string;
+  fileSizeBytes: number;
+  id: string;
+  mimeType: string;
+  partCount: number;
+  partSizeBytes: number;
+  progress: number;
+  resumable: boolean;
+  resumableUntil: string | null;
+  status:
+    | "expired"
+    | "failed"
+    | "paused"
+    | "uploading";
+};
+
 export async function createMediaUpload(input: CreateUploadInput) {
   const owner = await requireOwnerSummary();
 
@@ -208,7 +229,7 @@ export async function createMediaUploadPartUrls(input: {
   const session = await getOwnerUploadSession(input.uploadId);
 
   assertMultipartSession(session);
-  assertUploadSessionActive(session);
+  assertMultipartSessionRecoverable(session);
 
   const requestedParts = Array.from(new Set(input.partNumbers))
     .filter((partNumber) => Number.isInteger(partNumber))
@@ -245,7 +266,7 @@ export async function recordMediaUploadParts(input: {
   const session = await getOwnerUploadSession(input.uploadId);
 
   assertMultipartSession(session);
-  assertUploadSessionActive(session);
+  assertMultipartSessionRecoverable(session);
 
   const completedParts = mergeCompletedParts(
     normalizeMultipartParts(input.parts, session.part_count ?? 0),
@@ -288,7 +309,7 @@ export async function completeMediaUpload(input: {
   const owner = await requireOwnerSummary();
   const session = await getOwnerUploadSession(input.uploadId, owner.id);
 
-  assertUploadSessionActive(session);
+  assertUploadSessionActive(session, { allowRecoverableFailed: true });
 
   if (session.upload_mode === "multipart") {
     assertMultipartSession(session);
@@ -512,6 +533,153 @@ export async function abortMediaUpload(input: { uploadId: string }) {
   }
 
   return { ok: true };
+}
+
+export async function failMediaUpload(input: {
+  message: string;
+  uploadId: string;
+}) {
+  const session = await getOwnerUploadSession(input.uploadId);
+
+  if (session.status === "ready" || session.status === "aborted") {
+    throw new MediaAssetError("Upload session is no longer active.", 409);
+  }
+
+  await markUploadFailed(session.id, input.message);
+
+  return {
+    session: toResumableUploadSession({
+      ...session,
+      error_message: input.message.slice(0, 1000),
+      status: "failed",
+    }),
+  };
+}
+
+export async function listResumableMediaUploads() {
+  const owner = await requireOwnerSummary();
+  const admin = createSupabaseAdminClient();
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await admin
+    .from("media_upload_sessions")
+    .select()
+    .eq("owner_user_id", owner.id)
+    .eq("upload_mode", "multipart")
+    .is("media_asset_id", null)
+    .in("status", ["pending", "uploading", "failed", "completing"])
+    .gte("created_at", sevenDaysAgo)
+    .order("updated_at", { ascending: false })
+    .limit(20);
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    sessions: data.map(toResumableUploadSession),
+  };
+}
+
+export async function resumeMediaUpload(input: { uploadId: string }) {
+  const session = await getOwnerUploadSession(input.uploadId);
+
+  assertMultipartSession(session);
+  assertMultipartSessionRecoverable(session);
+
+  if (session.status === "ready" || session.status === "aborted") {
+    throw new MediaAssetError("Upload session is no longer resumable.", 409);
+  }
+
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin
+    .from("media_upload_sessions")
+    .update({
+      error_message: null,
+      status: "uploading",
+    })
+    .eq("id", session.id)
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    session: toResumableUploadSession(data),
+  };
+}
+
+export async function cleanupExpiredMultipartUploads() {
+  const admin = createSupabaseAdminClient();
+  const { data: sessions, error } = await admin
+    .from("media_upload_sessions")
+    .select()
+    .eq("upload_mode", "multipart")
+    .not("multipart_upload_id", "is", null)
+    .is("media_asset_id", null)
+    .in("status", ["pending", "uploading", "failed", "completing"])
+    .order("updated_at", { ascending: true })
+    .limit(100);
+
+  if (error) {
+    throw error;
+  }
+
+  let cleaned = 0;
+  const failures: Array<{ message: string; uploadId: string }> = [];
+
+  const expiredSessions = sessions.filter((session) => {
+    const recoverableUntil = session.resumable_until ?? session.expires_at;
+
+    return new Date(recoverableUntil).getTime() < Date.now();
+  });
+
+  for (const session of expiredSessions.slice(0, 25)) {
+    try {
+      if (session.multipart_upload_id) {
+        await abortR2MultipartUpload({
+          multipartUploadId: session.multipart_upload_id,
+          objectKey: session.object_key,
+        }).catch((error) => {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "R2 multipart upload could not be aborted.";
+
+          if (!message.includes("404")) {
+            throw error;
+          }
+        });
+      }
+
+      const { error: updateError } = await admin
+        .from("media_upload_sessions")
+        .update({
+          error_message: "Expired multipart upload was cleaned up.",
+          status: "expired",
+        })
+        .eq("id", session.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      cleaned += 1;
+    } catch (error) {
+      failures.push({
+        message:
+          error instanceof Error ? error.message : "Multipart cleanup failed.",
+        uploadId: session.id,
+      });
+    }
+  }
+
+  return {
+    cleaned,
+    failures,
+    scanned: sessions.length,
+  };
 }
 
 export async function listReadyMediaAssets() {
@@ -1006,6 +1174,7 @@ async function getOwnerUploadSession(uploadId: string, ownerUserId?: string) {
 
 function assertUploadSessionActive(
   session: Awaited<ReturnType<typeof getOwnerUploadSession>>,
+  options: { allowRecoverableFailed?: boolean } = {},
 ) {
   if (new Date(session.expires_at).getTime() < Date.now()) {
     throw new MediaAssetError("Upload session expired. Start a new upload.", 410);
@@ -1013,10 +1182,27 @@ function assertUploadSessionActive(
 
   if (
     session.status === "aborted" ||
-    session.status === "failed" ||
+    (session.status === "failed" && !options.allowRecoverableFailed) ||
     session.status === "ready"
   ) {
     throw new MediaAssetError("Upload session is no longer active.", 409);
+  }
+}
+
+function assertMultipartSessionRecoverable(
+  session: Awaited<ReturnType<typeof getOwnerUploadSession>>,
+) {
+  const resumableUntil = session.resumable_until ?? session.expires_at;
+
+  if (!resumableUntil || new Date(resumableUntil).getTime() < Date.now()) {
+    throw new MediaAssetError(
+      "Upload recovery window expired. Start a new upload.",
+      410,
+    );
+  }
+
+  if (session.status === "aborted" || session.status === "ready") {
+    throw new MediaAssetError("Upload session is no longer resumable.", 409);
   }
 }
 
@@ -1031,6 +1217,52 @@ function assertMultipartSession(
   ) {
     throw new MediaAssetError("Upload session is not multipart.", 400);
   }
+}
+
+function toResumableUploadSession(
+  session: Tables<"media_upload_sessions">,
+): ResumableMediaUploadSession {
+  const completedParts = readCompletedParts(session.completed_parts);
+  const bytesUploaded =
+    session.bytes_uploaded ||
+    (session.part_size_bytes
+      ? calculateCompletedBytes({
+          completedParts,
+          fileSizeBytes: session.file_size_bytes,
+          partSizeBytes: session.part_size_bytes,
+        })
+      : 0);
+  const resumableUntil = session.resumable_until ?? session.expires_at;
+  const expired =
+    !resumableUntil || new Date(resumableUntil).getTime() < Date.now();
+  const status =
+    expired
+      ? "expired"
+      : session.status === "failed"
+        ? "failed"
+        : session.status === "uploading" || session.status === "completing"
+          ? "uploading"
+          : "paused";
+
+  return {
+    bytesUploaded,
+    completedParts,
+    createdAt: session.created_at,
+    errorMessage: session.error_message,
+    fileName: session.original_filename,
+    fileSizeBytes: session.file_size_bytes,
+    id: session.id,
+    mimeType: session.mime_type,
+    partCount: session.part_count ?? 0,
+    partSizeBytes: session.part_size_bytes ?? 0,
+    progress:
+      session.file_size_bytes > 0
+        ? Math.min(95, (bytesUploaded / session.file_size_bytes) * 95)
+        : 0,
+    resumable: !expired && session.status !== "aborted" && session.status !== "ready",
+    resumableUntil,
+    status,
+  };
 }
 
 async function requireOwnerSummary() {

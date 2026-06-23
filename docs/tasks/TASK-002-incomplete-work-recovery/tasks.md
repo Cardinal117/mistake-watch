@@ -649,6 +649,40 @@ Safe commit point:
 
 - Owner media upload processing is cost-aware without replacing the current R2/CloudConvert architecture.
 
+## TASK-002.8F: Multipart Upload Recovery And Cleanup
+
+Source task: owner reliability follow-up after 3-4 GB multipart upload testing.
+
+Work:
+
+- Treat `media_upload_sessions` as the durable source of truth for recoverable multipart uploads.
+- Keep failed multipart sessions resumable until their `resumable_until` window expires.
+- Add owner-only resumable upload listing in the Watch Media Hub.
+- On resume:
+  - require the owner to reselect the same local file;
+  - validate file name, size, and MIME type when available;
+  - reuse already recorded completed part ETags;
+  - request signed URLs only for missing parts;
+  - continue the same byte-based progress bar from already uploaded bytes.
+- On cancel:
+  - call the existing R2 multipart abort path;
+  - mark the upload session aborted;
+  - remove it from the active recovery UI.
+- Add an app cleanup endpoint that aborts expired incomplete multipart uploads and marks sessions expired.
+- Add a Vercel Cron entry for periodic cleanup while keeping R2 lifecycle cleanup as a backup safety layer.
+- Keep CloudConvert, transcoding decisions, media folders, and playback behavior unchanged.
+
+Review checkpoint:
+
+- Refreshing or losing a large upload no longer means starting from zero when completed parts were already recorded.
+- Owners can see recoverable uploads, resume with the same file, or cancel and clean up.
+- Expired abandoned multipart uploads are explicitly aborted by the app cleanup route.
+- Completed uploads still flow into the existing media asset creation and processing decision pipeline.
+
+Safe commit point:
+
+- Large R2 multipart uploads have a practical owner recovery and cleanup path without replacing the direct-to-R2 architecture.
+
 ## TASK-002.9: Voting and Suggested Next
 
 Source task: TASK-001 later voting direction.

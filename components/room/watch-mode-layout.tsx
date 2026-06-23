@@ -32,6 +32,7 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Radio,
+  RotateCcw,
   Trash2,
   Users,
   X,
@@ -131,6 +132,22 @@ type WatchMediaHubItem = Omit<ReturnType<typeof getQueueItems>[number], "status"
 };
 type WatchMediaHubTab = "discover" | "uploads";
 type UploadedLibraryViewMode = "grid" | "list";
+type ResumableMediaUpload = {
+  bytesUploaded: number;
+  completedParts: MultipartCompletedPart[];
+  createdAt: string;
+  errorMessage: string | null;
+  fileName: string;
+  fileSizeBytes: number;
+  id: string;
+  mimeType: string;
+  partCount: number;
+  partSizeBytes: number;
+  progress: number;
+  resumable: boolean;
+  resumableUntil: string | null;
+  status: "expired" | "failed" | "paused" | "uploading";
+};
 
 export function WatchModeLayout({
   account,
@@ -608,6 +625,9 @@ function WatchMediaHubDiscovery({
   const [uploadedSearchQuery, setUploadedSearchQuery] = useState("");
   const [uploadedViewMode, setUploadedViewMode] =
     useState<UploadedLibraryViewMode>("grid");
+  const [resumableUploads, setResumableUploads] = useState<
+    ResumableMediaUpload[]
+  >([]);
   const [uploadStatus, setUploadStatus] = useState<{
     detail: string;
     progress: number;
@@ -687,6 +707,58 @@ function WatchMediaHubDiscovery({
     setAssets(payload.assets ?? []);
     setFolders(payload.folders ?? []);
   }
+
+  async function refreshResumableUploads() {
+    if (!isOwner) {
+      setResumableUploads([]);
+      return;
+    }
+
+    const response = await fetch("/api/media/uploads/resumable", {
+      cache: "no-store",
+    });
+    const payload = (await response.json()) as {
+      error?: string;
+      sessions?: ResumableMediaUpload[];
+    };
+
+    if (!response.ok) {
+      throw new Error(payload.error ?? "Recoverable uploads could not load.");
+    }
+
+    setResumableUploads(payload.sessions ?? []);
+  }
+
+  useEffect(() => {
+    if (!isOwner) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadResumableUploads() {
+      try {
+        const response = await fetch("/api/media/uploads/resumable", {
+          cache: "no-store",
+        });
+        const payload = (await response.json()) as {
+          sessions?: ResumableMediaUpload[];
+        };
+
+        if (!cancelled && response.ok) {
+          setResumableUploads(payload.sessions ?? []);
+        }
+      } catch {
+        // Recovery rows are helpful, but should not block the media hub.
+      }
+    }
+
+    void loadResumableUploads();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOwner]);
 
   async function createFolder() {
     const name = newFolderName.trim();
@@ -796,6 +868,15 @@ function WatchMediaHubDiscovery({
               partCount: createPayload.partCount ?? 0,
               partSizeBytes: createPayload.partSizeBytes ?? 0,
               uploadId: createPayload.uploadId,
+            }).catch(async (error) => {
+              await markUploadSessionFailed(
+                createPayload.uploadId!,
+                error instanceof Error
+                  ? error.message
+                  : "Multipart upload failed.",
+              ).catch(() => undefined);
+              await refreshResumableUploads().catch(() => undefined);
+              throw error;
             })
           : await uploadSingleFileToR2({
               file,
@@ -843,6 +924,7 @@ function WatchMediaHubDiscovery({
 
       const completedAsset = completePayload.asset!;
       setAssets((current) => [completedAsset, ...current]);
+      await refreshResumableUploads().catch(() => undefined);
       if (
         completedAsset.status === "ready" ||
         completedAsset.processingStatus === "not_required"
@@ -908,7 +990,191 @@ function WatchMediaHubDiscovery({
         progress: 0,
         tone: "error",
       });
+      await refreshResumableUploads().catch(() => undefined);
     }
+  }
+
+  async function resumeUpload(session: ResumableMediaUpload) {
+    if (!session.resumable) {
+      setUploadStatus({
+        detail: "Upload recovery window expired. Cancel it and upload again.",
+        progress: session.progress,
+        tone: "error",
+      });
+      return;
+    }
+
+    try {
+      const file = await requestUploadFileSelection(session);
+
+      validateResumeFile(session, file);
+
+      const [clientInspection, durationSeconds] = await Promise.all([
+        inspectUploadFile(file),
+        readUploadDuration(file),
+      ]);
+      const retryResponse = await fetch(`/api/media/uploads/${session.id}/retry`, {
+        method: "POST",
+      });
+      const retryPayload = (await retryResponse.json()) as {
+        error?: string;
+        session?: ResumableMediaUpload;
+      };
+
+      if (!retryResponse.ok || !retryPayload.session) {
+        throw new Error(retryPayload.error ?? "Upload could not be resumed.");
+      }
+
+      const resumedSession = retryPayload.session;
+      const completedParts = await uploadMultipartFileToR2({
+        existingParts: resumedSession.completedParts,
+        file,
+        onProgress: (progress, detail) => {
+          setUploadStatus({
+            detail,
+            progress,
+            tone: "info",
+          });
+        },
+        partCount: resumedSession.partCount,
+        partSizeBytes: resumedSession.partSizeBytes,
+        uploadId: resumedSession.id,
+      }).catch(async (error) => {
+        await markUploadSessionFailed(
+          resumedSession.id,
+          error instanceof Error ? error.message : "Multipart upload failed.",
+        ).catch(() => undefined);
+        await refreshResumableUploads().catch(() => undefined);
+        throw error;
+      });
+
+      setUploadStatus({
+        detail: "Finalizing resumed multipart upload",
+        progress: 96,
+        tone: "info",
+      });
+
+      const completeResponse = await fetch(
+        `/api/media/uploads/${resumedSession.id}/complete`,
+        {
+          body: JSON.stringify({
+            clientInspection,
+            durationSeconds,
+            folderId: uploadFolderId || null,
+            multipartParts: completedParts,
+            title: deriveUploadTitle(file.name),
+          }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        },
+      );
+      const completePayload = (await completeResponse.json()) as {
+        asset?: MediaLibraryAsset;
+        error?: string;
+      };
+
+      if (!completeResponse.ok || !completePayload.asset) {
+        throw new Error(completePayload.error ?? "Upload could not be completed.");
+      }
+
+      const completedAsset = completePayload.asset;
+      setAssets((current) => [completedAsset, ...current]);
+      await refreshResumableUploads().catch(() => undefined);
+
+      if (
+        completedAsset.status === "ready" ||
+        completedAsset.processingStatus === "not_required"
+      ) {
+        setUploadStatus({
+          detail: `${completedAsset.title} is ready without CloudConvert conversion.`,
+          progress: 100,
+          tone: "success",
+        });
+        if (completedAsset.posterStatus !== "ready") {
+          void captureAndUploadPoster(completedAsset, (asset) => {
+            setAssets((current) =>
+              current.map((item) => (item.id === asset.id ? asset : item)),
+            );
+          });
+        }
+        return;
+      }
+
+      if (
+        completedAsset.processingStatus === "approval_required" ||
+        completedAsset.processingRequiresApproval
+      ) {
+        setUploadStatus({
+          detail: `${completedAsset.title} needs owner approval before CloudConvert runs.`,
+          progress: 100,
+          tone: "info",
+        });
+        return;
+      }
+
+      setUploadStatus({
+        detail: `${completedAsset.title} is queued for CloudConvert processing.`,
+        progress: 97,
+        tone: "info",
+      });
+      const readyAsset = await pollMediaProcessing(completedAsset.id, (status) => {
+        setUploadStatus({
+          detail: status.detail,
+          progress: status.progress,
+          tone: status.tone,
+        });
+      });
+      setAssets((current) =>
+        current.map((item) => (item.id === readyAsset.id ? readyAsset : item)),
+      );
+      setUploadStatus({
+        detail: `${readyAsset.title} is ready in the media library.`,
+        progress: 100,
+        tone: "success",
+      });
+    } catch (error) {
+      setUploadStatus({
+        detail:
+          error instanceof Error ? error.message : "Upload could not be resumed.",
+        progress: session.progress,
+        tone: "error",
+      });
+    }
+  }
+
+  async function cancelUpload(session: ResumableMediaUpload) {
+    const confirmed = window.confirm(
+      `Cancel "${session.fileName}" and clean up the incomplete R2 upload?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const response = await fetch(`/api/media/uploads/${session.id}/abort`, {
+      method: "POST",
+    });
+    const payload = (await response.json().catch(() => ({}))) as {
+      error?: string;
+    };
+
+    if (!response.ok) {
+      setUploadStatus({
+        detail: payload.error ?? "Upload could not be cancelled.",
+        progress: session.progress,
+        tone: "error",
+      });
+      return;
+    }
+
+    setResumableUploads((current) =>
+      current.filter((item) => item.id !== session.id),
+    );
+    setUploadStatus({
+      detail: `${session.fileName} was cancelled and cleanup was requested.`,
+      progress: 0,
+      tone: "success",
+    });
   }
 
   function handleFiles(files: FileList | File[]) {
@@ -1149,6 +1415,13 @@ function WatchMediaHubDiscovery({
               </p>
             </div>
           )}
+          {isOwner && resumableUploads.length > 0 ? (
+            <ResumableUploadList
+              onCancelUpload={(session) => void cancelUpload(session)}
+              onResumeUpload={(session) => void resumeUpload(session)}
+              sessions={resumableUploads}
+            />
+          ) : null}
         </>
       ) : null}
         {uploadStatus ? (
@@ -1304,6 +1577,105 @@ type WatchMediaHubSectionConfig =
       label: string;
       note: string;
     };
+
+function ResumableUploadList({
+  onCancelUpload,
+  onResumeUpload,
+  sessions,
+}: {
+  onCancelUpload(session: ResumableMediaUpload): void;
+  onResumeUpload(session: ResumableMediaUpload): void;
+  sessions: ResumableMediaUpload[];
+}) {
+  return (
+    <section className="grid gap-2 rounded-md border border-secondary-fixed-dim/25 bg-secondary-fixed-dim/8 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <p className="technical-label text-secondary-fixed-dim">
+            Recoverable uploads
+          </p>
+          <p className="mt-1 text-label-sm text-on-surface-variant">
+            Reselect the same local file to resume only the missing R2 parts.
+          </p>
+        </div>
+        <span className="rounded-sm border border-white/10 bg-background/20 px-2 py-1 text-label-sm text-on-surface-variant">
+          {sessions.length} active
+        </span>
+      </div>
+      <div className="grid gap-2">
+        {sessions.map((session) => (
+          <article
+            className="grid gap-2 rounded-sm border border-white/10 bg-background/18 p-2"
+            key={session.id}
+          >
+            <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+              <div className="min-w-0">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <span className="truncate text-label-sm font-semibold text-on-surface">
+                    {session.fileName}
+                  </span>
+                  <span
+                    className={cx(
+                      "rounded-sm border px-1.5 py-0.5 text-[10px] uppercase tracking-[0.08em]",
+                      session.status === "failed"
+                        ? "border-error/30 text-error"
+                        : session.status === "expired"
+                          ? "border-white/10 text-on-surface-variant"
+                          : "border-secondary-fixed-dim/30 text-secondary-fixed-dim",
+                    )}
+                  >
+                    {session.status === "paused"
+                      ? "Paused"
+                      : session.status === "uploading"
+                        ? "Recoverable"
+                        : session.status}
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] text-on-surface-variant">
+                  {formatBytes(session.bytesUploaded)} of{" "}
+                  {formatBytes(session.fileSizeBytes)} uploaded
+                  {session.resumableUntil
+                    ? ` / resumable until ${formatDateTime(session.resumableUntil)}`
+                    : ""}
+                </p>
+                {session.errorMessage ? (
+                  <p className="mt-1 text-[11px] text-error">
+                    {session.errorMessage}
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  className="inline-flex h-8 items-center gap-2 rounded-sm border border-primary-fixed-dim/35 bg-primary-fixed-dim/10 px-2 text-label-sm font-semibold text-primary-fixed-dim transition hover:bg-primary-fixed-dim/15 disabled:cursor-not-allowed disabled:opacity-45"
+                  disabled={!session.resumable}
+                  onClick={() => onResumeUpload(session)}
+                  type="button"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+                  Resume
+                </button>
+                <button
+                  className="inline-flex h-8 items-center gap-2 rounded-sm border border-error/30 bg-error/8 px-2 text-label-sm font-semibold text-error transition hover:bg-error/12"
+                  onClick={() => onCancelUpload(session)}
+                  type="button"
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden />
+                  Cancel
+                </button>
+              </div>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full bg-secondary-fixed-dim transition-[width]"
+                style={{ width: `${Math.max(0, Math.min(100, session.progress))}%` }}
+              />
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 function WatchMediaHubSection({
   canAddQueue,
@@ -2794,12 +3166,14 @@ function uploadSingleFileToR2({
 }
 
 async function uploadMultipartFileToR2({
+  existingParts = [],
   file,
   onProgress,
   partCount,
   partSizeBytes,
   uploadId,
 }: {
+  existingParts?: MultipartCompletedPart[];
   file: File;
   onProgress(progress: number, detail: string): void;
   partCount: number;
@@ -2810,10 +3184,19 @@ async function uploadMultipartFileToR2({
     throw new Error("Multipart upload metadata is missing.");
   }
 
-  const completedParts: MultipartCompletedPart[] = [];
+  const completedParts: MultipartCompletedPart[] = [...existingParts];
+  const completedPartNumbers = new Set(
+    existingParts.map((part) => part.partNumber),
+  );
   const completedBytesByPart = new Map<number, number>();
   const inFlightBytesByPart = new Map<number, number>();
   let nextPartNumber = 1;
+
+  for (const part of existingParts) {
+    const start = (part.partNumber - 1) * partSizeBytes;
+    const end = Math.min(file.size, start + partSizeBytes);
+    completedBytesByPart.set(part.partNumber, Math.max(0, end - start));
+  }
 
   function emitProgress(detailPrefix = "Uploading parts") {
     const completedBytes = Array.from(completedBytesByPart.values()).reduce(
@@ -2839,6 +3222,12 @@ async function uploadMultipartFileToR2({
     while (nextPartNumber <= partCount) {
       const partNumber = nextPartNumber;
       nextPartNumber += 1;
+
+      if (completedPartNumbers.has(partNumber)) {
+        emitProgress(`Skipping completed part ${partNumber}/${partCount}`);
+        continue;
+      }
+
       const start = (partNumber - 1) * partSizeBytes;
       const end = Math.min(file.size, start + partSizeBytes);
       const partSize = end - start;
@@ -2857,12 +3246,17 @@ async function uploadMultipartFileToR2({
       inFlightBytesByPart.delete(partNumber);
       completedBytesByPart.set(partNumber, partSize);
       completedParts.push(part);
+      completedPartNumbers.add(partNumber);
       emitProgress(`Uploaded part ${partNumber}/${partCount}`);
       await recordCompletedMultipartParts(uploadId, [part]);
     }
   }
 
-  onProgress(0, `Preparing multipart upload for ${file.name}`);
+  emitProgress(
+    existingParts.length > 0
+      ? `Resuming multipart upload for ${file.name}`
+      : `Preparing multipart upload for ${file.name}`,
+  );
   await Promise.all(
     Array.from({ length: Math.min(3, partCount) }, () => uploadNextPart()),
   );
@@ -2993,6 +3387,75 @@ async function recordCompletedMultipartParts(
     };
 
     throw new Error(payload.error ?? "Upload progress could not be recorded.");
+  }
+}
+
+async function markUploadSessionFailed(uploadId: string, message: string) {
+  await fetch(`/api/media/uploads/${uploadId}/fail`, {
+    body: JSON.stringify({ message }),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+}
+
+function requestUploadFileSelection(session: ResumableMediaUpload) {
+  return new Promise<File>((resolve, reject) => {
+    const input = document.createElement("input");
+    let settled = false;
+
+    function cleanup() {
+      window.removeEventListener("focus", handleWindowFocus);
+      input.remove();
+    }
+
+    function finish(file: File | null) {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      cleanup();
+
+      if (file) {
+        resolve(file);
+        return;
+      }
+
+      reject(new Error("No file was selected."));
+    }
+
+    function handleWindowFocus() {
+      window.setTimeout(() => {
+        if (!input.files?.length) {
+          finish(null);
+        }
+      }, 250);
+    }
+
+    input.accept = session.mimeType
+      ? `video/*,.mp4,.mkv,.mov,.webm,.avi,.m4v,${session.mimeType}`
+      : "video/*,.mp4,.mkv,.mov,.webm,.avi,.m4v";
+    input.type = "file";
+    input.onchange = () => {
+      finish(input.files?.[0] ?? null);
+    };
+    input.addEventListener("cancel", () => finish(null));
+    window.addEventListener("focus", handleWindowFocus);
+    input.click();
+  });
+}
+
+function validateResumeFile(session: ResumableMediaUpload, file: File) {
+  if (file.name !== session.fileName) {
+    throw new Error("Select the same file name to resume this upload.");
+  }
+
+  if (file.size !== session.fileSizeBytes) {
+    throw new Error("Selected file size does not match the resumable upload.");
+  }
+
+  if (session.mimeType && file.type && file.type !== session.mimeType) {
+    throw new Error("Selected file type does not match the resumable upload.");
   }
 }
 
@@ -3157,6 +3620,21 @@ function formatCreditEstimate(credits: number | null | undefined) {
   }
 
   return `~${credits} CloudConvert credit${credits === 1 ? "" : "s"}`;
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "unknown";
+  }
+
+  return date.toLocaleString(undefined, {
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "short",
+  });
 }
 
 function parseDurationSeconds(duration: string) {

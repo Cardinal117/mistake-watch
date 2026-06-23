@@ -221,6 +221,30 @@
       </section>
 
       <section>
+        <h2>TASK-002.8F Multipart Recovery</h2>
+        <div class="grid cols-2" style="margin-top: 14px">
+          <article class="card">
+            <h3>Recoverable Uploads</h3>
+            <ul class="muted">
+              <li>Failed multipart sessions now stay recoverable until their <code>resumable_until</code> window expires.</li>
+              <li>The Watch Media Hub shows owner-only recoverable upload rows with filename, uploaded bytes, error state, Resume, Cancel, and progress.</li>
+              <li>Resume requires reselecting the same local file, validates name/size/type, and uploads only missing R2 parts.</li>
+              <li>Completed part ETags remain stored in <code>media_upload_sessions.completed_parts</code> and are reused during completion.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Cleanup Path</h3>
+            <ul class="muted">
+              <li>Cancel reuses the R2 multipart abort path and marks the session <code>aborted</code>.</li>
+              <li>Expired cleanup route aborts stale incomplete multipart uploads and marks sessions <code>expired</code>.</li>
+              <li><code>vercel.json</code> schedules hourly cleanup through Vercel Cron.</li>
+              <li>Production cleanup requires <code>CRON_SECRET</code> authorization; R2 lifecycle cleanup remains the backup safety layer.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section>
         <h2>Files To Review</h2>
         <div class="grid cols-2" style="margin-top: 14px">
           <article class="card">
@@ -247,6 +271,11 @@
               <li><code>app/api/media/uploads/[uploadId]/complete/route.ts</code></li>
               <li><code>app/api/media/uploads/[uploadId]/parts/route.ts</code></li>
               <li><code>app/api/media/uploads/[uploadId]/abort/route.ts</code></li>
+              <li><code>app/api/media/uploads/[uploadId]/fail/route.ts</code></li>
+              <li><code>app/api/media/uploads/[uploadId]/retry/route.ts</code></li>
+              <li><code>app/api/media/uploads/resumable/route.ts</code></li>
+              <li><code>app/api/media/uploads/cleanup/route.ts</code></li>
+              <li><code>vercel.json</code></li>
             </ul>
           </article>
           <article class="card">
@@ -257,6 +286,7 @@
               <li><code>components/room/queue-panel.tsx</code></li>
               <li><code>lib/supabase/database.types.ts</code></li>
               <li><code>tests/media/processing-decision.test.mjs</code></li>
+              <li><code>vercel.json</code></li>
               <li><code>docs/tasks/TASK-002-incomplete-work-recovery/review-notes.md</code></li>
               <li><code>docs/tasks/TASK-002-incomplete-work-recovery/tasks.md</code></li>
               <li><code>docs/tasks/TASK-002-incomplete-work-recovery/implementation-report.html</code></li>
@@ -279,6 +309,7 @@
           <div class="check"><span class="dot"></span><p>TASK-002.8D adds multipart upload support, byte-based progress, part retries, and server-side multipart completion for large MP4 uploads.</p></div>
           <div class="check"><span class="dot"></span><p>CloudConvert processing status, webhook handling, owner diagnostics, and graceful failed/processing asset states are implemented.</p></div>
           <div class="check"><span class="dot"></span><p>TASK-002.8E adds credit-aware processing: safe MP4 files skip CloudConvert, while expensive conversions wait for owner approval.</p></div>
+          <div class="check"><span class="dot"></span><p>TASK-002.8F adds recoverable multipart upload rows, same-file resume, missing-part upload, cancel/abort, and scheduled expired-session cleanup.</p></div>
           <div class="check"><span class="dot warn"></span><p>Manual owner browser QA remains pending for direct-ready upload, approval-required conversion, and account efficiency stats.</p></div>
         </div>
       </section>
@@ -293,11 +324,11 @@
             <tr><td><code>npm run typecheck</code></td><td>Passed</td><td>Ran after API, service, queue, and watch hub changes.</td></tr>
             <tr><td><code>npm run lint</code></td><td>Passed</td><td>ESLint completed with no reported issues.</td></tr>
             <tr><td><code>npm run build</code></td><td>Passed</td><td>Next build included all new media routes.</td></tr>
-            <tr><td><code>node --test tests\media\processing-decision.test.mjs</code></td><td>Passed</td><td>Covers direct-ready MP4, long HEVC approval, short unsupported conversion, large unknown approval, and credit estimation.</td></tr>
+            <tr><td><code>node --test tests\media\*.test.mjs</code></td><td>Passed</td><td>Covers CloudConvert payload shape plus direct-ready MP4, long HEVC approval, short unsupported conversion, large unknown approval, and credit estimation.</td></tr>
             <tr><td>Supabase migration</td><td>Passed</td><td>Remote migration <code>cloudconvert_credit_efficiency</code> applied successfully to project <code>qzmivwhzotuleivzphhm</code>.</td></tr>
             <tr><td>Supabase advisors</td><td>Passed with existing notes</td><td>Remaining security warning is leaked-password protection setting; performance entries are unused-index INFO notices, including fresh media processing indexes.</td></tr>
             <tr><td>RLS sanity check</td><td>Passed</td><td>RLS enabled on media tables including <code>media_processing_events</code>; owner-only event SELECT policy present.</td></tr>
-            <tr><td><code>npm run dev:check</code></td><td>Blocked locally</td><td>Local Next and SpacetimeDB were not running in this session; env checks passed.</td></tr>
+            <tr><td><code>npm run dev:check</code></td><td>Blocked locally</td><td>Local Next and SpacetimeDB were not running; attempted background startup hit a local PowerShell <code>Start-Process</code> PATH duplication error before services started. Env checks passed.</td></tr>
           </tbody>
         </table>
       </section>
@@ -305,8 +336,8 @@
       <section>
         <h2>Deferred Work</h2>
         <div class="grid cols-3" style="margin-top: 14px">
-          <article class="card"><h3>Not in this task</h3><p class="muted">Cloudflare Stream, adaptive bitrate playback, cross-refresh resumable uploads, and background waveform jobs.</p></article>
-          <article class="card"><h3>Later media polish</h3><p class="muted">Watch history/resume, advanced episode parsing, bulk delete, friend-only visibility, source-match management UI, and scheduled R2 cleanup for failed/expired uploads.</p></article>
+          <article class="card"><h3>Not in this task</h3><p class="muted">Cloudflare Stream, adaptive bitrate playback, resumable uploads without file reselect, and background waveform jobs.</p></article>
+          <article class="card"><h3>Later media polish</h3><p class="muted">Watch history/resume, advanced episode parsing, bulk delete, friend-only visibility, source-match management UI, and richer upload recovery analytics.</p></article>
           <article class="card"><h3>Next workflow</h3><p class="muted">Run manual browser QA, then use the QA release gate before commit preparation.</p></article>
         </div>
       </section>

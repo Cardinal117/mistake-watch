@@ -862,6 +862,32 @@ Manual review pending:
 - Owner QA should approve a waiting conversion and confirm it enters normal CloudConvert status polling.
 - Owner QA should confirm Account CloudConvert efficiency stats update after direct and approval-required uploads.
 
+## TASK-002.8F Multipart Upload Recovery And Cleanup Notes
+
+- Added owner-only resumable multipart upload listing through `/api/media/uploads/resumable`.
+- Added multipart retry support through `/api/media/uploads/[uploadId]/retry`; failed multipart sessions can return to `uploading` while still inside their `resumable_until` window.
+- Added `/api/media/uploads/[uploadId]/fail` so browser part-upload failures preserve completed part metadata instead of forcing an abort.
+- Updated part URL creation, part progress recording, and multipart completion to allow recoverable failed sessions where appropriate.
+- Added `/api/media/uploads/cleanup` for expired multipart cleanup. In production it requires `Authorization: Bearer $CRON_SECRET`; locally it can be called without the secret for development checks.
+- Added `vercel.json` with an hourly cron entry for the cleanup route.
+- Watch Media Hub now shows recoverable uploads for owners, including filename, bytes uploaded, resumable-until time, error message, Resume, Cancel, and a progress bar.
+- Resume asks the owner to reselect the same local file, validates name/size/type, skips completed parts, and uploads only missing parts while keeping one progress bar.
+- Cancel reuses the existing abort route so R2 incomplete multipart uploads are explicitly aborted and the session is marked aborted.
+
+Verification:
+
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `node --test tests\media\*.test.mjs` passed.
+- `npm run build` passed and included the new upload recovery routes.
+- `npm run dev:check` reported 14 pass, 2 warn, 4 fail because local Next.js `127.0.0.1:5371` and SpacetimeDB `127.0.0.1:5372` were not running. A background startup attempt failed before service launch with a local PowerShell `Start-Process` PATH duplication error.
+
+Manual review pending:
+
+- Start a large multipart upload, interrupt it, refresh, reselect the same file, and confirm it resumes from completed bytes instead of zero.
+- Cancel a recoverable upload and confirm it disappears from the Watch Media Hub.
+- Confirm `CRON_SECRET` exists in Vercel before relying on production cron cleanup.
+
 ## TASK-002.1 Implementation Notes
 
 - Listen queue drawer now has persisted Compact, Standard, and Tall height controls.
