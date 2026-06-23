@@ -148,6 +148,11 @@ type ResumableMediaUpload = {
   resumableUntil: string | null;
   status: "expired" | "failed" | "paused" | "uploading";
 };
+type RecoverableUploadProgress = {
+  detail: string;
+  progress: number;
+  tone: "error" | "info" | "success";
+};
 
 export function WatchModeLayout({
   account,
@@ -628,6 +633,9 @@ function WatchMediaHubDiscovery({
   const [resumableUploads, setResumableUploads] = useState<
     ResumableMediaUpload[]
   >([]);
+  const [recoverableProgress, setRecoverableProgress] = useState<
+    Record<string, RecoverableUploadProgress>
+  >({});
   const [uploadStatus, setUploadStatus] = useState<{
     detail: string;
     progress: number;
@@ -996,15 +1004,26 @@ function WatchMediaHubDiscovery({
 
   async function resumeUpload(session: ResumableMediaUpload) {
     if (!session.resumable) {
-      setUploadStatus({
-        detail: "Upload recovery window expired. Cancel it and upload again.",
-        progress: session.progress,
-        tone: "error",
-      });
+      setRecoverableProgress((current) => ({
+        ...current,
+        [session.id]: {
+          detail: "Upload recovery window expired. Cancel it and upload again.",
+          progress: session.progress,
+          tone: "error",
+        },
+      }));
       return;
     }
 
     try {
+      setRecoverableProgress((current) => ({
+        ...current,
+        [session.id]: {
+          detail: "Choose the same local file to resume.",
+          progress: session.progress,
+          tone: "info",
+        },
+      }));
       const file = await requestUploadFileSelection(session);
 
       validateResumeFile(session, file);
@@ -1026,15 +1045,26 @@ function WatchMediaHubDiscovery({
       }
 
       const resumedSession = retryPayload.session;
+      setRecoverableProgress((current) => ({
+        ...current,
+        [resumedSession.id]: {
+          detail: `Resuming ${resumedSession.fileName}`,
+          progress: resumedSession.progress,
+          tone: "info",
+        },
+      }));
       const completedParts = await uploadMultipartFileToR2({
         existingParts: resumedSession.completedParts,
         file,
         onProgress: (progress, detail) => {
-          setUploadStatus({
-            detail,
-            progress,
-            tone: "info",
-          });
+          setRecoverableProgress((current) => ({
+            ...current,
+            [resumedSession.id]: {
+              detail,
+              progress,
+              tone: "info",
+            },
+          }));
         },
         partCount: resumedSession.partCount,
         partSizeBytes: resumedSession.partSizeBytes,
@@ -1048,11 +1078,14 @@ function WatchMediaHubDiscovery({
         throw error;
       });
 
-      setUploadStatus({
-        detail: "Finalizing resumed multipart upload",
-        progress: 96,
-        tone: "info",
-      });
+      setRecoverableProgress((current) => ({
+        ...current,
+        [resumedSession.id]: {
+          detail: "Finalizing resumed multipart upload",
+          progress: 96,
+          tone: "info",
+        },
+      }));
 
       const completeResponse = await fetch(
         `/api/media/uploads/${resumedSession.id}/complete`,
@@ -1085,11 +1118,21 @@ function WatchMediaHubDiscovery({
         completedAsset.status === "ready" ||
         completedAsset.processingStatus === "not_required"
       ) {
-        setUploadStatus({
-          detail: `${completedAsset.title} is ready without CloudConvert conversion.`,
-          progress: 100,
-          tone: "success",
-        });
+        setRecoverableProgress((current) => ({
+          ...current,
+          [resumedSession.id]: {
+            detail: `${completedAsset.title} is ready without CloudConvert conversion.`,
+            progress: 100,
+            tone: "success",
+          },
+        }));
+        window.setTimeout(() => {
+          setRecoverableProgress((current) => {
+            const next = { ...current };
+            delete next[resumedSession.id];
+            return next;
+          });
+        }, 1600);
         if (completedAsset.posterStatus !== "ready") {
           void captureAndUploadPoster(completedAsset, (asset) => {
             setAssets((current) =>
@@ -1104,41 +1147,66 @@ function WatchMediaHubDiscovery({
         completedAsset.processingStatus === "approval_required" ||
         completedAsset.processingRequiresApproval
       ) {
-        setUploadStatus({
-          detail: `${completedAsset.title} needs owner approval before CloudConvert runs.`,
-          progress: 100,
-          tone: "info",
-        });
+        setRecoverableProgress((current) => ({
+          ...current,
+          [resumedSession.id]: {
+            detail: `${completedAsset.title} needs owner approval before CloudConvert runs.`,
+            progress: 100,
+            tone: "info",
+          },
+        }));
+        window.setTimeout(() => {
+          setRecoverableProgress((current) => {
+            const next = { ...current };
+            delete next[resumedSession.id];
+            return next;
+          });
+        }, 1600);
         return;
       }
 
-      setUploadStatus({
-        detail: `${completedAsset.title} is queued for CloudConvert processing.`,
-        progress: 97,
-        tone: "info",
-      });
+      setRecoverableProgress((current) => ({
+        ...current,
+        [resumedSession.id]: {
+          detail: `${completedAsset.title} is queued for CloudConvert processing.`,
+          progress: 97,
+          tone: "info",
+        },
+      }));
       const readyAsset = await pollMediaProcessing(completedAsset.id, (status) => {
-        setUploadStatus({
-          detail: status.detail,
-          progress: status.progress,
-          tone: status.tone,
-        });
+        setRecoverableProgress((current) => ({
+          ...current,
+          [resumedSession.id]: status,
+        }));
       });
       setAssets((current) =>
         current.map((item) => (item.id === readyAsset.id ? readyAsset : item)),
       );
-      setUploadStatus({
-        detail: `${readyAsset.title} is ready in the media library.`,
-        progress: 100,
-        tone: "success",
-      });
+      setRecoverableProgress((current) => ({
+        ...current,
+        [resumedSession.id]: {
+          detail: `${readyAsset.title} is ready in the media library.`,
+          progress: 100,
+          tone: "success",
+        },
+      }));
+      window.setTimeout(() => {
+        setRecoverableProgress((current) => {
+          const next = { ...current };
+          delete next[resumedSession.id];
+          return next;
+        });
+      }, 1600);
     } catch (error) {
-      setUploadStatus({
-        detail:
-          error instanceof Error ? error.message : "Upload could not be resumed.",
-        progress: session.progress,
-        tone: "error",
-      });
+      setRecoverableProgress((current) => ({
+        ...current,
+        [session.id]: {
+          detail:
+            error instanceof Error ? error.message : "Upload could not be resumed.",
+          progress: current[session.id]?.progress ?? session.progress,
+          tone: "error",
+        },
+      }));
     }
   }
 
@@ -1170,6 +1238,11 @@ function WatchMediaHubDiscovery({
     setResumableUploads((current) =>
       current.filter((item) => item.id !== session.id),
     );
+    setRecoverableProgress((current) => {
+      const next = { ...current };
+      delete next[session.id];
+      return next;
+    });
     setUploadStatus({
       detail: `${session.fileName} was cancelled and cleanup was requested.`,
       progress: 0,
@@ -1419,6 +1492,7 @@ function WatchMediaHubDiscovery({
             <ResumableUploadList
               onCancelUpload={(session) => void cancelUpload(session)}
               onResumeUpload={(session) => void resumeUpload(session)}
+              progressByUploadId={recoverableProgress}
               sessions={resumableUploads}
             />
           ) : null}
@@ -1581,10 +1655,12 @@ type WatchMediaHubSectionConfig =
 function ResumableUploadList({
   onCancelUpload,
   onResumeUpload,
+  progressByUploadId,
   sessions,
 }: {
   onCancelUpload(session: ResumableMediaUpload): void;
   onResumeUpload(session: ResumableMediaUpload): void;
+  progressByUploadId: Record<string, RecoverableUploadProgress>;
   sessions: ResumableMediaUpload[];
 }) {
   return (
@@ -1603,11 +1679,33 @@ function ResumableUploadList({
         </span>
       </div>
       <div className="grid gap-2">
-        {sessions.map((session) => (
-          <article
-            className="grid gap-2 rounded-sm border border-white/10 bg-background/18 p-2"
-            key={session.id}
-          >
+        {sessions.map((session) => {
+          const activeProgress = progressByUploadId[session.id];
+          const displayProgress = activeProgress?.progress ?? session.progress;
+          const displayBytes =
+            activeProgress && session.fileSizeBytes > 0
+              ? Math.min(
+                  session.fileSizeBytes,
+                  Math.round((displayProgress / 95) * session.fileSizeBytes),
+                )
+              : session.bytesUploaded;
+          const statusLabel = activeProgress
+            ? activeProgress.tone === "error"
+              ? "Attention"
+              : activeProgress.progress >= 96
+                ? "Finalizing"
+                : "Resuming"
+            : session.status === "paused"
+              ? "Paused"
+              : session.status === "uploading"
+                ? "Recoverable"
+                : session.status;
+
+          return (
+            <article
+              className="grid gap-2 rounded-sm border border-white/10 bg-background/18 p-2"
+              key={session.id}
+            >
             <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
               <div className="min-w-0">
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -1624,20 +1722,30 @@ function ResumableUploadList({
                           : "border-secondary-fixed-dim/30 text-secondary-fixed-dim",
                     )}
                   >
-                    {session.status === "paused"
-                      ? "Paused"
-                      : session.status === "uploading"
-                        ? "Recoverable"
-                        : session.status}
+                    {statusLabel}
                   </span>
                 </div>
                 <p className="mt-1 text-[11px] text-on-surface-variant">
-                  {formatBytes(session.bytesUploaded)} of{" "}
+                  {formatBytes(displayBytes)} of{" "}
                   {formatBytes(session.fileSizeBytes)} uploaded
                   {session.resumableUntil
                     ? ` / resumable until ${formatDateTime(session.resumableUntil)}`
                     : ""}
                 </p>
+                {activeProgress ? (
+                  <p
+                    className={cx(
+                      "mt-1 text-[11px]",
+                      activeProgress.tone === "error"
+                        ? "text-error"
+                        : activeProgress.tone === "success"
+                          ? "text-primary-fixed-dim"
+                          : "text-secondary-fixed-dim",
+                    )}
+                  >
+                    {activeProgress.detail}
+                  </p>
+                ) : null}
                 {session.errorMessage ? (
                   <p className="mt-1 text-[11px] text-error">
                     {session.errorMessage}
@@ -1647,7 +1755,7 @@ function ResumableUploadList({
               <div className="flex items-center gap-2">
                 <button
                   className="inline-flex h-8 items-center gap-2 rounded-sm border border-primary-fixed-dim/35 bg-primary-fixed-dim/10 px-2 text-label-sm font-semibold text-primary-fixed-dim transition hover:bg-primary-fixed-dim/15 disabled:cursor-not-allowed disabled:opacity-45"
-                  disabled={!session.resumable}
+                  disabled={!session.resumable || Boolean(activeProgress)}
                   onClick={() => onResumeUpload(session)}
                   type="button"
                 >
@@ -1666,12 +1774,20 @@ function ResumableUploadList({
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
               <div
-                className="h-full bg-secondary-fixed-dim transition-[width]"
-                style={{ width: `${Math.max(0, Math.min(100, session.progress))}%` }}
+                className={cx(
+                  "h-full transition-[width]",
+                  activeProgress?.tone === "error"
+                    ? "bg-error"
+                    : activeProgress?.tone === "success"
+                      ? "bg-primary-fixed-dim"
+                      : "bg-secondary-fixed-dim",
+                )}
+                style={{ width: `${Math.max(0, Math.min(100, displayProgress))}%` }}
               />
             </div>
           </article>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
