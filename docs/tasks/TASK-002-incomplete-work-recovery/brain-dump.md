@@ -92,3 +92,42 @@ Important product notes:
 - This is a friends-and-family project, and the user intends to use the `YOU DIED` style treatment for the easter egg.
 - Keep the achievement/easter egg system asset-driven so visuals and audio can be replaced later without rewriting the system.
 - Guest users can receive local-only fun effects before accounts exist, but durable achievement history belongs to signed-in profiles.
+
+## Added Listen Room Reference Refinement Direction
+
+The user approved a reference-style listen room header/player layout and wants the current listen room corrected toward that exact feel while preserving Mistake Watch behavior.
+
+User-confirmed requirements:
+
+- Remove right member sidebar.
+- Move members to a top avatar row above the room name, flowing left to right.
+- Member avatars show names on hover/focus tooltip.
+- Move permissions into a settings-menu pop-out/window.
+- Move copy/share/save/leave into the settings menu.
+- Make Leave Room pink/destructive.
+- Make Save Room state-aware when already saved.
+- Replace the bulky `Watch | Listen` switch with left-aligned icon tabs.
+- Add the search bar to the right of the mode tabs.
+- Make accent color follow the current music thumbnail.
+- Remove Recently Added.
+- Hide Future AI DJ for now.
+- Keep the left panel as the media card/player concept, but make it the left rail itself rather than a floating card inside a sidebar.
+- Make the player area slightly larger, about 380-420px on desktop where it fits.
+- Give Room Picks cards 12-16px more vertical breathing room.
+
+Search behavior requested:
+
+- Placeholder: `Search YouTube, playlists, artists...`
+- Empty state: `Search YouTube videos and playlists`
+- Minimum query length: 3.
+- Debounce: 600ms after typing stops.
+- Cache TTL: 10 minutes.
+- Max results: 10.
+- Cancel the previous request when a newer search starts.
+- Do not show skeletons on every keystroke; show skeletons only while an actual debounced request is in flight.
+
+Important clarification:
+
+- The left panel should still be the media card/player, but visually integrated as the left panel.
+- The Future AI DJ concept should not be shown for now; later Odysseus/session intelligence remains a future task.
+- Recently Added is considered useless in the new listen flow and should be removed.

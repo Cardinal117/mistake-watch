@@ -265,6 +265,172 @@ Safe commit point:
 
 - Listen mode has a clear responsive home for the future AI DJ surface before real AI/session-intelligence work begins later.
 
+## TASK-002.5F: Listen Room Header And Presence Refinement
+
+Source task: corrective listen-room layout direction from the reference-header review.
+
+Work:
+
+- Rework the listen-room top shell to follow the approved reference direction:
+  - room name is the primary title;
+  - room metadata sits underneath as calm supporting text;
+  - primary actions stay minimal;
+  - secondary room actions move into a settings menu.
+- Replace the bulky full-width `Watch | Listen` switch with compact left-aligned icon tabs:
+  - video icon plus `Watch`;
+  - headphones icon plus `Listen`;
+  - active mode uses a clean underline/accent treatment.
+- Add the listen search bar to the right of the mode tabs:
+  - placeholder: `Search YouTube, playlists, artists...`;
+  - UI shell supports empty, typing, searching, results, no-results, and provider-error states;
+  - search behavior should be debounced at 600ms, start at 3 characters, cache results for 10 minutes, cap results at 10, and cancel the previous request.
+- Keep this task focused on the search shell and interaction states unless a provider route already exists. Do not add broad YouTube provider scope, Google account provider permissions, playlist-history access, or fake recommendations here.
+- Remove the permanent listen-mode right members sidebar.
+- Move current room members into a compact top avatar row above the room title, flowing left to right:
+  - show avatar icons only by default;
+  - show member display name in a tooltip on hover/focus;
+  - preserve host/crown and online indicators where available.
+- Move room permission management into a settings-menu `Permissions` action that opens a focused pop-out/window:
+  - reuse existing member permission semantics;
+  - preserve host authority behavior;
+  - do not change SpacetimeDB reducer permission contracts in this UI task.
+- Move copy/share/save/leave actions into the settings cog menu:
+  - `Copy Room ID`;
+  - `Copy Room Link`;
+  - `Share Room`;
+  - state-aware `Save Room` / `Saved Room`;
+  - `Room Settings`;
+  - `Permissions`;
+  - pink/destructive `Leave Room`.
+- Match the reference cog/menu treatment closely:
+  - small square glass cog button;
+  - compact dark menu;
+  - thin dividers;
+  - clear icon labels;
+  - pink leave action.
+- Make listen-room accent controls follow the current music thumbnail palette where available:
+  - active Listen underline;
+  - Add Media accent/glow;
+  - search focus ring;
+  - progress/interactive accents where appropriate;
+  - reduced-motion and contrast remain respected.
+
+Review checkpoint:
+
+- The listen-room header no longer tries to be a status bar, action bar, mode switch, and member panel at once.
+- Room identity, mode navigation, search, and room actions have clear hierarchy.
+- Member presence remains visible without consuming a permanent right sidebar.
+- Permission controls remain available through the settings menu and continue to respect existing authority behavior.
+
+Safe commit point:
+
+- Listen mode has the approved reference-style header, member presence, settings menu, permissions pop-out, and search shell before lower-page player/discovery polishing continues.
+
+## TASK-002.5G: Listen Player Rail And Discovery Cleanup
+
+Source task: corrective listen-room layout direction from the full reference-player review.
+
+Work:
+
+- Preserve the listen player/media-card concept, but make it read as the actual left music rail rather than a floating card inside a sidebar.
+- Increase the left player area slightly:
+  - current target was around 320px;
+  - desktop target should be roughly 380-420px where viewport width allows;
+  - avoid making the player so large that room picks become cramped.
+- Keep the left rail as the listen room's current-media anchor:
+  - brand/room identity at the top where appropriate;
+  - large artwork/video thumbnail;
+  - now-playing metadata;
+  - source/view/like chips where currently supported;
+  - progress;
+  - transport controls;
+  - volume/fullscreen;
+  - Up Next and queue count grounded below the player.
+- On tall desktop and vertical-monitor listen layouts, use the below-player space for an intentional `Suggested Next` / `Up Next` area instead of a floating bubble or empty gap.
+- Hide the current Future AI DJ section for now:
+  - do not show a future-feature block as if it is shipped information;
+  - keep real recommendation content in the Room Picks cards;
+  - reserve the later Odysseus/session-intelligence concept for TASK-002.10B.
+- Remove the `Recently added` section from listen mode:
+  - it is no longer part of the desired listen-room flow;
+  - discovery should come from Room Picks, search, queue context, and later account/history surfaces.
+- Give Room Picks cards more vertical breathing room:
+  - add roughly 12-16px of vertical space;
+  - keep thumbnails prominent;
+  - keep title, channel, duration, and action buttons readable;
+  - preserve Play, Add Next, and Add Queue behavior/permission gates.
+- Preserve existing playback, queue reducer semantics, Add Media behavior, room sync, provider availability classification, and recommendation honesty.
+
+Review checkpoint:
+
+- The left player rail feels like a permanent music console, not a suggestion card.
+- Room Picks feel curated and breathable instead of vertically cramped.
+- Tall layouts no longer show accidental dead space below the player.
+- The listen room no longer displays filler/future sections that make the product feel unfinished.
+
+Safe commit point:
+
+- Listen mode has the approved left-rail/player and discovery cleanup while preserving existing media playback, queue, and recommendation behavior.
+
+## TASK-002.5H: YouTube Search In Add Media
+
+Source task: Add Media provider-search follow-up from the listen-room search shell direction.
+
+Work:
+
+- Add an in-app YouTube video search flow inside Add Media.
+- Keep the room header search as an entry point only: focusing it should open/focus Add Media search rather than running provider search directly in the header.
+- Add a server-side `/api/youtube/search` route so the YouTube API key never reaches frontend code.
+- Use YouTube Data API search for videos only, then enrich results through video metadata for title, channel, thumbnail, duration, and availability.
+- Normalize results into the existing queue/source input shape.
+- Preserve pasted YouTube URL, playlist URL, direct media, and HLS behavior exactly.
+- Add frontend search behavior with:
+  - minimum query length of 3 characters;
+  - 600ms debounce;
+  - request cancellation for stale queries;
+  - short-lived query cache;
+  - skeleton loading state;
+  - empty, typing, no-results, and error states.
+- Reuse existing queue duplicate handling and add-anyway confirmation.
+- Keep playlist search, Google account scopes, YouTube user history, provider-account playlists, and broad recommendation changes out of this task.
+
+Review checkpoint:
+
+- Users can search YouTube from Add Media and add a result to the queue without leaving the room.
+- Header search does not spend quota directly; it only opens/focuses the Add Media search surface.
+- Search requests are debounced, cancellable, cached, and room-rate-limited.
+- Existing pasted-link Add Media behavior is unchanged.
+
+Safe commit point:
+
+- Add Media supports server-side YouTube video search without exposing provider keys or expanding account/provider permission scope.
+
+## TASK-002.5I: Performance Quick Wins
+
+Source task: Lighthouse baseline review from June 23, 2026 after incognito runs with a stress-test 250-item room queue.
+
+Work:
+
+- Replace the oversized `public/favicon.svg` with a small optimized Signal Aperture-style favicon asset.
+- Preserve the app identity direction without embedding a large PNG/base64 payload in the favicon.
+- Lazy-load `hls.js` only when the active playback source is HLS.
+- Keep native HLS playback support unchanged for browsers that can play HLS without `hls.js`.
+- Keep direct MP4/R2 playback, YouTube playback, room sync, transport controls, fullscreen controls, queue autoplay, and error handling unchanged.
+- Do not implement queue virtualization, watch/listen bundle splitting, large-list memoization, image CDN changes, or layout CLS work in this quick-win task.
+- Re-run static checks and production build after the quick wins.
+- Capture a follow-up Lighthouse baseline later from production/Vercel before judging final scores.
+
+Review checkpoint:
+
+- Every page stops downloading the multi-megabyte favicon.
+- Non-HLS room sessions do not fetch the HLS player chunk on initial room load.
+- HLS links still load when actually selected.
+- The patch is small enough to deploy before the larger queue/bundle performance task.
+
+Safe commit point:
+
+- Shared room and dashboard payloads are reduced by quick, low-risk asset/player-loading fixes without changing product behavior.
+
 ## TASK-002.6: Real Audio-Reactive Waveform Architecture
 
 Source task: TASK-001 Task 16.D.

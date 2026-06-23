@@ -2,7 +2,11 @@
 
 ## Current Status
 
-Status: TASK-002.8 R2 Media Library and Authorized Upload Pipeline is implemented through TASK-002.8E CloudConvert credit-efficiency support, pending manual owner upload/browser QA for direct-ready MP4 and approval-required conversion flows.
+Status: TASK-002.8 R2 Media Library and Authorized Upload Pipeline is implemented through TASK-002.8F Multipart Upload Recovery And Cleanup, with production QA ongoing for large-upload resume and owner media-library UX.
+
+TASK-002.5F Listen Room Header And Presence Refinement and TASK-002.5G Listen Player Rail And Discovery Cleanup were added as a two-part corrective listen-room reference refinement. Both are implemented pending browser visual QA on the live listen room.
+
+TASK-002.5H YouTube Search In Add Media is implemented pending browser QA in watch/listen Add Media surfaces.
 
 TASK-002.1 Listen Mode Quality Pass is complete pending manual visual review in a live room.
 
@@ -22,13 +26,21 @@ TASK-002.5B Cinematic Watch Room Purpose Pass is complete after user-confirmed w
 
 TASK-002.5E Vertical Listen AI DJ Placement Shell is complete after vertical, wide desktop, and mobile browser QA.
 
+TASK-002.5F Listen Room Header And Presence Refinement is implemented pending browser visual QA on desktop, vertical-monitor width, and mobile fallback.
+
+TASK-002.5G Listen Player Rail And Discovery Cleanup is implemented pending browser visual QA on desktop, vertical-monitor width, and mobile fallback.
+
 TASK-002.6 Real Audio-Reactive Waveform Architecture is complete after resolver, UI wiring, build, and dev-check verification.
 
 Baseline handoff docs now exist at `docs/HANDOFF.md` and `docs/COMMANDS.md` so future agents can continue from TASK-002 without relying on chat memory.
 
 ## Canonical Next Task
 
-Next checkpoint after TASK-002.8 manual QA: TASK-002.9 Voting and Suggested Next.
+Current user-directed corrective listen-room refinement checkpoint: TASK-002.5F and TASK-002.5G are implemented pending visual QA.
+
+Current provider-search checkpoint: TASK-002.5H is implemented pending browser QA.
+
+Normal roadmap checkpoint after the corrective listen-room refinement and TASK-002.8 manual QA: TASK-002.9 Voting and Suggested Next.
 
 ## Decisions Locked
 
@@ -49,6 +61,13 @@ Next checkpoint after TASK-002.8 manual QA: TASK-002.9 Voting and Suggested Next
 - TASK-002.8A was inserted before TASK-002.8 because owner-only Stream/R2 upload and source ingestion require a server-verifiable account/owner role before implementation.
 - TASK-002.5D is inserted before TASK-002.5B because local QA found queue permission mismatches, silent duplicate handling, previous/back history gaps, and Add Media stacking problems that should be fixed before the cinematic watch queue/library surfaces are redesigned.
 - TASK-002.5E is inserted after TASK-002.5B because the AI DJ vertical placement request is a small listen-layout shell correction, not the later full TASK-002.10B AI/session-intelligence system.
+- TASK-002.5F and TASK-002.5G split the approved listen-room reference refinement into two parts:
+  - Part 1 handles the header, member presence, settings menu, permissions pop-out, search shell, and dynamic accent direction.
+  - Part 2 handles the left player rail, Room Picks card breathing, removal of Recently Added, and hiding Future AI DJ for now.
+- The left listen panel should remain the media/player card concept, but visually become the left rail itself rather than a floating card inside another panel.
+- The listen-mode right member sidebar should be removed. Member presence belongs in the top avatar row, while detailed permissions belong in a settings-menu pop-out.
+- The search bar belongs to the right of the compact `Watch | Listen` icon tabs, with debounced provider behavior and honest provider-error states.
+- The current Future AI DJ panel should be hidden until the later TASK-002.10B session-intelligence work can make it useful and truthful.
 
 ## Important Assumptions
 
@@ -167,6 +186,8 @@ Implementation implication:
 Verification:
 
 - `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
 - `npm run lint` passed.
 - `npm run build` passed.
 - `npm run dev:check` passed with 20 pass, 0 warn, 0 fail after Next.js and SpacetimeDB were running.
@@ -887,6 +908,129 @@ Manual review pending:
 - Start a large multipart upload, interrupt it, refresh, reselect the same file, and confirm it resumes from completed bytes instead of zero.
 - Cancel a recoverable upload and confirm it disappears from the Watch Media Hub.
 - Confirm `CRON_SECRET` exists in Vercel before relying on production cron cleanup.
+
+## TASK-002.5F Implementation Notes
+
+- Updated the desktop listen shell from three columns to two columns by removing the permanent right members sidebar.
+- Moved live member presence into a compact avatar row above the room name. Avatars use the current listen accent and native hover/focus title text for member names.
+- Reworked the listen header toward the approved reference:
+  - room name is the primary header;
+  - room metadata is a quieter single row;
+  - Add Media, account, and the settings cog are the only primary right-side actions.
+- Replaced the desktop bulky mode switch with left-aligned icon tabs for Watch and Listen. The active tab uses the current thumbnail-driven listen accent.
+- Added the listen search shell to the right of the mode tabs. It has empty, typing, debounced searching, skeleton, and honest provider-unavailable states. It does not fake YouTube search results or request new provider scopes.
+- Added a compact settings cog menu containing Copy Room ID, Copy Room Link, Share Room, Save/Saved Room, Room Settings, Permissions, and Leave Room.
+- Made Save Room state-aware in the cog menu using the existing `setRoomSavedAction`.
+- Moved Leave Room out of the left player rail and into the cog menu, using the current listen accent for the destructive action treatment.
+- Added a permissions pop-out from the cog menu that reuses the existing `MembersPanel`, preserving permission toggles, control grant/revoke, idle remove, and kick behavior.
+- Updated the listen queue drawer desktop bounds so it no longer reserves right-side space for the removed members sidebar.
+- Kept mobile listen room tools unchanged for this slice to avoid changing phone/tablet behavior before separate mobile QA.
+
+Verification:
+
+- `npm run typecheck` passed.
+
+Manual review pending:
+
+- Desktop visual QA: confirm the header matches the reference direction, the right sidebar is gone, and member avatars sit above the room name.
+- Permissions QA: open cog menu, open Permissions, and verify host permission controls still work.
+- Search-shell QA: type fewer than 3 characters, then 3+ characters, and confirm no skeleton appears until after debounce.
+- Theme QA: confirm active tabs, search focus, Add Media/header controls, menu glow, and avatar rings follow the current thumbnail accent.
+- Mobile QA: confirm the existing mobile room tools still work because they were intentionally preserved in this slice.
+
+## TASK-002.5G Implementation Notes
+
+- Increased the desktop listen rail from the older 320px sidebar target to a responsive `clamp(380px, 24vw, 420px)` music rail.
+- Kept the left-side player/media-card concept, but removed the heavy nested card treatment so the player reads as part of the rail itself.
+- Enlarged the artwork/player stage modestly and kept current metadata, source chips, progress, transport controls, volume, fullscreen, and autoplay controls in the rail.
+- Added an integrated `Suggested Next` rail section showing the next queued item, queue count, and remaining queue duration where available.
+- Removed the active listen-room Future AI DJ render path for now. The later Odysseus/session-intelligence concept remains reserved for TASK-002.10B.
+- Removed the `Recently added` section from listen mode so the page focuses on Room Picks, search, queue context, and later account/history surfaces.
+- Added more vertical breathing room to Room Picks by increasing rail padding, card gap, and card width targets while preserving Play, Add Queue, and Play Next actions.
+- Preserved existing playback, queue reducer semantics, Add Media, provider availability, recommendation honesty, room sync, and mobile tools.
+- Corrective screenshot QA pass: restored the listen queue to its bottom drawer placement on desktop and offset it by the wider player rail instead of turning it into a right sidebar.
+- Corrective screenshot QA pass: moved the listen center waveform to the shell-level background so it spans horizontally behind both the left player rail and main content area.
+- Corrective screenshot QA pass: made the player rail header, listen-mode badge, fallback artwork state, progress slider, play button, autoplay toggle, volume slider, queue drawer handle, queue drawer tabs, queue row active states, and queue drawer settings consume the thumbnail-driven `--listen-primary` accent instead of fixed amber/cyan tokens.
+- Corrective screenshot QA pass: reduced the left rail's opaque separation so the player header and media controls read as one integrated music console while preserving text readability.
+- Corrective screenshot QA pass: removed the redundant left-rail Mistake Watch / Signal Room / Listen Mode header strip and removed the `Now Playing` label so the YouTube player stage and media title no longer visually collide.
+- Corrective screenshot QA pass: widened the search result panel to match the search input, brightened the shell-wide waveform, forced the top-right Add Media and account avatar actions onto the thumbnail-driven accent, and anchored the left-rail Up Next area toward the bottom to reduce dead space without clipping vertical screens.
+- Corrective screenshot QA pass: slightly increased left-rail spacing between the media stage, metadata, transport controls, volume row, and Up Next section so the player console breathes without changing the approved rail width or vertical-screen behavior.
+
+Verification:
+
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
+
+Manual review pending:
+
+- Desktop visual QA: confirm the left rail feels like the permanent music console and not a card inside a card.
+- Vertical-monitor QA: confirm the rail stays usable, the Suggested Next area is intentional, and the main Room Picks surface remains readable.
+- Room Picks QA: confirm cards have enough vertical breathing room without losing actions or clipping long titles.
+- Regression QA: confirm queue actions, play now, add next, add queue, Add Media, and playback controls still work.
+- Mobile QA: confirm the preserved mobile listen flow still scrolls naturally and does not inherit desktop rail sizing.
+
+## TASK-002.5H Implementation Notes
+
+- Added `lib/youtube/search.ts` as the server-side YouTube video search provider helper.
+- Added `/api/youtube/search`, guarded by room-member request context and rate limiting, so frontend code never receives the YouTube API key.
+- YouTube search now uses `search.list` for video IDs and `videos.list` for normalized metadata, duration, thumbnail, and availability.
+- Added 10-minute server-side and client-side query caching to reduce quota burn for repeated searches.
+- Added `lib/youtube/search-client.ts` with cancellable fetch support for debounced browser search requests.
+- Added `YouTubeAddMediaSearch` as the shared Add Media search panel:
+  - minimum 3 characters;
+  - 600ms debounce;
+  - request cancellation for stale queries;
+  - skeleton loading rows;
+  - empty, typing, no-results, and graceful error states.
+- Wired YouTube search into the shared `QueuePanel` Add Media modal used by watch/queue surfaces.
+- Wired YouTube search into the listen-specific Add Media modal.
+- Changed the listen header search to act only as an entry point/focus trigger for Add Media search. It does not call YouTube directly and does not spend quota from the header.
+- Search result add/load actions normalize into the existing queue/source input shape and reuse the existing duplicate warning/add-anyway flow.
+- Preserved pasted URL behavior for YouTube video links, YouTube playlists, direct media, and HLS links.
+- Did not add playlist search, Google account scopes, YouTube user history, provider-account playlists, or broader recommendation behavior.
+
+Verification:
+
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+
+Manual review pending:
+
+- Browser QA: focus the listen header search and confirm it opens/focuses Add Media search.
+- Browser QA: search 2 characters and confirm no provider request/skeleton appears.
+- Browser QA: search 3+ characters and confirm skeletons appear only after debounce.
+- Browser QA: add a result and confirm queue duplicate handling matches pasted YouTube links.
+- Browser QA: confirm pasted URL, playlist URL, direct media, and HLS Add Media paths still work.
+
+## TASK-002.5I Implementation Notes
+
+- Added the quick-win performance task after the incognito Lighthouse baseline identified two low-risk shared payload issues:
+  - `public/favicon.svg` was a multi-megabyte embedded SVG payload downloaded by dashboard, watch room, and listen room.
+  - `hls.js` was statically imported by the direct media player and appeared as unused room JavaScript when the active source was not HLS.
+- Replaced `public/favicon.svg` with a small hand-authored Signal Aperture-style SVG that preserves the dark tile, gold aperture ring, cyan play core, and online dot language without embedding raster data.
+- Changed `components/room/direct-media-player.tsx` to type-import `hls.js` and dynamically import the runtime only inside the HLS source path.
+- Native HLS support remains preferred: if the browser can play `application/vnd.apple.mpegurl`, the app still assigns the HLS URL directly without loading `hls.js`.
+- Non-HLS direct media, R2 MP4, YouTube playback, room sync, fullscreen controls, queue autoplay, and transport behavior were not intentionally changed.
+- Larger performance work is intentionally deferred:
+  - queue virtualization for 250+ item queues;
+  - watch/listen layout bundle splitting;
+  - lazy-loading media hub/account/audience panels;
+  - thumbnail/metadata request discipline;
+  - CLS/layout stability pass.
+
+Verification:
+
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
+- `public/favicon.svg` is now 818 bytes instead of the previous multi-megabyte embedded asset.
+- `components/room/direct-media-player.tsx` now type-imports `hls.js` and dynamically imports the runtime only in the HLS source path.
+
+Manual review pending:
+
+- Optional production Lighthouse recapture after deploy.
+- HLS playback QA with an actual `.m3u8` source.
 
 ## TASK-002.1 Implementation Notes
 

@@ -223,6 +223,93 @@ Implementation direction:
 - visually reserve future prompt, voice, and waveform affordances only as structure, without implementing model calls, speech, waveform analysis, memory, or queue mutation;
 - continue marking the surface as advisory/future session intelligence.
 
+### Listen Room Header And Presence Refinement
+
+The listen-room header should follow the approved reference image closely while preserving Mistake Watch behavior. The user explicitly prefers the reference layout over the current dense command strip.
+
+Target structure:
+
+```text
+[member avatar] [member avatar] [member avatar]
+
+ROOM NAME                                      [+ Add Media] [account/avatar] [settings cog]
+Room ID: CODE * connected * Listen mode * queue stats
+
+[video icon] Watch    [headphones icon] Listen        [Search YouTube, playlists, artists...]
+```
+
+Design direction:
+
+- give the room name the strongest hierarchy in the header;
+- keep metadata as a single calm supporting row;
+- move copy/share/save/permissions/leave into the settings cog menu;
+- make the settings menu compact, dark, icon-led, and close to the reference treatment;
+- make Leave Room pink/destructive inside the menu;
+- make Save Room state-aware using a saved/unsaved visual label or icon state;
+- remove the permanent listen members sidebar and replace it with a compact top avatar row;
+- use hover/focus tooltips for member names instead of always-visible labels;
+- keep the account/avatar entry separate from member presence where the current account system requires it;
+- preserve all existing permission semantics even though the management surface moves into a pop-out.
+
+Search direction:
+
+- the search input sits on the same row as the mode tabs, to the right;
+- the results surface should expand smoothly from the input rather than open as a heavy modal;
+- empty state copy: `Search YouTube videos and playlists`;
+- typing state should not show skeletons yet;
+- searching state should show skeleton result cards only after the debounced request starts;
+- result cards should eventually expose Play Now, Play Next, and Add Queue actions where permission allows;
+- no-result and quota/provider-error states should be friendly and not imply broken playback.
+
+Provider boundary:
+
+- this task may add the UI shell and wire to existing provider routes if available;
+- do not request new Google/YouTube account scopes;
+- do not fake YouTube recommendations or personal history;
+- do not move provider API keys to the client.
+
+Dynamic accent direction:
+
+- the current media thumbnail should influence the listen-room accent color where browser sampling or existing theme variables allow it;
+- the accent should affect active tab underline, Add Media glow/fill, search focus state, progress/slider controls, and subtle panel glow;
+- preserve contrast and reduced-motion behavior.
+
+### Listen Player Rail And Discovery Cleanup
+
+The left listen player should remain the media card/player concept, but it should visually become the left rail itself rather than a card floating inside a sidebar.
+
+Target structure:
+
+```text
+LEFT MUSIC RAIL                         MAIN LISTEN SURFACE
+Mistake Watch / Signal Room             Room header and member avatars
+[large artwork/video]                   Watch | Listen + Search
+Now Playing                             Room Picks
+Title / artist / metadata               [breathable cards]
+Progress
+Transport
+Volume / fullscreen
+Up Next
+Queue count
+```
+
+Design direction:
+
+- keep the left rail media-first and current-song-first;
+- increase the player area only modestly, targeting about 380-420px on desktop when space allows;
+- keep the player responsive so it does not crowd Room Picks on smaller desktop or vertical-monitor layouts;
+- ground Up Next and queue count inside the rail;
+- turn tall-screen empty space into intentional Suggested Next / Up Next context;
+- hide the Future AI DJ block for now because it reads as an unfinished feature rather than useful information;
+- remove Recently Added from listen mode because search, Room Picks, queue, uploaded media, and later account-history surfaces replace that role;
+- add 12-16px of breathing room to Room Picks cards without changing their action model.
+
+Implementation boundary:
+
+- preserve playback, queue reducers, sync, provider availability, Add Media, playlist review, and recommendation honesty;
+- do not implement the later Odysseus/session-intelligence behavior in this task;
+- do not add unrelated watch-room changes.
+
 ### AI DJ / Session Intelligence
 
 The AI DJ task is intentionally later than accounts/friends. It should begin with room-session intelligence and only add personal memory after profile and consent boundaries exist.

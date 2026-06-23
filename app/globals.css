@@ -750,6 +750,11 @@
     --slider-accent-soft: rgb(255 186 32 / 0.18);
   }
 
+  .mistake-slider[data-tone="dynamic"] {
+    --slider-accent: rgb(var(--listen-primary));
+    --slider-accent-soft: rgb(var(--listen-shadow) / 0.18);
+  }
+
   .mistake-slider::-webkit-slider-runnable-track {
     height: 3px;
     border-radius: 9999px;

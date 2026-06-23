@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import Hls from "hls.js";
+import type Hls from "hls.js";
 import type { LiveRoomState } from "@/lib/spacetime";
 import {
   chooseSyncCorrection,
@@ -184,38 +184,51 @@ function DirectMediaPlayerCore({
         return cleanup;
       }
 
-      if (Hls.isSupported()) {
-        const hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: true,
-        });
+      let disposed = false;
 
-        mediaSourceUrlRef.current = sourceUrl;
-        hls.on(Hls.Events.ERROR, (_event, data) => {
-          if (
-            data.fatal &&
-            mediaSourceUrlRef.current &&
-            mediaSourceUrlRef.current === activeSourceUrlRef.current
-          ) {
-            setLocalError("The HLS stream failed to load.");
-            setPlaybackStateRef.current({
-              playbackRate: 1,
-              positionSeconds: media.currentTime,
-              status: "error",
-            });
+      void import("hls.js")
+        .then(({ default: Hls }) => {
+          if (disposed || !mediaRef.current || mediaRef.current !== media) {
+            return;
+          }
+
+          if (!Hls.isSupported()) {
+            setLocalError("This browser cannot play HLS streams.");
+            return;
+          }
+
+          const hls = new Hls({
+            enableWorker: true,
+            lowLatencyMode: true,
+          });
+
+          mediaSourceUrlRef.current = sourceUrl;
+          hls.on(Hls.Events.ERROR, (_event, data) => {
+            if (
+              data.fatal &&
+              mediaSourceUrlRef.current &&
+              mediaSourceUrlRef.current === activeSourceUrlRef.current
+            ) {
+              setLocalError("The HLS stream failed to load.");
+              setPlaybackStateRef.current({
+                playbackRate: 1,
+                positionSeconds: media.currentTime,
+                status: "error",
+              });
+            }
+          });
+          hls.loadSource(sourceUrl);
+          hls.attachMedia(media);
+          hlsRef.current = hls;
+        })
+        .catch(() => {
+          if (!disposed) {
+            setLocalError("The HLS player could not be loaded.");
           }
         });
-        hls.loadSource(sourceUrl);
-        hls.attachMedia(media);
-        hlsRef.current = hls;
-        return cleanup;
-      }
 
-      const errorTimer = window.setTimeout(() => {
-        setLocalError("This browser cannot play HLS streams.");
-      }, 0);
       return () => {
-        window.clearTimeout(errorTimer);
+        disposed = true;
         cleanup();
       };
     }

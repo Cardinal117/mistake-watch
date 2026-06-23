@@ -11,7 +11,7 @@ type YouTubeMetadataLineProps = {
   compact?: boolean;
   showChannel?: boolean;
   sourceUrl?: string | null;
-  tone?: "amber" | "cyan";
+  tone?: "amber" | "cyan" | "dynamic";
 };
 
 export function YouTubeMetadataLine({
@@ -29,7 +29,11 @@ export function YouTubeMetadataLine({
   }
 
   const accent =
-    tone === "amber" ? "text-secondary-fixed-dim" : "text-primary-fixed-dim";
+    tone === "dynamic"
+      ? "text-[rgb(var(--listen-primary))]"
+      : tone === "amber"
+        ? "text-secondary-fixed-dim"
+        : "text-primary-fixed-dim";
   const viewCount = formatCompactCount(metadata?.viewCount);
   const likeCount = formatCompactCount(metadata?.likeCount);
 

@@ -3,43 +3,61 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TASK-002.8 R2 Media Library Implementation Report</title>
+    <title>TASK-002.5F/G Listen Room Refinement Report</title>
     <style>
       :root {
         color-scheme: dark;
         --bg: #0a0a0b;
         --panel: rgb(18 18 20 / 0.78);
-        --panel-strong: rgb(28 27 28 / 0.86);
+        --panel-strong: rgb(28 27 28 / 0.9);
         --line: rgb(255 255 255 / 0.1);
         --text: #e5e2e3;
         --muted: #b9cacb;
         --cyan: #00dbe9;
-        --amber: #ffba20;
+        --pink: #ff39ad;
+        --gold: #ffba20;
         --green: #77d982;
-        --red: #ffb4ab;
       }
+
       * { box-sizing: border-box; }
+
       body {
         margin: 0;
         background:
-          radial-gradient(circle at 18% 0%, rgb(0 219 233 / 0.14), transparent 34rem),
-          radial-gradient(circle at 85% 88%, rgb(255 186 32 / 0.08), transparent 34rem),
+          radial-gradient(circle at 14% 0%, rgb(255 57 173 / 0.16), transparent 34rem),
+          radial-gradient(circle at 86% 16%, rgb(0 219 233 / 0.14), transparent 32rem),
           var(--bg);
         color: var(--text);
         font-family: Geist, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         line-height: 1.5;
       }
-      main { margin: 0 auto; max-width: 1160px; padding: 40px 24px 56px; }
-      header { border-bottom: 1px solid var(--line); padding-bottom: 24px; }
+
+      main {
+        width: min(1160px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 36px 0 56px;
+      }
+
+      header, section, .card {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--panel);
+        backdrop-filter: blur(16px);
+      }
+
+      header { padding: 28px; }
+      section { margin-top: 18px; padding: 22px; }
+
       h1, h2, h3, p { margin: 0; }
-      h1 { margin-top: 8px; max-width: 940px; font-size: clamp(32px, 5vw, 52px); line-height: 1.04; }
+      h1 { margin-top: 8px; max-width: 920px; font-size: clamp(32px, 5vw, 52px); line-height: 1.04; }
       h2 { font-size: 22px; }
       h3 { font-size: 16px; }
-      section { margin-top: 28px; }
+      p, li { color: var(--muted); }
       ul { margin: 12px 0 0; padding-left: 18px; }
-      li + li { margin-top: 8px; }
+      li + li { margin-top: 7px; }
       code, .eyebrow, .status { font-family: "JetBrains Mono", Consolas, monospace; }
       code { color: var(--cyan); }
+
       .eyebrow {
         color: var(--cyan);
         font-size: 12px;
@@ -47,24 +65,27 @@
         letter-spacing: 0.08em;
         text-transform: uppercase;
       }
-      .summary { margin-top: 18px; max-width: 900px; color: var(--muted); font-size: 17px; }
-      .grid { display: grid; gap: 16px; }
+
+      .summary {
+        margin-top: 16px;
+        max-width: 880px;
+        font-size: 17px;
+      }
+
+      .grid { display: grid; gap: 14px; }
       .cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
       .card {
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: var(--panel);
         padding: 18px;
-        backdrop-filter: blur(14px);
+        background: var(--panel-strong);
       }
-      .card strong { color: var(--text); }
-      .muted { color: var(--muted); }
+
       .status {
         display: inline-flex;
         width: fit-content;
         border: 1px solid rgb(119 217 130 / 0.35);
-        border-radius: 4px;
+        border-radius: 6px;
         color: var(--green);
         font-size: 11px;
         font-weight: 700;
@@ -72,8 +93,10 @@
         padding: 4px 8px;
         text-transform: uppercase;
       }
-      .warning { border-color: rgb(255 186 32 / 0.35); color: var(--amber); }
-      .blocked { border-color: rgb(255 180 171 / 0.35); color: var(--red); }
+
+      .warn { border-color: rgb(255 186 32 / 0.35); color: var(--gold); }
+      .pink { border-color: rgb(255 57 173 / 0.38); color: var(--pink); }
+
       table {
         width: 100%;
         border-collapse: collapse;
@@ -82,214 +105,84 @@
         border-radius: 8px;
         background: var(--panel);
       }
-      th, td { border-bottom: 1px solid var(--line); padding: 12px; text-align: left; vertical-align: top; }
-      th { color: var(--cyan); font-family: "JetBrains Mono", Consolas, monospace; font-size: 12px; text-transform: uppercase; }
+
+      th, td {
+        border-bottom: 1px solid var(--line);
+        padding: 12px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        color: var(--cyan);
+        font-family: "JetBrains Mono", Consolas, monospace;
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
       tr:last-child td { border-bottom: 0; }
-      .hero-grid { grid-template-columns: 1.15fr 0.85fr; margin-top: 22px; }
-      .checklist { display: grid; gap: 10px; margin-top: 12px; }
-      .check {
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr);
-        gap: 10px;
-        align-items: start;
-        color: var(--muted);
-      }
-      .dot {
-        margin-top: 5px;
-        width: 8px;
-        height: 8px;
-        border-radius: 999px;
-        background: var(--green);
-        box-shadow: 0 0 16px rgb(119 217 130 / 0.45);
-      }
-      .dot.warn { background: var(--amber); box-shadow: 0 0 16px rgb(255 186 32 / 0.35); }
-      .dot.block { background: var(--red); box-shadow: 0 0 16px rgb(255 180 171 / 0.35); }
-      @media (max-width: 860px) {
-        main { padding: 28px 16px 44px; }
-        .cols-2, .cols-3, .hero-grid { grid-template-columns: 1fr; }
+
+      @media (max-width: 820px) {
+        main { width: min(100% - 24px, 1160px); padding-top: 24px; }
+        .cols-2, .cols-3 { grid-template-columns: 1fr; }
       }
     </style>
   </head>
   <body>
     <main>
       <header>
-        <p class="eyebrow">TASK-002.8 Implementation Report</p>
-        <h1>R2 media library and owner-authorized upload pipeline</h1>
+        <p class="eyebrow">TASK-002.5F/G implementation report</p>
+        <h1>Listen room reference refinement</h1>
         <p class="summary">
-          TASK-002.8 is implemented as the R2-first private-room media path. Owner accounts can create signed upload intents, upload browser-playable MP4 files directly to R2, complete metadata into Supabase, and surface ready assets inside the Watch Media Hub. Guests and non-owners can browse ready media and use existing queue/playback actions where room permissions allow.
+          The listen room now follows the approved reference direction across the header and main content: cleaner room identity, top member avatars, compact mode tabs, search shell, settings menu, wider integrated player rail, breathable Room Picks, and no active filler sections.
         </p>
       </header>
 
-      <section class="grid hero-grid">
-        <article class="card">
-          <span class="status">Implemented</span>
-          <h2 style="margin-top: 12px">Scope Completed</h2>
-          <ul class="muted">
-            <li>Added Supabase tables for <code>media_assets</code>, <code>media_upload_sessions</code>, and <code>media_source_matches</code>.</li>
-            <li>Applied remote Supabase migrations to <code>watch-mistakestudios</code>.</li>
-            <li>Added server-only R2 signing and metadata helpers.</li>
-            <li>Added media API routes for listing, signed upload creation, upload completion, and source-match lookup.</li>
-            <li>Updated the Watch Media Hub with owner upload, R2 library cards, progress/status messaging, and queue/play actions.</li>
-            <li>Added multipart R2 upload support for large MP4 files with server-created part URLs and byte-based progress.</li>
-            <li>Updated Add Media playlist/single-source logic so ready first-party R2 matches can replace YouTube queue items.</li>
-          </ul>
-        </article>
-        <article class="card">
-          <span class="status warning">Manual QA Needed</span>
-          <h2 style="margin-top: 12px">Remaining Review</h2>
-          <ul class="muted">
-            <li>Run browser QA as owner: drag an MP4 into Watch Media Hub, confirm it uploads to R2 and appears as ready.</li>
-            <li>Run browser QA with a 3-4 GB MP4 to confirm multipart progress, finalization, poster capture, and playback.</li>
-            <li>Queue uploaded media, play now, play next, and verify direct browser playback in a live watch room.</li>
-            <li>Test non-owner account/guest: ready assets visible, upload control disabled, queue permissions unchanged.</li>
-            <li>If multipart fails with a missing ETag message, verify the R2 bucket CORS exposes the <code>ETag</code> response header.</li>
-          </ul>
-        </article>
-      </section>
-
-      <section>
-        <h2>TASK-002.8D Large Upload Refinement</h2>
-        <div class="grid cols-2" style="margin-top: 14px">
-          <article class="card">
-            <h3>Multipart Upload Path</h3>
-            <ul class="muted">
-              <li>Uploads below 500 MB keep the existing single signed PUT flow.</li>
-              <li>Uploads at or above 500 MB use R2 multipart upload with 64 MB parts and 3-way browser concurrency.</li>
-              <li>Each part URL is requested shortly before use so long uploads are less likely to hit expired signatures.</li>
-              <li>Multipart upload sessions remain valid for 24 hours while individual part URLs stay short-lived.</li>
-              <li>Failed parts retry up to 3 times without restarting already completed parts.</li>
-            </ul>
-          </article>
-          <article class="card">
-            <h3>Progress and Safety</h3>
-            <ul class="muted">
-              <li>Single and multipart uploads now share one clear byte-based progress bar.</li>
-              <li>Supabase tracks upload mode, part size/count, completed ETags, uploaded bytes, and abort/finalizing states.</li>
-              <li>The media asset row is created only after multipart completion and R2 object-size verification succeed.</li>
-              <li>R2 credentials remain server-only; browser code receives only scoped signed URLs.</li>
-            </ul>
-          </article>
-        </div>
-      </section>
-
-      <section>
-        <h2>TASK-002.8C Refinement</h2>
-        <div class="grid cols-2" style="margin-top: 14px">
-          <article class="card">
-            <h3>Uploaded Library UX</h3>
-            <ul class="muted">
-              <li>Uploaded media now has explicit folder creation instead of implicit folder-name typing.</li>
-              <li>The Uploaded tab is folder-first, with quick views for all media, unsorted items, and live items.</li>
-              <li>Grid and list views are available; grid keeps cards clean, while list exposes direct Play, Add Next, and Queue buttons.</li>
-              <li>Search uses normalized partial matching instead of exact/case-sensitive matching.</li>
-            </ul>
-          </article>
-          <article class="card">
-            <h3>Management and Permissions</h3>
-            <ul class="muted">
-              <li>Card settings now contain Play Now, Add Next, Add to Queue, Move to Folder, and visibility controls.</li>
-              <li>Folders store persistent sort key/direction, and folder-level queue actions use that ordering.</li>
-              <li>Uploaded assets can be marked <code>public</code> or <code>owner_only</code>; non-owners do not receive hidden assets.</li>
-              <li>Watch history/resume, transcoding, MKV conversion, and friend-only visibility remain deferred.</li>
-            </ul>
-          </article>
-        </div>
-      </section>
-
-      <section>
-        <h2>TASK-002.8E Credit Efficiency</h2>
-        <div class="grid cols-2" style="margin-top: 14px">
-          <article class="card">
-            <h3>Processing Decision Gate</h3>
-            <ul class="muted">
-              <li>Uploads now inspect media before spending CloudConvert credits.</li>
-              <li>Confident MP4/H.264/AAC files become <code>direct_ready</code> and play from R2 without conversion.</li>
-              <li>Unsupported or uncertain files still convert automatically when they are small enough.</li>
-              <li>Large, long, or unknown-duration large uploads wait for explicit owner approval.</li>
-            </ul>
-          </article>
-          <article class="card">
-            <h3>Owner Visibility</h3>
-            <ul class="muted">
-              <li>Media assets store inspection result, processing strategy, estimated credits, and approval state.</li>
-              <li>Uploaded cards show Direct, Converting, and Needs approval states with owner-only approval action.</li>
-              <li>The Account CloudConvert section now reports direct-ready, converted, approval-required, and estimated credits avoided counts.</li>
-              <li>Direct-ready assets keep best-effort browser poster capture without forcing full conversion.</li>
-            </ul>
-          </article>
-        </div>
-      </section>
-
-      <section>
-        <h2>TASK-002.8F Multipart Recovery</h2>
-        <div class="grid cols-2" style="margin-top: 14px">
-          <article class="card">
-            <h3>Recoverable Uploads</h3>
-            <ul class="muted">
-              <li>Failed multipart sessions now stay recoverable until their <code>resumable_until</code> window expires.</li>
-              <li>The Watch Media Hub shows owner-only recoverable upload rows with filename, uploaded bytes, error state, Resume, Cancel, and progress.</li>
-              <li>Resume requires reselecting the same local file, validates name/size/type, and uploads only missing R2 parts.</li>
-              <li>Completed part ETags remain stored in <code>media_upload_sessions.completed_parts</code> and are reused during completion.</li>
-            </ul>
-          </article>
-          <article class="card">
-            <h3>Cleanup Path</h3>
-            <ul class="muted">
-              <li>Cancel reuses the R2 multipart abort path and marks the session <code>aborted</code>.</li>
-              <li>Expired cleanup route aborts stale incomplete multipart uploads and marks sessions <code>expired</code>.</li>
-              <li><code>vercel.json</code> schedules hourly cleanup through Vercel Cron.</li>
-              <li>Production cleanup requires <code>CRON_SECRET</code> authorization; R2 lifecycle cleanup remains the backup safety layer.</li>
-            </ul>
-          </article>
-        </div>
-      </section>
-
       <section>
         <h2>Files To Review</h2>
+        <div class="grid cols-3" style="margin-top: 14px">
+          <article class="card">
+            <span class="status pink">Primary</span>
+            <h3 style="margin-top: 10px">Source file</h3>
+            <p><code>components/room/listen-mode-layout.tsx</code></p>
+          </article>
+          <article class="card">
+            <span class="status">Notes</span>
+            <h3 style="margin-top: 10px">Task notes</h3>
+            <p><code>docs/tasks/TASK-002-incomplete-work-recovery/review-notes.md</code></p>
+          </article>
+          <article class="card">
+            <span class="status warn">Context</span>
+            <h3 style="margin-top: 10px">Spec files</h3>
+            <p><code>tasks.md</code>, <code>design.md</code>, and <code>acceptance-criteria.md</code> define the two-part listen refinement.</p>
+          </article>
+        </div>
+      </section>
+
+      <section>
+        <h2>Implemented</h2>
         <div class="grid cols-2" style="margin-top: 14px">
           <article class="card">
-            <h3>Backend and Schema</h3>
-            <ul class="muted">
-              <li><code>supabase/migrations/20260613152000_r2_media_library.sql</code></li>
-              <li><code>supabase/migrations/20260613154500_r2_media_library_advisor_fixes.sql</code></li>
-              <li><code>supabase/migrations/20260614092507_media_library_management_refinement.sql</code></li>
-              <li><code>supabase/migrations/20260614101745_media_multipart_upload_progress.sql</code></li>
-              <li><code>supabase/migrations/20260617064533_cloudconvert_processing_pipeline.sql</code></li>
-              <li><code>supabase/migrations/20260617183000_cloudconvert_credit_efficiency.sql</code></li>
-              <li><code>lib/media/r2.ts</code></li>
-              <li><code>lib/media/assets.ts</code></li>
-              <li><code>lib/media/cloudconvert.ts</code></li>
-              <li><code>lib/media/processing-decision.ts</code></li>
-              <li><code>app/api/media/assets/route.ts</code></li>
-              <li><code>app/api/media/assets/[assetId]/processing/route.ts</code></li>
-              <li><code>app/api/media/cloudconvert/status/route.ts</code></li>
-              <li><code>app/api/media/cloudconvert/webhook/route.ts</code></li>
-              <li><code>app/api/media/assets/[assetId]/visibility/route.ts</code></li>
-              <li><code>app/api/media/folders/[folderId]/sort/route.ts</code></li>
-              <li><code>app/api/media/source-matches/route.ts</code></li>
-              <li><code>app/api/media/uploads/route.ts</code></li>
-              <li><code>app/api/media/uploads/[uploadId]/complete/route.ts</code></li>
-              <li><code>app/api/media/uploads/[uploadId]/parts/route.ts</code></li>
-              <li><code>app/api/media/uploads/[uploadId]/abort/route.ts</code></li>
-              <li><code>app/api/media/uploads/[uploadId]/fail/route.ts</code></li>
-              <li><code>app/api/media/uploads/[uploadId]/retry/route.ts</code></li>
-              <li><code>app/api/media/uploads/resumable/route.ts</code></li>
-              <li><code>app/api/media/uploads/cleanup/route.ts</code></li>
-              <li><code>vercel.json</code></li>
+            <span class="status">TASK-002.5F</span>
+            <h3 style="margin-top: 10px">Header and presence</h3>
+            <ul>
+              <li>Removed the permanent desktop right members sidebar.</li>
+              <li>Moved live member presence into top avatars above the room title.</li>
+              <li>Moved copy, share, save, permissions, room settings, and leave actions into a compact cog menu.</li>
+              <li>Replaced the bulky desktop mode switch with left-aligned Watch and Listen icon tabs.</li>
+              <li>Added the listen search shell beside the tabs without faking provider results.</li>
             </ul>
           </article>
           <article class="card">
-            <h3>UI and Contracts</h3>
-            <ul class="muted">
-              <li><code>components/room/watch-mode-layout.tsx</code></li>
-              <li><code>components/account/account-command-panel.tsx</code></li>
-              <li><code>components/room/queue-panel.tsx</code></li>
-              <li><code>lib/supabase/database.types.ts</code></li>
-              <li><code>tests/media/processing-decision.test.mjs</code></li>
-              <li><code>vercel.json</code></li>
-              <li><code>docs/tasks/TASK-002-incomplete-work-recovery/review-notes.md</code></li>
-              <li><code>docs/tasks/TASK-002-incomplete-work-recovery/tasks.md</code></li>
-              <li><code>docs/tasks/TASK-002-incomplete-work-recovery/implementation-report.html</code></li>
+            <span class="status">TASK-002.5G</span>
+            <h3 style="margin-top: 10px">Player rail and discovery</h3>
+            <ul>
+              <li>Increased the desktop player rail to a responsive 380-420px target.</li>
+              <li>Made the player read as the left music rail instead of a nested floating card.</li>
+              <li>Added an integrated Suggested Next area with next item, queue count, and remaining duration.</li>
+              <li>Removed Recently Added from listen mode.</li>
+              <li>Hid the Future AI DJ block until the later session-intelligence task.</li>
+              <li>Gave Room Picks more vertical breathing room while preserving actions.</li>
             </ul>
           </article>
         </div>
@@ -297,49 +190,80 @@
 
       <section>
         <h2>Acceptance Status</h2>
-        <div class="checklist">
-          <div class="check"><span class="dot"></span><p>R2 remains the primary uploaded-media store; CloudConvert now provides the server-side browser-safe MP4 processing path.</p></div>
-          <div class="check"><span class="dot"></span><p>Owner uploads can accept normal video sources and stay non-playable until CloudConvert exports the processed MP4.</p></div>
-          <div class="check"><span class="dot"></span><p>Supabase stores metadata, R2 keys/public URLs, upload sessions, waveform status, and source-match records.</p></div>
-          <div class="check"><span class="dot"></span><p>Owner-only upload authority is enforced server-side using signed-in account role.</p></div>
-          <div class="check"><span class="dot"></span><p>R2 credentials stay server-only; the browser receives only scoped signed PUT URLs for single uploads or multipart parts.</p></div>
-          <div class="check"><span class="dot"></span><p>Watch Media Hub supports drag/drop upload, stored asset browsing, and Add to Queue / Play Next / Play Now actions.</p></div>
-          <div class="check"><span class="dot"></span><p>Ready source matches can replace YouTube queue entries with first-party R2 direct media.</p></div>
-          <div class="check"><span class="dot"></span><p>TASK-002.8C adds explicit folder creation, card settings menus, persistent folder sorting, visibility toggles, grid/list views, normalized search, and folder-level queue actions.</p></div>
-          <div class="check"><span class="dot"></span><p>TASK-002.8D adds multipart upload support, byte-based progress, part retries, and server-side multipart completion for large MP4 uploads.</p></div>
-          <div class="check"><span class="dot"></span><p>CloudConvert processing status, webhook handling, owner diagnostics, and graceful failed/processing asset states are implemented.</p></div>
-          <div class="check"><span class="dot"></span><p>TASK-002.8E adds credit-aware processing: safe MP4 files skip CloudConvert, while expensive conversions wait for owner approval.</p></div>
-          <div class="check"><span class="dot"></span><p>TASK-002.8F adds recoverable multipart upload rows, same-file resume, missing-part upload, cancel/abort, and scheduled expired-session cleanup.</p></div>
-          <div class="check"><span class="dot warn"></span><p>Manual owner browser QA remains pending for direct-ready upload, approval-required conversion, and account efficiency stats.</p></div>
-        </div>
-      </section>
-
-      <section>
-        <h2>Verification</h2>
         <table>
           <thead>
-            <tr><th>Check</th><th>Result</th><th>Notes</th></tr>
+            <tr>
+              <th>Area</th>
+              <th>Status</th>
+              <th>Notes</th>
+            </tr>
           </thead>
           <tbody>
-            <tr><td><code>npm run typecheck</code></td><td>Passed</td><td>Ran after API, service, queue, and watch hub changes.</td></tr>
-            <tr><td><code>npm run lint</code></td><td>Passed</td><td>ESLint completed with no reported issues.</td></tr>
-            <tr><td><code>npm run build</code></td><td>Passed</td><td>Next build included all new media routes.</td></tr>
-            <tr><td><code>node --test tests\media\*.test.mjs</code></td><td>Passed</td><td>Covers CloudConvert payload shape plus direct-ready MP4, long HEVC approval, short unsupported conversion, large unknown approval, and credit estimation.</td></tr>
-            <tr><td>Supabase migration</td><td>Passed</td><td>Remote migration <code>cloudconvert_credit_efficiency</code> applied successfully to project <code>qzmivwhzotuleivzphhm</code>.</td></tr>
-            <tr><td>Supabase advisors</td><td>Passed with existing notes</td><td>Remaining security warning is leaked-password protection setting; performance entries are unused-index INFO notices, including fresh media processing indexes.</td></tr>
-            <tr><td>RLS sanity check</td><td>Passed</td><td>RLS enabled on media tables including <code>media_processing_events</code>; owner-only event SELECT policy present.</td></tr>
-            <tr><td><code>npm run dev:check</code></td><td>Blocked locally</td><td>Local Next and SpacetimeDB were not running; attempted background startup hit a local PowerShell <code>Start-Process</code> PATH duplication error before services started. Env checks passed.</td></tr>
+            <tr>
+              <td>Reference-style listen header</td>
+              <td><span class="status">Implemented</span></td>
+              <td>Room name, metadata, member avatars, primary actions, mode tabs, and search shell are separated by hierarchy.</td>
+            </tr>
+            <tr>
+              <td>Settings and permissions</td>
+              <td><span class="status">Implemented</span></td>
+              <td>Secondary actions live in the cog menu; permissions reuse the existing authority panel in a pop-out.</td>
+            </tr>
+            <tr>
+              <td>Integrated left music rail</td>
+              <td><span class="status">Implemented</span></td>
+              <td>The rail is wider, media-first, and contains playback plus queue context.</td>
+            </tr>
+            <tr>
+              <td>Discovery cleanup</td>
+              <td><span class="status">Implemented</span></td>
+              <td>Recently Added and Future AI DJ are removed from the active listen surface.</td>
+            </tr>
+            <tr>
+              <td>Room Picks card breathing</td>
+              <td><span class="status">Implemented</span></td>
+              <td>Room Picks receive more padding, spacing, and width without changing action behavior.</td>
+            </tr>
+            <tr>
+              <td>Provider search results</td>
+              <td><span class="status warn">Deferred</span></td>
+              <td>The shell exists; real YouTube search results need a dedicated provider route/API slice.</td>
+            </tr>
           </tbody>
         </table>
       </section>
 
       <section>
-        <h2>Deferred Work</h2>
-        <div class="grid cols-3" style="margin-top: 14px">
-          <article class="card"><h3>Not in this task</h3><p class="muted">Cloudflare Stream, adaptive bitrate playback, resumable uploads without file reselect, and background waveform jobs.</p></article>
-          <article class="card"><h3>Later media polish</h3><p class="muted">Watch history/resume, advanced episode parsing, bulk delete, friend-only visibility, source-match management UI, and richer upload recovery analytics.</p></article>
-          <article class="card"><h3>Next workflow</h3><p class="muted">Run manual browser QA, then use the QA release gate before commit preparation.</p></article>
+        <h2>Verification</h2>
+        <div class="grid cols-2" style="margin-top: 14px">
+          <article class="card">
+            <span class="status">Passed</span>
+            <h3 style="margin-top: 10px">Static checks</h3>
+            <ul>
+              <li><code>npm run typecheck</code></li>
+              <li><code>npm run lint</code></li>
+              <li><code>npm run build</code></li>
+            </ul>
+          </article>
+          <article class="card">
+            <span class="status warn">Pending</span>
+            <h3 style="margin-top: 10px">Manual browser QA</h3>
+            <ul>
+              <li>Desktop listen visual check against the reference.</li>
+              <li>Vertical-monitor rail and Room Picks check.</li>
+              <li>Permissions pop-out behavior in a live room.</li>
+              <li>Queue action regression: play, add next, add queue, Add Media.</li>
+              <li>Mobile regression check for preserved mobile listen flow.</li>
+            </ul>
+          </article>
         </div>
+      </section>
+
+      <section>
+        <h2>Deferred</h2>
+        <p>
+          Real provider search results, Odysseus/session intelligence, first-party account-history recommendations, and broader listen-room personalization remain later tasks. This slice intentionally avoids changing playback authority, queue reducer semantics, Add Media behavior, or provider availability classification.
+        </p>
       </section>
     </main>
   </body>

@@ -42,6 +42,8 @@ TASK-002.5C Live Room Authority Hardening: implemented; local manual QA confirme
 TASK-002.5D Queue Authority And Add Media UX Stabilization: complete after user QA confirmed the corrective pass
 TASK-002.5B Cinematic Watch Room Purpose Pass: complete after user-confirmed watch UI and functionality QA
 TASK-002.5E Vertical Listen AI DJ Placement Shell: complete after vertical, wide desktop, and mobile browser QA
+TASK-002.5F Listen Room Header And Presence Refinement: implemented pending final visual QA
+TASK-002.5G Listen Player Rail And Discovery Cleanup: implemented pending final visual QA
 TASK-002.6 Real Audio-Reactive Waveform Architecture: complete after resolver, UI wiring, build, and dev-check verification
 ```
 
@@ -62,6 +64,25 @@ Do not skip ahead unless the user explicitly names another TASK-002 subtask.
 5. `docs/tasks/TASK-002-incomplete-work-recovery/review-notes.md`
 6. `docs/tasks/TASK-002-incomplete-work-recovery/acceptance-criteria.md`
 7. Relevant source files for the active subtask
+
+## Room Source Map
+
+Use this map to find the active room surfaces quickly:
+
+- `components/room/room-shell.tsx`: server entry into the room experience.
+- `components/room/room-experience.tsx`: client switch between watch and listen layouts from live SpacetimeDB room mode.
+- `components/room/listen-mode-layout.tsx`: main listen-room shell, left player rail, header/search/settings menu, room picks, and listen queue drawer.
+- `components/room/watch-mode-layout.tsx`: main watch-room shell, cinematic stage, audience surface, watch media hub, queue/media drawer, and uploaded media library UI.
+- `components/room/queue-panel.tsx`: shared queue controls, Add Media flow, queue list, history, and queue-mode controls used by watch/listen surfaces.
+- `components/room/youtube-media-player.tsx`: synchronized YouTube playback adapter and sync correction handling.
+- `components/room/direct-media-player.tsx`: synchronized direct/HLS media playback adapter and sync correction handling.
+- `components/room/youtube-room-stage.tsx`: YouTube stage wrapper for watch/listen layout presentation.
+- `components/room/media-stage.tsx`: watch-mode stage switcher for direct/HLS/YouTube/idle media.
+- `components/room/members-panel.tsx`: shared member permission/control panel.
+- `components/room/room-chat-panel.tsx`: shared room chat panel, currently surfaced in watch/audience flows.
+- `components/room/transport-controls.tsx`: shared transport UI used outside the custom listen rail.
+- `lib/spacetime/use-live-room.ts`: live room subscription, reducers, mode switching, queue, permissions, and playback mutation helpers.
+- `lib/player/sync.ts`: canonical playback-position calculation and drift correction rules for watch/listen players.
 
 ## Local Readiness Gate
 

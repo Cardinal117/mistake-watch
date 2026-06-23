@@ -31,6 +31,8 @@ TASK-002 covers:
 - Live room authority hardening for session seeding, reducer permissions, duplicate queue imports, and provider API abuse protection.
 - Queue authority, Add Media UX, duplicate prompts, queue notifications, and playback history stabilization.
 - Cinematic watch-room purpose and layout refinement.
+- Listen-room header/presence refinement based on the approved reference layout.
+- Listen player-rail and discovery cleanup based on the approved reference layout.
 - Real audio-reactive waveform architecture.
 - Avatar motion polish.
 - Google OAuth and owner authority foundation.
@@ -63,3 +65,4 @@ This packet also does not replace `TASK-001` as historical context. TASK-001 rem
 - YouTube availability can reduce failed playback but cannot guarantee every third-party video is playable in an embedded room.
 - Provider recommendations must remain honest and avoid fake "personalized" data before accounts exist.
 - Chat and notifications must not leak room data between rooms or users.
+- Listen-room reference refinement has visual scope risk because it changes the header, member access, settings menu, search entry point, left player rail, and discovery sections. It is split into two subtasks so the high-risk shell/permissions changes can land separately from lower-page player/card cleanup.

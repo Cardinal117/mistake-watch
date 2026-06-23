@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TASK-002 Account Roadmap Split - Mistake Watch</title>
+    <title>TASK-002 Listen Room Reference Refinement - Mistake Watch</title>
     <style>
       :root {
         color-scheme: dark;
@@ -16,8 +16,9 @@
         --line: rgb(255 255 255 / 0.1);
         --cyan: #00dbe9;
         --gold: #ffba20;
+        --pink: #ff39ad;
         --green: #77d982;
-        --danger: #ffb4ab;
+        --danger: #ff7aa8;
       }
 
       * { box-sizing: border-box; }
@@ -25,8 +26,8 @@
       body {
         margin: 0;
         background:
-          radial-gradient(circle at 14% 4%, rgb(0 219 233 / 0.14), transparent 34rem),
-          radial-gradient(circle at 86% 18%, rgb(255 186 32 / 0.12), transparent 30rem),
+          radial-gradient(circle at 16% 8%, rgb(255 57 173 / 0.2), transparent 34rem),
+          radial-gradient(circle at 92% 12%, rgb(0 219 233 / 0.14), transparent 30rem),
           var(--bg);
         color: var(--text);
         font-family: Inter, Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -35,10 +36,10 @@
       main {
         width: min(1180px, calc(100% - 32px));
         margin: 0 auto;
-        padding: 32px 0 52px;
+        padding: 32px 0 56px;
       }
 
-      header, section, .card, .task {
+      header, section, .card, .wire, .task {
         border: 1px solid var(--line);
         border-radius: 12px;
         background: rgb(19 19 20 / 0.86);
@@ -47,7 +48,7 @@
 
       header {
         display: grid;
-        gap: 18px;
+        gap: 20px;
         padding: 28px;
       }
 
@@ -59,10 +60,9 @@
       h1, h2, h3, p { margin: 0; }
 
       h1 {
-        max-width: 880px;
-        font-size: clamp(2rem, 5vw, 3.8rem);
-        line-height: 1.03;
-        letter-spacing: 0;
+        max-width: 900px;
+        font-size: clamp(2rem, 5vw, 3.6rem);
+        line-height: 1.04;
       }
 
       h2 { font-size: 1.25rem; }
@@ -77,7 +77,7 @@
       li + li { margin-top: 7px; }
 
       a { color: var(--cyan); }
-      code, .label, .badge {
+      code, .label, .badge, .mono {
         font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
       }
 
@@ -95,27 +95,18 @@
 
       .label { padding: 6px 10px; }
       .badge { padding: 4px 8px; }
-      .badge.gold { border-color: rgb(255 186 32 / 0.34); color: var(--gold); }
-      .badge.green { border-color: rgb(119 217 130 / 0.34); color: var(--green); }
-      .badge.danger { border-color: rgb(255 180 171 / 0.38); color: var(--danger); }
+      .badge.pink { border-color: rgb(255 57 173 / 0.42); color: var(--pink); }
+      .badge.gold { border-color: rgb(255 186 32 / 0.38); color: var(--gold); }
+      .badge.green { border-color: rgb(119 217 130 / 0.38); color: var(--green); }
+      .badge.danger { border-color: rgb(255 122 168 / 0.42); color: var(--danger); }
 
-      .summary-grid, .task-grid, .files-grid, .decision-grid {
+      .grid {
         display: grid;
         gap: 14px;
       }
 
-      .summary-grid, .files-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
-
-      .task-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        align-items: stretch;
-      }
-
-      .decision-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
+      .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
       .card, .task {
         padding: 18px;
@@ -124,231 +115,288 @@
 
       .task {
         display: grid;
-        grid-template-rows: auto auto 1fr;
         gap: 12px;
       }
 
-      .task-number {
+      .hero-row {
         display: flex;
         flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .wire {
+        padding: 18px;
+        overflow: hidden;
+      }
+
+      .wire-frame {
+        display: grid;
+        grid-template-columns: 290px minmax(0, 1fr);
+        min-height: 390px;
+        border: 1px solid rgb(255 255 255 / 0.12);
+        border-radius: 10px;
+        background: rgb(0 0 0 / 0.28);
+      }
+
+      .rail {
+        border-right: 1px solid rgb(255 255 255 / 0.12);
+        padding: 18px;
+        background:
+          linear-gradient(180deg, rgb(255 57 173 / 0.14), transparent 56%),
+          rgb(12 12 14 / 0.8);
+      }
+
+      .album {
+        aspect-ratio: 1;
+        border-radius: 8px;
+        border: 1px solid rgb(255 255 255 / 0.12);
+        background:
+          radial-gradient(circle at 58% 38%, rgb(255 57 173 / 0.72), transparent 34%),
+          linear-gradient(135deg, #24112c, #0a0a0b 58%);
+        margin: 18px 0;
+      }
+
+      .main-surface {
+        padding: 20px;
+        display: grid;
+        gap: 18px;
+        align-content: start;
+      }
+
+      .avatar-row {
+        display: flex;
         gap: 8px;
+      }
+
+      .avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        border: 1px solid rgb(255 57 173 / 0.72);
+        background: radial-gradient(circle, rgb(0 219 233 / 0.5), rgb(24 24 26));
+      }
+
+      .title-row, .mode-row, .actions {
+        display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 16px;
       }
 
-      .timeline {
+      .tabs {
+        display: flex;
+        gap: 26px;
+        border-bottom: 1px solid rgb(255 255 255 / 0.1);
+        padding-bottom: 10px;
+      }
+
+      .tab-active {
+        color: var(--pink);
+        border-bottom: 2px solid var(--pink);
+        padding-bottom: 10px;
+        margin-bottom: -12px;
+      }
+
+      .search {
+        min-width: min(420px, 45%);
+        border: 1px solid rgb(255 255 255 / 0.12);
+        border-radius: 8px;
+        padding: 11px 14px;
+        color: var(--muted);
+        background: rgb(255 255 255 / 0.04);
+      }
+
+      .button {
+        border: 1px solid rgb(255 57 173 / 0.5);
+        border-radius: 8px;
+        padding: 12px 16px;
+        color: var(--pink);
+        background: rgb(255 57 173 / 0.08);
+      }
+
+      .cards {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 0;
-        overflow: hidden;
-        border: 1px solid var(--line);
-        border-radius: 10px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
       }
 
-      .timeline div {
-        padding: 14px;
-        background: rgb(28 27 28 / 0.74);
-        border-right: 1px solid var(--line);
+      .pick {
+        min-height: 180px;
+        border: 1px solid rgb(255 255 255 / 0.12);
+        border-radius: 8px;
+        background: rgb(255 255 255 / 0.04);
       }
 
-      .timeline div:last-child { border-right: 0; }
-
-      .split-rule {
-        display: grid;
-        gap: 10px;
-        padding: 14px;
-        border: 1px solid rgb(0 219 233 / 0.2);
-        border-radius: 10px;
-        background: rgb(0 219 233 / 0.045);
+      .divider {
+        height: 1px;
+        background: var(--line);
+        margin: 12px 0;
       }
 
-      .warning {
-        border-color: rgb(255 186 32 / 0.28);
-        background: rgb(255 186 32 / 0.055);
-      }
-
-      .danger-zone {
-        border-color: rgb(255 180 171 / 0.32);
-        background: rgb(255 180 171 / 0.055);
-      }
-
-      @media (max-width: 920px) {
-        .summary-grid, .task-grid, .files-grid, .decision-grid, .timeline {
-          grid-template-columns: 1fr;
-        }
-
-        .timeline div {
-          border-right: 0;
-          border-bottom: 1px solid var(--line);
-        }
-
-        .timeline div:last-child { border-bottom: 0; }
+      @media (max-width: 840px) {
+        .grid.three, .grid.two { grid-template-columns: 1fr; }
+        .wire-frame { grid-template-columns: 1fr; }
+        .rail { border-right: 0; border-bottom: 1px solid rgb(255 255 255 / 0.12); }
+        .title-row, .mode-row { align-items: stretch; flex-direction: column; }
+        .search { min-width: 100%; }
+        .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       }
     </style>
   </head>
   <body>
     <main>
       <header>
-        <span class="label">TASK-002 roadmap update</span>
-        <h1>Account work is now split into identity, first-party value, and social/provider consent.</h1>
+        <span class="label">Spec-first review</span>
+        <h1>Two-part listen room reference refinement</h1>
         <p>
-          This review dashboard summarizes the updated task packet. The Markdown files remain the durable source of truth; this page is the first-open approval surface for the revised account roadmap.
+          The current listen room should be corrected toward the approved reference: calm room identity, compact mode tabs, search beside the tabs, member avatars above the title, actions inside a cog menu, and the left media player reading as the permanent music rail.
         </p>
-        <div class="summary-grid">
-          <div class="card">
-            <span class="badge green">Now</span>
-            <h3>TASK-002.8A</h3>
-            <p>Account identity, minimal Google OAuth, guest migration, and server-side owner authority.</p>
-          </div>
-          <div class="card">
-            <span class="badge gold">Later</span>
-            <h3>TASK-002.10</h3>
-            <p>Personalization, saved rooms, profile previews, and first-party Mistake Watch history.</p>
-          </div>
-          <div class="card">
-            <span class="badge gold">Later</span>
-            <h3>TASK-002.10C</h3>
-            <p>Signed-in-only friends, room invites, notifications, and incremental provider permissions.</p>
-          </div>
+        <div class="hero-row">
+          <span class="badge pink">TASK-002.5F Header and presence</span>
+          <span class="badge gold">TASK-002.5G Player rail and discovery</span>
+          <span class="badge green">No runtime code in this packet</span>
         </div>
       </header>
 
       <section>
         <h2>Files To Review</h2>
-        <div class="files-grid">
-          <div class="card">
-            <span class="badge green">Must review</span>
+        <div class="grid three" style="margin-top: 14px">
+          <article class="card">
+            <h3>Must Review</h3>
             <ul>
-              <li><code>docs/tasks/TASK-002-incomplete-work-recovery/tasks.md</code></li>
-              <li><code>docs/tasks/TASK-002-incomplete-work-recovery/acceptance-criteria.md</code></li>
-              <li><code>docs/tasks/TASK-002-incomplete-work-recovery/review-notes.md</code></li>
-            </ul>
-          </div>
-          <div class="card">
-            <span class="badge gold">Review surface</span>
-            <ul>
-              <li><code>docs/tasks/TASK-002-incomplete-work-recovery/review.html</code></li>
-            </ul>
-            <p>This HTML file is for scanning decisions and approval flow. It is not a separate source of truth.</p>
-          </div>
-          <div class="card">
-            <span class="badge">Background</span>
-            <ul>
-              <li><code>docs/HANDOFF.md</code></li>
-              <li><code>DESIGN.md</code></li>
-              <li><code>AGENTS.md</code></li>
-            </ul>
-            <p>No app source files were changed for this spec update.</p>
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <h2>Three-Task Split</h2>
-        <div class="task-grid">
-          <article class="task">
-            <div class="task-number">
-              <span class="badge green">Task 1</span>
-              <code>TASK-002.8A</code>
-            </div>
-            <h3>Account Identity and Owner Authority</h3>
-            <ul>
-              <li>Google OAuth with minimal identity scopes only: <code>openid</code>, email, profile.</li>
-              <li>Profiles, RLS, role model, and server-side owner helper.</li>
-              <li>Guest-to-account migration with explicit confirmation.</li>
-              <li>Global account/avatar button and Account Command Panel shell.</li>
-              <li>No YouTube, Drive, friends, history aggregation, upload, or provider recommendations.</li>
+              <li><a href="./tasks.md">tasks.md</a> - new TASK-002.5F and TASK-002.5G scope.</li>
+              <li><a href="./acceptance-criteria.md">acceptance-criteria.md</a> - pass/fail checks.</li>
+              <li><a href="./design.md">design.md</a> - reference layout and UI rules.</li>
             </ul>
           </article>
-
-          <article class="task">
-            <div class="task-number">
-              <span class="badge gold">Task 2</span>
-              <code>TASK-002.10</code>
-            </div>
-            <h3>Personalization and First-Party History</h3>
+          <article class="card">
+            <h3>Useful Context</h3>
             <ul>
-              <li>Durable profile preferences and controlled theme presets.</li>
-              <li>Watch/listen settings that improve repeated use.</li>
-              <li>Saved, recent, and owned rooms.</li>
-              <li>First-party Mistake Watch history for real <code>Most listened</code>, <code>Recently played</code>, profile previews, and recommendation seeds.</li>
-              <li>No friends and no external provider data scopes.</li>
+              <li><a href="./brain-dump.md">brain-dump.md</a> - raw user requirements and search behavior.</li>
+              <li><a href="./review-notes.md">review-notes.md</a> - current status and locked decisions.</li>
             </ul>
           </article>
-
-          <article class="task">
-            <div class="task-number">
-              <span class="badge gold">Task 3</span>
-              <code>TASK-002.10C</code>
-            </div>
-            <h3>Social Graph and Provider Permissions</h3>
+          <article class="card">
+            <h3>Background</h3>
             <ul>
-              <li>Friend requests only between signed-in accounts.</li>
-              <li>Guests never become durable friend graph nodes.</li>
-              <li>Friend room visibility, invites, notifications, privacy, and blocking.</li>
-              <li>Optional Google/YouTube scopes only through incremental consent for concrete features.</li>
-              <li>First-party history remains the primary recommendation source.</li>
+              <li><a href="./proposal.md">proposal.md</a> - roadmap scope update.</li>
+              <li><a href="./implementation-report.html">implementation-report.html</a> - previous implementation evidence.</li>
             </ul>
           </article>
         </div>
       </section>
 
       <section>
-        <h2>Implementation Order</h2>
-        <div class="timeline">
-          <div>
-            <span class="badge green">1</span>
-            <h3>Identity first</h3>
-            <p>TASK-002.8A must land before owner-only upload work because Stream/R2 ingestion needs a trusted server-side owner check.</p>
-          </div>
-          <div>
-            <span class="badge gold">2</span>
-            <h3>Upload can proceed</h3>
-            <p>TASK-002.8 can proceed after 8A. It does not need social graph or history, only owner authority.</p>
-          </div>
-          <div>
-            <span class="badge gold">3</span>
-            <h3>Account value then social</h3>
-            <p>TASK-002.10 should establish first-party account value before TASK-002.10C adds friends and external provider consent.</p>
+        <h2>Target Shape</h2>
+        <div class="wire" style="margin-top: 14px">
+          <div class="wire-frame" aria-label="Listen room target wireframe">
+            <aside class="rail">
+              <p class="mono" style="color: var(--pink); font-size: 12px">MISTAKE WATCH / SIGNAL ROOM</p>
+              <div class="album"></div>
+              <p class="mono" style="color: var(--pink); font-size: 12px">NOW PLAYING</p>
+              <h3 style="margin-top: 8px">'Back To The 80's' mix</h3>
+              <p>ThePrimeThanatos</p>
+              <div class="divider"></div>
+              <p class="mono">Progress / transport / volume</p>
+              <div class="divider"></div>
+              <p class="mono" style="color: var(--pink); font-size: 12px">UP NEXT</p>
+              <p>Suggested next item and queue count stay grounded in this rail.</p>
+            </aside>
+            <div class="main-surface">
+              <div class="avatar-row" title="Top member avatar row">
+                <span class="avatar"></span>
+                <span class="avatar"></span>
+                <span class="avatar"></span>
+              </div>
+              <div class="title-row">
+                <div>
+                  <h2>MOVIEESS</h2>
+                  <p class="mono">Room ID: 8F3B-KYBY * 1 connected * Listen mode * 18 upcoming</p>
+                </div>
+                <div class="actions">
+                  <span class="button">+ Add Media</span>
+                  <span class="avatar"></span>
+                  <span class="button">Cog</span>
+                </div>
+              </div>
+              <div class="mode-row">
+                <div class="tabs">
+                  <span>video Watch</span>
+                  <span class="tab-active">headphones Listen</span>
+                </div>
+                <div class="search">Search YouTube, playlists, artists...</div>
+              </div>
+              <div>
+                <h2>Room picks</h2>
+                <div class="cards" style="margin-top: 14px">
+                  <div class="pick"></div>
+                  <div class="pick"></div>
+                  <div class="pick"></div>
+                  <div class="pick"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       <section>
-        <h2>Decisions Locked In This Spec</h2>
-        <div class="decision-grid">
-          <div class="split-rule">
-            <span class="badge green">Guest-first</span>
-            <p>Guests remain valid room participants. They can create/join rooms, queue/chat/control where permissions allow, and keep temporary identity without signing in.</p>
-          </div>
-          <div class="split-rule">
-            <span class="badge green">Account-enhanced</span>
-            <p>Accounts add durability: profile, preferences, saved rooms, owner authority, first-party history, and later social/provider features.</p>
-          </div>
-          <div class="split-rule warning">
-            <span class="badge gold">Minimal Google auth</span>
-            <p>Initial Google login is identity only. No YouTube, Drive, playlist, history, contacts, calendar, or offline access scopes in TASK-002.8A.</p>
-          </div>
-          <div class="split-rule warning">
-            <span class="badge gold">Friends require accounts</span>
-            <p>Friend relationships require signed-in accounts on both sides. Guests are session participants, not durable social identities.</p>
-          </div>
-          <div class="split-rule">
-            <span class="badge">Recommendations</span>
-            <p>Mistake Watch first-party history is the default recommendation source. Provider data is optional and scoped later.</p>
-          </div>
-          <div class="split-rule danger-zone">
-            <span class="badge danger">Do not collapse roles</span>
-            <p>App/media owner, room host, signed-in member, and guest identity are separate concepts and must not become one frontend role flag.</p>
-          </div>
+        <h2>Two-Part Scope</h2>
+        <div class="grid two" style="margin-top: 14px">
+          <article class="task">
+            <div class="hero-row">
+              <span class="badge pink">Part 1</span>
+              <span class="badge">TASK-002.5F</span>
+            </div>
+            <h3>Listen Room Header And Presence Refinement</h3>
+            <p>
+              Changes the room shell: compact reference-style header, top avatar presence, settings cog menu, permissions pop-out, icon tabs, search bar, state-aware save, and pink leave action.
+            </p>
+            <ul>
+              <li>Remove the permanent right members sidebar.</li>
+              <li>Move members above the room title as icon-only avatars with tooltips.</li>
+              <li>Move copy/share/save/permissions/leave to the cog menu.</li>
+              <li>Add the search shell beside the Watch/Listen tabs.</li>
+              <li>Preserve existing permission authority.</li>
+            </ul>
+          </article>
+          <article class="task">
+            <div class="hero-row">
+              <span class="badge gold">Part 2</span>
+              <span class="badge">TASK-002.5G</span>
+            </div>
+            <h3>Listen Player Rail And Discovery Cleanup</h3>
+            <p>
+              Changes the lower listen layout: left player becomes the rail itself, player grows modestly, tall layouts get intentional Up Next context, Room Picks breathe more, Future AI DJ and Recently Added are hidden/removed.
+            </p>
+            <ul>
+              <li>Keep the media/player card concept but integrate it into the left rail.</li>
+              <li>Target 380-420px player rail where space allows.</li>
+              <li>Give Room Picks cards 12-16px more vertical room.</li>
+              <li>Hide Future AI DJ until TASK-002.10B.</li>
+              <li>Remove Recently Added from listen mode.</li>
+            </ul>
+          </article>
         </div>
       </section>
 
       <section>
-        <h2>Approval Checkpoint</h2>
-        <p>
-          Approving this spec means TASK-002.8A should be implemented as the identity and owner-authority foundation only. Personalization/history and social/provider permissions remain separate follow-up tasks.
-        </p>
+        <h2>Approval Notes</h2>
+        <div class="grid three" style="margin-top: 14px">
+          <article class="card">
+            <h3>Confirmed</h3>
+            <p>The reference image is the desired look for listen mode. The implementation should prioritize that shape even where the current room shell differs.</p>
+          </article>
+          <article class="card">
+            <h3>Protected</h3>
+            <p>Playback, queue reducers, permissions, sync, Add Media, and recommendation honesty should remain unchanged unless a listed task explicitly requires UI relocation.</p>
+          </article>
+          <article class="card">
+            <h3>Deferred</h3>
+            <p>Real Odysseus AI/session intelligence, provider account scopes, fake recommendations, and broader social/history work remain later tasks.</p>
+          </article>
+        </div>
       </section>
     </main>
   </body>

@@ -108,6 +108,47 @@
 - Wide desktop may keep the AI DJ card in the center discovery surface if the below-player placement is not the strongest layout for that viewport.
 - The implementation prepares a clean visual home for future AI DJ interactivity without implementing the later AI/session-intelligence system.
 
+## TASK-002.5F Listen Room Header And Presence Refinement
+
+- The listen-room header matches the approved reference direction: room name first, compact metadata second, minimal primary actions, and a compact settings menu for secondary actions.
+- `Watch` and `Listen` render as left-aligned icon tabs with a clear active underline/accent state rather than as a bulky full-width segmented control.
+- The search bar appears to the right of the mode tabs with placeholder text `Search YouTube, playlists, artists...`.
+- Search UI states are explicit: empty, typing, searching, results, no-results, and provider-error/quota.
+- Search requests, when wired to a provider route, use a minimum query length of 3, a 600ms debounce, a 10-minute cache TTL, a maximum of 10 results, and cancellation of the previous request.
+- The permanent listen-mode right members sidebar is removed.
+- Current room members appear as compact avatars above the room title, flowing left to right, with hover/focus tooltips for member names.
+- Existing host/crown and online/presence indicators remain visible where available without crowding the header.
+- Permission management opens from the settings menu as a focused pop-out/window and preserves existing permission semantics and host authority behavior.
+- Copy Room ID, Copy Room Link, Share Room, Save/Saved Room, Room Settings, Permissions, and Leave Room live inside the settings menu.
+- Leave Room is visually destructive/pink.
+- Save Room is state-aware and clearly shows saved versus unsaved state.
+- The settings cog and menu use the approved reference treatment: compact square cog, dark glass surface, thin separators, clear icon labels.
+- The listen-room accent follows the current media thumbnail palette where technically available while preserving contrast and reduced-motion behavior.
+- Existing playback, queue, chat/watch behavior, room join, invite, and permissions continue to work.
+
+## TASK-002.5G Listen Player Rail And Discovery Cleanup
+
+- The listen player/media card remains the left-side player concept, but reads as the left music rail itself instead of a floating card nested inside a sidebar.
+- Desktop player rail width is increased toward 380-420px where viewport width allows, without forcing room-pick content into cramped or broken layouts.
+- The left rail keeps current-media responsibilities: artwork/video, title, artist/channel, metadata chips, progress, transport, volume/fullscreen, Up Next, and queue count.
+- Tall desktop and vertical-monitor layouts use below-player space for an intentional Suggested Next / Up Next area instead of leaving a dead gap or showing a disconnected bubble.
+- Future AI DJ is hidden for now and does not appear as a future-feature block in the active listen room.
+- Recently Added is removed from listen mode.
+- Room Picks cards gain roughly 12-16px of vertical breathing room and keep thumbnail, title, channel, duration, and actions readable.
+- Room Picks actions still respect existing Play, Add Next, Add Queue, and permission behavior.
+- Existing playback, queue reducer semantics, provider availability classification, Add Media flow, recommendation honesty, and sync behavior remain unchanged.
+
+## TASK-002.5I Performance Quick Wins
+
+- `public/favicon.svg` is reduced from the multi-megabyte embedded asset to a small optimized favicon.
+- Dashboard, listen room, and watch room no longer pay a multi-megabyte favicon download.
+- `hls.js` is not part of the initial non-HLS room load.
+- HLS playback still works when an HLS source is selected.
+- Native HLS browser support remains preferred where available.
+- YouTube playback, direct/R2 playback, transport controls, fullscreen controls, queue autoplay, and room sync remain unchanged.
+- Static checks and production build pass.
+- Larger performance work such as queue virtualization, room bundle splitting, metadata caching, and CLS cleanup remains explicitly out of scope for this quick-win task.
+
 ## TASK-002.6 Real Audio-Reactive Waveform Architecture
 
 - A waveform source resolver distinguishes `youtube_embed`, `direct_media`, `hls_media`, future `stream_media`, and future `r2_media` sources.

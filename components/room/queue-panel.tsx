@@ -53,6 +53,8 @@ import type {
 } from "@/lib/youtube/playlist";
 import { getYouTubeAvailabilityLabel } from "@/lib/youtube/availability";
 import { useYouTubeMetadata } from "@/lib/youtube/use-youtube-metadata";
+import type { YouTubeSearchItem } from "@/lib/youtube/search";
+import { YouTubeAddMediaSearch } from "./youtube-add-media-search";
 
 type QueuePanelProps = {
   canAddQueue?: boolean;
@@ -229,6 +231,7 @@ export function QueuePanel({
   const hasPreviewState = Boolean(
     queueUrl.trim() || singlePreview || playlistPreview,
   );
+
   const hub = presentation === "hub";
 
   useEffect(() => {
@@ -499,6 +502,69 @@ export function QueuePanel({
         : `Added to queue: ${input.sourceTitle}`,
       input.allowDuplicate ? "warning" : "success",
     );
+  }
+
+  function youtubeSearchItemToQueueInput(item: YouTubeSearchItem): QueueAddInput {
+    return {
+      artist: item.channelTitle ?? undefined,
+      channelName: item.channelTitle ?? undefined,
+      durationSeconds: item.durationSeconds ?? undefined,
+      isUnavailable: item.availability.playable === false,
+      sourceTitle: item.title,
+      sourceType: "youtube",
+      sourceUrl: item.url,
+      thumbnailUrl: item.thumbnailUrl ?? undefined,
+    };
+  }
+
+  async function addSearchResult(item: YouTubeSearchItem) {
+    const input = await preferFirstPartyMediaMatch(
+      youtubeSearchItemToQueueInput(item),
+    );
+
+    if (isDuplicateQueueSource(input) && duplicatePreference === "warn") {
+      setPendingDuplicateAdd({ item: input, kind: "single" });
+      notify("Duplicate detected. Confirm whether to add it again.", "warning");
+      return;
+    }
+
+    addQueueItemWithFeedback({
+      ...input,
+      allowDuplicate: isDuplicateQueueSource(input),
+    });
+  }
+
+  async function playSearchResultNext(item: YouTubeSearchItem) {
+    const input = await preferFirstPartyMediaMatch(
+      youtubeSearchItemToQueueInput(item),
+    );
+
+    if (isDuplicateQueueSource(input) && duplicatePreference === "warn") {
+      setPendingDuplicateAdd({
+        item: {
+          ...input,
+          isPlayNext: true,
+        },
+        kind: "single",
+      });
+      notify("Duplicate detected. Confirm whether to add it again.", "warning");
+      return;
+    }
+
+    addQueueItemWithFeedback({
+      ...input,
+      allowDuplicate: isDuplicateQueueSource(input),
+      isPlayNext: true,
+    });
+  }
+
+  async function loadSearchResult(item: YouTubeSearchItem) {
+    const input = await preferFirstPartyMediaMatch(
+      youtubeSearchItemToQueueInput(item),
+    );
+
+    onLoadSource?.(input);
+    notify(`Loaded source: ${input.sourceTitle}`, "success");
   }
 
   async function importPlaylistItemsWithFeedback(
@@ -886,6 +952,22 @@ export function QueuePanel({
             Loading preview
           </p>
         ) : null}
+        <YouTubeAddMediaSearch
+          canAddQueue={!addDisabled}
+          canLoadSource={!loadDisabled}
+          duplicateVideoIds={duplicateVideoIds}
+          mode={mode}
+          onAddResult={(item) => {
+            void addSearchResult(item);
+          }}
+          onLoadResult={(item) => {
+            void loadSearchResult(item);
+          }}
+          onPlayNextResult={(item) => {
+            void playSearchResultNext(item);
+          }}
+          roomId={roomId}
+        />
         {singlePreview ? (
           <SinglePreviewCard
             duplicate={isDuplicateQueueSource(singlePreview)}

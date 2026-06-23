@@ -3,7 +3,7 @@ import { cx } from "@/lib/ui";
 
 type SliderProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & {
   label: string;
-  tone?: "amber" | "cyan";
+  tone?: "amber" | "cyan" | "dynamic";
 };
 
 export function Slider({
