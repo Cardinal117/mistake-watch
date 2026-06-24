@@ -149,6 +149,21 @@
 - Static checks and production build pass.
 - Larger performance work such as queue virtualization, room bundle splitting, metadata caching, and CLS cleanup remains explicitly out of scope for this quick-win task.
 
+## TASK-002.5J Queue Resilience and Large Queue Performance
+
+- YouTube runtime/player/provider errors do not silently drain upcoming queue items.
+- Runtime-error auto-skip is limited to confirmed permanent unavailable states such as removed/private videos or embed-blocked videos.
+- Auto-skipped items produce compact, readable room-visible event/history records with source, reason, and timestamp.
+- Repeated known-bad URLs are labeled clearly in queue/history surfaces instead of failing without context.
+- Listen-mode metadata loading fetches the first 10 queued items quickly, then progressively resolves the rest with bounded concurrency.
+- Queue drawer preview/handle can show that metadata is still loading without blocking queue interaction.
+- Large queue drawers use virtualized/windowed rendering or an equivalent visible-row strategy for 250+ item queues.
+- Queue drawer heavy content is not rendered while the drawer is closed except for the compact preview data needed by the handle.
+- Room Picks, history, and playlist/recommendation tabs do not depend solely on active upcoming queue rows and can render useful cached/history-backed states when upcoming is empty.
+- Skeleton loaders appear for initially loading tab/card surfaces and disappear when cached or fetched content is ready.
+- Existing SpacetimeDB queue reducer contracts remain authoritative and are not replaced by client-only ordering.
+- Static checks and production build pass.
+
 ## TASK-002.6 Real Audio-Reactive Waveform Architecture
 
 - A waveform source resolver distinguishes `youtube_embed`, `direct_media`, `hls_media`, future `stream_media`, and future `r2_media` sources.

@@ -33,7 +33,10 @@ import {
   type YoutubePlayer,
   type YoutubePlayerEvent,
 } from "@/lib/youtube/iframe-api";
-import { classifyYouTubeIframeError } from "@/lib/youtube/availability";
+import {
+  classifyYouTubeIframeError,
+  type YouTubeAvailability,
+} from "@/lib/youtube/availability";
 
 type YoutubeMediaPlayerProps = {
   className?: string;
@@ -42,6 +45,8 @@ type YoutubeMediaPlayerProps = {
 };
 
 const AUTOPLAY_ADVANCE_IN_FLIGHT_TIMEOUT_MS = 6_000;
+const RUNTIME_ERROR_AUTOSKIP_LIMIT = 3;
+const RUNTIME_ERROR_AUTOSKIP_WINDOW_MS = 30_000;
 
 export function YoutubeMediaPlayer({
   className,
@@ -61,6 +66,7 @@ export function YoutubeMediaPlayer({
   const hydratedAtMsRef = useRef(0);
   const hydratedPlaybackKeyRef = useRef<string | null>(null);
   const metadataRefreshTimerRef = useRef<number | null>(null);
+  const runtimeErrorAutoSkipTimestampsRef = useRef<number[]>([]);
   const setPlaybackStateRef = useRef(liveRoom.setPlaybackState);
   const updateMediaTitleRef = useRef(liveRoom.updateMediaTitle);
   const activeSourceUrlRef = useRef(liveRoom.snapshot.session?.sourceUrl);
@@ -140,6 +146,21 @@ export function YoutubeMediaPlayer({
     autoplayAdvanceInFlightKeyRef.current = activeKey;
     autoplayAdvanceInFlightAtMsRef.current = Date.now();
     advanceToNextQueueItemRef.current({ autoplay: true });
+  }, []);
+
+  const reserveRuntimeErrorAutoSkip = useCallback(() => {
+    const now = Date.now();
+    const recentSkips = runtimeErrorAutoSkipTimestampsRef.current.filter(
+      (timestamp) => now - timestamp < RUNTIME_ERROR_AUTOSKIP_WINDOW_MS,
+    );
+
+    if (recentSkips.length >= RUNTIME_ERROR_AUTOSKIP_LIMIT) {
+      runtimeErrorAutoSkipTimestampsRef.current = recentSkips;
+      return false;
+    }
+
+    runtimeErrorAutoSkipTimestampsRef.current = [...recentSkips, now];
+    return true;
   }, []);
 
   const publishCurrentMetadata = useCallback((player: YoutubePlayer) => {
@@ -462,11 +483,24 @@ export function YoutubeMediaPlayer({
               setLocalError(availability.reason);
 
               if (
+                shouldAutoSkipYouTubeRuntimeError(availability) &&
+                reserveRuntimeErrorAutoSkip() &&
                 queueAutoplayEnabledRef.current &&
                 hasNextQueueItemRef.current &&
                 canControlPlaybackRef.current
               ) {
-                window.setTimeout(() => requestAutoplayAdvance(), 900);
+                const activeKey = getActivePlaybackKey(
+                  canonicalStateRef.current,
+                );
+
+                window.setTimeout(() => {
+                  if (
+                    activeKey &&
+                    activeKey === getActivePlaybackKey(canonicalStateRef.current)
+                  ) {
+                    requestAutoplayAdvance();
+                  }
+                }, 900);
               } else {
                 publishPlaybackState("error");
               }
@@ -527,6 +561,7 @@ export function YoutubeMediaPlayer({
     publishPlaybackState,
     publishCurrentMetadata,
     requestAutoplayAdvance,
+    reserveRuntimeErrorAutoSkip,
     scheduleMetadataRefresh,
   ]);
 
@@ -776,6 +811,13 @@ function buildCanonicalPlaybackState(
 
 function isYouTubePlaying(state: number) {
   return state === window.YT?.PlayerState.PLAYING;
+}
+
+function shouldAutoSkipYouTubeRuntimeError(availability: YouTubeAvailability) {
+  return (
+    availability.status === "removed-private" ||
+    availability.status === "embed-blocked"
+  );
 }
 
 function getActivePlaybackKey(state: CanonicalPlaybackState | null) {

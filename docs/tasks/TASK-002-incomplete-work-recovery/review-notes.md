@@ -1032,6 +1032,29 @@ Manual review pending:
 - Optional production Lighthouse recapture after deploy.
 - HLS playback QA with an actual `.m3u8` source.
 
+## TASK-002.5J Bug Discovery Notes
+
+- June 24, 2026 QA found that large YouTube queues could appear to disappear after the room had been active for a while.
+- Follow-up detail confirmed this was not only a visual empty state: autoplay stopped and the upcoming/recommendation surfaces lost their queue context.
+- Console logs showed noisy YouTube iframe/ad/CORS messages rather than a SpacetimeDB subscription failure. The actionable risk was in the YouTube runtime error path.
+- Current bug fix:
+  - YouTube iframe runtime errors no longer auto-advance the queue for generic provider/player/unknown errors.
+  - Auto-skip is now restricted to clearly permanent unavailable states: removed/private and embed-blocked.
+  - A delayed runtime-error auto-skip now verifies that the active playback key has not changed before advancing.
+  - Runtime-error auto-skip has a circuit breaker of 3 skips per 30 seconds so a bad playlist cannot silently drain a large queue.
+- Remaining corrective work is tracked as TASK-002.5J:
+  - staged metadata loading for large queues: first 10 items immediately, then lazy-load the rest over time with bounded concurrency;
+  - queue drawer loading indicators and skeleton rows while metadata resolves;
+  - virtualization/windowing for 250+ item queue drawers;
+  - compact room-visible event logs for skipped/unavailable media;
+  - known-problem URL labeling in queue/history surfaces;
+  - separation of upcoming queue state from history/recommendation sources so Room Picks and history surfaces do not go dead when upcoming becomes empty.
+
+Verification:
+
+- `npm run typecheck` passed for the runtime-error guard fix.
+- `npm run lint` passed for the runtime-error guard fix.
+
 ## TASK-002.1 Implementation Notes
 
 - Listen queue drawer now has persisted Compact, Standard, and Tall height controls.

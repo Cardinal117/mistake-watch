@@ -431,6 +431,47 @@ Safe commit point:
 
 - Shared room and dashboard payloads are reduced by quick, low-risk asset/player-loading fixes without changing product behavior.
 
+## TASK-002.5J: Queue Resilience and Large Queue Performance
+
+Source task: corrective follow-up from the June 24, 2026 queue disappearance bug and 250-item queue performance review.
+
+Work:
+
+- Harden YouTube autoplay continuity so runtime player/provider errors cannot silently consume a large queue.
+- Only auto-skip YouTube items for confirmed permanent runtime failures such as removed/private videos or embed-blocked videos.
+- Record compact room-visible queue/player events when an item is auto-skipped:
+  - source URL or normalized provider ID;
+  - readable reason such as `Owner does not allow embedded playback`;
+  - affected queue item title when available;
+  - timestamp and actor/system source.
+- Keep a lightweight known-problem source map for the current room/session so repeated unavailable URLs can be labeled in history and queue surfaces.
+- Add clear user-facing history labels for unavailable/skipped items so hosts understand why autoplay moved past them.
+- Reduce listen-mode metadata pressure for large queues:
+  - fetch duration/metadata for the first 10 queued items immediately;
+  - progressively lazy-load the remaining queue metadata over time with a small concurrency limit;
+  - prioritize visible drawer rows and near-future items before offscreen rows;
+  - show small loading indicators in the queue drawer handle and rows while metadata is still being resolved.
+- Virtualize or window large queue drawers so only visible rows and near-viewport rows render.
+- Keep queue drawer heavy content mounted only when the drawer is open or when a compact preview requires it.
+- Separate active upcoming queue state from session history/recommendation source data:
+  - Room Picks / For You / From Playlist should not go dead just because upcoming queue is temporarily empty;
+  - history and recommendation tabs should load/render only their active visible cards;
+  - use skeleton loaders during initial tab loads and cached results after first load.
+- Keep SpacetimeDB reducers authoritative for queue mutation; do not move queue ordering to client-only state.
+- Do not implement new provider recommendation algorithms, account history, or AI DJ behavior in this corrective task.
+
+Review checkpoint:
+
+- A bad YouTube embed or provider error cannot silently drain a 250-item queue.
+- Auto-skipped items are visible and understandable in room history or event surfaces.
+- Large queues stay responsive while still showing useful first-page queue metadata quickly.
+- Opening the queue drawer with 250+ items does not render every thumbnail/card at once.
+- Room Picks and history surfaces remain useful even after the upcoming queue is empty.
+
+Safe commit point:
+
+- Listen/watch rooms can survive YouTube runtime failures and large queues without silent queue loss or heavy initial metadata/render pressure.
+
 ## TASK-002.6: Real Audio-Reactive Waveform Architecture
 
 Source task: TASK-001 Task 16.D.
