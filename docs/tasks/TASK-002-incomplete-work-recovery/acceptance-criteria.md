@@ -164,6 +164,24 @@
 - Existing SpacetimeDB queue reducer contracts remain authoritative and are not replaced by client-only ordering.
 - Static checks and production build pass.
 
+## TASK-002.5K Listen Room TV View Mode
+
+- TV mode is local/client-only and does not change the shared room mode or other members' layouts.
+- Listen mode exposes a clear TV mode entry point without confusing it with Watch/Listens shared room mode switching.
+- TV mode uses a full-viewport cinematic presentation close to the supplied neon music-lounge reference.
+- The current media/video/artwork is the dominant visual element.
+- Top-left room pill shows room name and listener count.
+- Top-right exit control remains accessible and includes a keyboard hint.
+- Current title, artist/channel, source metadata, progress, play/pause, previous, next, shuffle/repeat/autoplay, volume, fullscreen, and Up Next remain usable.
+- YouTube TV mode hides native iframe controls where technically possible and renders Mistake Watch controls over the app shell.
+- Fullscreen is applied to the app TV shell wrapper so custom controls can remain visible above the media.
+- Controls remain readable over bright/dark artwork using gradient scrims and glass surfaces.
+- Controls may fade when idle but exit remains discoverable and reduced-motion is respected.
+- Dynamic thumbnail-driven accent colors style TV mode progress, controls, room pill, Up Next, and glows.
+- TV mode exits back to the previous listen-room layout without resetting playback, queue, search state, or local volume.
+- Watch mode remains visually unchanged except for any safe shared helper refactor.
+- Static checks, production build, and browser QA pass.
+
 ## TASK-002.6 Real Audio-Reactive Waveform Architecture
 
 - A waveform source resolver distinguishes `youtube_embed`, `direct_media`, `hls_media`, future `stream_media`, and future `r2_media` sources.

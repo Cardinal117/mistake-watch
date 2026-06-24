@@ -42,6 +42,7 @@ type YoutubeMediaPlayerProps = {
   className?: string;
   liveRoom: LiveRoomState;
   mode: PlaybackMode;
+  showNativeControls?: boolean;
 };
 
 const AUTOPLAY_ADVANCE_IN_FLIGHT_TIMEOUT_MS = 6_000;
@@ -52,6 +53,7 @@ export function YoutubeMediaPlayer({
   className,
   liveRoom,
   mode,
+  showNativeControls = true,
 }: YoutubeMediaPlayerProps) {
   const elementId = useId().replaceAll(":", "");
   const playerRef = useRef<YoutubePlayer | null>(null);
@@ -526,7 +528,7 @@ export function YoutubeMediaPlayer({
           height: "100%",
           playerVars: {
             autoplay: 0,
-            controls: 1,
+            controls: showNativeControls ? 1 : 0,
             enablejsapi: 1,
             origin: window.location.origin,
             playsinline: 1,
@@ -563,6 +565,7 @@ export function YoutubeMediaPlayer({
     requestAutoplayAdvance,
     reserveRuntimeErrorAutoSkip,
     scheduleMetadataRefresh,
+    showNativeControls,
   ]);
 
   useEffect(() => {

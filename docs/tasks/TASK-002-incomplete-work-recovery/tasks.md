@@ -472,6 +472,78 @@ Safe commit point:
 
 - Listen/watch rooms can survive YouTube runtime failures and large queues without silent queue loss or heavy initial metadata/render pressure.
 
+## TASK-002.5K: Listen Room TV View Mode
+
+Source task: listen-room TV presentation idea from June 24, 2026, using the neon cinematic reference screen as the target feel.
+
+Work:
+
+- Add a client-only TV view mode for listen rooms.
+- Keep TV mode local to the current browser/client:
+  - do not change SpacetimeDB room mode;
+  - do not affect other members;
+  - do not create a durable room setting unless a later task explicitly asks for it.
+- Add a TV mode entry point to listen mode controls:
+  - desktop/top controls can expose a compact TV icon/button;
+  - TV mode should also be reachable from an appropriate player control or settings affordance;
+  - preserve normal watch/listen mode switching separately from TV view.
+- Build a dedicated TV presentation surface that looks close to the reference:
+  - full-viewport cinematic media/background canvas;
+  - top-left room pill with room name and listener count;
+  - top-right `Exit TV Mode` control with keyboard hint;
+  - large current song title and artist/channel;
+  - source chip and optional verified/provider indicator where available;
+  - wide progress bar;
+  - large centered play/pause control with previous/next nearby;
+  - secondary shuffle/repeat/autoplay controls;
+  - compact volume/fullscreen cluster;
+  - compact Up Next card on the right.
+- For YouTube sources, use the YouTube iframe API in TV mode with native iframe controls hidden where possible, then render Mistake Watch controls over the player shell.
+- Keep fullscreen on the app TV shell wrapper rather than the YouTube iframe so custom controls remain visible above the video.
+- Add idle-control behavior:
+  - controls stay visible on mouse/keyboard/touch activity;
+  - controls can fade down after a short idle period without hiding critical exit access;
+  - reduced-motion users get no animated fade or a very subtle opacity change.
+- Preserve dynamic thumbnail-driven listen accent styling:
+  - progress bar;
+  - title eyebrow;
+  - play button glow/fill;
+  - room pill glow;
+  - exit/TV controls;
+  - volume slider;
+  - Up Next accent.
+- Preserve playback behavior:
+  - existing YouTube/direct/HLS playback state;
+  - queue autoplay;
+  - previous/next queue actions;
+  - duration and seek behavior;
+  - fullscreen behavior;
+  - local volume.
+- Use TV mode to reveal player/autoplay issues safely:
+  - if YouTube controls cannot be fully hidden, keep our overlay dominant and avoid duplicate visual noise where possible;
+  - do not create new autoplay fallback semantics inside TV mode.
+- Hide management surfaces while in TV mode:
+  - Room Picks;
+  - Add Media;
+  - Search;
+  - Queue drawer;
+  - Account/settings panels except exit/minimal controls;
+  - member permissions/chat surfaces.
+- Keep watch room unchanged unless shared player-shell helpers require a small non-visual refactor.
+
+Review checkpoint:
+
+- Listen TV mode feels like a premium full-screen music lounge, close to the provided neon reference.
+- Current media is the main character; app controls are readable but secondary.
+- YouTube native controls do not visually fight with Mistake Watch controls in normal TV mode usage.
+- Exiting TV mode reliably returns to the previous listen-room layout without changing room state.
+- TV mode works for YouTube and degrades honestly for direct/HLS sources.
+- TV mode does not break normal listen mode, watch mode, queue reducers, Add Media, search, or room sync.
+
+Safe commit point:
+
+- Listen mode has a local TV presentation view that improves passive viewing and provides a cleaner surface for future playback/autoplay QA.
+
 ## TASK-002.6: Real Audio-Reactive Waveform Architecture
 
 Source task: TASK-001 Task 16.D.

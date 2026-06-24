@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TASK-002.5F/G Listen Room Refinement Report</title>
+    <title>TASK-002.5F/G/K Listen Room Refinement Report</title>
     <style>
       :root {
         color-scheme: dark;
@@ -131,10 +131,10 @@
   <body>
     <main>
       <header>
-        <p class="eyebrow">TASK-002.5F/G implementation report</p>
-        <h1>Listen room reference refinement</h1>
+        <p class="eyebrow">TASK-002.5F/G/K implementation report</p>
+        <h1>Listen room reference and TV mode refinement</h1>
         <p class="summary">
-          The listen room now follows the approved reference direction across the header and main content: cleaner room identity, top member avatars, compact mode tabs, search shell, settings menu, wider integrated player rail, breathable Room Picks, and no active filler sections.
+          The listen room now follows the approved reference direction across the header and main content, and it includes a local TV mode for passive viewing: cleaner room identity, top member avatars, compact mode tabs, search shell, settings menu, wider integrated player rail, breathable Room Picks, no active filler sections, and a fullscreen music-lounge surface focused on the current media.
         </p>
       </header>
 
@@ -154,7 +154,12 @@
           <article class="card">
             <span class="status warn">Context</span>
             <h3 style="margin-top: 10px">Spec files</h3>
-            <p><code>tasks.md</code>, <code>design.md</code>, and <code>acceptance-criteria.md</code> define the two-part listen refinement.</p>
+            <p><code>tasks.md</code>, <code>design.md</code>, and <code>acceptance-criteria.md</code> define the listen refinement and TV mode scope.</p>
+          </article>
+          <article class="card">
+            <span class="status pink">Player prop</span>
+            <h3 style="margin-top: 10px">YouTube player</h3>
+            <p><code>components/room/youtube-media-player.tsx</code></p>
           </article>
         </div>
       </section>
@@ -183,6 +188,17 @@
               <li>Removed Recently Added from listen mode.</li>
               <li>Hid the Future AI DJ block until the later session-intelligence task.</li>
               <li>Gave Room Picks more vertical breathing room while preserving actions.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <span class="status pink">TASK-002.5K</span>
+            <h3 style="margin-top: 10px">Listen TV mode</h3>
+            <ul>
+              <li>Added a local-only TV mode entry in the listen desktop header.</li>
+              <li>Added a fullscreen TV presentation with room pill, exit control, large title, wide progress, centered transport, Up Next, volume, and fullscreen controls.</li>
+              <li>Added keyboard handling for <code>T</code> toggle and <code>Escape</code> exit while avoiding form-input conflicts.</li>
+              <li>Hid normal management surfaces while TV mode is active.</li>
+              <li>Added a YouTube player option to hide native iframe controls only inside TV mode.</li>
             </ul>
           </article>
         </div>
@@ -226,8 +242,18 @@
             </tr>
             <tr>
               <td>Provider search results</td>
-              <td><span class="status warn">Deferred</span></td>
-              <td>The shell exists; real YouTube search results need a dedicated provider route/API slice.</td>
+              <td><span class="status">Implemented</span></td>
+              <td>The header search uses the current Add Media search integration and preserves pasted-link behavior.</td>
+            </tr>
+            <tr>
+              <td>Listen TV mode</td>
+              <td><span class="status">Implemented</span></td>
+              <td>TV mode is local to the current browser, reuses existing playback/queue controls, and does not mutate room mode.</td>
+            </tr>
+            <tr>
+              <td>YouTube native controls in TV mode</td>
+              <td><span class="status">Implemented</span></td>
+              <td>The YouTube iframe receives hidden native controls in TV mode; normal listen/watch players keep existing behavior.</td>
             </tr>
           </tbody>
         </table>
@@ -254,6 +280,7 @@
               <li>Permissions pop-out behavior in a live room.</li>
               <li>Queue action regression: play, add next, add queue, Add Media.</li>
               <li>Mobile regression check for preserved mobile listen flow.</li>
+              <li>TV mode desktop/TV-like display check, including exit, T toggle, Escape exit, fullscreen, YouTube overlay controls, and Up Next.</li>
             </ul>
           </article>
         </div>
@@ -262,7 +289,7 @@
       <section>
         <h2>Deferred</h2>
         <p>
-          Real provider search results, Odysseus/session intelligence, first-party account-history recommendations, and broader listen-room personalization remain later tasks. This slice intentionally avoids changing playback authority, queue reducer semantics, Add Media behavior, or provider availability classification.
+          Odysseus/session intelligence, first-party account-history recommendations, queue virtualization, metadata lazy loading, event logging, and broader listen-room personalization remain later tasks. This slice intentionally avoids changing playback authority, queue reducer semantics, Add Media behavior, provider availability classification, or watch-room layout.
         </p>
       </section>
     </main>

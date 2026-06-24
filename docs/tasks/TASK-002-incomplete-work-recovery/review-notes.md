@@ -188,6 +188,7 @@ Verification:
 - `npm run typecheck` passed.
 - `npm run lint` passed.
 - `npm run build` passed.
+- `npm run build` passed.
 - `npm run lint` passed.
 - `npm run build` passed.
 - `npm run dev:check` passed with 20 pass, 0 warn, 0 fail after Next.js and SpacetimeDB were running.
@@ -1054,6 +1055,74 @@ Verification:
 
 - `npm run typecheck` passed for the runtime-error guard fix.
 - `npm run lint` passed for the runtime-error guard fix.
+
+## TASK-002.5K Planning Notes
+
+- User wants listen-room TV view mode pulled forward before the larger queue-resilience/performance implementation.
+- Rationale:
+  - watch room already has a focused screening-room direction;
+  - listen room needs a passive-viewing presentation for TV or large display use;
+  - simplifying the listen-room surface to only the current media and basic controls may reveal playback/autoplay issues more clearly before we tackle the broader queue problems.
+- TV mode should look close to the supplied neon reference:
+  - full-viewport video/artwork focus;
+  - top-left room pill;
+  - top-right Exit TV Mode control;
+  - large title and artist/source metadata;
+  - wide progress bar;
+  - centered transport controls;
+  - compact Up Next and volume/fullscreen clusters.
+- The mode is client-only and should not become a shared room mode.
+- YouTube player controls should be hidden where possible through iframe params, with Mistake Watch controls rendered on the app TV shell.
+- Fullscreen should target the app wrapper, not the cross-origin YouTube iframe, so custom overlays can remain visible.
+- This task should not implement queue virtualization, metadata lazy loading, event logging, or known-bad URL persistence; those remain in TASK-002.5J.
+
+## TASK-002.5K Implementation Notes
+
+- Added a local listen-room TV view state to `components/room/listen-mode-layout.tsx`.
+- Added a dynamic-accent `TV Mode` entry button in the desktop listen header.
+- Added keyboard handling:
+  - `T` toggles TV mode when focus is not inside a form field.
+  - `Escape` exits TV mode.
+- Added a full-viewport `ListenTvModeLayout` that hides management surfaces and renders:
+  - top-left room/listener pill;
+  - top-right `Exit TV Mode` control with `T` hint;
+  - full-bleed YouTube player or artwork-driven ambient fallback;
+  - large current title and artist/source context;
+  - wide progress slider;
+  - large centered play/pause with previous and next controls;
+  - shuffle and repeat/autoplay controls;
+  - compact Up Next card;
+  - volume and app-wrapper fullscreen controls.
+- Added `showNativeControls` to `YoutubeMediaPlayer` so TV mode can hide YouTube iframe controls while normal listen/watch usage keeps native iframe controls unchanged.
+- Kept direct/HLS listen playback on the existing hidden audio path; TV mode uses artwork/ambient visuals for those sources.
+- Did not change SpacetimeDB reducers, queue semantics, watch mode, Add Media behavior, search behavior, or durable room state.
+- Follow-up screenshot QA refinement:
+  - reduced oversized TV title typography and capped its readable width;
+  - kept title/progress readable during idle instead of fading the entire lower-third;
+  - reduced heavy background dimming so the media remains the protagonist;
+  - softened Up Next, volume, and secondary control glass so they feel overlaid rather than boxed;
+  - made the main TV play/pause control a cleaner circular anchor.
+- Second screenshot QA refinement:
+  - reduced TV title typography again and added a subtle dynamic accent tint;
+  - moved Up Next above the progress bar;
+  - kept the progress bar directly above the media controls;
+  - restored the main play/pause button to dynamic accent styling;
+  - added dynamic YouTube metadata pills for source, views, and likes in TV mode;
+  - added persisted local TV display settings for dimness, UI brightness, and hide-all-UI-on-idle;
+  - made hide-all-UI-on-idle also hide the cursor until activity returns;
+  - fixed the listen settings menu `Room Settings` item to open the TV display settings dialog;
+  - made `Copy Room Link` fall back to the current `/rooms/{roomId}` URL when no invite URL is available.
+
+Verification:
+
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+
+Manual review pending:
+
+- Browser QA should confirm the TV surface matches the cinematic reference closely enough on desktop and TV-like displays.
+- Browser QA should confirm YouTube controls stay visually secondary/hidden while Mistake Watch controls remain usable.
+- Browser QA should confirm exiting TV mode returns to the exact normal listen layout and room state.
 
 ## TASK-002.1 Implementation Notes
 

@@ -310,6 +310,65 @@ Implementation boundary:
 - do not implement the later Odysseus/session-intelligence behavior in this task;
 - do not add unrelated watch-room changes.
 
+### Listen Room TV View Mode
+
+TV mode is a local presentation view for listen rooms. It is not a new shared room mode and must not mutate SpacetimeDB room mode or other members' layouts.
+
+Target structure:
+
+```text
+FULL VIEWPORT TV SHELL
+┌──────────────────────────────────────────────────────────────┐
+│ Room pill                                      Exit TV Mode   │
+│                                                              │
+│                 full-bleed video / artwork focus             │
+│                                                              │
+│ Now playing eyebrow                                          │
+│ Large title                                                  │
+│ Artist / source                                              │
+│ Progress bar                                           Up Next│
+│ Shuffle   Previous   Play/Pause   Next   Repeat     Volume   │
+└──────────────────────────────────────────────────────────────┘
+```
+
+Visual direction:
+
+- follow the supplied neon TV reference: cinematic full-viewport image/video, dark gradient scrims, large title, centered transport, compact Up Next;
+- keep the current media as the main character, with app controls reading as a lightweight overlay;
+- use translucent glass panels sparingly for the room pill, exit control, Up Next card, and volume cluster;
+- preserve dynamic thumbnail-driven listen accent variables for progress, active controls, glows, and metadata accents;
+- keep the exit affordance visible even when controls fade after idle;
+- respect reduced-motion by disabling or minimizing idle fade and background motion.
+
+YouTube strategy:
+
+- initialize the YouTube iframe with native controls hidden in TV mode where possible;
+- drive playback through the existing YouTube iframe API control path;
+- render Mistake Watch controls above the app TV shell, not above a YouTube fullscreen iframe;
+- use fullscreen on the app wrapper so overlays remain visible;
+- accept that YouTube may still show unavoidable branding or transient overlays, but our UI should remain visually dominant.
+
+State boundary:
+
+- TV mode can be held in client state and optionally persisted locally for that browser;
+- TV mode should not call room mode reducers;
+- exiting TV mode should restore the previous listen layout without resetting playback, queue state, search state, or local volume.
+
+Hidden in TV mode:
+
+- Room Picks;
+- Add Media;
+- search;
+- queue drawer;
+- account/settings panels except minimal exit;
+- members/permissions/chat surfaces.
+
+Implementation preference:
+
+- add a dedicated `ListenTvModeLayout` or similarly isolated component instead of bending the existing desktop listen shell into full-screen mode;
+- reuse existing live-room playback actions, queue selectors, metadata helpers, and dynamic accent variables;
+- avoid new autoplay semantics in TV mode so playback bugs are not hidden by a separate path.
+
 ### AI DJ / Session Intelligence
 
 The AI DJ task is intentionally later than accounts/friends. It should begin with room-session intelligence and only add personal memory after profile and consent boundaries exist.
