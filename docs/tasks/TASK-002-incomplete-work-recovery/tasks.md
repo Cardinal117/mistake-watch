@@ -962,6 +962,27 @@ Safe commit point:
 
 - Large R2 multipart uploads have a practical owner recovery and cleanup path without replacing the direct-to-R2 architecture.
 
+## TASK-002.8G: Live Room Reconnect And Stale Queue Recovery
+
+Source task: long-session QA after TASK-002.5J reduced aggressive queue draining but a room could still look empty or stop accepting controls after several hours until refresh.
+
+Work:
+
+- Add client-side SpacetimeDB reconnect handling for room websocket disconnects, subscription failures, and connection errors.
+- Preserve the last known good live snapshot while reconnecting so the current media and queue do not visually disappear during transient live-cache gaps.
+- Rejoin the current room member after reconnect and when the participant row becomes stale or idle while the browser is still on the room page.
+- Keep heartbeats and durable room activity timers tied to the active connection lifecycle so stale timers do not accumulate.
+- Surface reconnecting/disconnected state through the existing `connectionStatus` and `errorMessage` plumbing instead of silently disabling playback controls.
+- Do not change SpacetimeDB schema, queue reducer semantics, autoplay rules, or durable Supabase room data in this corrective task.
+
+Review checkpoint:
+
+- A long-lived room can recover from a dropped/stale live connection without a manual browser refresh.
+
+Safe commit point:
+
+- Queue and playback controls resume after live-room reconnect, while the last known room state remains visible during recovery.
+
 ## TASK-002.9: Voting and Suggested Next
 
 Source task: TASK-001 later voting direction.

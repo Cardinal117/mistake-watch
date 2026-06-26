@@ -198,6 +198,11 @@ type LiveReducers = {
   }): Promise<void>;
 };
 
+const LIVE_ROOM_RECONNECT_BASE_DELAY_MS = 1_000;
+const LIVE_ROOM_RECONNECT_MAX_DELAY_MS = 30_000;
+const LIVE_ROOM_STALE_MEMBER_REJOIN_MS = 4_000;
+const LIVE_ROOM_MEMBER_MISSING_NOTICE_MS = 30_000;
+
 export type LiveRoomState = {
   addQueueItem(input: {
     artist?: string;
@@ -274,6 +279,10 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
   );
   const [reducers, setReducers] = useState<LiveReducers | null>(null);
   const serverClockOffsetMs = useRef(0);
+  const reconnectAttemptRef = useRef(0);
+  const reconnectTimerRef = useRef<number | null>(null);
+  const recoveringConnectionRef = useRef(false);
+  const [connectionRunId, setConnectionRunId] = useState(0);
 
   const tokenStorageKey = `mw_spacetime_token_${room.id}`;
   const currentMember = room.currentMember;
@@ -332,10 +341,39 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       setMemberMissingNotice(
         "Your live room membership could not be restored. You will be returned to the dashboard.",
       );
-    }, 12_000);
+    }, LIVE_ROOM_MEMBER_MISSING_NOTICE_MS);
 
     return () => window.clearTimeout(timer);
   }, [connectionStatus, currentLiveParticipant, currentMember]);
+
+  useEffect(() => {
+    if (!currentMember || !reducers || connectionStatus !== "connected") {
+      return;
+    }
+
+    if (currentLiveParticipant?.status === "online") {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      void reducers.joinRoom({
+        avatarKey: selectedAvatarKey,
+        displayName: currentMember.name,
+        memberId: currentMember.id,
+        role: currentMember.role,
+        roomId: room.id,
+      });
+    }, LIVE_ROOM_STALE_MEMBER_REJOIN_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    connectionStatus,
+    currentLiveParticipant?.status,
+    currentMember,
+    reducers,
+    room.id,
+    selectedAvatarKey,
+  ]);
 
   useEffect(() => {
     if (!currentMember || !room.hostMemberId) {
@@ -343,9 +381,11 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     }
 
     const hostMemberId = room.hostMemberId;
+    let disposed = false;
     let heartbeatTimer: number | undefined;
     let durableHeartbeatTimer: number | undefined;
     let liveDb: LiveDb | undefined;
+    let shouldLeaveOnCleanup = true;
     const config = getSpacetimeConfig();
     const storedToken = window.localStorage.getItem(tokenStorageKey);
 
@@ -361,22 +401,107 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
           Date.now() - nextSnapshot.session.serverUpdatedMs;
       }
 
-      setSnapshot(
-        adjustSnapshotClock(nextSnapshot, serverClockOffsetMs.current),
+      const adjustedSnapshot = adjustSnapshotClock(
+        nextSnapshot,
+        serverClockOffsetMs.current,
+      );
+
+      if (adjustedSnapshot.session) {
+        recoveringConnectionRef.current = false;
+      }
+
+      setSnapshot((currentSnapshot) =>
+        shouldPreserveCurrentSnapshotDuringReconnect(
+          currentSnapshot,
+          adjustedSnapshot,
+          recoveringConnectionRef.current,
+        )
+          ? {
+              ...currentSnapshot,
+              connection: adjustedSnapshot.connection,
+              errors: adjustedSnapshot.errors,
+            }
+          : adjustedSnapshot,
       );
     };
 
     const handleRowChange = () => refreshSnapshot();
     const handleSessionChange = () => refreshSnapshot({ calibrateClock: true });
 
+    const clearLiveTimers = () => {
+      if (heartbeatTimer) {
+        window.clearInterval(heartbeatTimer);
+        heartbeatTimer = undefined;
+      }
+
+      if (durableHeartbeatTimer) {
+        window.clearInterval(durableHeartbeatTimer);
+        durableHeartbeatTimer = undefined;
+      }
+    };
+
+    const removeLiveListeners = () => {
+      if (!liveDb) {
+        return;
+      }
+
+      liveDb.room_participant.removeOnInsert(handleRowChange);
+      liveDb.room_participant.removeOnUpdate(handleRowChange);
+      liveDb.room_participant.removeOnDelete(handleRowChange);
+      liveDb.room_permission.removeOnInsert(handleRowChange);
+      liveDb.room_permission.removeOnUpdate(handleRowChange);
+      liveDb.room_permission.removeOnDelete(handleRowChange);
+      liveDb.room_session.removeOnInsert(handleSessionChange);
+      liveDb.room_session.removeOnUpdate(handleSessionChange);
+      liveDb.room_session.removeOnDelete(handleSessionChange);
+      liveDb.room_error.removeOnInsert(handleRowChange);
+      liveDb.room_error.removeOnDelete(handleRowChange);
+      liveDb.room_kick.removeOnInsert(handleRowChange);
+      liveDb.room_kick.removeOnDelete(handleRowChange);
+      liveDb.live_queue_item.removeOnInsert(handleRowChange);
+      liveDb.live_queue_item.removeOnUpdate(handleRowChange);
+      liveDb.live_queue_item.removeOnDelete(handleRowChange);
+      liveDb.room_chat_message.removeOnInsert(handleRowChange);
+      liveDb.room_chat_message.removeOnDelete(handleRowChange);
+      liveDb = undefined;
+    };
+
+    const scheduleReconnect = (message: string) => {
+      if (disposed || reconnectTimerRef.current !== null) {
+        return;
+      }
+
+      shouldLeaveOnCleanup = false;
+      recoveringConnectionRef.current = true;
+      clearLiveTimers();
+      removeLiveListeners();
+      setReducers(null);
+      setErrorMessage(message);
+
+      const attempt = reconnectAttemptRef.current + 1;
+      reconnectAttemptRef.current = attempt;
+      const delayMs = Math.min(
+        LIVE_ROOM_RECONNECT_BASE_DELAY_MS * 2 ** (attempt - 1),
+        LIVE_ROOM_RECONNECT_MAX_DELAY_MS,
+      );
+
+      reconnectTimerRef.current = window.setTimeout(() => {
+        reconnectTimerRef.current = null;
+        setConnectionStatus("connecting");
+        setConnectionRunId((current) => current + 1);
+      }, delayMs);
+    };
+
     const connection = DbConnection.builder()
       .withUri(config.uri)
       .withDatabaseName(config.databaseName)
       .withToken(storedToken ?? "")
       .onConnect((connected, _identity, token) => {
+        reconnectAttemptRef.current = 0;
         window.localStorage.setItem(tokenStorageKey, token);
         setConnectionStatus("connected");
         setErrorMessage(null);
+        setMemberMissingNotice(null);
 
         liveDb = connected.db as unknown as LiveDb;
         setReducers(connected.reducers as unknown as LiveReducers);
@@ -428,7 +553,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
           })
           .onError(() => {
             setConnectionStatus("error");
-            setErrorMessage("SpacetimeDB room subscription failed.");
+            scheduleReconnect("Live room subscription failed. Reconnecting...");
           })
           .subscribe(getRoomSubscriptions(room.id));
 
@@ -445,51 +570,37 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       })
       .onDisconnect(() => {
         setConnectionStatus("disconnected");
+        scheduleReconnect("Live room signal disconnected. Reconnecting...");
       })
       .onConnectError(() => {
         setConnectionStatus("error");
-        setErrorMessage("SpacetimeDB room connection failed.");
+        scheduleReconnect("Live room connection failed. Retrying...");
       })
       .build();
 
     return () => {
-      if (heartbeatTimer) {
-        window.clearInterval(heartbeatTimer);
+      disposed = true;
+
+      if (reconnectTimerRef.current !== null) {
+        window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
       }
 
-      if (durableHeartbeatTimer) {
-        window.clearInterval(durableHeartbeatTimer);
+      clearLiveTimers();
+      removeLiveListeners();
+
+      if (shouldLeaveOnCleanup) {
+        void (connection.reducers as unknown as LiveReducers).leaveRoom({
+          memberId: currentMember.id,
+          roomId: room.id,
+        });
       }
 
-      if (liveDb) {
-        liveDb.room_participant.removeOnInsert(handleRowChange);
-        liveDb.room_participant.removeOnUpdate(handleRowChange);
-        liveDb.room_participant.removeOnDelete(handleRowChange);
-        liveDb.room_permission.removeOnInsert(handleRowChange);
-        liveDb.room_permission.removeOnUpdate(handleRowChange);
-        liveDb.room_permission.removeOnDelete(handleRowChange);
-        liveDb.room_session.removeOnInsert(handleSessionChange);
-        liveDb.room_session.removeOnUpdate(handleSessionChange);
-        liveDb.room_session.removeOnDelete(handleSessionChange);
-        liveDb.room_error.removeOnInsert(handleRowChange);
-        liveDb.room_error.removeOnDelete(handleRowChange);
-        liveDb.room_kick.removeOnInsert(handleRowChange);
-        liveDb.room_kick.removeOnDelete(handleRowChange);
-        liveDb.live_queue_item.removeOnInsert(handleRowChange);
-        liveDb.live_queue_item.removeOnUpdate(handleRowChange);
-        liveDb.live_queue_item.removeOnDelete(handleRowChange);
-        liveDb.room_chat_message.removeOnInsert(handleRowChange);
-        liveDb.room_chat_message.removeOnDelete(handleRowChange);
-      }
-
-      void (connection.reducers as unknown as LiveReducers).leaveRoom({
-        memberId: currentMember.id,
-        roomId: room.id,
-      });
       connection.disconnect();
       setReducers(null);
     };
   }, [
+    connectionRunId,
     currentMember,
     room.hostMemberId,
     room.id,
@@ -1175,6 +1286,20 @@ function adjustSnapshotClock(
       serverUpdatedMs: snapshot.session.serverUpdatedMs + serverClockOffsetMs,
     },
   };
+}
+
+function shouldPreserveCurrentSnapshotDuringReconnect(
+  currentSnapshot: LiveRoomSnapshot,
+  nextSnapshot: LiveRoomSnapshot,
+  recoveringConnection: boolean,
+) {
+  return Boolean(
+    recoveringConnection &&
+      currentSnapshot.session &&
+      currentSnapshot.queue.length > 0 &&
+      !nextSnapshot.session &&
+      nextSnapshot.queue.length === 0,
+  );
 }
 
 function mapLiveParticipants(

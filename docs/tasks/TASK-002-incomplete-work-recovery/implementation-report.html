@@ -255,6 +255,11 @@
               <td><span class="status">Implemented</span></td>
               <td>The YouTube iframe receives hidden native controls in TV mode; normal listen/watch players keep existing behavior.</td>
             </tr>
+            <tr>
+              <td>Live-room reconnect recovery</td>
+              <td><span class="status">Implemented</span></td>
+              <td>SpacetimeDB disconnects, subscription failures, and connection errors now schedule reconnects, preserve the last good room snapshot, and rejoin stale members.</td>
+            </tr>
           </tbody>
         </table>
       </section>
@@ -281,6 +286,7 @@
               <li>Queue action regression: play, add next, add queue, Add Media.</li>
               <li>Mobile regression check for preserved mobile listen flow.</li>
               <li>TV mode desktop/TV-like display check, including exit, T toggle, Escape exit, fullscreen, YouTube overlay controls, and Up Next.</li>
+              <li>Long-session reconnect check: leave a room active for several hours or interrupt the network and confirm queue/control recovery without refresh.</li>
             </ul>
           </article>
         </div>
@@ -289,7 +295,7 @@
       <section>
         <h2>Deferred</h2>
         <p>
-          Odysseus/session intelligence, first-party account-history recommendations, queue virtualization, metadata lazy loading, event logging, and broader listen-room personalization remain later tasks. This slice intentionally avoids changing playback authority, queue reducer semantics, Add Media behavior, provider availability classification, or watch-room layout.
+          Odysseus/session intelligence, first-party account-history recommendations, queue virtualization, metadata lazy loading, event logging, and broader listen-room personalization remain later tasks. This slice intentionally avoids changing playback authority, queue reducer semantics, Add Media behavior, provider availability classification, SpacetimeDB schema, or watch-room layout.
         </p>
       </section>
     </main>

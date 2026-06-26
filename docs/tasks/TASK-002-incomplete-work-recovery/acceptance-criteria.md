@@ -241,6 +241,17 @@
 - Multipart upload state is stored in Supabase without exposing R2 secrets to the browser.
 - R2 CORS must expose `ETag`; if it does not, the UI reports a clear upload-part ETag error.
 
+## TASK-002.8G Live Room Reconnect And Stale Queue Recovery
+
+- A transient SpacetimeDB disconnect does not require a full browser refresh to recover room controls.
+- The client attempts bounded automatic reconnects after websocket disconnects, subscription failures, or connection errors.
+- Reconnect attempts reuse the stored SpacetimeDB token and re-run room membership join for the current member.
+- The last known good room session and queue remain visible while reconnecting instead of being replaced by an empty live-cache state.
+- If the current participant becomes missing or idle while the browser remains in the room, the client attempts a room rejoin before treating the member as removed.
+- Heartbeat and durable activity timers do not accumulate duplicate intervals across reconnects.
+- Existing queue reducers, playback reducers, permissions, autoplay, watch mode, listen mode, and durable Supabase room data remain unchanged.
+- Static checks and production build pass.
+
 ## TASK-002.9 Voting and Suggested Next
 
 - Suggested-next voting appears at the intended playback moment.

@@ -930,6 +930,8 @@ Manual review pending:
 Verification:
 
 - `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
 
 Manual review pending:
 
@@ -1123,6 +1125,35 @@ Manual review pending:
 - Browser QA should confirm the TV surface matches the cinematic reference closely enough on desktop and TV-like displays.
 - Browser QA should confirm YouTube controls stay visually secondary/hidden while Mistake Watch controls remain usable.
 - Browser QA should confirm exiting TV mode returns to the exact normal listen layout and room state.
+
+## TASK-002.8G Implementation Notes
+
+- Added TASK-002.8G after long-session QA showed a less destructive version of the earlier vanished-queue bug:
+  - after roughly several hours the visible queue could empty or stop updating;
+  - the selected/current song could remain visible;
+  - playback controls could stop mutating room state;
+  - a full browser refresh restored the queue, proving the durable/live room data still existed.
+- Root-cause inspection found the frontend live-room hook handled SpacetimeDB disconnects by setting `connectionStatus = disconnected` but did not reconnect, resubscribe, or rejoin automatically.
+- SpacetimeDB correctly marks a participant `idle` on websocket disconnect. The frontend only grants playback authority to an `online` live participant, so a stale/disconnected client could keep showing the previous media while control reducers silently stopped being called.
+- Implemented a bounded exponential reconnect loop in `lib/spacetime/use-live-room.ts`:
+  - websocket disconnects, subscription errors, and connection errors schedule reconnect attempts;
+  - reconnect attempts reuse the stored SpacetimeDB token;
+  - successful reconnects reset the backoff;
+  - heartbeat and durable activity timers are cleared before reconnect so duplicate intervals do not accumulate.
+- Preserved the last known good live snapshot during reconnect when the fresh cache has no session and no queue yet. This prevents transient empty-cache states from replacing a populated room UI while the client is recovering.
+- Added stale-member recovery: if the current member becomes missing or idle while the browser is still connected to the room, the client retries `joinRoom` before surfacing the longer missing-member removal notice.
+- No SpacetimeDB schema, reducers, generated bindings, Supabase data, queue ordering, autoplay rules, or media-player controls were changed.
+
+Verification:
+
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
+
+Manual review pending:
+
+- Long-session production QA: leave a listen room active for 4+ hours and confirm queue visibility and controls recover without refresh after network/socket interruptions.
+- Browser QA: temporarily interrupt network or SpacetimeDB connectivity and confirm the room returns to `connected`, rejoins the current member, and keeps the queue visible during reconnect.
 
 ## TASK-002.1 Implementation Notes
 
