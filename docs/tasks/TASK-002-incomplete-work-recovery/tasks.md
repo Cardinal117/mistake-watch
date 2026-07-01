@@ -910,6 +910,10 @@ Work:
 - Classify owner uploads as direct-ready, convert, needs-approval, or failed.
 - Let confidently browser-safe MP4/H.264/AAC uploads become ready directly from R2 without CloudConvert.
 - Continue converting unsupported or uncertain files through CloudConvert when they are small enough.
+- Use a browser-playback-safe CloudConvert output profile for converted videos:
+  - H.264 MP4 video;
+  - AAC stereo audio for predictable headphone, laptop, phone, and browser playback;
+  - keep the original uploaded source object in R2 unchanged.
 - Require explicit owner approval before likely expensive conversions, including long, large, or unknown-duration large files.
 - Store inspection result, processing strategy, estimated credits, and approval state on the media asset.
 - Show upload lifecycle and uploaded-card badges for direct, converting, needs approval, and failed states.

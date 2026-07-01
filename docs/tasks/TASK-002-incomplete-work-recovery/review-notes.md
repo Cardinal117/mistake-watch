@@ -860,6 +860,15 @@ Manual review pending:
   - MP4 files with H.264/AVC and AAC markers become `direct_ready` and skip CloudConvert.
   - Unsupported, uncertain, or non-MP4 files still use CloudConvert when small enough.
   - Long, large, or unknown-duration large files become `needs_approval` before CloudConvert spends credits.
+- July 1, 2026 follow-up: changed the recommended CloudConvert output profile from preserved 5.1 AAC to browser-safe stereo AAC for converted MP4 assets.
+  - The first standard convert-task attempt with `audio_channels: 2` did not force a stereo downmix; CloudConvert still exported 5.1 AAC.
+  - The final implementation uses a CloudConvert `command` task with explicit FFmpeg arguments, including `-ac 2`, `-c:a aac`, `-b:a 320k`, H.264 video, yuv420p pixels, and faststart MP4 output.
+  - The command task targets the exact imported R2 filename rather than a wildcard input, because wildcard input produced a finished command task with no exportable output file.
+  - `capture_output` is enabled on the command task so future CloudConvert command failures leave useful FFmpeg context in job details.
+- Reprocessed existing owner library assets from their stored R2 source objects without requiring reupload:
+  - `Devil May Cry S02E02 Shades`
+  - `Devil May Cry S02E03 The Panther, The Lion, The Wolf`
+  - Both were restored to `ready` and verified with `ffprobe` as `AAC LC`, `stereo`, `2 channels`.
 - Removed the upload-start requirement that CloudConvert must be configured. Direct-ready MP4 uploads can complete without provider configuration.
 - Added owner approval through `POST /api/media/assets/[assetId]/processing`, reusing the existing CloudConvert processing and polling path.
 - Uploaded media cards now distinguish Direct, Converting, and Needs approval states. Approval-required assets show estimated CloudConvert credits and expose an owner-only approval action.

@@ -35,7 +35,7 @@ test.after(async () => {
   await rm(tempDir, { force: true, recursive: true });
 });
 
-test("CloudConvert MP4 job uses integer audio bitrate", () => {
+test("CloudConvert MP4 job uses browser-safe stereo AAC", () => {
   const payload = buildCloudConvertMediaJobPayload({
     assetId: "asset-id",
     exportCredentials: {
@@ -52,10 +52,14 @@ test("CloudConvert MP4 job uses integer audio bitrate", () => {
 
   const convertTask = payload.tasks["convert-browser-mp4"];
 
-  assert.equal(typeof convertTask.audio_bitrate, "number");
-  assert.equal(convertTask.audio_bitrate, 512);
-  assert.equal(convertTask.audio_codec, "aac");
-  assert.equal(convertTask.audio_channels, 6);
-  assert.equal(convertTask.video_codec, "x264");
+  assert.equal(convertTask.engine, "ffmpeg");
+  assert.equal(convertTask.operation, "command");
+  assert.equal(convertTask.command, "ffmpeg");
+  assert.equal(convertTask.capture_output, true);
+  assert.match(convertTask.arguments, /\/input\/import-source\/source-file\.mkv/);
+  assert.match(convertTask.arguments, /-c:a aac/);
+  assert.match(convertTask.arguments, /-b:a 320k/);
+  assert.match(convertTask.arguments, /-ac 2/);
+  assert.match(convertTask.arguments, /-c:v libx264/);
   assert.equal(payload.webhook_url, "https://watch.example.com/api/media/cloudconvert/webhook");
 });
