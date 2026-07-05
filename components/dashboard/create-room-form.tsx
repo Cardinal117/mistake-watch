@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useFormStatus } from "react-dom";
-import { Loader2, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 
 import { Button, Input, RoomTransitionOverlay } from "@/components/ui";
 import { markRoomTransition } from "@/lib/performance/room-transition";
@@ -83,11 +83,7 @@ function CreateRoomSubmitButton() {
         disabled={pending}
         type="submit"
       >
-        {pending ? (
-          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-        ) : (
-          <Plus className="h-4 w-4" aria-hidden />
-        )}
+        <Plus className="h-4 w-4" aria-hidden />
         {pending ? "Creating room..." : "Create Room"}
       </Button>
     </>

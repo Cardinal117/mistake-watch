@@ -32,15 +32,20 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Radio,
-  RotateCcw,
   Trash2,
   Users,
   X,
 } from "lucide-react";
 
-import { Avatar, IconButton, PendingLink } from "@/components/ui";
+import { Avatar, IconButton, PendingLink, SignalStatusChip } from "@/components/ui";
 import { AccountCommandPanel } from "@/components/account";
 import type { AccountSummary } from "@/lib/account/types";
+import {
+  resolveMediaAssetDisplayState,
+  resolveRecoverableUploadDisplayState,
+  resolveUploadProgressDisplayState,
+} from "@/lib/media/processing-display-state";
+import type { SignalDisplayState } from "@/lib/status/display-state";
 import {
   getSourceDisplayTitle,
   getYouTubeThumbnailUrl,
@@ -52,6 +57,7 @@ import type { LiveRoomState } from "@/lib/spacetime";
 import { cx } from "@/lib/ui";
 import { InviteActions } from "./invite-actions";
 import { MediaStage } from "./media-stage";
+import { MediaProcessingStatus } from "./media-processing-status";
 import { MembersPanel } from "./members-panel";
 import { ModeSwitcher } from "./mode-switcher";
 import { QueuePanel } from "./queue-panel";
@@ -147,11 +153,6 @@ type ResumableMediaUpload = {
   resumable: boolean;
   resumableUntil: string | null;
   status: "expired" | "failed" | "paused" | "uploading";
-};
-type RecoverableUploadProgress = {
-  detail: string;
-  progress: number;
-  tone: "error" | "info" | "success";
 };
 
 export function WatchModeLayout({
@@ -634,13 +635,10 @@ function WatchMediaHubDiscovery({
     ResumableMediaUpload[]
   >([]);
   const [recoverableProgress, setRecoverableProgress] = useState<
-    Record<string, RecoverableUploadProgress>
+    Record<string, SignalDisplayState>
   >({});
-  const [uploadStatus, setUploadStatus] = useState<{
-    detail: string;
-    progress: number;
-    tone: "error" | "info" | "success";
-  } | null>(null);
+  const [uploadStatus, setUploadStatus] =
+    useState<SignalDisplayState | null>(null);
   const activeItems = items.filter((item) => item.status !== "played");
   const liveItems = activeItems.filter(isLiveMediaHubItem);
   const nonLiveActiveItems = activeItems.filter((item) => !isLiveMediaHubItem(item));
@@ -818,19 +816,19 @@ function WatchMediaHubDiscovery({
 
   async function uploadFile(file: File) {
     if (!isOwner) {
-      setUploadStatus({
+      setUploadStatus(resolveUploadProgressDisplayState({
         detail: "Only the owner account can upload first-party media.",
-        progress: 0,
-        tone: "error",
-      });
+        label: "Upload blocked",
+        phase: "blocked",
+      }));
       return;
     }
 
-    setUploadStatus({
+    setUploadStatus(resolveUploadProgressDisplayState({
       detail: `Preparing ${file.name}`,
-      progress: 0,
-      tone: "info",
-    });
+      label: "Preparing upload",
+      phase: "loading",
+    }));
 
     try {
       const [clientInspection, durationSeconds] = await Promise.all([
@@ -867,11 +865,12 @@ function WatchMediaHubDiscovery({
           ? await uploadMultipartFileToR2({
               file,
               onProgress: (progress, detail) => {
-                setUploadStatus({
+                setUploadStatus(resolveUploadProgressDisplayState({
                   detail,
-                  progress,
-                  tone: "info",
-                });
+                  label: "Uploading",
+                  phase: "uploading",
+                  progressPercent: progress,
+                }));
               },
               partCount: createPayload.partCount ?? 0,
               partSizeBytes: createPayload.partSizeBytes ?? 0,
@@ -889,23 +888,27 @@ function WatchMediaHubDiscovery({
           : await uploadSingleFileToR2({
               file,
               onProgress: (progress, detail) => {
-                setUploadStatus({
+                setUploadStatus(resolveUploadProgressDisplayState({
                   detail: detail ?? `Uploading ${file.name}`,
-                  progress,
-                  tone: "info",
-                });
+                  label: "Uploading",
+                  phase: "uploading",
+                  progressPercent: progress,
+                }));
               },
               uploadUrl: createPayload.uploadUrl,
             });
 
-      setUploadStatus({
+      setUploadStatus(resolveUploadProgressDisplayState({
         detail:
           createPayload.uploadMode === "multipart"
             ? "Finalizing multipart upload"
             : "Inspecting uploaded source",
-        progress: 96,
-        tone: "info",
-      });
+        label:
+          createPayload.uploadMode === "multipart"
+            ? "Finalizing upload"
+            : "Inspecting media",
+        phase: "processing",
+      }));
 
       const completeResponse = await fetch(
         `/api/media/uploads/${createPayload.uploadId}/complete`,
@@ -937,11 +940,7 @@ function WatchMediaHubDiscovery({
         completedAsset.status === "ready" ||
         completedAsset.processingStatus === "not_required"
       ) {
-        setUploadStatus({
-          detail: `${completedAsset.title} is ready without CloudConvert conversion.`,
-          progress: 100,
-          tone: "success",
-        });
+        setUploadStatus(resolveMediaAssetDisplayState(completedAsset));
         if (completedAsset.posterStatus !== "ready") {
           void captureAndUploadPoster(completedAsset, (asset) => {
             setAssets((current) =>
@@ -956,34 +955,18 @@ function WatchMediaHubDiscovery({
         completedAsset.processingStatus === "approval_required" ||
         completedAsset.processingRequiresApproval
       ) {
-        setUploadStatus({
-          detail: `${completedAsset.title} needs owner approval before CloudConvert runs.`,
-          progress: 100,
-          tone: "info",
-        });
+        setUploadStatus(resolveMediaAssetDisplayState(completedAsset));
         return;
       }
 
-      setUploadStatus({
-        detail: `${completedAsset.title} is queued for CloudConvert processing.`,
-        progress: 97,
-        tone: "info",
-      });
+      setUploadStatus(resolveMediaAssetDisplayState(completedAsset));
       const readyAsset = await pollMediaProcessing(completedAsset.id, (status) => {
-        setUploadStatus({
-          detail: status.detail,
-          progress: status.progress,
-          tone: status.tone,
-        });
+        setUploadStatus(status);
       });
       setAssets((current) =>
         current.map((item) => (item.id === readyAsset.id ? readyAsset : item)),
       );
-      setUploadStatus({
-        detail: `${readyAsset.title} is ready in the media library.`,
-        progress: 100,
-        tone: "success",
-      });
+      setUploadStatus(resolveMediaAssetDisplayState(readyAsset));
       if (readyAsset.posterStatus !== "ready") {
         void captureAndUploadPoster(readyAsset, (asset) => {
           setAssets((current) =>
@@ -992,12 +975,11 @@ function WatchMediaHubDiscovery({
         });
       }
     } catch (error) {
-      setUploadStatus({
+      setUploadStatus(resolveUploadProgressDisplayState({
         detail:
           error instanceof Error ? error.message : "Upload could not complete.",
-        progress: 0,
-        tone: "error",
-      });
+        phase: "failed",
+      }));
       await refreshResumableUploads().catch(() => undefined);
     }
   }
@@ -1006,11 +988,10 @@ function WatchMediaHubDiscovery({
     if (!session.resumable) {
       setRecoverableProgress((current) => ({
         ...current,
-        [session.id]: {
-          detail: "Upload recovery window expired. Cancel it and upload again.",
-          progress: session.progress,
-          tone: "error",
-        },
+        [session.id]: resolveRecoverableUploadDisplayState({
+          ...session,
+          resumable: false,
+        }),
       }));
       return;
     }
@@ -1018,11 +999,12 @@ function WatchMediaHubDiscovery({
     try {
       setRecoverableProgress((current) => ({
         ...current,
-        [session.id]: {
+        [session.id]: resolveUploadProgressDisplayState({
           detail: "Choose the same local file to resume.",
-          progress: session.progress,
-          tone: "info",
-        },
+          label: "Select file",
+          phase: "blocked",
+          progressPercent: session.progress,
+        }),
       }));
       const file = await requestUploadFileSelection(session);
 
@@ -1047,11 +1029,12 @@ function WatchMediaHubDiscovery({
       const resumedSession = retryPayload.session;
       setRecoverableProgress((current) => ({
         ...current,
-        [resumedSession.id]: {
+        [resumedSession.id]: resolveUploadProgressDisplayState({
           detail: `Resuming ${resumedSession.fileName}`,
-          progress: resumedSession.progress,
-          tone: "info",
-        },
+          label: "Resuming upload",
+          phase: "uploading",
+          progressPercent: resumedSession.progress,
+        }),
       }));
       const completedParts = await uploadMultipartFileToR2({
         existingParts: resumedSession.completedParts,
@@ -1059,11 +1042,12 @@ function WatchMediaHubDiscovery({
         onProgress: (progress, detail) => {
           setRecoverableProgress((current) => ({
             ...current,
-            [resumedSession.id]: {
+            [resumedSession.id]: resolveUploadProgressDisplayState({
               detail,
-              progress,
-              tone: "info",
-            },
+              label: "Uploading",
+              phase: "uploading",
+              progressPercent: progress,
+            }),
           }));
         },
         partCount: resumedSession.partCount,
@@ -1080,11 +1064,11 @@ function WatchMediaHubDiscovery({
 
       setRecoverableProgress((current) => ({
         ...current,
-        [resumedSession.id]: {
+        [resumedSession.id]: resolveUploadProgressDisplayState({
           detail: "Finalizing resumed multipart upload",
-          progress: 96,
-          tone: "info",
-        },
+          label: "Finalizing upload",
+          phase: "processing",
+        }),
       }));
 
       const completeResponse = await fetch(
@@ -1120,11 +1104,7 @@ function WatchMediaHubDiscovery({
       ) {
         setRecoverableProgress((current) => ({
           ...current,
-          [resumedSession.id]: {
-            detail: `${completedAsset.title} is ready without CloudConvert conversion.`,
-            progress: 100,
-            tone: "success",
-          },
+          [resumedSession.id]: resolveMediaAssetDisplayState(completedAsset),
         }));
         window.setTimeout(() => {
           setRecoverableProgress((current) => {
@@ -1149,11 +1129,7 @@ function WatchMediaHubDiscovery({
       ) {
         setRecoverableProgress((current) => ({
           ...current,
-          [resumedSession.id]: {
-            detail: `${completedAsset.title} needs owner approval before CloudConvert runs.`,
-            progress: 100,
-            tone: "info",
-          },
+          [resumedSession.id]: resolveMediaAssetDisplayState(completedAsset),
         }));
         window.setTimeout(() => {
           setRecoverableProgress((current) => {
@@ -1167,11 +1143,7 @@ function WatchMediaHubDiscovery({
 
       setRecoverableProgress((current) => ({
         ...current,
-        [resumedSession.id]: {
-          detail: `${completedAsset.title} is queued for CloudConvert processing.`,
-          progress: 97,
-          tone: "info",
-        },
+        [resumedSession.id]: resolveMediaAssetDisplayState(completedAsset),
       }));
       const readyAsset = await pollMediaProcessing(completedAsset.id, (status) => {
         setRecoverableProgress((current) => ({
@@ -1184,11 +1156,7 @@ function WatchMediaHubDiscovery({
       );
       setRecoverableProgress((current) => ({
         ...current,
-        [resumedSession.id]: {
-          detail: `${readyAsset.title} is ready in the media library.`,
-          progress: 100,
-          tone: "success",
-        },
+        [resumedSession.id]: resolveMediaAssetDisplayState(readyAsset),
       }));
       window.setTimeout(() => {
         setRecoverableProgress((current) => {
@@ -1200,12 +1168,12 @@ function WatchMediaHubDiscovery({
     } catch (error) {
       setRecoverableProgress((current) => ({
         ...current,
-        [session.id]: {
+        [session.id]: resolveUploadProgressDisplayState({
           detail:
             error instanceof Error ? error.message : "Upload could not be resumed.",
-          progress: current[session.id]?.progress ?? session.progress,
-          tone: "error",
-        },
+          phase: "failed",
+          progressPercent: current[session.id]?.progressPercent ?? session.progress,
+        }),
       }));
     }
   }
@@ -1227,11 +1195,12 @@ function WatchMediaHubDiscovery({
     };
 
     if (!response.ok) {
-      setUploadStatus({
+      setUploadStatus(resolveUploadProgressDisplayState({
         detail: payload.error ?? "Upload could not be cancelled.",
-        progress: session.progress,
-        tone: "error",
-      });
+        label: "Cancel failed",
+        phase: "failed",
+        progressPercent: session.progress,
+      }));
       return;
     }
 
@@ -1243,11 +1212,11 @@ function WatchMediaHubDiscovery({
       delete next[session.id];
       return next;
     });
-    setUploadStatus({
+    setUploadStatus(resolveUploadProgressDisplayState({
       detail: `${session.fileName} was cancelled and cleanup was requested.`,
-      progress: 0,
-      tone: "success",
-    });
+      label: "Upload cancelled",
+      phase: "ready",
+    }));
   }
 
   function handleFiles(files: FileList | File[]) {
@@ -1498,31 +1467,7 @@ function WatchMediaHubDiscovery({
           ) : null}
         </>
       ) : null}
-        {uploadStatus ? (
-          <div
-            className={cx(
-              "grid gap-1 rounded-sm border px-2 py-1.5 text-label-sm",
-              uploadStatus.tone === "error"
-                ? "border-error/30 bg-error/10 text-error"
-                : uploadStatus.tone === "success"
-                  ? "border-primary-fixed-dim/35 bg-primary-fixed-dim/10 text-primary-fixed-dim"
-                  : "border-white/10 bg-background/16 text-on-surface-variant",
-            )}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <span className="min-w-0 truncate">{uploadStatus.detail}</span>
-              <span>{Math.round(uploadStatus.progress)}%</span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-white/10 shadow-[inset_0_0_8px_rgb(0_0_0_/_0.35)]">
-              <div
-                className="h-full bg-primary-fixed-dim shadow-[0_0_14px_rgb(0_219_233_/_0.45)] transition-[width]"
-                style={{
-                  width: `${Math.max(0, Math.min(100, uploadStatus.progress))}%`,
-                }}
-              />
-            </div>
-          </div>
-        ) : null}
+        {uploadStatus ? <MediaProcessingStatus state={uploadStatus} /> : null}
         {assetError ? (
           <p className="text-label-sm text-error">{assetError}</p>
         ) : null}
@@ -1551,25 +1496,22 @@ function WatchMediaHubDiscovery({
               isOwner={isOwner}
               onApproveProcessing={async (assetId) => {
                 try {
-                  setUploadStatus({
+                  setUploadStatus(resolveUploadProgressDisplayState({
                     detail: "Starting approved CloudConvert processing.",
-                    progress: 97,
-                    tone: "info",
-                  });
+                    label: "Starting conversion",
+                    phase: "queued",
+                  }));
                   const approvedAsset = await approveAssetProcessing(assetId);
                   setAssets((current) =>
                     current.map((item) =>
                       item.id === approvedAsset.id ? approvedAsset : item,
                     ),
                   );
+                  setUploadStatus(resolveMediaAssetDisplayState(approvedAsset));
                   const readyAsset = await pollMediaProcessing(
                     approvedAsset.id,
                     (status) => {
-                      setUploadStatus({
-                        detail: status.detail,
-                        progress: status.progress,
-                        tone: status.tone,
-                      });
+                      setUploadStatus(status);
                     },
                   );
                   setAssets((current) =>
@@ -1577,20 +1519,15 @@ function WatchMediaHubDiscovery({
                       item.id === readyAsset.id ? readyAsset : item,
                     ),
                   );
-                  setUploadStatus({
-                    detail: `${readyAsset.title} is ready in the media library.`,
-                    progress: 100,
-                    tone: "success",
-                  });
+                  setUploadStatus(resolveMediaAssetDisplayState(readyAsset));
                 } catch (error) {
-                  setUploadStatus({
+                  setUploadStatus(resolveUploadProgressDisplayState({
                     detail:
                       error instanceof Error
                         ? error.message
                         : "Approved conversion could not start.",
-                    progress: 0,
-                    tone: "error",
-                  });
+                    phase: "failed",
+                  }));
                 }
               }}
               onDeleteAsset={async (assetId) => {
@@ -1660,7 +1597,7 @@ function ResumableUploadList({
 }: {
   onCancelUpload(session: ResumableMediaUpload): void;
   onResumeUpload(session: ResumableMediaUpload): void;
-  progressByUploadId: Record<string, RecoverableUploadProgress>;
+  progressByUploadId: Record<string, SignalDisplayState>;
   sessions: ResumableMediaUpload[];
 }) {
   return (
@@ -1680,113 +1617,28 @@ function ResumableUploadList({
       </div>
       <div className="grid gap-2">
         {sessions.map((session) => {
-          const activeProgress = progressByUploadId[session.id];
-          const displayProgress = activeProgress?.progress ?? session.progress;
-          const displayBytes =
-            activeProgress && session.fileSizeBytes > 0
-              ? Math.min(
-                  session.fileSizeBytes,
-                  Math.round((displayProgress / 95) * session.fileSizeBytes),
-                )
-              : session.bytesUploaded;
-          const statusLabel = activeProgress
-            ? activeProgress.tone === "error"
-              ? "Attention"
-              : activeProgress.progress >= 96
-                ? "Finalizing"
-                : "Resuming"
-            : session.status === "paused"
-              ? "Paused"
-              : session.status === "uploading"
-                ? "Recoverable"
-                : session.status;
+          const displayState = resolveRecoverableUploadDisplayState({
+            ...session,
+            activeState: progressByUploadId[session.id] ?? null,
+            resumableUntil: session.resumableUntil
+              ? formatDateTime(session.resumableUntil)
+              : null,
+          });
 
           return (
             <article
               className="grid gap-2 rounded-sm border border-secondary-fixed-dim/25 bg-background/18 p-2"
               key={session.id}
             >
-              <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-                <div className="min-w-0">
-                  <div className="flex min-w-0 flex-wrap items-center gap-2">
-                    <span className="truncate text-label-sm font-semibold text-on-surface">
-                      {session.fileName}
-                    </span>
-                    <span
-                      className={cx(
-                        "rounded-sm border px-1.5 py-0.5 text-[10px] uppercase tracking-[0.08em]",
-                        session.status === "failed"
-                          ? "border-error/30 text-error"
-                          : session.status === "expired"
-                            ? "border-white/10 text-on-surface-variant"
-                            : "border-secondary-fixed-dim/30 text-secondary-fixed-dim",
-                      )}
-                    >
-                      {statusLabel}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-[11px] text-on-surface-variant">
-                    {formatBytes(displayBytes)} of{" "}
-                    {formatBytes(session.fileSizeBytes)} uploaded
-                    {session.resumableUntil
-                      ? ` / resumable until ${formatDateTime(session.resumableUntil)}`
-                      : ""}
-                  </p>
-                  {activeProgress ? (
-                    <p
-                      className={cx(
-                        "mt-1 text-[11px]",
-                        activeProgress.tone === "error"
-                          ? "text-error"
-                          : activeProgress.tone === "success"
-                            ? "text-primary-fixed-dim"
-                            : "text-secondary-fixed-dim",
-                      )}
-                    >
-                      {activeProgress.detail}
-                    </p>
-                  ) : null}
-                  {session.errorMessage ? (
-                    <p className="mt-1 text-[11px] text-error">
-                      {session.errorMessage}
-                    </p>
-                  ) : null}
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    className="inline-flex h-8 items-center gap-2 rounded-sm border border-primary-fixed-dim/35 bg-primary-fixed-dim/10 px-2 text-label-sm font-semibold text-primary-fixed-dim transition hover:bg-primary-fixed-dim/15 disabled:cursor-not-allowed disabled:opacity-45"
-                    disabled={!session.resumable || Boolean(activeProgress)}
-                    onClick={() => onResumeUpload(session)}
-                    type="button"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-                    Resume
-                  </button>
-                  <button
-                    className="inline-flex h-8 items-center gap-2 rounded-sm border border-error/30 bg-error/8 px-2 text-label-sm font-semibold text-error transition hover:bg-error/12"
-                    onClick={() => onCancelUpload(session)}
-                    type="button"
-                  >
-                    <X className="h-3.5 w-3.5" aria-hidden />
-                    Cancel
-                  </button>
-                </div>
-              </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-                <div
-                  className={cx(
-                    "h-full transition-[width]",
-                    activeProgress?.tone === "error"
-                      ? "bg-error"
-                      : activeProgress?.tone === "success"
-                        ? "bg-primary-fixed-dim"
-                        : "bg-secondary-fixed-dim",
-                  )}
-                  style={{
-                    width: `${Math.max(0, Math.min(100, displayProgress))}%`,
-                  }}
-                />
-              </div>
+              <p className="truncate text-label-sm font-semibold text-on-surface">
+                {session.fileName}
+              </p>
+              <MediaProcessingStatus
+                compact
+                onPrimaryAction={() => onResumeUpload(session)}
+                onSecondaryAction={() => onCancelUpload(session)}
+                state={displayState}
+              />
             </article>
           );
         })}
@@ -2318,13 +2170,11 @@ function WatchMediaHubCard({
   const queued = item.status === "queued";
   const library = item.status === "library";
   const hidden = item.visibility === "owner_only";
-  const approvalRequired =
-    library &&
-    (item.processingRequiresApproval ||
-      item.processingStatus === "approval_required" ||
-      item.processingStrategy === "needs_approval");
-  const processing = item.isUnavailable && library && !approvalRequired;
-  const directReady = library && item.processingStrategy === "direct_ready";
+  const mediaDisplayState = library ? resolveMediaAssetDisplayState(item) : null;
+  const approvalRequired = mediaDisplayState?.state === "blocked";
+  const processing =
+    mediaDisplayState?.state === "processing" ||
+    mediaDisplayState?.state === "queued";
   const playbackBlocked = processing || approvalRequired;
   const directActionsDisabled = {
     add:
@@ -2636,20 +2486,8 @@ function WatchMediaHubCard({
             <span className="truncate text-label-sm font-semibold text-on-surface">
               {item.title}
             </span>
-            {processing ? (
-              <span className="technical-label text-secondary-fixed-dim">
-                Processing
-              </span>
-            ) : null}
-            {approvalRequired ? (
-              <span className="technical-label text-secondary-fixed-dim">
-                Needs approval
-              </span>
-            ) : null}
-            {directReady ? (
-              <span className="technical-label text-primary-fixed-dim">
-                Direct
-              </span>
+            {mediaDisplayState ? (
+              <SignalStatusChip state={mediaDisplayState} />
             ) : null}
             {hidden ? (
               <span className="technical-label text-secondary-fixed-dim">
@@ -2735,23 +2573,19 @@ function WatchMediaHubCard({
         )}
       </div>
       <div className="grid gap-1 p-2">
-        <span className="technical-label text-primary-fixed-dim">
-          {item.isLive
-            ? "Live"
-            : item.status === "now"
-            ? "Now"
-            : library
-              ? approvalRequired
-                ? "Needs approval"
-                : processing
-                  ? "Converting"
-                  : directReady
-                    ? "Direct"
-                    : "R2"
-            : item.status === "played"
-              ? "History"
-              : "Play"}
-        </span>
+        {mediaDisplayState ? (
+          <SignalStatusChip state={mediaDisplayState} />
+        ) : (
+          <span className="technical-label text-primary-fixed-dim">
+            {item.isLive
+              ? "Live"
+              : item.status === "now"
+                ? "Now"
+                : item.status === "played"
+                  ? "History"
+                  : "Play"}
+          </span>
+        )}
         <span className="line-clamp-2 text-label-sm font-semibold text-on-surface">
           {item.title}
         </span>
@@ -2763,9 +2597,9 @@ function WatchMediaHubCard({
             Hidden from viewers
           </span>
         ) : null}
-        {processing ? (
-          <span className="technical-label text-secondary-fixed-dim">
-            CloudConvert is preparing MP4
+        {processing && mediaDisplayState ? (
+          <span className="text-[11px] text-on-surface-variant">
+            {mediaDisplayState.detail}
           </span>
         ) : null}
         {approvalRequired ? (
@@ -3258,7 +3092,7 @@ function uploadSingleFileToR2({
 
     request.upload.onprogress = (event) => {
       if (event.lengthComputable) {
-        const progress = Math.min(95, (event.loaded / event.total) * 95);
+        const progress = Math.min(100, (event.loaded / event.total) * 100);
         onProgress(
           progress,
           `Uploading ${file.name} (${formatBytes(event.loaded)} of ${formatBytes(
@@ -3267,15 +3101,28 @@ function uploadSingleFileToR2({
         );
       }
     };
-    request.onerror = () => reject(new Error("R2 upload failed."));
+    request.onerror = () =>
+      reject(
+        new Error(
+          "Upload failed before the file reached storage. Check network access and R2 CORS.",
+        ),
+      );
+    request.onabort = () => reject(new Error("Upload was cancelled by the browser."));
+    request.ontimeout = () => reject(new Error("Upload timed out before storage responded."));
     request.onload = () => {
       if (request.status >= 200 && request.status < 300) {
-        onProgress(95, `Uploaded ${file.name}`);
+        onProgress(100, `Uploaded ${file.name}`);
         resolve();
         return;
       }
 
-      reject(new Error(`R2 upload failed with status ${request.status}.`));
+      reject(
+        new Error(
+          request.status === 0
+            ? "Upload failed before storage returned a response. Check R2 CORS and network access."
+            : `Upload failed with storage status ${request.status}.`,
+        ),
+      );
     };
     request.open("PUT", uploadUrl);
     request.setRequestHeader("Content-Type", file.type || "video/mp4");
@@ -3326,7 +3173,7 @@ async function uploadMultipartFileToR2({
       0,
     );
     const uploadedBytes = Math.min(file.size, completedBytes + inFlightBytes);
-    const progress = Math.min(95, (uploadedBytes / file.size) * 95);
+    const progress = Math.min(100, (uploadedBytes / file.size) * 100);
 
     onProgress(
       progress,
@@ -3457,7 +3304,15 @@ function uploadMultipartPart(input: {
       }
     };
     request.onerror = () =>
-      reject(new Error(`Part ${input.partNumber} failed to upload.`));
+      reject(
+        new Error(
+          `Part ${input.partNumber} failed before it reached storage. Check network access and R2 CORS.`,
+        ),
+      );
+    request.onabort = () =>
+      reject(new Error(`Part ${input.partNumber} upload was cancelled.`));
+    request.ontimeout = () =>
+      reject(new Error(`Part ${input.partNumber} upload timed out.`));
     request.onload = () => {
       if (request.status >= 200 && request.status < 300) {
         const etag = request.getResponseHeader("ETag");
@@ -3480,7 +3335,9 @@ function uploadMultipartPart(input: {
 
       reject(
         new Error(
-          `Part ${input.partNumber} failed with status ${request.status}.`,
+          request.status === 0
+            ? `Part ${input.partNumber} failed before storage returned a response. Check R2 CORS and network access.`
+            : `Part ${input.partNumber} failed with storage status ${request.status}.`,
         ),
       );
     };
@@ -3579,11 +3436,7 @@ function validateResumeFile(session: ResumableMediaUpload, file: File) {
 
 async function pollMediaProcessing(
   assetId: string,
-  onStatus: (status: {
-    detail: string;
-    progress: number;
-    tone: "error" | "info" | "success";
-  }) => void,
+  onStatus: (status: SignalDisplayState) => void,
 ) {
   const startedAt = Date.now();
   const timeoutMs = 45 * 60 * 1000;
@@ -3591,7 +3444,9 @@ async function pollMediaProcessing(
 
   while (Date.now() - startedAt < timeoutMs) {
     attempts += 1;
-    await new Promise((resolve) => window.setTimeout(resolve, attempts < 3 ? 1500 : 4000));
+    await new Promise((resolve) =>
+      window.setTimeout(resolve, attempts < 3 ? 1500 : 4000),
+    );
 
     const response = await fetch(`/api/media/assets/${assetId}/processing`, {
       cache: "no-store",
@@ -3612,14 +3467,15 @@ async function pollMediaProcessing(
     }
 
     const latestEvent = payload.events?.[0];
-    const status = payload.asset.processingStatus;
+    const status = payload.asset.processingStatus ?? payload.asset.status;
 
     if (payload.asset.status === "ready" || status === "ready") {
-      onStatus({
-        detail: "CloudConvert finished. Preparing library item.",
-        progress: 100,
-        tone: "success",
-      });
+      onStatus(
+        resolveMediaAssetDisplayState({
+          ...payload.asset,
+          latestEvent: "CloudConvert finished. Preparing library item.",
+        }),
+      );
       return payload.asset;
     }
 
@@ -3631,14 +3487,17 @@ async function pollMediaProcessing(
       );
     }
 
-    onStatus({
-      detail: formatProcessingStatus(latestEvent, status),
-      progress: status === "queued" ? 97 : 99,
-      tone: "info",
-    });
+    onStatus(
+      resolveMediaAssetDisplayState({
+        ...payload.asset,
+        latestEvent: formatProcessingStatus(latestEvent, status ?? "processing"),
+      }),
+    );
   }
 
-  throw new Error("Video processing is taking longer than expected. Check the uploaded item status later.");
+  throw new Error(
+    "Video processing is taking longer than expected. Check the uploaded item status later.",
+  );
 }
 
 function formatProcessingStatus(
@@ -3677,14 +3536,27 @@ function uploadBlobToR2(blob: Blob, uploadUrl: string, contentType: string) {
   return new Promise<void>((resolve, reject) => {
     const request = new XMLHttpRequest();
 
-    request.onerror = () => reject(new Error("R2 upload failed."));
+    request.onerror = () =>
+      reject(
+        new Error(
+          "Upload failed before the file reached storage. Check network access and R2 CORS.",
+        ),
+      );
+    request.onabort = () => reject(new Error("Upload was cancelled by the browser."));
+    request.ontimeout = () => reject(new Error("Upload timed out before storage responded."));
     request.onload = () => {
       if (request.status >= 200 && request.status < 300) {
         resolve();
         return;
       }
 
-      reject(new Error(`R2 upload failed with status ${request.status}.`));
+      reject(
+        new Error(
+          request.status === 0
+            ? "Upload failed before storage returned a response. Check R2 CORS and network access."
+            : `Upload failed with storage status ${request.status}.`,
+        ),
+      );
     };
     request.open("PUT", uploadUrl);
     request.setRequestHeader("Content-Type", contentType);

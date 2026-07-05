@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Link2, Loader2 } from "lucide-react";
-import { Button, Input } from "@/components/ui";
+import { Link2 } from "lucide-react";
+import { Button, Input, SignalInlineStatus } from "@/components/ui";
 import { validateMediaSourceForMode } from "@/lib/player/source";
+import type { SignalDisplayState } from "@/lib/status/display-state";
 
 type SourceInputProps = {
   canLoadSource: boolean;
@@ -25,6 +26,12 @@ export function SourceInput({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [sourceUrl, setSourceUrl] = useState("");
+  const pendingState: SignalDisplayState = {
+    detail: "Sending source to the live room.",
+    label: "Loading source",
+    state: "loading",
+    tone: "info",
+  };
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,14 +77,11 @@ export function SourceInput({
           value={sourceUrl}
         />
         <Button disabled={!canLoadSource || pending} type="submit">
-          {pending ? (
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-          ) : (
-            <Link2 className="h-4 w-4" aria-hidden />
-          )}
+          <Link2 className="h-4 w-4" aria-hidden />
           Load
         </Button>
       </div>
+      {pending ? <SignalInlineStatus state={pendingState} /> : null}
       <p className="text-label-sm text-on-surface-variant">
         {canLoadSource
           ? mode === "watch"

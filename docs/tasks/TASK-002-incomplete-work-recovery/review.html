@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TASK-002 Listen Room Reference Refinement - Mistake Watch</title>
+    <title>TASK-002 Recovery Planning - Mistake Watch</title>
     <style>
       :root {
         color-scheme: dark;
@@ -248,17 +248,57 @@
     <main>
       <header>
         <span class="label">Spec-first review</span>
-        <h1>Listen room reference refinement and TV mode</h1>
+        <h1>TASK-002 recovery planning and status states</h1>
         <p>
-          The current listen room should keep evolving toward the approved reference: calm room identity, compact mode tabs, search beside the tabs, member avatars above the title, actions inside a cog menu, the left media player reading as the permanent music rail, and a new local TV mode for passive large-screen viewing.
+          This review surface now includes TASK-002.8I, the implemented local slice for replacing generic loading states with a small Signal state vocabulary, shared primitives, and a media/upload processing resolver. TASK-002.8H remains the next owner batch-upload workflow that will build on this foundation.
         </p>
         <div class="hero-row">
+          <span class="badge green">TASK-002.8I Implemented locally</span>
+          <span class="badge gold">TASK-002.8H Upload queue</span>
           <span class="badge pink">TASK-002.5F Header and presence</span>
           <span class="badge gold">TASK-002.5G Player rail and discovery</span>
           <span class="badge pink">TASK-002.5K TV view mode</span>
-          <span class="badge green">Spec update only</span>
         </div>
       </header>
+
+      <section>
+        <div class="hero-row">
+          <span class="badge green">Local implementation task</span>
+          <span class="badge">TASK-002.8I</span>
+          <span class="badge gold">State resolver first</span>
+        </div>
+        <h2 style="margin-top: 12px">Signal state vocabulary and processing status UX</h2>
+        <p style="margin-top: 8px">
+          TASK-002.8I creates a normalized display-state layer for upload and media processing states before replacing UI instances. The implementation stops treating every waiting state as loading, stops showing fake progress for CloudConvert, and makes recoverable/blocked/failed states expose the next action clearly.
+        </p>
+        <div class="grid three" style="margin-top: 14px">
+          <article class="card">
+            <h3>State Vocabulary</h3>
+            <ul>
+              <li>Use waiting, loading, uploading, processing, queued, blocked, recoverable, failed, and ready.</li>
+              <li>Map raw provider/session/media data into one normalized display object.</li>
+              <li>Keep long-running jobs honest about lifecycle stage and next action.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Shared Primitives</h3>
+            <ul>
+              <li>SignalInlineStatus for short async states.</li>
+              <li>SignalSkeleton for layout-preserving placeholders.</li>
+              <li>SignalProgressBar only for real measurable progress.</li>
+              <li>SignalStatusChip for compact labels.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Scope Boundaries</h3>
+            <ul>
+              <li>No new upload backend, CloudConvert behavior, or batch queue implementation.</li>
+              <li>No fake percentages, progress-looking idle states, or waveform-as-loader reuse.</li>
+              <li>No broad redesign outside targeted status/loading surfaces.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
 
       <section>
         <h2>Files To Review</h2>
@@ -266,23 +306,24 @@
           <article class="card">
             <h3>Must Review</h3>
             <ul>
-              <li><a href="./tasks.md">tasks.md</a> - TASK-002.5F/5G plus new TASK-002.5K TV mode scope.</li>
+              <li><a href="./tasks.md">tasks.md</a> - TASK-002.8I status vocabulary and resolver plus existing upload/listen task context.</li>
               <li><a href="./acceptance-criteria.md">acceptance-criteria.md</a> - pass/fail checks.</li>
-              <li><a href="./design.md">design.md</a> - reference layout and UI rules.</li>
+              <li><a href="./review-notes.md">review-notes.md</a> - current status, locked decisions, and state vocabulary notes.</li>
+              <li><a href="./status-state-vocabulary.md">status-state-vocabulary.md</a> - state vocabulary, resolver boundary, and component responsibilities.</li>
             </ul>
           </article>
           <article class="card">
             <h3>Useful Context</h3>
             <ul>
               <li><a href="./brain-dump.md">brain-dump.md</a> - raw user requirements and search behavior.</li>
-              <li><a href="./review-notes.md">review-notes.md</a> - current status and locked decisions.</li>
+              <li><a href="./design.md">design.md</a> - reference layout and UI rules.</li>
             </ul>
           </article>
           <article class="card">
             <h3>Background</h3>
             <ul>
               <li><a href="./proposal.md">proposal.md</a> - roadmap scope update.</li>
-              <li><a href="./implementation-report.html">implementation-report.html</a> - previous implementation evidence.</li>
+              <li><a href="./implementation-report.html">implementation-report.html</a> - local implementation evidence.</li>
             </ul>
           </article>
         </div>

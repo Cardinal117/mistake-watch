@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ListPlus, Loader2, Plus, Play, Search, X } from "lucide-react";
+import { ListPlus, Plus, Play, Search, X } from "lucide-react";
 
-import { Badge, Button } from "@/components/ui";
+import { Badge, Button, SignalSkeleton } from "@/components/ui";
 import { cx } from "@/lib/ui";
 import { fetchYouTubeSearch } from "@/lib/youtube/search-client";
 import type { YouTubeSearchItem, YouTubeSearchResponse } from "@/lib/youtube/search";
@@ -264,17 +264,12 @@ function SearchSkeleton() {
   return (
     <div className="grid gap-2" aria-label="Searching YouTube">
       {[0, 1, 2].map((index) => (
-        <div
-          className="grid grid-cols-[4.5rem_minmax(0,1fr)_auto] items-center gap-3 rounded-sm border border-white/8 bg-white/[0.035] p-2"
+        <SignalSkeleton
+          className="grid grid-cols-[4.5rem_minmax(0,1fr)_auto] items-center"
+          lines={2}
+          media="thumbnail"
           key={index}
-        >
-          <span className="aspect-video rounded-sm bg-white/10" />
-          <span className="grid gap-2">
-            <span className="h-3 w-4/5 rounded-full bg-white/10" />
-            <span className="h-2.5 w-2/5 rounded-full bg-white/8" />
-          </span>
-          <Loader2 className="h-4 w-4 animate-spin text-on-surface-variant" />
-        </div>
+        />
       ))}
     </div>
   );

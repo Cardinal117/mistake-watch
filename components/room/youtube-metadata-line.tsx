@@ -2,6 +2,7 @@
 
 import { Eye, PlaySquare, ThumbsUp } from "lucide-react";
 
+import { MetadataPlaceholderChips } from "./metadata-placeholder-chips";
 import { formatCompactCount } from "@/lib/youtube/format";
 import { useYouTubeMetadata } from "@/lib/youtube/use-youtube-metadata";
 import { cx } from "@/lib/ui";
@@ -39,15 +40,11 @@ export function YouTubeMetadataLine({
 
   if (loading && !metadata) {
     return (
-      <p
-        className={cx(
-          "technical-label text-on-surface-variant",
-          compact && "text-[11px]",
-          className,
-        )}
-      >
-        Loading details
-      </p>
+      <MetadataPlaceholderChips
+        className={className}
+        compact={compact}
+        showChannel={showChannel}
+      />
     );
   }
 

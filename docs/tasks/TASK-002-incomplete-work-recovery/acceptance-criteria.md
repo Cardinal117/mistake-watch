@@ -241,6 +241,42 @@
 - Multipart upload state is stored in Supabase without exposing R2 secrets to the browser.
 - R2 CORS must expose `ETag`; if it does not, the UI reports a clear upload-part ETag error.
 
+## TASK-002.8H Multi-File Upload Queue And Batch Processing UX
+
+- Owners can select or drop multiple video files at once from the Watch Media Hub uploaded-library area.
+- Each selected file appears as a distinct upload queue item with name, size, target folder, status, progress, and available actions.
+- The upload queue uses controlled concurrency and does not start every large file upload simultaneously.
+- Existing single PUT and multipart upload paths remain in use; credentials stay server-only and no R2 secrets reach the browser.
+- The queue shows the full lifecycle after R2 upload reaches 100%, including inspection, conversion approval, CloudConvert processing, ready, failed, and cancelled states.
+- Recoverable multipart sessions appear in the upload queue after refresh and require reselecting the same local file before resuming missing parts.
+- Batch folder assignment supports choosing an existing folder or creating a new folder before upload, with per-item correction where practical.
+- Batch conversion approval is owner-only, shows estimated credits/reasons, and supports approve-all plus individual approval.
+- A failed upload or conversion does not block waiting or active items from continuing.
+- Failed conversions can retry from existing R2 source objects when a source object exists.
+- Direct-ready MP4/H.264/AAC files still skip CloudConvert.
+- Unsupported MKV/HEVC/unknown files continue through the existing approval and CloudConvert pipeline.
+- Non-owner users cannot upload, approve conversion, or trigger first-party source ingestion.
+- The UI remains compact and usable on desktop and mobile without nested panel clutter.
+- Static checks and production build pass.
+
+## TASK-002.8I Signal State Vocabulary And Processing Status UX
+
+- The app has a typed normalized display-state resolver for upload/media processing state with `state`, `label`, `detail`, `tone`, optional real `progressPercent`, optional `latestEvent`, and optional primary/secondary action labels.
+- The resolver maps raw R2 upload progress, recoverable multipart sessions, media asset processing status, owner approval requirements, CloudConvert queued/processing/exporting states, failed media, retryable media, and ready media without scattering those conditionals through UI components.
+- `SignalInlineStatus`, `SignalSkeleton`, `SignalProgressBar`, and `SignalStatusChip` exist as small shared primitives and are reused in targeted room/media surfaces.
+- `SignalProgressBar` appears only for real measurable progress such as byte-based R2 upload or stored completed multipart bytes.
+- CloudConvert queued/processing/exporting states do not show fake 96/97/99 percent progress. They show stage, detail, and next action where available.
+- Recoverable multipart uploads show resume/cancel actions, stored progress, failure detail when available, and recovery window detail.
+- Approval-required media clearly shows why action is blocked, estimated credits when available, and owner approval action where available.
+- Failed media/upload states show a useful failure reason and recovery action rather than a generic spinner or static label.
+- YouTube search loading uses layout-preserving skeletons without per-row spinners.
+- YouTube metadata pending states preserve chip layout through placeholder chips instead of plain `Loading details` text.
+- Awaiting-media states no longer reuse progress-looking animation or playback waveform motion.
+- `RoomTransitionOverlay` remains reserved for blocking room/navigation transitions.
+- Reduced-motion preferences are respected by status animations.
+- Existing playback, queue reducers, upload endpoints, CloudConvert endpoints, Add Media, watch mode, listen mode, and room sync behavior remain unchanged.
+- Static checks and production build pass.
+
 ## TASK-002.8G Live Room Reconnect And Stale Queue Recovery
 
 - A transient SpacetimeDB disconnect does not require a full browser refresh to recover room controls.

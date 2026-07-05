@@ -1,8 +1,8 @@
 import { Film, Link2 } from "lucide-react";
-import { Badge } from "@/components/ui";
 import type { RoomSnapshot } from "@/lib/rooms";
 import type { LiveRoomState } from "@/lib/spacetime";
 import { DirectMediaPlayer } from "./direct-media-player";
+import { IdleSignalState } from "./idle-signal-state";
 import { IdleMediaTube } from "./idle-media-tube";
 import { YoutubeMediaPlayer } from "./youtube-media-player";
 
@@ -15,6 +15,13 @@ export function MediaStage({ liveRoom, room }: MediaStageProps) {
   const liveSource = liveRoom.snapshot.session?.sourceUrl;
   const liveSourceType = liveRoom.snapshot.session?.sourceType;
   const awaitingMedia = !liveSource;
+  const waitingState = {
+    detail:
+      "Load a YouTube link, direct video URL, or HLS stream to start synchronized playback.",
+    label: "Waiting for media",
+    state: "waiting" as const,
+    tone: "neutral" as const,
+  };
 
   return (
     <div className="relative h-full min-h-0 min-w-0">
@@ -52,23 +59,12 @@ export function MediaStage({ liveRoom, room }: MediaStageProps) {
 
         {awaitingMedia ? (
           <div className="relative z-10 flex h-full min-h-0 items-center justify-center px-4 py-10 md:px-5">
-            <div className="grid max-w-xl place-items-center gap-5 text-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-xl border border-white/10 bg-surface-container/70 text-primary-fixed-dim backdrop-blur-xl">
-                <Film className="h-9 w-9" aria-hidden />
-              </div>
-              <div>
-                <Badge>Player ready</Badge>
-                <h2
-                  className="mt-4 text-headline-md font-semibold text-on-surface [overflow-wrap:anywhere] sm:text-headline-lg"
-                  id="media-stage-heading"
-                >
-                  {room.nowPlaying.title}
-                </h2>
-                <p className="mt-2 text-body-md text-on-surface-variant">
-                  Load a YouTube link, direct video URL, or HLS stream from the
-                  room sidebar to start synchronized playback.
-                </p>
-              </div>
+            <IdleSignalState
+              headingId="media-stage-heading"
+              icon={<Film className="h-9 w-9" aria-hidden />}
+              state={waitingState}
+              title={room.nowPlaying.title}
+            >
               <div className="flex max-w-full flex-wrap justify-center gap-2 text-label-sm text-on-surface-variant">
                 <span className="inline-flex max-w-full min-w-0 items-center gap-2 rounded-md border border-white/10 bg-surface-container/70 px-3 py-2">
                   <Link2
@@ -81,7 +77,7 @@ export function MediaStage({ liveRoom, room }: MediaStageProps) {
                   {liveRoom.connectionStatus}
                 </span>
               </div>
-            </div>
+            </IdleSignalState>
           </div>
         ) : null}
       </section>

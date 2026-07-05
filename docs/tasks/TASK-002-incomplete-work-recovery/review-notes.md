@@ -8,6 +8,8 @@ TASK-002.5F Listen Room Header And Presence Refinement and TASK-002.5G Listen Pl
 
 TASK-002.5H YouTube Search In Add Media is implemented pending browser QA in watch/listen Add Media surfaces.
 
+TASK-002.8I Signal State Vocabulary And Processing Status UX is approved for implementation as the current corrective status-language slice. It should add a small normalized state resolver and shared Signal status primitives before replacing targeted generic loading/status UI.
+
 TASK-002.1 Listen Mode Quality Pass is complete pending manual visual review in a live room.
 
 TASK-002.2 Room Chat is implemented pending manual two-client browser QA in a live room.
@@ -40,7 +42,9 @@ Current user-directed corrective listen-room refinement checkpoint: TASK-002.5F 
 
 Current provider-search checkpoint: TASK-002.5H is implemented pending browser QA.
 
-Normal roadmap checkpoint after the corrective listen-room refinement and TASK-002.8 manual QA: TASK-002.9 Voting and Suggested Next.
+Current status-language checkpoint: TASK-002.8I is approved for implementation.
+
+Normal roadmap checkpoint after the corrective listen-room refinement, TASK-002.8 manual QA, and TASK-002.8I status cleanup: TASK-002.9 Voting and Suggested Next.
 
 ## Decisions Locked
 
@@ -68,6 +72,8 @@ Normal roadmap checkpoint after the corrective listen-room refinement and TASK-0
 - The listen-mode right member sidebar should be removed. Member presence belongs in the top avatar row, while detailed permissions belong in a settings-menu pop-out.
 - The search bar belongs to the right of the compact `Watch | Listen` icon tabs, with debounced provider behavior and honest provider-error states.
 - The current Future AI DJ panel should be hidden until the later TASK-002.10B session-intelligence work can make it useful and truthful.
+- TASK-002.8I must not treat every waiting state as loading. Use `waiting`, `loading`, `uploading`, `processing`, `queued`, `blocked`, `recoverable`, `failed`, and `ready` as the shared UI state vocabulary.
+- TASK-002.8I must add the media/upload display-state resolver before replacing UI instances so R2 uploads, recoverable multipart sessions, CloudConvert states, approval-required media, failed media, and ready media all consume one normalized shape.
 
 ## Important Assumptions
 
@@ -919,6 +925,26 @@ Manual review pending:
 - Cancel a recoverable upload and confirm it disappears from the Watch Media Hub.
 - Confirm `CRON_SECRET` exists in Vercel before relying on production cron cleanup.
 
+## TASK-002.8H Multi-File Upload Queue Planning Notes
+
+- Added TASK-002.8H as the next owner media workflow refinement after multipart recovery and CloudConvert stereo-output fixes.
+- The task should solve the practical "upload a season" workflow:
+  - select/drop many 20-40 minute videos;
+  - assign them to a folder once;
+  - process each item with visible per-file lifecycle state;
+  - avoid starting every upload at once.
+- Recommended first implementation path:
+  - build a client-side queue manager around the existing upload APIs;
+  - default to one active file upload at a time;
+  - keep existing multipart part concurrency inside the active upload;
+  - reuse existing `media_upload_sessions`, resumable upload listing, approval endpoint, and processing poller.
+- The queue must stay visible after source upload reaches 100%; users need to see inspection, waiting for approval, CloudConvert converting, ready, or failed.
+- Batch approval should be owner-only and should not bypass credit-efficiency rules. Approval UI should show why conversion is needed and the estimated credit range.
+- Recoverable uploads should appear in the same queue surface rather than a separate disconnected warning box.
+- The UI should avoid nested boxes inside boxes. Use one uploaded-library panel, then clear queue rows/groups inside it.
+- This task does not add Cloudflare Stream, VPS processing, automatic series metadata scraping, non-owner upload libraries, service workers, or friend sharing.
+- Open implementation risk: browser file handles do not survive refresh. Recovery still requires reselecting the same local files; the task should make that explicit in the UI.
+
 ## TASK-002.5F Implementation Notes
 
 - Updated the desktop listen shell from three columns to two columns by removing the permanent right members sidebar.
@@ -1163,6 +1189,57 @@ Manual review pending:
 
 - Long-session production QA: leave a listen room active for 4+ hours and confirm queue visibility and controls recover without refresh after network/socket interruptions.
 - Browser QA: temporarily interrupt network or SpacetimeDB connectivity and confirm the room returns to `connected`, rejoins the current member, and keeps the queue visible during reconnect.
+
+## TASK-002.8I Implementation Notes
+
+- Added a small normalized display-state layer for upload and media-processing UI:
+  - `SignalDisplayState` defines `state`, `label`, `detail`, `tone`, optional real `progressPercent`, optional latest event, and optional primary/secondary actions.
+  - `resolveUploadProgressDisplayState` handles R2 upload lifecycle states.
+  - `resolveRecoverableUploadDisplayState` handles recoverable multipart upload sessions and saved byte progress.
+  - `resolveMediaAssetDisplayState` handles direct-ready media, CloudConvert queued/converting states, approval-required media, failed/retryable media, and ready media.
+- Added shared Signal UI primitives:
+  - `SignalStatusChip` for compact labels.
+  - `SignalInlineStatus` for short async operations.
+  - `SignalProgressBar` for real measurable progress only.
+  - `SignalSkeleton` for layout-preserving placeholders.
+- Added room/media wrappers:
+  - `MediaProcessingStatus` for upload, conversion, approval, recoverable, failed, and ready media states.
+  - `MetadataPlaceholderChips` for YouTube/source metadata placeholders.
+  - `IdleSignalState` for awaiting-media and idle room states.
+- Updated owner upload status and recoverable multipart upload cards to use the normalized display state instead of local `{ detail, progress, tone }` objects.
+- Removed fake CloudConvert progress percentages from upload completion, processing polling, approval processing, and recoverable resume states. CloudConvert queued/converting/exporting states now show lifecycle copy without a progress bar.
+- Updated single and multipart R2 uploads to report real transfer percentages up to 100% during the transfer phase.
+- Replaced targeted generic loading/spinner states:
+  - YouTube add-media search now uses skeleton rows while searching.
+  - YouTube metadata loading now uses placeholder chips.
+  - Dashboard YouTube metadata loading now uses placeholder chips.
+  - Add-media preview loading and source submission now use inline Signal status.
+  - Awaiting-media watch stage now uses `IdleSignalState`.
+  - Awaiting-media transport no longer uses the animated playback-style slider class.
+- Added `status-state-vocabulary.md` to document the shared vocabulary, resolver boundary, and component responsibilities.
+- Added resolver tests covering real upload progress, CloudConvert queued-without-progress, approval-required media, failed media, recoverable multipart progress, and expired multipart cleanup state.
+
+Verification so far:
+
+- `node --test tests\media\processing-display-state.test.mjs` passed.
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
+
+Corrective QA follow-up:
+
+- Fixed uploaded library cards incorrectly showing `Converting` for every converted asset. Ready persisted status now wins over historical `processingStrategy = convert`, because completed CloudConvert assets keep the strategy for audit/history.
+- Upload progress copy now uses user-facing `Uploading` instead of internal `Uploading to R2`.
+- `MediaProcessingStatus` no longer prints the same upload detail twice when a real progress bar is present.
+- Browser storage upload failures now distinguish network/CORS/abort/timeout/status-code failures instead of only showing `R2 upload failed`.
+- Added a resolver regression test for `status = ready` plus `processingStrategy = convert`.
+
+Corrective verification:
+
+- `node --test tests\media\processing-display-state.test.mjs` passed.
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
 
 ## TASK-002.1 Implementation Notes
 

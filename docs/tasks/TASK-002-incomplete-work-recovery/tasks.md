@@ -966,6 +966,129 @@ Safe commit point:
 
 - Large R2 multipart uploads have a practical owner recovery and cleanup path without replacing the direct-to-R2 architecture.
 
+## TASK-002.8H: Multi-File Upload Queue And Batch Processing UX
+
+Source task: owner workflow follow-up after CloudConvert/R2 testing showed that uploading many 20-40 minute episodes one at a time is too manual.
+
+Work:
+
+- Add a client-side upload queue manager for owner-selected batches of video files.
+- Support multi-file drag/drop and file picker selection from the Watch Media Hub uploaded-library area.
+- Create one queued upload item per file with durable references to the existing upload session and media asset where available:
+  - local queue id;
+  - file name, size, type, and folder target;
+  - upload session id;
+  - media asset id after source upload completion;
+  - status, progress, error, retry/recoverability metadata.
+- Use controlled concurrency instead of starting every file at once:
+  - default to one active file upload at a time;
+  - keep existing multipart part concurrency inside the active file path;
+  - allow future tuning without changing the UI contract.
+- Keep the upload queue visible across the full lifecycle:
+  - waiting;
+  - preparing;
+  - uploading to R2;
+  - paused/recoverable;
+  - source uploaded;
+  - inspecting;
+  - waiting for owner conversion approval;
+  - converting;
+  - ready;
+  - failed;
+  - cancelled.
+- Reuse the existing R2 upload, multipart recovery, CloudConvert credit-efficiency, approval, and processing status APIs instead of introducing a new transcoding backend.
+- Add batch folder assignment:
+  - choose an existing folder once before/while adding a batch;
+  - create a folder inline and apply it to the selected batch;
+  - allow per-item folder correction after queueing where practical.
+- Add upload queue controls:
+  - pause/resume all where technically safe;
+  - cancel all waiting/active/recoverable uploads;
+  - retry failed upload items;
+  - clear completed items;
+  - per-item cancel/retry/details actions.
+- Add batch conversion approval:
+  - list files that need CloudConvert approval;
+  - show estimated credits and why conversion is needed;
+  - allow approve all or approve individually;
+  - keep owner-only server authority for approvals.
+- Integrate recoverable multipart uploads into the same queue surface:
+  - after refresh, show recoverable sessions as queue items;
+  - require the owner to reselect the same file;
+  - resume missing parts using stored completed ETags.
+- Ensure failed conversions can retry from the existing R2 source object without requiring reupload.
+- Keep the queue UI concise and operational, not a dashboard:
+  - one clear progress bar per item;
+  - compact batch summary;
+  - obvious active/waiting/needs-approval groups;
+  - no nested panels inside panels.
+- Do not implement user-owned media libraries for non-owners, background desktop uploaders, service workers, Cloudflare Stream, VPS transcoding, friend sharing, or automatic series metadata scraping in this slice.
+
+Review checkpoint:
+
+- Owners can select 10+ episode files and see each one as a queued upload item.
+- The app uploads files sequentially or with controlled concurrency rather than starting every large upload at once.
+- Upload progress, processing progress, approval waits, and failures are visible per file.
+- Browser refresh does not hide recoverable multipart uploads; owners can reselect files and resume where possible.
+- Direct-ready MP4 files still skip CloudConvert.
+- Unsupported MKV/HEVC files still use the existing approval/CloudConvert path.
+- A failed item does not block the rest of the batch.
+
+Safe commit point:
+
+- Owners can batch-add a season of normal 20-40 minute videos without babysitting single-file uploads, while preserving the existing R2 and CloudConvert architecture.
+
+## TASK-002.8I: Signal State Vocabulary And Processing Status UX
+
+Source task: loading/status corrective pass after upload, CloudConvert, metadata, and search states started using generic spinners or fake-looking progress.
+
+Work:
+
+- Add a small shared state vocabulary for user-facing async/status UI:
+  - `waiting`;
+  - `loading`;
+  - `uploading`;
+  - `processing`;
+  - `queued`;
+  - `blocked`;
+  - `recoverable`;
+  - `failed`;
+  - `ready`.
+- Add shared primitives that follow the Signal Aperture design language without creating a large framework:
+  - `SignalInlineStatus` for short async states;
+  - `SignalSkeleton` for layout-preserving placeholders;
+  - `SignalProgressBar` only when real measurable progress exists;
+  - `SignalStatusChip` for compact state labels.
+- Add a resolver layer for upload/media processing display state so raw upload sessions, media assets, R2 upload progress, approval states, and CloudConvert states map into one normalized object:
+  - `state`;
+  - `label`;
+  - `detail`;
+  - `tone`;
+  - `progressPercent` only when real progress exists;
+  - `latestEvent` where available;
+  - `primaryAction` and `secondaryAction` labels where available.
+- Use the resolver to drive owner media upload, recoverable multipart, approval-required media, failed/retryable media, and CloudConvert queued/processing/exporting states.
+- Replace generic spinners in repeated room/search/metadata surfaces with the correct primitive for the state:
+  - short inline async work uses `SignalInlineStatus`;
+  - card/search placeholders use `SignalSkeleton`;
+  - metadata placeholders preserve final chip layout through `MetadataPlaceholderChips`;
+  - awaiting-media surfaces use `IdleSignalState` instead of progress-looking animation.
+- Keep `RoomTransitionOverlay` as the blocking room/navigation transition overlay only.
+- Respect reduced-motion and avoid decorative-only animation.
+- Do not add a new design system, new dependency, new upload backend, new CloudConvert behavior, or broader batch upload behavior in this task.
+
+Review checkpoint:
+
+- Users can distinguish waiting, loading, uploading, queued, processing, approval-blocked, recoverable, failed, and ready states without guessing from a spinner.
+- R2 upload progress is shown only when byte progress exists.
+- CloudConvert states show lifecycle stage and next action without fake percentages.
+- Recoverable and failed states expose resume/retry/cancel guidance.
+- Search and metadata placeholders preserve layout without noisy spinner rows.
+
+Safe commit point:
+
+- Loading/status UI has a small normalized foundation that can support TASK-002.8H batch uploads without scattering conditionals through the room UI.
+
 ## TASK-002.8G: Live Room Reconnect And Stale Queue Recovery
 
 Source task: long-session QA after TASK-002.5J reduced aggressive queue draining but a room could still look empty or stop accepting controls after several hours until refresh.

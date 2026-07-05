@@ -2,6 +2,7 @@
 
 import { Eye, ThumbsUp } from "lucide-react";
 
+import { MetadataPlaceholderChips } from "@/components/room/metadata-placeholder-chips";
 import { formatCompactCount } from "@/lib/youtube/format";
 import { useYouTubeMetadata } from "@/lib/youtube/use-youtube-metadata";
 
@@ -19,11 +20,7 @@ export function DashboardYouTubeMetadata({
   }
 
   if (loading && !metadata) {
-    return (
-      <p className="technical-label text-on-surface-variant">
-        Metadata pending
-      </p>
-    );
+    return <MetadataPlaceholderChips compact />;
   }
 
   if (status !== "available" || !metadata) {

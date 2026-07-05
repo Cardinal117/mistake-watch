@@ -3,300 +3,169 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TASK-002.5F/G/K Listen Room Refinement Report</title>
+    <title>TASK-002.8I Signal State Vocabulary Implementation Report</title>
     <style>
       :root {
         color-scheme: dark;
-        --bg: #0a0a0b;
-        --panel: rgb(18 18 20 / 0.78);
-        --panel-strong: rgb(28 27 28 / 0.9);
+        --bg: #08090a;
+        --panel: rgb(18 20 22 / 0.82);
         --line: rgb(255 255 255 / 0.1);
-        --text: #e5e2e3;
-        --muted: #b9cacb;
+        --text: #e9eff0;
+        --muted: #b8c8ca;
         --cyan: #00dbe9;
-        --pink: #ff39ad;
         --gold: #ffba20;
+        --red: #ffb4ab;
         --green: #77d982;
       }
 
       * { box-sizing: border-box; }
-
       body {
         margin: 0;
         background:
-          radial-gradient(circle at 14% 0%, rgb(255 57 173 / 0.16), transparent 34rem),
-          radial-gradient(circle at 86% 16%, rgb(0 219 233 / 0.14), transparent 32rem),
+          radial-gradient(circle at 14% 0%, rgb(0 219 233 / 0.16), transparent 34rem),
+          radial-gradient(circle at 84% 10%, rgb(255 186 32 / 0.12), transparent 30rem),
           var(--bg);
         color: var(--text);
-        font-family: Geist, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         line-height: 1.5;
       }
-
-      main {
-        width: min(1160px, calc(100% - 32px));
-        margin: 0 auto;
-        padding: 36px 0 56px;
-      }
-
+      main { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 36px 0 52px; }
       header, section, .card {
         border: 1px solid var(--line);
-        border-radius: 12px;
+        border-radius: 10px;
         background: var(--panel);
         backdrop-filter: blur(16px);
       }
-
       header { padding: 28px; }
       section { margin-top: 18px; padding: 22px; }
-
       h1, h2, h3, p { margin: 0; }
-      h1 { margin-top: 8px; max-width: 920px; font-size: clamp(32px, 5vw, 52px); line-height: 1.04; }
+      h1 { margin-top: 10px; max-width: 920px; font-size: clamp(32px, 5vw, 52px); line-height: 1.04; }
       h2 { font-size: 22px; }
       h3 { font-size: 16px; }
       p, li { color: var(--muted); }
       ul { margin: 12px 0 0; padding-left: 18px; }
       li + li { margin-top: 7px; }
-      code, .eyebrow, .status { font-family: "JetBrains Mono", Consolas, monospace; }
+      code, .label, .badge { font-family: "JetBrains Mono", Consolas, monospace; }
       code { color: var(--cyan); }
-
-      .eyebrow {
-        color: var(--cyan);
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-
-      .summary {
-        margin-top: 16px;
-        max-width: 880px;
-        font-size: 17px;
-      }
-
+      .label { color: var(--cyan); font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+      .summary { margin-top: 16px; max-width: 920px; font-size: 17px; }
+      .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
       .grid { display: grid; gap: 14px; }
-      .cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-
-      .card {
-        padding: 18px;
-        background: var(--panel-strong);
-      }
-
-      .status {
-        display: inline-flex;
-        width: fit-content;
-        border: 1px solid rgb(119 217 130 / 0.35);
-        border-radius: 6px;
-        color: var(--green);
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        padding: 4px 8px;
-        text-transform: uppercase;
-      }
-
-      .warn { border-color: rgb(255 186 32 / 0.35); color: var(--gold); }
-      .pink { border-color: rgb(255 57 173 / 0.38); color: var(--pink); }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        overflow: hidden;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: var(--panel);
-      }
-
-      th, td {
-        border-bottom: 1px solid var(--line);
-        padding: 12px;
-        text-align: left;
-        vertical-align: top;
-      }
-
-      th {
-        color: var(--cyan);
-        font-family: "JetBrains Mono", Consolas, monospace;
-        font-size: 12px;
-        text-transform: uppercase;
-      }
-
-      tr:last-child td { border-bottom: 0; }
-
-      @media (max-width: 820px) {
-        main { width: min(100% - 24px, 1160px); padding-top: 24px; }
-        .cols-2, .cols-3 { grid-template-columns: 1fr; }
-      }
+      .two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .card { padding: 18px; }
+      .badge { display: inline-flex; align-items: center; min-height: 28px; border: 1px solid var(--line); border-radius: 6px; padding: 0 10px; color: var(--muted); font-size: 12px; }
+      .badge.green { border-color: rgb(119 217 130 / 0.35); color: var(--green); }
+      .badge.gold { border-color: rgb(255 186 32 / 0.35); color: var(--gold); }
+      .badge.red { border-color: rgb(255 180 171 / 0.35); color: var(--red); }
+      .ok { color: var(--green); }
+      .warn { color: var(--gold); }
+      @media (max-width: 820px) { .two, .three { grid-template-columns: 1fr; } }
     </style>
   </head>
   <body>
     <main>
       <header>
-        <p class="eyebrow">TASK-002.5F/G/K implementation report</p>
-        <h1>Listen room reference and TV mode refinement</h1>
+        <span class="label">Implementation Report</span>
+        <h1>TASK-002.8I Signal State Vocabulary And Processing Status UX</h1>
         <p class="summary">
-          The listen room now follows the approved reference direction across the header and main content, and it includes a local TV mode for passive viewing: cleaner room identity, top member avatars, compact mode tabs, search shell, settings menu, wider integrated player rail, breathable Room Picks, no active filler sections, and a fullscreen music-lounge surface focused on the current media.
+          Implemented locally. The media/upload UI now routes important waiting, upload, processing, approval, recoverable, failed, and ready states through a normalized display-state resolver and shared Signal primitives instead of scattered component conditionals.
         </p>
+        <div class="row" style="margin-top: 18px">
+          <span class="badge green">Local only</span>
+          <span class="badge green">Resolver first</span>
+          <span class="badge gold">No fake CloudConvert progress</span>
+          <span class="badge">No deploy</span>
+        </div>
       </header>
 
       <section>
+        <h2>What Changed</h2>
+        <div class="grid three" style="margin-top: 14px">
+          <article class="card">
+            <h3>State Layer</h3>
+            <ul>
+              <li>Added <code>SignalDisplayState</code> with state, label, detail, tone, optional real progress, latest event, and actions.</li>
+              <li>Added resolver helpers for R2 uploads, recoverable multipart sessions, and media asset processing.</li>
+              <li>Added tests for direct, queued, approval, failed, recoverable, expired, and real-progress cases.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Shared Components</h3>
+            <ul>
+              <li>Added <code>SignalStatusChip</code>, <code>SignalInlineStatus</code>, <code>SignalProgressBar</code>, and <code>SignalSkeleton</code>.</li>
+              <li>Added <code>MediaProcessingStatus</code>, <code>MetadataPlaceholderChips</code>, and <code>IdleSignalState</code>.</li>
+              <li>Kept <code>RoomTransitionOverlay</code> as the blocking transition surface.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>UI Replacements</h3>
+            <ul>
+              <li>Owner upload and recoverable multipart cards now consume normalized states.</li>
+              <li>YouTube search and metadata loading now use skeleton placeholders.</li>
+              <li>Awaiting-media watch stage now uses an idle state instead of a loading/progress visual.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section>
+        <h2>Important Behavior</h2>
+        <div class="grid two" style="margin-top: 14px">
+          <article class="card">
+            <h3>Progress Rules</h3>
+            <ul>
+              <li>R2 single and multipart uploads now report real transfer progress to 100%.</li>
+              <li>Recoverable uploads show saved byte progress from the durable session.</li>
+              <li>CloudConvert queued/converting/exporting states do not show fake percentages.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Recovery Rules</h3>
+            <ul>
+              <li>Approval-required media resolves to <code>blocked</code> with an owner action.</li>
+              <li>Failed media resolves to <code>failed</code> with retry-oriented copy.</li>
+              <li>Expired multipart sessions resolve to cleanup-oriented failed states.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section>
         <h2>Files To Review</h2>
-        <div class="grid cols-3" style="margin-top: 14px">
+        <div class="grid two" style="margin-top: 14px">
           <article class="card">
-            <span class="status pink">Primary</span>
-            <h3 style="margin-top: 10px">Source file</h3>
-            <p><code>components/room/listen-mode-layout.tsx</code></p>
-          </article>
-          <article class="card">
-            <span class="status">Notes</span>
-            <h3 style="margin-top: 10px">Task notes</h3>
-            <p><code>docs/tasks/TASK-002-incomplete-work-recovery/review-notes.md</code></p>
-          </article>
-          <article class="card">
-            <span class="status warn">Context</span>
-            <h3 style="margin-top: 10px">Spec files</h3>
-            <p><code>tasks.md</code>, <code>design.md</code>, and <code>acceptance-criteria.md</code> define the listen refinement and TV mode scope.</p>
-          </article>
-          <article class="card">
-            <span class="status pink">Player prop</span>
-            <h3 style="margin-top: 10px">YouTube player</h3>
-            <p><code>components/room/youtube-media-player.tsx</code></p>
-          </article>
-        </div>
-      </section>
-
-      <section>
-        <h2>Implemented</h2>
-        <div class="grid cols-2" style="margin-top: 14px">
-          <article class="card">
-            <span class="status">TASK-002.5F</span>
-            <h3 style="margin-top: 10px">Header and presence</h3>
+            <h3>Source</h3>
             <ul>
-              <li>Removed the permanent desktop right members sidebar.</li>
-              <li>Moved live member presence into top avatars above the room title.</li>
-              <li>Moved copy, share, save, permissions, room settings, and leave actions into a compact cog menu.</li>
-              <li>Replaced the bulky desktop mode switch with left-aligned Watch and Listen icon tabs.</li>
-              <li>Added the listen search shell beside the tabs without faking provider results.</li>
+              <li><code>lib/status/display-state.ts</code></li>
+              <li><code>lib/media/processing-display-state.ts</code></li>
+              <li><code>components/ui/signal-status.tsx</code></li>
+              <li><code>components/room/media-processing-status.tsx</code></li>
+              <li><code>components/room/metadata-placeholder-chips.tsx</code></li>
+              <li><code>components/room/idle-signal-state.tsx</code></li>
             </ul>
           </article>
           <article class="card">
-            <span class="status">TASK-002.5G</span>
-            <h3 style="margin-top: 10px">Player rail and discovery</h3>
+            <h3>Docs And Tests</h3>
             <ul>
-              <li>Increased the desktop player rail to a responsive 380-420px target.</li>
-              <li>Made the player read as the left music rail instead of a nested floating card.</li>
-              <li>Added an integrated Suggested Next area with next item, queue count, and remaining duration.</li>
-              <li>Removed Recently Added from listen mode.</li>
-              <li>Hid the Future AI DJ block until the later session-intelligence task.</li>
-              <li>Gave Room Picks more vertical breathing room while preserving actions.</li>
-            </ul>
-          </article>
-          <article class="card">
-            <span class="status pink">TASK-002.5K</span>
-            <h3 style="margin-top: 10px">Listen TV mode</h3>
-            <ul>
-              <li>Added a local-only TV mode entry in the listen desktop header.</li>
-              <li>Added a fullscreen TV presentation with room pill, exit control, large title, wide progress, centered transport, Up Next, volume, and fullscreen controls.</li>
-              <li>Added keyboard handling for <code>T</code> toggle and <code>Escape</code> exit while avoiding form-input conflicts.</li>
-              <li>Hid normal management surfaces while TV mode is active.</li>
-              <li>Added a YouTube player option to hide native iframe controls only inside TV mode.</li>
+              <li><code>tests/media/processing-display-state.test.mjs</code></li>
+              <li><code>status-state-vocabulary.md</code></li>
+              <li><code>review-notes.md</code></li>
+              <li><code>acceptance-criteria.md</code></li>
+              <li><code>tasks.md</code></li>
             </ul>
           </article>
         </div>
-      </section>
-
-      <section>
-        <h2>Acceptance Status</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Area</th>
-              <th>Status</th>
-              <th>Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Reference-style listen header</td>
-              <td><span class="status">Implemented</span></td>
-              <td>Room name, metadata, member avatars, primary actions, mode tabs, and search shell are separated by hierarchy.</td>
-            </tr>
-            <tr>
-              <td>Settings and permissions</td>
-              <td><span class="status">Implemented</span></td>
-              <td>Secondary actions live in the cog menu; permissions reuse the existing authority panel in a pop-out.</td>
-            </tr>
-            <tr>
-              <td>Integrated left music rail</td>
-              <td><span class="status">Implemented</span></td>
-              <td>The rail is wider, media-first, and contains playback plus queue context.</td>
-            </tr>
-            <tr>
-              <td>Discovery cleanup</td>
-              <td><span class="status">Implemented</span></td>
-              <td>Recently Added and Future AI DJ are removed from the active listen surface.</td>
-            </tr>
-            <tr>
-              <td>Room Picks card breathing</td>
-              <td><span class="status">Implemented</span></td>
-              <td>Room Picks receive more padding, spacing, and width without changing action behavior.</td>
-            </tr>
-            <tr>
-              <td>Provider search results</td>
-              <td><span class="status">Implemented</span></td>
-              <td>The header search uses the current Add Media search integration and preserves pasted-link behavior.</td>
-            </tr>
-            <tr>
-              <td>Listen TV mode</td>
-              <td><span class="status">Implemented</span></td>
-              <td>TV mode is local to the current browser, reuses existing playback/queue controls, and does not mutate room mode.</td>
-            </tr>
-            <tr>
-              <td>YouTube native controls in TV mode</td>
-              <td><span class="status">Implemented</span></td>
-              <td>The YouTube iframe receives hidden native controls in TV mode; normal listen/watch players keep existing behavior.</td>
-            </tr>
-            <tr>
-              <td>Live-room reconnect recovery</td>
-              <td><span class="status">Implemented</span></td>
-              <td>SpacetimeDB disconnects, subscription failures, and connection errors now schedule reconnects, preserve the last good room snapshot, and rejoin stale members.</td>
-            </tr>
-          </tbody>
-        </table>
       </section>
 
       <section>
         <h2>Verification</h2>
-        <div class="grid cols-2" style="margin-top: 14px">
-          <article class="card">
-            <span class="status">Passed</span>
-            <h3 style="margin-top: 10px">Static checks</h3>
-            <ul>
-              <li><code>npm run typecheck</code></li>
-              <li><code>npm run lint</code></li>
-              <li><code>npm run build</code></li>
-            </ul>
-          </article>
-          <article class="card">
-            <span class="status warn">Pending</span>
-            <h3 style="margin-top: 10px">Manual browser QA</h3>
-            <ul>
-              <li>Desktop listen visual check against the reference.</li>
-              <li>Vertical-monitor rail and Room Picks check.</li>
-              <li>Permissions pop-out behavior in a live room.</li>
-              <li>Queue action regression: play, add next, add queue, Add Media.</li>
-              <li>Mobile regression check for preserved mobile listen flow.</li>
-              <li>TV mode desktop/TV-like display check, including exit, T toggle, Escape exit, fullscreen, YouTube overlay controls, and Up Next.</li>
-              <li>Long-session reconnect check: leave a room active for several hours or interrupt the network and confirm queue/control recovery without refresh.</li>
-            </ul>
-          </article>
-        </div>
-      </section>
-
-      <section>
-        <h2>Deferred</h2>
-        <p>
-          Odysseus/session intelligence, first-party account-history recommendations, queue virtualization, metadata lazy loading, event logging, and broader listen-room personalization remain later tasks. This slice intentionally avoids changing playback authority, queue reducer semantics, Add Media behavior, provider availability classification, SpacetimeDB schema, or watch-room layout.
-        </p>
+        <ul>
+          <li class="ok"><code>node --test tests\media\processing-display-state.test.mjs</code> passed.</li>
+          <li class="ok"><code>npm run typecheck</code> passed.</li>
+          <li class="ok"><code>npm run lint</code> passed.</li>
+          <li class="ok"><code>npm run build</code> passed.</li>
+        </ul>
       </section>
     </main>
   </body>

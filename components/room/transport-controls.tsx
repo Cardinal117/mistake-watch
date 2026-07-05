@@ -98,11 +98,7 @@ export function TransportControls({
       ? formatSeconds(nextQueueItem.durationSeconds)
       : "Queue preview");
   const progressClass =
-    awaitingMedia && room.mode === "listen"
-      ? "awaiting-media-slider awaiting-media-slider-amber"
-      : awaitingMedia
-        ? "awaiting-media-slider"
-        : undefined;
+    awaitingMedia ? "opacity-55" : undefined;
   const cinematic = presentation === "cinematic" && room.mode === "watch";
   const waveformPlan = useMemo(
     () =>

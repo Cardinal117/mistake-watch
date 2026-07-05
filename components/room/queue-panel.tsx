@@ -17,7 +17,6 @@ import {
   ChevronsUp,
   Film,
   ListPlus,
-  Loader2,
   Music2,
   MoreVertical,
   Pin,
@@ -29,7 +28,8 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { Badge, Button } from "@/components/ui";
+import { Badge, Button, SignalInlineStatus } from "@/components/ui";
+import { MetadataPlaceholderChips } from "./metadata-placeholder-chips";
 import {
   detectUrlType,
   parseYouTubeVideoId,
@@ -947,10 +947,14 @@ export function QueuePanel({
           </div>
         </div>
         {isImportingPlaylist || previewLoading ? (
-          <p className="inline-flex items-center gap-2 text-label-sm text-on-surface-variant">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            Loading preview
-          </p>
+          <SignalInlineStatus
+            state={{
+              detail: "Checking the pasted media source.",
+              label: "Loading preview",
+              state: "loading",
+              tone: "info",
+            }}
+          />
         ) : null}
         <YouTubeAddMediaSearch
           canAddQueue={!addDisabled}
@@ -1908,9 +1912,13 @@ function QueueRow({
           {item.isUnavailable ? <Badge tone="amber">Unavailable</Badge> : null}
         </div>
         {item.sourceType === "youtube" && metadata.status !== "available" ? (
-          <span className="technical-label mt-1 block text-on-surface-variant/80">
-            {metadata.loading ? "Loading details" : "Metadata unavailable"}
-          </span>
+          metadata.loading ? (
+            <MetadataPlaceholderChips className="mt-1" compact />
+          ) : (
+            <span className="technical-label mt-1 block text-on-surface-variant/80">
+              Metadata unavailable
+            </span>
+          )
         ) : null}
         {isBlocked ? (
           <p className="mt-1 text-label-sm text-error">

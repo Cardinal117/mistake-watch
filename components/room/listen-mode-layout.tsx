@@ -27,7 +27,6 @@ import {
   Headphones,
   ListMusic,
   ListPlus,
-  Loader2,
   LogOut,
   Maximize2,
   Monitor,
@@ -61,6 +60,7 @@ import {
   IconButton,
   PendingLink,
   RoomTransitionOverlay,
+  SignalInlineStatus,
   Slider,
 } from "@/components/ui";
 import type { AccountSummary } from "@/lib/account/types";
@@ -1448,9 +1448,14 @@ function ListenTechnicalRoomHeader({
                 value={visibleRoomName}
               />
               {renaming ? (
-                <Loader2
-                  className="h-4 w-4 animate-spin text-secondary-fixed-dim"
-                  aria-hidden
+                <SignalInlineStatus
+                  className="shrink-0"
+                  state={{
+                    detail: "Applying room name.",
+                    label: "Saving",
+                    state: "loading",
+                    tone: "warning",
+                  }}
                 />
               ) : null}
             </div>
@@ -3381,10 +3386,14 @@ function ListenAddMediaPopover({
             </div>
           </form>
           {isImportingPlaylist || previewLoading ? (
-            <p className="inline-flex items-center gap-2 text-label-sm text-on-surface-variant">
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              Loading preview
-            </p>
+            <SignalInlineStatus
+              state={{
+                detail: "Checking the pasted media source.",
+                label: "Loading preview",
+                state: "loading",
+                tone: "info",
+              }}
+            />
           ) : null}
           <YouTubeAddMediaSearch
             canAddQueue={!addDisabled}
