@@ -20,7 +20,7 @@ Use this repo with that context in mind.
 
 And yes, the text above was enhanced with AI, because why would I not use the tool I am experimenting with?
 
-Mistake Watch is a private watch/listen-together platform for synchronized rooms, shared queues, and host-led playback. It is built for a guest-first friends-and-family release now, with accounts, friends, uploaded media, voting, and shared browser control planned later through the TASK-002 recovery roadmap.
+Mistake Watch is a private watch/listen-together platform for synchronized rooms, shared queues, host-led playback, uploaded media, and music-room experimentation. It is built around a guest-first flow, with optional Google sign-in for durable account identity and owner-level features.
 
 Production:
 
@@ -30,21 +30,23 @@ Production:
 ## Current Capabilities
 
 - Create and join private rooms with guest display names.
-- Sync live playback state through SpacetimeDB.
-- Store durable room data through Supabase.
-- Watch YouTube videos, direct media URLs, and HLS-capable sources.
-- Use listen mode for YouTube/YouTube Music-style music sessions with a dedicated music UI.
+- Optional Google sign-in for durable profile identity, owner role support, account settings, and future account-only features.
+- Sync live playback state, presence, permissions, and queue mutations through SpacetimeDB.
+- Store durable rooms, accounts, media library records, upload sessions, folders, and processing events through Supabase.
+- Watch YouTube videos, uploaded first-party videos, direct media URLs, and HLS-capable sources.
+- Use listen mode for YouTube/YouTube Music-style music sessions with a dedicated music UI, dynamic thumbnail-based theming, room picks, search entry, and TV mode.
+- Use watch mode as a cinematic room with a dominant video stage, focused transport, media hub, queue drawer, and audience/chat surface.
 - Add single YouTube/direct links to the queue.
+- Search YouTube through the Add Media flow, with debounced server-side search and existing queue duplicate handling.
 - Import YouTube playlists through a review flow before adding items.
-- Manage queue order, removal, clear, shuffle, smart shuffle, pinned-first behavior, and history filtering.
-- Auto-advance through the queue with next-item preparation and fallback continuity handling.
-- Show current media metadata, thumbnails, views, likes, queue count, and next-item preparation where data is available.
-- Host controls playback by default.
-- Guests can add queue items by default.
-- Hosts can manage member permissions for queue, playback, and browser-control readiness.
-- Hosts can kick members and remove idle members.
-- Saved rooms and recent rooms support recurring personal use.
-- Listen mode includes dynamic thumbnail-based theming, a queue drawer, room picks, recently added tracks, and a compact members rail.
+- Manage queue order, removal, clear, shuffle, smart shuffle, pinned-first behavior, play-next, play-now, and history filtering where permissions allow.
+- Auto-advance through the queue with next-item preparation, unavailable-media skipping, and reconnect/stale-room recovery work.
+- Show current media metadata, thumbnails, views, likes, queue count, next-item context, and processing states where data is available.
+- Host controls playback by default, with member-level permissions for queue, playback, browser-control readiness, and room management.
+- Hosts can kick members, remove idle members, save rooms, and manage recurring personal rooms.
+- Owners can upload videos into the watch media library, organize uploads into folders, hide owner-only media, retry failed processing, recover multipart uploads, and queue batch uploads one file at a time.
+- Uploaded media is stored in Cloudflare R2, inspected for browser safety, and processed through CloudConvert when conversion is needed.
+- Shared Signal status components now distinguish waiting, loading, uploading, processing, queued, blocked, recoverable, failed, and ready states instead of treating everything as generic loading.
 
 ## Current Roadmap
 
@@ -62,16 +64,9 @@ docs/tasks/TASK-001-watch-together-platform/
 
 Current TASK-002 status:
 
-- `TASK-002.1` Listen Mode Quality Pass: implemented.
-- `TASK-002.2` Room Chat: implemented for watch room context only. The user explicitly does not want chat in listen mode.
-- `TASK-002.3` Seamless Next Item Loading: implemented.
-- `TASK-002.4` YouTube Availability Hardening: complete.
-- `TASK-002.5` Provider Recommendations and Room Picks: implemented pending live-room visual and permission QA.
-- `TASK-002.5A` Adaptive Listen Card Drift: closed after user QA rejected autonomous drift.
-- `TASK-002.5C` Live Room Authority Hardening: implemented; local manual QA confirmed by user.
-- `TASK-002.5D` Queue Authority And Add Media UX Stabilization: complete after user QA confirmed the corrective pass.
-- `TASK-002.5B` Cinematic Watch Room Purpose Pass: implemented pending browser visual QA.
-- `TASK-002.5E` Vertical Listen AI DJ Placement Shell: complete after vertical, wide desktop, and mobile browser QA.
+- The project has moved beyond the original MVP recovery work and is now deep into the `TASK-002` continuation packet.
+- Recently completed areas include listen-room redesign, watch-room cinematic layout, Google account identity, R2 media library uploads, CloudConvert processing, multipart recovery, multi-file owner batch uploads, TV mode, performance quick wins, status-state cleanup, and reconnect/queue stability fixes.
+- The next task should always be confirmed from the TASK-002 packet before implementation. Do not rely on this README as the live task board.
 
 Do not treat future features as shipped until the TASK-002 packet marks them complete.
 
@@ -81,14 +76,15 @@ Do not treat future features as shipped until the TASK-002 packet marks them com
 - React 19
 - TypeScript
 - Tailwind CSS
-- Supabase for durable data and future auth/profile systems
+- Supabase for durable data, Google auth, account profiles, media records, upload sessions, folders, and processing events
 - SpacetimeDB for live room state, presence, permissions, queue mutations, and playback sync
 - YouTube Data API for metadata
 - YouTube IFrame API for embedded YouTube playback
 - HLS.js for HLS-capable direct media
+- Cloudflare R2 for uploaded source/processed media storage
+- CloudConvert for browser-safe MP4 conversion and processing status
 - Vercel for frontend hosting
-- Cloudflare Stream planned for fast uploaded-video processing/playback
-- Cloudflare R2 planned for raw/source archive and supporting media artifacts
+- Vercel Speed Insights for production performance telemetry
 
 ## Architecture Boundaries
 
@@ -99,7 +95,12 @@ Supabase owns durable product data:
 - memberships
 - room settings
 - durable queue data
-- future auth, profiles, friends, and notification systems
+- Google-authenticated profiles
+- media assets
+- media folders
+- media upload sessions
+- media processing events
+- future friends, notifications, and account-only social systems
 
 SpacetimeDB owns live room state:
 
@@ -111,6 +112,19 @@ SpacetimeDB owns live room state:
 - room events that need low latency
 
 Do not move live media sync to Supabase Realtime. Supabase is not the low-latency room authority for this project.
+
+Cloudflare R2 owns media object storage:
+
+- original uploaded source files
+- processed browser-safe media files
+- poster images and media artifacts
+- incomplete multipart upload parts until completion, abort, or lifecycle cleanup
+
+CloudConvert owns conversion jobs only:
+
+- it converts files that are not confidently browser-safe;
+- direct-ready MP4 files should bypass conversion where possible;
+- long or expensive conversions may require owner approval before spending credits.
 
 ## Local Setup
 
@@ -142,9 +156,44 @@ Required server-only variables:
 SUPABASE_SECRET_KEY
 SPACETIME_SERVER_AUTH_TOKEN
 YOUTUBE_API_KEY
+CLOUDFLARE_ACCOUNT_ID
+CLOUDFLARE_R2_BUCKET
+CLOUDFLARE_R2_ACCESS_KEY_ID
+CLOUDFLARE_R2_SECRET_ACCESS_KEY
+CLOUDFLARE_R2_ENDPOINT
+CLOUDFLARE_R2_PUBLIC_BASE_URL
+CLOUDCONVERT_API_TOKEN
+CLOUDCONVERT_WEBHOOK_SECRET
+CRON_SECRET
+```
+
+Optional or context-specific variables used by scripts and upload limits:
+
+```text
+CLOUDCONVERT_WEBHOOK_URL
+GOOGLE_YOUTUBE_API_KEY
+MEDIA_UPLOAD_MAX_BYTES
+MEDIA_INGEST_OWNER_USER_ID
+MEDIA_INGEST_FOLDER_ID
+MISTAKE_WATCH_HOST
+MISTAKE_WATCH_PORT
+MISTAKE_WATCH_SPACETIME_PORT
+SPACETIME_CLI
 ```
 
 Never commit `.env`, `.env.local`, Vercel secrets, Supabase secret keys, or provider API keys.
+
+Google sign-in is configured through Supabase Auth. The production callback URL should include:
+
+```text
+https://watch.mistakestudios.com/auth/callback
+```
+
+CloudConvert webhooks should point to the deployed app's webhook route and use the same webhook secret configured in Vercel:
+
+```text
+https://watch.mistakestudios.com/api/media/cloudconvert/webhook
+```
 
 Live-room host seeding uses a SpacetimeDB server identity, not a shared SpacetimeDB environment secret. Generate a server identity/token pair for each target database:
 
@@ -276,10 +325,15 @@ https://mistake-watch.vercel.app/api/health
 - YouTube can block specific videos from embedded playback due to provider, region, age, copyright, live-premiere, or embedding restrictions.
 - YouTube autoplay and background-tab behavior is browser-controlled. The app owns queue progression and recovery, but user gesture and provider limits still apply.
 - YouTube iframe audio cannot be sampled directly for true audio-reactive visualizers. Real audio analysis must use direct/HLS/first-party media sources where browser access is allowed.
-- Uploaded watch-room video should use the approved Cloudflare Stream + R2 hybrid direction: Stream for fast processing/playback, R2 for raw/source archive and supporting artifacts where needed.
+- Uploaded media currently uses R2 plus CloudConvert, not Cloudflare Stream.
+- Direct-ready MP4 files should avoid CloudConvert when they are confidently browser-safe. MKV, HEVC/H.265, unsupported audio, unknown formats, or large uncertain files may need conversion and owner approval.
+- CloudConvert credits are a real cost boundary. The app should keep inspecting before converting and should not blindly convert every upload.
+- Multipart uploads can be resumed only after the user reselects the same local file. Browsers do not keep durable file handles for normal file inputs.
+- Active browser uploads are not force-cancelled by the batch queue pause button. Pause applies to waiting items; active transfers finish or fail normally.
+- Uploaded media playback still depends on browser codec support, correct content type, successful processing, and public R2/custom-domain access.
 - Shared browser control is not implemented yet and must remain a separate future subsystem.
-- Supabase auth, profiles, friend invites, custom avatar uploads, and notification drawers are future tasks.
-- Google OAuth and owner authority are now scheduled before Stream/R2 media work so owner-only upload and source ingestion can be verified server-side.
+- Friends, voting, notification drawers, durable personal recommendation history, and shared browser control remain future work.
+- This is not a hardened commercial product. Permissions, upload processing, and room recovery continue to evolve through the spec-first task flow.
 
 ## Handoff Reading Order
 
@@ -293,6 +347,6 @@ Before implementing the next task, read:
 6. `docs/tasks/TASK-002-incomplete-work-recovery/review-notes.md`
 7. `docs/tasks/TASK-002-incomplete-work-recovery/acceptance-criteria.md`
 
-The next expected checkpoint is `TASK-002.6: Real Audio-Reactive Waveform Architecture`.
+The next expected checkpoint should be read from the TASK-002 packet, not from this README.
 
 Future listen-layout note: `TASK-002.10B AI DJ / Session Intelligence` should use the unused below-player space on tall desktop and vertical-monitor listen layouts as the preferred AI DJ card home. Keep this as advisory placement only until the AI interaction task is active.
