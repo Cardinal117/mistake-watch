@@ -1,5 +1,25 @@
 # Mistake Watch
 
+## Main Note / Disclaimer
+
+Mistake Watch is a 98% AI-built web app/website created as an experimental hobby project.
+
+This project is not something I would call production-ready in any serious way, at least not yet. It exists because I am a curious person testing the current capabilities of AI, seeing how far it can go when someone guides it with clear direction, makes the final decisions, and owns the creative choices.
+
+The point is not to pretend the AI is doing everything alone. The point is to explore what becomes possible when a person uses AI as a practical engineering partner, while still steering the product, deciding what matters, correcting the direction, and shaping the experience.
+
+Most of the implementation was written with AI assistance, but the product direction, final judgment, creative decisions, testing feedback, and "this feels right or wrong" calls are mine. That distinction matters to me, because this project is just as much about learning how to guide AI well as it is about building the app itself.
+
+The AI is expected to follow a spec-first workflow, as seen in the `docs/` folder. That workflow helps with longer-term memory, task control, implementation tracking, and keeping old ideas, decisions, planned features, and completed work from being forgotten as the project grows.
+
+This repo may look unusual because it keeps a lot of planning, task history, implementation notes, and recovery documentation. That is intentional. It is part of the experiment: can a mostly AI-built project stay understandable over time if the work is guided through specs, review notes, and tracked decisions?
+
+This is, above all, an experiment in the future of building software. I am testing the tools, but I am also testing myself: how far I can take an idea when the bottleneck becomes less about knowing every technical detail upfront, and more about imagination, judgment, persistence, and the ability to guide the machine well.
+
+Use this repo with that context in mind.
+
+And yes, the text above was enhanced with AI, because why would I not use the tool I am experimenting with?
+
 Mistake Watch is a private watch/listen-together platform for synchronized rooms, shared queues, and host-led playback. It is built for a guest-first friends-and-family release now, with accounts, friends, uploaded media, voting, and shared browser control planned later through the TASK-002 recovery roadmap.
 
 Production:
