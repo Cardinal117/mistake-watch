@@ -3,12 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TASK-002.8I Signal State Vocabulary Implementation Report</title>
+    <title>TASK-002.8H Multi-File Upload Queue Implementation Report</title>
     <style>
       :root {
         color-scheme: dark;
         --bg: #08090a;
-        --panel: rgb(18 20 22 / 0.82);
+        --panel: rgb(18 20 22 / 0.84);
         --line: rgb(255 255 255 / 0.1);
         --text: #e9eff0;
         --muted: #b8c8ca;
@@ -22,8 +22,8 @@
       body {
         margin: 0;
         background:
-          radial-gradient(circle at 14% 0%, rgb(0 219 233 / 0.16), transparent 34rem),
-          radial-gradient(circle at 84% 10%, rgb(255 186 32 / 0.12), transparent 30rem),
+          radial-gradient(circle at 12% 0%, rgb(0 219 233 / 0.18), transparent 34rem),
+          radial-gradient(circle at 86% 10%, rgb(255 186 32 / 0.12), transparent 30rem),
           var(--bg);
         color: var(--text);
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -39,7 +39,7 @@
       header { padding: 28px; }
       section { margin-top: 18px; padding: 22px; }
       h1, h2, h3, p { margin: 0; }
-      h1 { margin-top: 10px; max-width: 920px; font-size: clamp(32px, 5vw, 52px); line-height: 1.04; }
+      h1 { margin-top: 10px; max-width: 940px; font-size: clamp(32px, 5vw, 52px); line-height: 1.04; }
       h2 { font-size: 22px; }
       h3 { font-size: 16px; }
       p, li { color: var(--muted); }
@@ -67,15 +67,17 @@
     <main>
       <header>
         <span class="label">Implementation Report</span>
-        <h1>TASK-002.8I Signal State Vocabulary And Processing Status UX</h1>
+        <h1>TASK-002.8H Multi-File Upload Queue And Batch Processing UX</h1>
         <p class="summary">
-          Implemented locally. The media/upload UI now routes important waiting, upload, processing, approval, recoverable, failed, and ready states through a normalized display-state resolver and shared Signal primitives instead of scattered component conditionals.
+          Implemented locally. The Watch Media Hub now supports selecting or dropping multiple owner video files,
+          queues them as individual items, and runs uploads one file at a time through the existing R2, multipart,
+          inspection, approval, and CloudConvert pipeline.
         </p>
         <div class="row" style="margin-top: 18px">
-          <span class="badge green">Local only</span>
-          <span class="badge green">Resolver first</span>
-          <span class="badge gold">No fake CloudConvert progress</span>
-          <span class="badge">No deploy</span>
+          <span class="badge green">Implemented locally</span>
+          <span class="badge green">Existing pipeline reused</span>
+          <span class="badge gold">One active file at a time</span>
+          <span class="badge">No new backend</span>
         </div>
       </header>
 
@@ -83,76 +85,50 @@
         <h2>What Changed</h2>
         <div class="grid three" style="margin-top: 14px">
           <article class="card">
-            <h3>State Layer</h3>
-            <ul>
-              <li>Added <code>SignalDisplayState</code> with state, label, detail, tone, optional real progress, latest event, and actions.</li>
-              <li>Added resolver helpers for R2 uploads, recoverable multipart sessions, and media asset processing.</li>
-              <li>Added tests for direct, queued, approval, failed, recoverable, expired, and real-progress cases.</li>
-            </ul>
+            <h3>Batch Queue</h3>
+            <p>Multiple selected files now appear as separate queue rows with file name, size, folder target, lifecycle state, and actions.</p>
           </article>
           <article class="card">
-            <h3>Shared Components</h3>
-            <ul>
-              <li>Added <code>SignalStatusChip</code>, <code>SignalInlineStatus</code>, <code>SignalProgressBar</code>, and <code>SignalSkeleton</code>.</li>
-              <li>Added <code>MediaProcessingStatus</code>, <code>MetadataPlaceholderChips</code>, and <code>IdleSignalState</code>.</li>
-              <li>Kept <code>RoomTransitionOverlay</code> as the blocking transition surface.</li>
-            </ul>
+            <h3>Controlled Uploads</h3>
+            <p>The queue starts one file at a time, preserving existing multipart part concurrency inside the active file.</p>
           </article>
           <article class="card">
-            <h3>UI Replacements</h3>
-            <ul>
-              <li>Owner upload and recoverable multipart cards now consume normalized states.</li>
-              <li>YouTube search and metadata loading now use skeleton placeholders.</li>
-              <li>Awaiting-media watch stage now uses an idle state instead of a loading/progress visual.</li>
-            </ul>
-          </article>
-        </div>
-      </section>
-
-      <section>
-        <h2>Important Behavior</h2>
-        <div class="grid two" style="margin-top: 14px">
-          <article class="card">
-            <h3>Progress Rules</h3>
-            <ul>
-              <li>R2 single and multipart uploads now report real transfer progress to 100%.</li>
-              <li>Recoverable uploads show saved byte progress from the durable session.</li>
-              <li>CloudConvert queued/converting/exporting states do not show fake percentages.</li>
-            </ul>
-          </article>
-          <article class="card">
-            <h3>Recovery Rules</h3>
-            <ul>
-              <li>Approval-required media resolves to <code>blocked</code> with an owner action.</li>
-              <li>Failed media resolves to <code>failed</code> with retry-oriented copy.</li>
-              <li>Expired multipart sessions resolve to cleanup-oriented failed states.</li>
-            </ul>
+            <h3>Processing Visibility</h3>
+            <p>Each item uses the Signal display-state resolver for waiting, uploading, inspecting, approval-blocked, converting, ready, failed, and cancelled states.</p>
           </article>
         </div>
       </section>
 
       <section>
         <h2>Files To Review</h2>
+        <ul>
+          <li><code>components/room/watch-mode-layout.tsx</code> - batch queue state, upload runner, queue surface, approval/retry controls.</li>
+          <li><code>lib/media/assets.ts</code> - owner-only processing endpoint now permits retrying failed CloudConvert assets from stored R2 source objects.</li>
+          <li><code>docs/tasks/TASK-002-incomplete-work-recovery/review-notes.md</code> - durable implementation notes and manual QA checklist.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Acceptance Status</h2>
         <div class="grid two" style="margin-top: 14px">
           <article class="card">
-            <h3>Source</h3>
+            <h3 class="ok">Met</h3>
             <ul>
-              <li><code>lib/status/display-state.ts</code></li>
-              <li><code>lib/media/processing-display-state.ts</code></li>
-              <li><code>components/ui/signal-status.tsx</code></li>
-              <li><code>components/room/media-processing-status.tsx</code></li>
-              <li><code>components/room/metadata-placeholder-chips.tsx</code></li>
-              <li><code>components/room/idle-signal-state.tsx</code></li>
+              <li>Owners can select/drop multiple video files from the uploaded-library area.</li>
+              <li>Each file becomes a visible queue item with progress/status/actions.</li>
+              <li>Only one file upload runs at a time.</li>
+              <li>Existing R2, multipart, inspection, approval, and CloudConvert paths remain in use.</li>
+              <li>Failed upload items can retry without blocking waiting items.</li>
+              <li>Conversion-blocked items expose individual Approve and batch Approve all.</li>
+              <li>Recoverable multipart sessions remain visible and resumable in the same upload area.</li>
             </ul>
           </article>
           <article class="card">
-            <h3>Docs And Tests</h3>
+            <h3 class="warn">Bounded / Deferred</h3>
             <ul>
-              <li><code>tests/media/processing-display-state.test.mjs</code></li>
-              <li><code>status-state-vocabulary.md</code></li>
-              <li><code>review-notes.md</code></li>
-              <li><code>acceptance-criteria.md</code></li>
-              <li><code>tasks.md</code></li>
+              <li>Pause applies to waiting queue items. Active browser XHR transfers finish or fail normally.</li>
+              <li>Per-item folder correction after queueing is deferred; uploaded assets can still be moved through existing card settings.</li>
+              <li>No service worker, desktop uploader, Cloudflare Stream, VPS transcoder, or automatic series metadata scraping was added.</li>
             </ul>
           </article>
         </div>
@@ -161,10 +137,21 @@
       <section>
         <h2>Verification</h2>
         <ul>
-          <li class="ok"><code>node --test tests\media\processing-display-state.test.mjs</code> passed.</li>
-          <li class="ok"><code>npm run typecheck</code> passed.</li>
-          <li class="ok"><code>npm run lint</code> passed.</li>
-          <li class="ok"><code>npm run build</code> passed.</li>
+          <li><code>node --test tests\media\processing-display-state.test.mjs</code> passed.</li>
+          <li><code>npm run typecheck</code> passed.</li>
+          <li><code>npm run lint</code> passed.</li>
+          <li><code>npm run build</code> passed.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Manual QA Needed</h2>
+        <ul>
+          <li>Select/drop 10+ videos and confirm only one file actively uploads while the others wait.</li>
+          <li>Confirm failed items can retry and do not block later waiting items.</li>
+          <li>Confirm direct-ready MP4 files skip CloudConvert.</li>
+          <li>Confirm MKV/HEVC/unknown files follow the existing approval and CloudConvert path.</li>
+          <li>Refresh during an incomplete multipart upload and confirm the recoverable session can resume after reselecting the same local file.</li>
         </ul>
       </section>
     </main>

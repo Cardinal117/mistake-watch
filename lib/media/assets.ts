@@ -473,8 +473,16 @@ export async function approveMediaAssetProcessing(input: { assetId: string }) {
     throw new MediaAssetError("Media source object is missing.", 409);
   }
 
-  if (asset.processing_strategy !== "needs_approval") {
-    throw new MediaAssetError("This media asset is not waiting for approval.", 409);
+  const retryingFailedProcessing = asset.processing_status === "failed";
+
+  if (
+    asset.processing_strategy !== "needs_approval" &&
+    !retryingFailedProcessing
+  ) {
+    throw new MediaAssetError(
+      "This media asset is not waiting for approval or retry.",
+      409,
+    );
   }
 
   const { data: approvedAsset, error: approvalError } = await admin
@@ -499,7 +507,9 @@ export async function approveMediaAssetProcessing(input: { assetId: string }) {
 
   await recordCloudConvertEvent({
     assetId: approvedAsset.id,
-    message: "Owner approved CloudConvert processing.",
+    message: retryingFailedProcessing
+      ? "Owner retried CloudConvert processing."
+      : "Owner approved CloudConvert processing.",
     payload: {
       estimatedCredits: approvedAsset.estimated_credits,
       sourceFileSizeBytes: approvedAsset.source_file_size_bytes,

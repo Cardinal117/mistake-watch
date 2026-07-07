@@ -155,6 +155,26 @@ type ResumableMediaUpload = {
   status: "expired" | "failed" | "paused" | "uploading";
 };
 
+type BatchUploadItemStatus =
+  | "active"
+  | "blocked"
+  | "cancelled"
+  | "failed"
+  | "ready"
+  | "waiting";
+
+type BatchUploadItem = {
+  assetId?: string;
+  displayState: SignalDisplayState;
+  error?: string;
+  file: File;
+  fileName: string;
+  fileSizeBytes: number;
+  folderId: string | null;
+  id: string;
+  status: BatchUploadItemStatus;
+};
+
 export function WatchModeLayout({
   account,
   accountNotice,
@@ -637,8 +657,13 @@ function WatchMediaHubDiscovery({
   const [recoverableProgress, setRecoverableProgress] = useState<
     Record<string, SignalDisplayState>
   >({});
+  const [batchUploads, setBatchUploads] = useState<BatchUploadItem[]>([]);
+  const [batchPaused, setBatchPaused] = useState(false);
   const [uploadStatus, setUploadStatus] =
     useState<SignalDisplayState | null>(null);
+  const batchUploadsRef = useRef<BatchUploadItem[]>([]);
+  const batchProcessingRef = useRef(false);
+  const batchPausedRef = useRef(false);
   const activeItems = items.filter((item) => item.status !== "played");
   const liveItems = activeItems.filter(isLiveMediaHubItem);
   const nonLiveActiveItems = activeItems.filter((item) => !isLiveMediaHubItem(item));
@@ -814,7 +839,188 @@ function WatchMediaHubDiscovery({
     }
   }
 
-  async function uploadFile(file: File) {
+  async function executeOwnerUploadFile(input: {
+    file: File;
+    folderId: string | null;
+    onAssetReady?(asset: MediaLibraryAsset): void;
+    onStatus(state: SignalDisplayState): void;
+  }) {
+    const { file, folderId, onAssetReady, onStatus } = input;
+
+    onStatus(resolveUploadProgressDisplayState({
+      detail: `Preparing ${file.name}`,
+      label: "Preparing upload",
+      phase: "loading",
+    }));
+
+    const [clientInspection, durationSeconds] = await Promise.all([
+      inspectUploadFile(file),
+      readUploadDuration(file),
+    ]);
+    const createResponse = await fetch("/api/media/uploads", {
+      body: JSON.stringify({
+        fileName: file.name,
+        fileSizeBytes: file.size,
+        folderId,
+        folderName: null,
+        mimeType: file.type || "application/octet-stream",
+      }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    });
+    const createPayload = (await createResponse.json()) as {
+      error?: string;
+      folderId?: string | null;
+      partCount?: number | null;
+      partSizeBytes?: number | null;
+      uploadId?: string;
+      uploadMode?: "multipart" | "single";
+      uploadUrl?: string;
+    };
+
+    if (!createResponse.ok || !createPayload.uploadId) {
+      throw new Error(createPayload.error ?? "Upload could not be prepared.");
+    }
+
+    const completedParts =
+      createPayload.uploadMode === "multipart"
+        ? await uploadMultipartFileToR2({
+            file,
+            onProgress: (progress, detail) => {
+              onStatus(resolveUploadProgressDisplayState({
+                detail,
+                label: "Uploading",
+                phase: "uploading",
+                progressPercent: progress,
+              }));
+            },
+            partCount: createPayload.partCount ?? 0,
+            partSizeBytes: createPayload.partSizeBytes ?? 0,
+            uploadId: createPayload.uploadId,
+          }).catch(async (error) => {
+            await markUploadSessionFailed(
+              createPayload.uploadId!,
+              error instanceof Error
+                ? error.message
+                : "Multipart upload failed.",
+            ).catch(() => undefined);
+            await refreshResumableUploads().catch(() => undefined);
+            throw error;
+          })
+        : await uploadSingleFileToR2({
+            file,
+            onProgress: (progress, detail) => {
+              onStatus(resolveUploadProgressDisplayState({
+                detail: detail ?? `Uploading ${file.name}`,
+                label: "Uploading",
+                phase: "uploading",
+                progressPercent: progress,
+              }));
+            },
+            uploadUrl: createPayload.uploadUrl,
+          });
+
+    onStatus(resolveUploadProgressDisplayState({
+      detail:
+        createPayload.uploadMode === "multipart"
+          ? "Finalizing multipart upload"
+          : "Inspecting uploaded source",
+      label:
+        createPayload.uploadMode === "multipart"
+          ? "Finalizing upload"
+          : "Inspecting media",
+      phase: "processing",
+    }));
+
+    const completeResponse = await fetch(
+      `/api/media/uploads/${createPayload.uploadId}/complete`,
+      {
+        body: JSON.stringify({
+          clientInspection,
+          durationSeconds,
+          folderId: createPayload.folderId ?? null,
+          multipartParts: completedParts,
+          title: deriveUploadTitle(file.name),
+        }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      },
+    );
+    const completePayload = (await completeResponse.json()) as {
+      asset?: MediaLibraryAsset;
+      error?: string;
+    };
+
+    if (!completeResponse.ok || !completePayload.asset) {
+      throw new Error(completePayload.error ?? "Upload could not be completed.");
+    }
+
+    const completedAsset = completePayload.asset;
+    setAssets((current) => [completedAsset, ...current]);
+    await refreshResumableUploads().catch(() => undefined);
+
+    if (
+      completedAsset.status === "ready" ||
+      completedAsset.processingStatus === "not_required"
+    ) {
+      onStatus(resolveMediaAssetDisplayState(completedAsset));
+      onAssetReady?.(completedAsset);
+      if (completedAsset.posterStatus !== "ready") {
+        void captureAndUploadPoster(completedAsset, (asset) => {
+          setAssets((current) =>
+            current.map((item) => (item.id === asset.id ? asset : item)),
+          );
+        });
+      }
+      return completedAsset;
+    }
+
+    if (
+      completedAsset.processingStatus === "approval_required" ||
+      completedAsset.processingRequiresApproval
+    ) {
+      onStatus(resolveMediaAssetDisplayState(completedAsset));
+      return completedAsset;
+    }
+
+    onStatus(resolveMediaAssetDisplayState(completedAsset));
+    const readyAsset = await pollMediaProcessing(completedAsset.id, onStatus);
+    setAssets((current) =>
+      current.map((item) => (item.id === readyAsset.id ? readyAsset : item)),
+    );
+    onStatus(resolveMediaAssetDisplayState(readyAsset));
+    onAssetReady?.(readyAsset);
+    if (readyAsset.posterStatus !== "ready") {
+      void captureAndUploadPoster(readyAsset, (asset) => {
+        setAssets((current) =>
+          current.map((item) => (item.id === asset.id ? asset : item)),
+        );
+      });
+    }
+
+    return readyAsset;
+  }
+
+  function updateBatchUploads(
+    updater: (current: BatchUploadItem[]) => BatchUploadItem[],
+  ) {
+    setBatchUploads((current) => {
+      const next = updater(current);
+      batchUploadsRef.current = next;
+      return next;
+    });
+  }
+
+  function updateBatchUploadItem(
+    itemId: string,
+    updater: (item: BatchUploadItem) => BatchUploadItem,
+  ) {
+    updateBatchUploads((current) =>
+      current.map((item) => (item.id === itemId ? updater(item) : item)),
+    );
+  }
+
+  function enqueueBatchFiles(files: File[]) {
     if (!isOwner) {
       setUploadStatus(resolveUploadProgressDisplayState({
         detail: "Only the owner account can upload first-party media.",
@@ -824,164 +1030,249 @@ function WatchMediaHubDiscovery({
       return;
     }
 
-    setUploadStatus(resolveUploadProgressDisplayState({
-      detail: `Preparing ${file.name}`,
-      label: "Preparing upload",
-      phase: "loading",
+    if (!files.length) {
+      return;
+    }
+
+    const folderId = uploadFolderId || null;
+    const queuedItems = files.map((file) => ({
+      displayState: resolveUploadProgressDisplayState({
+        detail: `${file.name} is waiting for its turn.`,
+        label: "Waiting",
+        phase: "queued",
+      }),
+      file,
+      fileName: file.name,
+      fileSizeBytes: file.size,
+      folderId,
+      id: createClientId("upload"),
+      status: "waiting" as const,
+    }));
+    const nextItems = [...batchUploadsRef.current, ...queuedItems];
+    batchUploadsRef.current = nextItems;
+    setBatchUploads(nextItems);
+    setUploadStatus(null);
+    setActiveHubTab("uploads");
+    window.setTimeout(runBatchUploadQueue, 0);
+  }
+
+  async function runBatchUploadQueue() {
+    if (batchPausedRef.current || batchProcessingRef.current) {
+      return;
+    }
+
+    const nextItem = batchUploadsRef.current.find(
+      (item) => item.status === "waiting",
+    );
+
+    if (!nextItem) {
+      return;
+    }
+
+    batchProcessingRef.current = true;
+    updateBatchUploadItem(nextItem.id, (item) => ({
+      ...item,
+      displayState: resolveUploadProgressDisplayState({
+        detail: `Preparing ${item.fileName}`,
+        label: "Preparing upload",
+        phase: "loading",
+      }),
+      status: "active",
     }));
 
     try {
-      const [clientInspection, durationSeconds] = await Promise.all([
-        inspectUploadFile(file),
-        readUploadDuration(file),
-      ]);
-      const createResponse = await fetch("/api/media/uploads", {
-        body: JSON.stringify({
-          fileName: file.name,
-          fileSizeBytes: file.size,
-          folderId: uploadFolderId || null,
-          folderName: null,
-          mimeType: file.type || "application/octet-stream",
-        }),
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-      });
-      const createPayload = (await createResponse.json()) as {
-        error?: string;
-        folderId?: string | null;
-        partCount?: number | null;
-        partSizeBytes?: number | null;
-        uploadId?: string;
-        uploadMode?: "multipart" | "single";
-        uploadUrl?: string;
-      };
-
-      if (!createResponse.ok || !createPayload.uploadId) {
-        throw new Error(createPayload.error ?? "Upload could not be prepared.");
-      }
-
-      const completedParts =
-        createPayload.uploadMode === "multipart"
-          ? await uploadMultipartFileToR2({
-              file,
-              onProgress: (progress, detail) => {
-                setUploadStatus(resolveUploadProgressDisplayState({
-                  detail,
-                  label: "Uploading",
-                  phase: "uploading",
-                  progressPercent: progress,
-                }));
-              },
-              partCount: createPayload.partCount ?? 0,
-              partSizeBytes: createPayload.partSizeBytes ?? 0,
-              uploadId: createPayload.uploadId,
-            }).catch(async (error) => {
-              await markUploadSessionFailed(
-                createPayload.uploadId!,
-                error instanceof Error
-                  ? error.message
-                  : "Multipart upload failed.",
-              ).catch(() => undefined);
-              await refreshResumableUploads().catch(() => undefined);
-              throw error;
-            })
-          : await uploadSingleFileToR2({
-              file,
-              onProgress: (progress, detail) => {
-                setUploadStatus(resolveUploadProgressDisplayState({
-                  detail: detail ?? `Uploading ${file.name}`,
-                  label: "Uploading",
-                  phase: "uploading",
-                  progressPercent: progress,
-                }));
-              },
-              uploadUrl: createPayload.uploadUrl,
-            });
-
-      setUploadStatus(resolveUploadProgressDisplayState({
-        detail:
-          createPayload.uploadMode === "multipart"
-            ? "Finalizing multipart upload"
-            : "Inspecting uploaded source",
-        label:
-          createPayload.uploadMode === "multipart"
-            ? "Finalizing upload"
-            : "Inspecting media",
-        phase: "processing",
-      }));
-
-      const completeResponse = await fetch(
-        `/api/media/uploads/${createPayload.uploadId}/complete`,
-        {
-          body: JSON.stringify({
-            clientInspection,
-            durationSeconds,
-            folderId: createPayload.folderId ?? null,
-            multipartParts: completedParts,
-            title: deriveUploadTitle(file.name),
-          }),
-          headers: { "Content-Type": "application/json" },
-          method: "POST",
+      const completedAsset = await executeOwnerUploadFile({
+        file: nextItem.file,
+        folderId: nextItem.folderId,
+        onAssetReady: (asset) => {
+          updateBatchUploadItem(nextItem.id, (item) => ({
+            ...item,
+            assetId: asset.id,
+          }));
         },
-      );
-      const completePayload = (await completeResponse.json()) as {
-        asset?: MediaLibraryAsset;
-        error?: string;
-      };
-
-      if (!completeResponse.ok || !completePayload.asset) {
-        throw new Error(completePayload.error ?? "Upload could not be completed.");
-      }
-
-      const completedAsset = completePayload.asset!;
-      setAssets((current) => [completedAsset, ...current]);
+        onStatus: (state) => {
+          updateBatchUploadItem(nextItem.id, (item) => ({
+            ...item,
+            displayState: state,
+          }));
+        },
+      });
+      const displayState = resolveMediaAssetDisplayState(completedAsset);
+      updateBatchUploadItem(nextItem.id, (item) => ({
+        ...item,
+        assetId: completedAsset.id,
+        displayState,
+        status: displayState.state === "blocked" ? "blocked" : "ready",
+      }));
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Upload could not complete.";
+      updateBatchUploadItem(nextItem.id, (item) => ({
+        ...item,
+        displayState: resolveUploadProgressDisplayState({
+          detail: message,
+          phase: "failed",
+          progressPercent: item.displayState.progressPercent,
+        }),
+        error: message,
+        status: "failed",
+      }));
       await refreshResumableUploads().catch(() => undefined);
-      if (
-        completedAsset.status === "ready" ||
-        completedAsset.processingStatus === "not_required"
-      ) {
-        setUploadStatus(resolveMediaAssetDisplayState(completedAsset));
-        if (completedAsset.posterStatus !== "ready") {
-          void captureAndUploadPoster(completedAsset, (asset) => {
-            setAssets((current) =>
-              current.map((item) => (item.id === asset.id ? asset : item)),
-            );
-          });
-        }
-        return;
-      }
+    } finally {
+      batchProcessingRef.current = false;
+      window.setTimeout(runBatchUploadQueue, 0);
+    }
+  }
 
-      if (
-        completedAsset.processingStatus === "approval_required" ||
-        completedAsset.processingRequiresApproval
-      ) {
-        setUploadStatus(resolveMediaAssetDisplayState(completedAsset));
-        return;
-      }
+  function retryBatchUpload(itemId: string) {
+    updateBatchUploadItem(itemId, (item) => ({
+      ...item,
+      displayState: resolveUploadProgressDisplayState({
+        detail: `${item.fileName} is waiting for retry.`,
+        label: "Waiting",
+        phase: "queued",
+      }),
+      error: undefined,
+      status: "waiting",
+    }));
+    window.setTimeout(runBatchUploadQueue, 0);
+  }
 
-      setUploadStatus(resolveMediaAssetDisplayState(completedAsset));
-      const readyAsset = await pollMediaProcessing(completedAsset.id, (status) => {
-        setUploadStatus(status);
+  function setBatchUploadPaused(paused: boolean) {
+    batchPausedRef.current = paused;
+    setBatchPaused(paused);
+
+    if (!paused) {
+      window.setTimeout(runBatchUploadQueue, 0);
+    }
+  }
+
+  async function approveBatchUploadConversion(itemId: string) {
+    const item = batchUploadsRef.current.find((entry) => entry.id === itemId);
+
+    if (!item?.assetId) {
+      updateBatchUploadItem(itemId, (entry) => ({
+        ...entry,
+        displayState: resolveUploadProgressDisplayState({
+          detail: "This item has no media asset to approve yet.",
+          phase: "failed",
+        }),
+        status: "failed",
+      }));
+      return;
+    }
+
+    updateBatchUploadItem(itemId, (entry) => ({
+      ...entry,
+      displayState: resolveUploadProgressDisplayState({
+        detail: "Starting approved CloudConvert processing.",
+        label: "Starting conversion",
+        phase: "queued",
+      }),
+      status: "active",
+    }));
+
+    try {
+      const approvedAsset = await approveAssetProcessing(item.assetId);
+      setAssets((current) =>
+        current.map((asset) =>
+          asset.id === approvedAsset.id ? approvedAsset : asset,
+        ),
+      );
+      updateBatchUploadItem(itemId, (entry) => ({
+        ...entry,
+        displayState: resolveMediaAssetDisplayState(approvedAsset),
+      }));
+      const readyAsset = await pollMediaProcessing(approvedAsset.id, (status) => {
+        updateBatchUploadItem(itemId, (entry) => ({
+          ...entry,
+          displayState: status,
+        }));
       });
       setAssets((current) =>
-        current.map((item) => (item.id === readyAsset.id ? readyAsset : item)),
+        current.map((asset) => (asset.id === readyAsset.id ? readyAsset : asset)),
       );
-      setUploadStatus(resolveMediaAssetDisplayState(readyAsset));
-      if (readyAsset.posterStatus !== "ready") {
-        void captureAndUploadPoster(readyAsset, (asset) => {
-          setAssets((current) =>
-            current.map((item) => (item.id === asset.id ? asset : item)),
-          );
-        });
-      }
-    } catch (error) {
-      setUploadStatus(resolveUploadProgressDisplayState({
-        detail:
-          error instanceof Error ? error.message : "Upload could not complete.",
-        phase: "failed",
+      updateBatchUploadItem(itemId, (entry) => ({
+        ...entry,
+        displayState: resolveMediaAssetDisplayState(readyAsset),
+        status: "ready",
       }));
-      await refreshResumableUploads().catch(() => undefined);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Approved conversion could not start.";
+      updateBatchUploadItem(itemId, (entry) => ({
+        ...entry,
+        displayState: resolveUploadProgressDisplayState({
+          detail: message,
+          phase: "failed",
+        }),
+        error: message,
+        status: "failed",
+      }));
     }
+  }
+
+  async function approveAllBlockedBatchUploads() {
+    for (const item of batchUploadsRef.current) {
+      if (item.status === "blocked") {
+        await approveBatchUploadConversion(item.id);
+      }
+    }
+  }
+
+  function cancelBatchUpload(itemId: string) {
+    updateBatchUploadItem(itemId, (item) => {
+      if (item.status === "active") {
+        return {
+          ...item,
+          displayState: resolveUploadProgressDisplayState({
+            detail:
+              "Active browser transfers cannot be safely cancelled here. It will finish or fail normally.",
+            label: "Active upload",
+            phase: "uploading",
+            progressPercent: item.displayState.progressPercent,
+          }),
+        };
+      }
+
+      return {
+        ...item,
+        displayState: resolveUploadProgressDisplayState({
+          detail: `${item.fileName} was removed from the batch queue.`,
+          label: "Cancelled",
+          phase: "ready",
+        }),
+        status: "cancelled",
+      };
+    });
+  }
+
+  function clearCompletedBatchUploads() {
+    updateBatchUploads((current) =>
+      current.filter(
+        (item) => item.status !== "ready" && item.status !== "cancelled",
+      ),
+    );
+  }
+
+  function cancelWaitingBatchUploads() {
+    updateBatchUploads((current) =>
+      current.map((item) =>
+        item.status === "waiting" || item.status === "failed"
+          ? {
+              ...item,
+              displayState: resolveUploadProgressDisplayState({
+                detail: `${item.fileName} was removed from the batch queue.`,
+                label: "Cancelled",
+                phase: "ready",
+              }),
+              status: "cancelled",
+            }
+          : item,
+      ),
+    );
   }
 
   async function resumeUpload(session: ResumableMediaUpload) {
@@ -1220,11 +1511,11 @@ function WatchMediaHubDiscovery({
   }
 
   function handleFiles(files: FileList | File[]) {
-    const [file] = Array.from(files);
+    const selectedFiles = Array.from(files).filter((file) =>
+      file.type.startsWith("video/") || /\.(avi|m4v|mkv|mov|mp4|webm)$/i.test(file.name),
+    );
 
-    if (file) {
-      void uploadFile(file);
-    }
+    enqueueBatchFiles(selectedFiles);
   }
 
   const discoverySections: Array<
@@ -1422,15 +1713,15 @@ function WatchMediaHubDiscovery({
                     Owner upload and CloudConvert
                   </span>
                   <span className="text-body-md font-semibold text-on-surface">
-                    Drop any video here
+                    Drop videos here
                   </span>
                   <span className="text-label-sm text-on-surface-variant">
-                    Source uploads to R2, then CloudConvert creates a browser-safe MP4 and thumbnail.
+                    Batch uploads run one file at a time, then CloudConvert handles files that need browser-safe MP4 output.
                   </span>
                 </span>
                 <span className="inline-flex h-9 items-center justify-center gap-2 rounded-sm border border-primary-fixed-dim/40 bg-primary-fixed-dim/12 px-3 text-label-sm font-semibold text-primary-fixed-dim transition group-hover:bg-primary-fixed-dim/18">
                   <Upload className="h-4 w-4" aria-hidden />
-                  Choose video
+                  Choose videos
                 </span>
                 <input
                   accept="video/*,.mp4,.mkv,.mov,.webm,.avi,.m4v"
@@ -1442,6 +1733,7 @@ function WatchMediaHubDiscovery({
                     }
                     event.currentTarget.value = "";
                   }}
+                  multiple
                   type="file"
                 />
               </label>
@@ -1457,6 +1749,19 @@ function WatchMediaHubDiscovery({
               </p>
             </section>
           )}
+          {isOwner && batchUploads.length > 0 ? (
+            <BatchUploadQueue
+              paused={batchPaused}
+              items={batchUploads}
+              onApproveAll={approveAllBlockedBatchUploads}
+              onApproveItem={approveBatchUploadConversion}
+              onCancelItem={cancelBatchUpload}
+              onCancelWaiting={cancelWaitingBatchUploads}
+              onClearCompleted={clearCompletedBatchUploads}
+              onPauseChange={setBatchUploadPaused}
+              onRetryItem={retryBatchUpload}
+            />
+          ) : null}
           {isOwner && resumableUploads.length > 0 ? (
             <ResumableUploadList
               onCancelUpload={(session) => void cancelUpload(session)}
@@ -1588,6 +1893,145 @@ type WatchMediaHubSectionConfig =
       label: string;
       note: string;
     };
+
+function BatchUploadQueue({
+  items,
+  paused,
+  onApproveAll,
+  onApproveItem,
+  onCancelItem,
+  onCancelWaiting,
+  onClearCompleted,
+  onPauseChange,
+  onRetryItem,
+}: {
+  items: BatchUploadItem[];
+  paused: boolean;
+  onApproveAll(): Promise<void> | void;
+  onApproveItem(itemId: string): void;
+  onCancelItem(itemId: string): void;
+  onCancelWaiting(): void;
+  onClearCompleted(): void;
+  onPauseChange(paused: boolean): void;
+  onRetryItem(itemId: string): void;
+}) {
+  const activeCount = items.filter((item) => item.status === "active").length;
+  const waitingCount = items.filter((item) => item.status === "waiting").length;
+  const failedCount = items.filter((item) => item.status === "failed").length;
+  const readyCount = items.filter((item) => item.status === "ready").length;
+  const blockedCount = items.filter((item) => item.status === "blocked").length;
+
+  return (
+    <section className="grid gap-2 border-l border-primary-fixed-dim/35 bg-primary-fixed-dim/5 pl-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <p className="technical-label text-primary-fixed-dim">
+            Upload queue
+          </p>
+          <p className="mt-1 text-label-sm text-on-surface-variant">
+            One file uploads at a time. Waiting files continue if one item fails.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-sm border border-white/10 bg-background/20 px-2 py-1 text-label-sm text-on-surface-variant">
+            {items.length} files
+          </span>
+          <button
+            className="inline-flex h-8 items-center justify-center rounded-sm border border-white/10 bg-background/16 px-2 text-label-sm font-semibold text-on-surface-variant transition hover:border-primary-fixed-dim/35 hover:text-primary-fixed-dim disabled:cursor-not-allowed disabled:opacity-45"
+            disabled={!waitingCount}
+            onClick={() => onPauseChange(!paused)}
+            type="button"
+          >
+            {paused ? "Resume queue" : "Pause queue"}
+          </button>
+          <button
+            className="inline-flex h-8 items-center justify-center rounded-sm border border-secondary-fixed-dim/35 bg-secondary-fixed-dim/10 px-2 text-label-sm font-semibold text-secondary-fixed-dim transition hover:bg-secondary-fixed-dim/15 disabled:cursor-not-allowed disabled:opacity-45"
+            disabled={!blockedCount}
+            onClick={() => void onApproveAll()}
+            type="button"
+          >
+            Approve all
+          </button>
+          <button
+            className="inline-flex h-8 items-center justify-center rounded-sm border border-white/10 bg-background/16 px-2 text-label-sm font-semibold text-on-surface-variant transition hover:border-error/30 hover:text-error disabled:cursor-not-allowed disabled:opacity-45"
+            disabled={!waitingCount && !failedCount}
+            onClick={onCancelWaiting}
+            type="button"
+          >
+            Cancel waiting
+          </button>
+          <button
+            className="inline-flex h-8 items-center justify-center rounded-sm border border-white/10 bg-background/16 px-2 text-label-sm font-semibold text-on-surface-variant transition hover:border-primary-fixed-dim/35 hover:text-primary-fixed-dim disabled:cursor-not-allowed disabled:opacity-45"
+            disabled={!readyCount && !items.some((item) => item.status === "cancelled")}
+            onClick={onClearCompleted}
+            type="button"
+          >
+            Clear done
+          </button>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2 text-[11px] text-on-surface-variant">
+        <span>Active {activeCount}</span>
+        <span>Waiting {waitingCount}</span>
+        <span>Needs approval {blockedCount}</span>
+        <span>Failed {failedCount}</span>
+        <span>Ready {readyCount}</span>
+      </div>
+      <div className="grid gap-2">
+        {items.map((item) => (
+          <article
+            className="grid gap-2 rounded-sm border border-white/10 bg-background/18 p-2"
+            key={item.id}
+          >
+            <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="truncate text-label-sm font-semibold text-on-surface">
+                  {item.fileName}
+                </p>
+                <p className="text-[11px] text-on-surface-variant">
+                  {formatBytes(item.fileSizeBytes)}
+                  {item.folderId ? " / folder selected" : " / unsorted"}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {item.status === "failed" ? (
+                  <button
+                    className="inline-flex h-8 items-center justify-center rounded-sm border border-primary-fixed-dim/35 bg-primary-fixed-dim/10 px-2 text-label-sm font-semibold text-primary-fixed-dim transition hover:bg-primary-fixed-dim/15"
+                    onClick={() => onRetryItem(item.id)}
+                    type="button"
+                  >
+                    Retry
+                  </button>
+                ) : null}
+                {item.status === "blocked" ? (
+                  <button
+                    className="inline-flex h-8 items-center justify-center rounded-sm border border-secondary-fixed-dim/35 bg-secondary-fixed-dim/10 px-2 text-label-sm font-semibold text-secondary-fixed-dim transition hover:bg-secondary-fixed-dim/15"
+                    onClick={() => onApproveItem(item.id)}
+                    type="button"
+                  >
+                    Approve
+                  </button>
+                ) : null}
+                {item.status === "waiting" ||
+                item.status === "failed" ||
+                item.status === "blocked" ? (
+                  <button
+                    className="inline-flex h-8 items-center justify-center rounded-sm border border-error/30 bg-error/8 px-2 text-label-sm font-semibold text-error transition hover:bg-error/12"
+                    onClick={() => onCancelItem(item.id)}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            <MediaProcessingStatus compact state={item.displayState} />
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 function ResumableUploadList({
   onCancelUpload,
@@ -2172,10 +2616,11 @@ function WatchMediaHubCard({
   const hidden = item.visibility === "owner_only";
   const mediaDisplayState = library ? resolveMediaAssetDisplayState(item) : null;
   const approvalRequired = mediaDisplayState?.state === "blocked";
+  const processingFailed = mediaDisplayState?.state === "failed";
   const processing =
     mediaDisplayState?.state === "processing" ||
     mediaDisplayState?.state === "queued";
-  const playbackBlocked = processing || approvalRequired;
+  const playbackBlocked = processing || approvalRequired || processingFailed;
   const directActionsDisabled = {
     add:
       playbackBlocked ||
@@ -2370,7 +2815,7 @@ function WatchMediaHubCard({
       </button>
       {isOwner ? (
         <>
-          {approvalRequired ? (
+          {approvalRequired || processingFailed ? (
             <>
               <div className="my-1 h-px bg-white/10" />
               <button
@@ -2381,9 +2826,13 @@ function WatchMediaHubCard({
               >
                 <Check className="h-3.5 w-3.5" aria-hidden />
                 <span className="grid gap-0.5">
-                  <span>Approve conversion</span>
+                  <span>
+                    {processingFailed ? "Retry conversion" : "Approve conversion"}
+                  </span>
                   <span className="text-[10px] text-on-surface-variant">
-                    {formatCreditEstimate(item.processingEstimatedCredits)}
+                    {processingFailed
+                      ? "Uses the stored R2 source file"
+                      : formatCreditEstimate(item.processingEstimatedCredits)}
                   </span>
                 </span>
               </button>
@@ -3590,6 +4039,16 @@ function deriveUploadTitle(fileName: string) {
       .trim()
       .slice(0, 160) || "Uploaded video"
   );
+}
+
+function createClientId(prefix: string) {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+
+  return `${prefix}-${Date.now().toString(36)}-${Math.random()
+    .toString(36)
+    .slice(2)}`;
 }
 
 function formatBytes(bytes: number) {

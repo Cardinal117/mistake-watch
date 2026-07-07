@@ -1241,6 +1241,61 @@ Corrective verification:
 - `npm run lint` passed.
 - `npm run build` passed.
 
+## TASK-002.8H Implementation Notes
+
+- Added a client-side owner upload queue to the Watch Media Hub uploaded tab:
+  - multiple selected or dropped video files are queued at once;
+  - each file gets a distinct queue row with file name, size, target folder state, lifecycle status, and actions;
+  - one file uploads at a time so large episode batches do not start every R2 transfer simultaneously.
+- Reused the existing upload pipeline rather than adding a second backend:
+  - existing single PUT and multipart R2 upload helpers still perform browser-to-R2 transfer;
+  - existing upload completion endpoint still performs inspection and credit-efficiency decisions;
+  - existing CloudConvert polling remains the processing path for files that need conversion.
+- Added batch queue lifecycle handling:
+  - waiting;
+  - preparing;
+  - uploading with real byte progress;
+  - inspecting/finalizing;
+  - approval blocked;
+  - converting/queued;
+  - ready;
+  - failed;
+  - cancelled.
+- Added queue controls:
+  - pause/resume queue processing for waiting items;
+  - cancel waiting/failed/blocked items;
+  - retry failed upload items;
+  - clear completed/cancelled rows;
+  - approve individual conversion-blocked items;
+  - approve all currently blocked conversion items.
+- Integrated recoverable multipart uploads alongside the batch queue area. Existing refresh/reselect/resume behavior remains intact, and recoverable sessions still use stored completed part ETags.
+- Extended the owner-only media processing endpoint so failed CloudConvert assets with a stored source object can be retried from R2 without reuploading.
+- Preserved non-owner boundaries:
+  - non-owners still cannot upload;
+  - non-owners still cannot approve or retry first-party processing;
+  - upload controls remain hidden for non-owners.
+
+Tradeoffs / intentionally bounded:
+
+- Active browser XHR transfers are not force-cancelled by the queue pause/cancel controls. Pause applies to waiting items, which is the safe browser boundary for this task. Active uploads finish or fail normally.
+- Per-item folder correction after queueing is not a separate editor yet. Batch items capture the selected upload folder at queue time, and uploaded assets can still be moved through the existing media card settings menu.
+- This task does not add service workers, background desktop uploaders, Cloudflare Stream, VPS transcoding, automatic series metadata scraping, or non-owner upload libraries.
+
+Verification:
+
+- `node --test tests\media\processing-display-state.test.mjs` passed.
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
+
+Manual review pending:
+
+- Browser QA: select/drop 10+ videos and confirm only one file actively uploads while the others wait.
+- Browser QA: confirm a failed item can retry and does not block later waiting items.
+- Browser QA: confirm conversion-blocked items expose individual Approve and batch Approve all.
+- Browser QA: refresh with an incomplete multipart upload and confirm recoverable session rows still resume with reselecting the same file.
+- Browser QA: confirm direct-ready MP4 files skip CloudConvert while MKV/HEVC files follow the approval/CloudConvert path.
+
 ## TASK-002.1 Implementation Notes
 
 - Listen queue drawer now has persisted Compact, Standard, and Tall height controls.
