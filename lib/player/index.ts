@@ -8,6 +8,15 @@ export {
   hasReadyWaveformPeaks,
   resolveWaveformSource,
 } from "./waveform-source";
+export {
+  bindMediaSessionActionHandlers,
+  canUseMediaSession,
+  getMediaSessionEnvironment,
+  normalizeMediaSessionMetadata,
+  publishMediaSessionMetadata,
+  setMediaSessionPlaybackState,
+  setMediaSessionPositionState,
+} from "./media-session";
 export type {
   CanonicalPlaybackState,
   LocalPlaybackSample,
@@ -28,3 +37,11 @@ export type {
   WaveformSourcePlan,
   WaveformStatus,
 } from "./waveform-source";
+export type {
+  MediaSessionActionHandlers,
+  MediaSessionArtworkInput,
+  MediaSessionEnvironment,
+  MediaSessionMetadataInput,
+  MediaSessionPositionInput,
+  NormalizedMediaSessionMetadata,
+} from "./media-session";

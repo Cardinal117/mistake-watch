@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TASK-006 Task 1 Implementation Report</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #131314;
+        --panel: #1c1b1c;
+        --text: #e5e2e3;
+        --muted: #b9cacb;
+        --line: #3b494b;
+        --cyan: #00dbe9;
+        --gold: #ffba20;
+        --danger: #ffb4ab;
+        --ok: #7df4ff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 18% 0%, rgba(0, 219, 233, 0.14), transparent 34%),
+          var(--bg);
+        color: var(--text);
+        font-family:
+          Geist,
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        line-height: 1.55;
+      }
+
+      main {
+        width: min(1080px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 48px 0;
+      }
+
+      h1 {
+        max-width: 860px;
+        margin: 10px 0 16px;
+        font-size: clamp(32px, 5vw, 52px);
+        line-height: 1.06;
+      }
+
+      h2 {
+        margin: 0 0 12px;
+        font-size: 20px;
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      code {
+        color: var(--gold);
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+      }
+
+      a {
+        color: var(--cyan);
+        text-decoration: none;
+      }
+
+      ul {
+        margin: 0;
+        padding-left: 20px;
+        color: var(--muted);
+      }
+
+      li + li {
+        margin-top: 8px;
+      }
+
+      .eyebrow,
+      .badge {
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .eyebrow {
+        color: var(--cyan);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 16px;
+        margin-top: 28px;
+      }
+
+      .card {
+        grid-column: span 6;
+        border: 1px solid rgba(185, 202, 203, 0.18);
+        background: rgba(28, 27, 28, 0.78);
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+      }
+
+      .card.full {
+        grid-column: 1 / -1;
+      }
+
+      .card.third {
+        grid-column: span 4;
+      }
+
+      .badge {
+        display: inline-flex;
+        border: 1px solid rgba(0, 219, 233, 0.45);
+        border-radius: 4px;
+        color: var(--cyan);
+        padding: 4px 8px;
+        margin-bottom: 12px;
+      }
+
+      .badge.gold {
+        border-color: rgba(255, 186, 32, 0.45);
+        color: var(--gold);
+      }
+
+      .badge.danger {
+        border-color: rgba(255, 180, 171, 0.45);
+        color: var(--danger);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid rgba(185, 202, 203, 0.14);
+        padding: 10px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        color: var(--text);
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      td {
+        color: var(--muted);
+      }
+
+      @media (max-width: 820px) {
+        main {
+          padding-top: 32px;
+        }
+
+        .card,
+        .card.third {
+          grid-column: 1 / -1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="eyebrow">Implementation Report · TASK-006 Task 1</div>
+      <h1>Media Session helper is implemented and ready for room wiring.</h1>
+      <p>
+        Task 1 added the browser-safe helper layer only. It does not yet bind
+        Mistake Watch room controls or update live playback UI behavior.
+      </p>
+
+      <section class="grid" aria-label="Implementation summary">
+        <article class="card third">
+          <span class="badge">Status</span>
+          <h2>Task 1 Complete</h2>
+          <p>Helper and tests are implemented. Room hook and transport wiring remain Task 2.</p>
+        </article>
+
+        <article class="card third">
+          <span class="badge">Scope</span>
+          <h2>No Room Behavior Change</h2>
+          <p>The helper is React-free and does not call live room reducers or player components.</p>
+        </article>
+
+        <article class="card third">
+          <span class="badge gold">Next</span>
+          <h2>Task 2</h2>
+          <p>Wire the helper through a room hook and `TransportControls` with permission-aware handlers.</p>
+        </article>
+
+        <article class="card full">
+          <span class="badge">Files To Review</span>
+          <table>
+            <thead>
+              <tr>
+                <th>Priority</th>
+                <th>File</th>
+                <th>Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Must review</td>
+                <td><a href="../../../lib/player/media-session.ts">lib/player/media-session.ts</a></td>
+                <td>New browser-safe Media Session helper functions.</td>
+              </tr>
+              <tr>
+                <td>Must review</td>
+                <td><a href="../../../tests/player/media-session.test.mjs">tests/player/media-session.test.mjs</a></td>
+                <td>Focused tests for helper behavior and no-op safety.</td>
+              </tr>
+              <tr>
+                <td>Supporting</td>
+                <td><a href="../../../lib/player/index.ts">lib/player/index.ts</a></td>
+                <td>Exports the new helper API for later room wiring.</td>
+              </tr>
+              <tr>
+                <td>Supporting</td>
+                <td><a href="./review-notes.md">review-notes.md</a></td>
+                <td>Records verification, known blocker, and deferred browser QA.</td>
+              </tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="card">
+          <span class="badge">Implemented</span>
+          <ul>
+            <li>Feature detection for `navigator.mediaSession` and `MediaMetadata`.</li>
+            <li>Metadata normalization with safe Mistake Watch fallbacks.</li>
+            <li>Playback state and position state helpers.</li>
+            <li>Safe action handler binding and cleanup.</li>
+            <li>Injectable test environment for Node-based verification.</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <span class="badge gold">Deferred</span>
+          <ul>
+            <li>No `TransportControls` wiring yet.</li>
+            <li>No browser media-key behavior yet.</li>
+            <li>No uploaded-media artwork policy beyond generic helper filtering yet.</li>
+            <li>No Opera GX manual QA yet.</li>
+          </ul>
+        </article>
+
+        <article class="card full">
+          <span class="badge">Verification</span>
+          <table>
+            <thead>
+              <tr>
+                <th>Check</th>
+                <th>Result</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>node --test tests\player\media-session.test.mjs</code></td>
+                <td>Passed</td>
+                <td>9 tests passed.</td>
+              </tr>
+              <tr>
+                <td><code>npm run typecheck</code></td>
+                <td>Passed</td>
+                <td>TypeScript completed without errors.</td>
+              </tr>
+              <tr>
+                <td><code>npm run lint</code></td>
+                <td>Passed</td>
+                <td>ESLint completed without errors.</td>
+              </tr>
+              <tr>
+                <td><code>node --test tests\player\*.test.mjs</code></td>
+                <td>Blocked by existing failures</td>
+                <td>`youtube-autoplay-atomic.test.mjs` fails on existing direct/uploaded-player behavior outside this helper task.</td>
+              </tr>
+            </tbody>
+          </table>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

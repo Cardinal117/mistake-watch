@@ -1,0 +1,233 @@
+import assert from "node:assert/strict";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import test from "node:test";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+import ts from "typescript";
+
+const rootDir = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../..",
+);
+
+const tempDir = await mkdtemp(
+  path.join(tmpdir(), "mistake-watch-media-session-"),
+);
+const sourcePath = path.join(rootDir, "lib/player/media-session.ts");
+const sourceText = await readFile(sourcePath, "utf8");
+const sourceJs = ts.transpileModule(sourceText, {
+  compilerOptions: {
+    module: ts.ModuleKind.ES2022,
+    target: ts.ScriptTarget.ES2022,
+  },
+  fileName: sourcePath,
+}).outputText;
+const sourceModulePath = path.join(tempDir, "media-session.mjs");
+
+await writeFile(sourceModulePath, sourceJs);
+
+const {
+  bindMediaSessionActionHandlers,
+  canUseMediaSession,
+  normalizeMediaSessionMetadata,
+  publishMediaSessionMetadata,
+  setMediaSessionPlaybackState,
+  setMediaSessionPositionState,
+} = await import(pathToFileURL(sourceModulePath));
+
+test.after(async () => {
+  await rm(tempDir, { force: true, recursive: true });
+});
+
+test("media session support detection is browser-safe", () => {
+  assert.equal(canUseMediaSession({}), false);
+  assert.equal(canUseMediaSession({ navigator: {} }), false);
+  assert.equal(
+    canUseMediaSession({ navigator: { mediaSession: createMediaSession() } }),
+    true,
+  );
+});
+
+test("metadata normalization trims values and filters invalid artwork", () => {
+  assert.deepEqual(
+    normalizeMediaSessionMetadata({
+      album: "  Test room  ",
+      artist: "  Test channel  ",
+      artwork: [
+        {
+          sizes: "512x512",
+          src: "  https://img.example.test/poster.jpg  ",
+          type: " image/jpeg ",
+        },
+        { src: "   " },
+        { src: null },
+      ],
+      title: "  Track title  ",
+    }),
+    {
+      album: "Test room",
+      artist: "Test channel",
+      artwork: [
+        {
+          sizes: "512x512",
+          src: "https://img.example.test/poster.jpg",
+          type: "image/jpeg",
+        },
+      ],
+      title: "Track title",
+    },
+  );
+});
+
+test("metadata normalization supplies safe app fallbacks", () => {
+  assert.deepEqual(normalizeMediaSessionMetadata({}), {
+    album: "Mistake Watch",
+    artist: "Mistake Watch",
+    artwork: [],
+    title: "Mistake Watch",
+  });
+});
+
+test("publishing metadata is a no-op without browser support", () => {
+  assert.equal(
+    publishMediaSessionMetadata(
+      { title: "Track" },
+      { navigator: { mediaSession: createMediaSession() } },
+    ),
+    false,
+  );
+  assert.equal(
+    publishMediaSessionMetadata(
+      { title: "Track" },
+      { MediaMetadata: FakeMediaMetadata },
+    ),
+    false,
+  );
+});
+
+test("publishing metadata creates browser metadata when supported", () => {
+  const mediaSession = createMediaSession();
+
+  assert.equal(
+    publishMediaSessionMetadata(
+      {
+        album: "Room",
+        artist: "Artist",
+        title: "Track",
+      },
+      {
+        MediaMetadata: FakeMediaMetadata,
+        navigator: { mediaSession },
+      },
+    ),
+    true,
+  );
+  assert.deepEqual(mediaSession.metadata.options, {
+    album: "Room",
+    artist: "Artist",
+    artwork: [],
+    title: "Track",
+  });
+});
+
+test("playback state is set only when media session exists", () => {
+  const mediaSession = createMediaSession();
+
+  assert.equal(setMediaSessionPlaybackState("playing", {}), false);
+  assert.equal(
+    setMediaSessionPlaybackState("paused", {
+      navigator: { mediaSession },
+    }),
+    true,
+  );
+  assert.equal(mediaSession.playbackState, "paused");
+});
+
+test("position state validates duration and clamps position", () => {
+  const mediaSession = createMediaSession();
+
+  assert.equal(
+    setMediaSessionPositionState(
+      { duration: null, position: 1 },
+      { navigator: { mediaSession } },
+    ),
+    false,
+  );
+  assert.equal(
+    setMediaSessionPositionState(
+      { duration: 100, playbackRate: 1.25, position: 120 },
+      { navigator: { mediaSession } },
+    ),
+    true,
+  );
+  assert.deepEqual(mediaSession.positionState, {
+    duration: 100,
+    playbackRate: 1.25,
+    position: 100,
+  });
+});
+
+test("action binding tolerates unsupported actions and cleans up bound actions", () => {
+  const mediaSession = createMediaSession({
+    unsupportedActions: new Set(["seekto"]),
+  });
+  const cleanup = bindMediaSessionActionHandlers(
+    {
+      pause: () => undefined,
+      play: () => undefined,
+      seekto: () => undefined,
+    },
+    { navigator: { mediaSession } },
+  );
+
+  assert.deepEqual(mediaSession.boundActions, ["pause", "play"]);
+  assert.equal(mediaSession.handlers.play instanceof Function, true);
+  assert.equal(mediaSession.handlers.seekto, undefined);
+
+  cleanup();
+
+  assert.deepEqual(mediaSession.clearedActions, ["pause", "play"]);
+  assert.equal(mediaSession.handlers.play, null);
+  assert.equal(mediaSession.handlers.pause, null);
+});
+
+test("action binding cleanup is a no-op without media session support", () => {
+  const cleanup = bindMediaSessionActionHandlers({ play: () => undefined }, {});
+
+  assert.doesNotThrow(() => cleanup());
+});
+
+class FakeMediaMetadata {
+  constructor(options) {
+    this.options = options;
+  }
+}
+
+function createMediaSession({ unsupportedActions = new Set() } = {}) {
+  return {
+    boundActions: [],
+    clearedActions: [],
+    handlers: {},
+    metadata: null,
+    playbackState: "none",
+    positionState: null,
+    setActionHandler(action, handler) {
+      if (unsupportedActions.has(action)) {
+        throw new Error(`Unsupported action: ${action}`);
+      }
+
+      if (handler) {
+        this.boundActions.push(action);
+      } else {
+        this.clearedActions.push(action);
+      }
+
+      this.handlers[action] = handler;
+    },
+    setPositionState(state) {
+      this.positionState = state;
+    },
+  };
+}

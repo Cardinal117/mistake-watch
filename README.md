@@ -42,6 +42,7 @@ Production:
 - Manage queue order, removal, clear, shuffle, smart shuffle, pinned-first behavior, play-next, play-now, and history filtering where permissions allow.
 - Auto-advance through the queue with next-item preparation, unavailable-media skipping, and reconnect/stale-room recovery work.
 - Show current media metadata, thumbnails, views, likes, queue count, next-item context, and processing states where data is available.
+- Media Session API support is being added as a small QoL layer. The current baseline includes the browser-safe helper and tests; room transport wiring is still the next TASK-006 implementation step before browser/Opera GX media controls can be meaningfully tested.
 - Host controls playback by default, with member-level permissions for queue, playback, browser-control readiness, and room management.
 - Hosts can kick members, remove idle members, save rooms, and manage recurring personal rooms.
 - Owners can upload videos into the watch media library, organize uploads into folders, hide owner-only media, retry failed processing, recover multipart uploads, and queue batch uploads one file at a time.
@@ -66,7 +67,19 @@ Current TASK-002 status:
 
 - The project has moved beyond the original MVP recovery work and is now deep into the `TASK-002` continuation packet.
 - Recently completed areas include listen-room redesign, watch-room cinematic layout, Google account identity, R2 media library uploads, CloudConvert processing, multipart recovery, multi-file owner batch uploads, TV mode, performance quick wins, status-state cleanup, and reconnect/queue stability fixes.
+- Uploaded-media access hardening has added owner/allowlist catalogue boundaries, room-scoped uploaded playback sessions, and short-lived server-resolved playback URLs so permanent private uploaded media URLs are not persisted into queue/live room state.
 - The next task should always be confirmed from the TASK-002 packet before implementation. Do not rely on this README as the live task board.
+
+Current QoL side packet:
+
+```text
+docs/tasks/TASK-006-media-session-controls/
+```
+
+- TASK-006 tracks Media Session API support for browser/OS media metadata and media-key controls.
+- Task 1 is implemented: `lib/player/media-session.ts` provides the browser-safe helper, and `tests/player/media-session.test.mjs` covers helper behavior.
+- Task 2 is still required before live Opera GX/sidebar testing is meaningful: it must wire the helper into `TransportControls` with permission-aware room actions.
+- A helper-only production deployment was made on July 9, 2026 as `dpl_BpF6gW8smo1nY377NAzzgJRDRbrS`; it built and health-checked successfully, but it does not yet expose visible Media Session behavior.
 
 Do not treat future features as shipped until the TASK-002 packet marks them complete.
 
@@ -295,7 +308,13 @@ npm run test:identity
 npm run test:queue
 npm run test:sync
 npm run test:youtube
+node --test tests/player/media-session.test.mjs
 ```
+
+Known test caveat as of July 9, 2026:
+
+- `node --test tests\player\media-session.test.mjs`, `npm run typecheck`, `npm run lint`, and `npm run build` pass for the TASK-006 helper baseline.
+- `node --test tests\player\*.test.mjs` currently has existing failures in `tests\player\youtube-autoplay-atomic.test.mjs` tied to direct/uploaded player behavior, not the Media Session helper.
 
 For UI changes, also verify the local app in the browser:
 
@@ -325,6 +344,7 @@ https://mistake-watch.vercel.app/api/health
 - YouTube can block specific videos from embedded playback due to provider, region, age, copyright, live-premiere, or embedding restrictions.
 - YouTube autoplay and background-tab behavior is browser-controlled. The app owns queue progression and recovery, but user gesture and provider limits still apply.
 - YouTube iframe audio cannot be sampled directly for true audio-reactive visualizers. Real audio analysis must use direct/HLS/first-party media sources where browser access is allowed.
+- Browser/OS media-control integration depends on the Media Session API and browser support. Opera GX may expose useful metadata for sidebar sites, but this is not the same as Opera's built-in music-service integrations and must be treated as progressive enhancement.
 - Uploaded media currently uses R2 plus CloudConvert, not Cloudflare Stream.
 - Direct-ready MP4 files should avoid CloudConvert when they are confidently browser-safe. MKV, HEVC/H.265, unsupported audio, unknown formats, or large uncertain files may need conversion and owner approval.
 - CloudConvert credits are a real cost boundary. The app should keep inspecting before converting and should not blindly convert every upload.
