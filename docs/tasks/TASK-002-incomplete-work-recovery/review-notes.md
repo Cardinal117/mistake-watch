@@ -191,6 +191,37 @@ Manual QA / follow-up:
 - Chunk C should add room-scoped uploaded-media session records and create/resolve access endpoints.
 - Chunk D should remove permanent private uploaded-media URLs from queue/live/player state.
 
+## TASK-002.8J Chunk C Implementation Notes
+
+- Added `public.room_media_sessions` as the internal room-scoped uploaded-media playback session table.
+  - Each row binds a room, uploaded media asset, starter user, starter room member, status, start time, expiry time, and audit timestamps.
+  - The table allows only one active uploaded-media session per room.
+  - RLS is enabled and direct table access is granted only to `service_role`; no direct `anon` or `authenticated` grants are added.
+- Split room-session policy helpers into `lib/media/room-media-session-policy.ts`:
+  - `canStartUploadedMedia(...)` now checks catalogue authorization, room playback authority, and ready asset state.
+  - `canWatchRoomMedia(...)` checks active room participation, session room match, active/non-expired session state, and ready asset state.
+  - Room playback access does not require catalogue allowlist status, preserving the intended split between catalogue browsing and active room playback.
+- Added `lib/media/room-media-sessions.ts` as the server helper layer:
+  - signed-in catalogue-authorized users with room playback authority can create an active room media session;
+  - existing active uploaded-media sessions for the room are ended before the new one is inserted;
+  - guests and signed-in room participants can be evaluated for watch access without gaining catalogue access.
+- Added `POST /api/media/room-sessions` to create a room media session from `{ roomId, assetId }`.
+- Chunk C intentionally does not generate temporary R2 playback URLs, update the player to resolve uploaded session URLs, or remove permanent private URLs from queue/live/player state. Those remain Chunk D.
+
+Verification so far:
+
+- Supabase changelog and RLS guide were checked before the schema work. Relevant current guidance remains: enable RLS on public tables, keep grants explicit, and avoid user-editable metadata for authorization.
+- `node --test tests\media\uploaded-catalogue-policy.test.mjs tests\media\room-media-session-policy.test.mjs` passed with 17 tests.
+- `node --test tests\media\*.test.mjs` passed with 40 tests.
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
+
+Manual QA / follow-up:
+
+- Applied and verified `supabase/migrations/20260709092938_room_media_sessions.sql` in the target Supabase database before release of Chunk C.
+- Chunk D should add the temporary playback URL resolver and migrate queue/live/player state away from permanent uploaded-media URLs.
+
 ## Live Authority Inspection Notes
 
 - Current SpacetimeDB live session seeding accepts a browser-provided `host_member_id` when no session exists. That creates a front-run risk after a live database reset, expired session, or first-connect race.

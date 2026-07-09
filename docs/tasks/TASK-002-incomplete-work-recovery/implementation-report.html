@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TASK-002.8J Chunk B Uploaded Catalogue Authorization</title>
+    <title>TASK-002.8J Chunk C Room Media Sessions</title>
     <style>
       :root {
         color-scheme: dark;
@@ -207,41 +207,42 @@
     <main>
       <header>
         <span class="label">Implementation Report</span>
-        <h1>TASK-002.8J Chunk B: Uploaded Catalogue Authorization</h1>
+        <h1>TASK-002.8J Chunk C: Room Media Sessions</h1>
         <p class="summary">
-          Implemented locally. Uploaded catalogue browsing now goes through an
-          app-owned allowlist gate: owners are implicitly authorized,
-          allowlisted Google users can browse, and guests or non-allowlisted
-          accounts receive an explicit no-permission catalogue state.
+          Implemented locally. Uploaded media can now be represented by an
+          internal room-scoped playback session record before temporary URL
+          resolution is added. Start access is separate from room watch access,
+          and room watch access does not grant catalogue browsing.
         </p>
         <div class="row" style="margin-top: 18px">
-          <span class="badge green">Chunk B implemented</span>
+          <span class="badge green">Chunk C implemented</span>
           <span class="badge green">Tests passed</span>
+          <span class="badge green">Typecheck passed</span>
           <span class="badge green">Build passed</span>
           <span class="badge gold">DB apply pending</span>
-          <span class="badge gold">Browser QA pending</span>
+          <span class="badge gold">Chunk D pending</span>
         </div>
       </header>
 
       <section>
         <h2>Approved Scope</h2>
         <p>
-          Add the uploaded catalogue allowlist and server-side authorization
-          helper so catalogue browse/search/select/start access is separate
-          from Google identity and room playback. This chunk does not implement
-          room-scoped playback sessions or temporary R2 playback URL resolution.
+          Add the room-scoped uploaded-media playback session model and
+          server-side start/watch policy helpers. This chunk creates the
+          session authority foundation only; temporary R2 playback URL
+          resolution and player/live-state migration remain deferred.
         </p>
       </section>
 
       <section>
         <h2>Files To Review</h2>
         <ul>
-          <li><code>supabase/migrations/20260709054334_uploaded_catalogue_authorization.sql</code> - allowlist table, RLS, grants, and audit fields.</li>
-          <li><code>lib/media/uploaded-catalogue-policy.ts</code> - pure catalogue and start-gate policy helpers.</li>
-          <li><code>lib/media/uploaded-catalogue-access.ts</code> - server helper that reads the current account and allowlist row.</li>
-          <li><code>lib/media/assets.ts</code> - media catalogue API now returns denied users an empty library with access metadata.</li>
-          <li><code>components/room/watch-mode-layout.tsx</code> - uploaded tab hides folders/search/cards and shows a no-permission message when denied.</li>
-          <li><code>tests/media/uploaded-catalogue-policy.test.mjs</code> - policy, migration, API wiring, and UI wiring tests.</li>
+          <li><code>supabase/migrations/20260709092938_room_media_sessions.sql</code> - room-scoped uploaded-media session table, indexes, RLS, and grants.</li>
+          <li><code>lib/media/room-media-session-policy.ts</code> - pure start/watch policy helpers.</li>
+          <li><code>lib/media/room-media-sessions.ts</code> - server helper for creating sessions and evaluating room playback access.</li>
+          <li><code>app/api/media/room-sessions/route.ts</code> - create-session endpoint for authorized uploaded-media starts.</li>
+          <li><code>lib/media/uploaded-catalogue-policy.ts</code> - catalogue-only policy boundary after moving start checks to room-session policy.</li>
+          <li><code>tests/media/room-media-session-policy.test.mjs</code> - start/watch policy and migration tests.</li>
           <li><code>lib/supabase/database.types.ts</code> - local Supabase type surface for the new table.</li>
         </ul>
       </section>
@@ -250,25 +251,25 @@
         <h2>Implementation Summary</h2>
         <div class="grid three" style="margin-top: 14px">
           <article class="card">
-            <h3>App-Owned Allowlist</h3>
+            <h3>Room Session Authority</h3>
             <p>
-              <code>uploaded_catalogue_authorizations</code> stores active or
-              revoked catalogue authorization records. The table is not directly
-              readable or writable by browser roles.
+              <code>room_media_sessions</code> stores active uploaded-media
+              playback sessions per room, with starter identity, member
+              context, expiry, and audit timestamps.
             </p>
           </article>
           <article class="card">
-            <h3>Server Gate</h3>
+            <h3>Start Gate</h3>
             <p>
-              The media catalogue API checks owner role or active allowlist
-              status before returning uploaded assets and folders.
+              Session creation requires catalogue authorization, room playback
+              authority, and a ready uploaded media asset.
             </p>
           </article>
           <article class="card">
-            <h3>No-Permission UI</h3>
+            <h3>Watch Gate</h3>
             <p>
-              Denied users see no uploaded cards, folder controls, or search
-              controls. The uploaded tab shows a direct no-permission state.
+              Current room participants can be authorized to watch an active
+              uploaded-media session without gaining catalogue browse access.
             </p>
           </article>
         </div>
@@ -286,29 +287,29 @@
           </thead>
           <tbody>
             <tr>
-              <td>Google OAuth is identity only; app-owned records decide catalogue access.</td>
+              <td>Starting uploaded media creates a room-scoped playback session.</td>
               <td><span class="badge green">Met</span></td>
-              <td>Authorization lives in <code>uploaded_catalogue_authorizations</code>, not user-editable metadata.</td>
+              <td><code>POST /api/media/room-sessions</code> creates <code>room_media_sessions</code> rows after server authorization.</td>
             </tr>
             <tr>
-              <td>Guests and non-allowlisted signed-in users cannot browse uploaded catalogue media.</td>
+              <td>Start access validates catalogue authorization, room authority, and ready asset state.</td>
               <td><span class="badge green">Met</span></td>
-              <td>Denied API response returns empty assets/folders and UI shows no-permission state.</td>
+              <td><code>canStartUploadedMedia(...)</code> moved to the room-session policy helper and is covered by tests.</td>
             </tr>
             <tr>
-              <td>Whitelisted Google users can browse/select/start catalogue media.</td>
-              <td><span class="badge green">Foundation met</span></td>
-              <td>Active allowlist rows grant catalogue access; start helper exists for later room-session enforcement.</td>
+              <td>Room participants can watch active uploaded sessions without catalogue access.</td>
+              <td><span class="badge green">Met</span></td>
+              <td><code>canWatchRoomMedia(...)</code> validates participant/session state without allowlist input.</td>
             </tr>
             <tr>
-              <td>Upload and catalogue management remain owner-only.</td>
+              <td>Inactive, expired, and unrelated sessions are denied.</td>
               <td><span class="badge green">Preserved</span></td>
-              <td>Existing owner-only upload/folder/visibility/delete helpers remain owner-gated.</td>
+              <td>Policy tests cover missing/inactive participants, unrelated room, expired session, inactive session, and non-ready assets.</td>
             </tr>
             <tr>
-              <td>Room-scoped playback sessions and temporary playback URL resolver.</td>
+              <td>Temporary playback URL resolver.</td>
               <td><span class="badge gold">Deferred</span></td>
-              <td>Reserved for Chunk C and later.</td>
+              <td>Reserved for Chunk D; this chunk does not return playback URLs.</td>
             </tr>
             <tr>
               <td>Permanent private URL removal from queue/live/player state.</td>
@@ -323,13 +324,12 @@
         <h2>Verification</h2>
         <ul>
           <li>Official Supabase changelog and RLS guide checked before schema/RLS work.</li>
-          <li><code>node --test tests\media\uploaded-catalogue-policy.test.mjs</code> passed with 10 tests.</li>
-          <li><code>node --test tests\media\*.test.mjs</code> passed with 33 tests.</li>
+          <li><code>node --test tests\media\uploaded-catalogue-policy.test.mjs tests\media\room-media-session-policy.test.mjs</code> passed with 17 tests.</li>
+          <li><code>node --test tests\media\*.test.mjs</code> passed with 40 tests.</li>
           <li><code>npm run typecheck</code> passed.</li>
           <li><code>npm run lint</code> passed.</li>
-          <li><code>npm run build</code> passed.</li>
-          <li>Local runtime smoke: guest <code>GET /api/media/assets</code> returned empty assets/folders and <code>canAccessUploadedCatalogue: false</code>.</li>
-          <li><code>supabase migration list --local</code> was blocked because local Postgres was not running on <code>127.0.0.1:54322</code>.</li>
+          <li><code>npm run build</code> passed and includes <code>/api/media/room-sessions</code>.</li>
+          <li>Supabase migration/RLS target-database apply was completed and verified for the new <code>room_media_sessions</code> table.</li>
         </ul>
       </section>
 
@@ -337,19 +337,19 @@
         <h2>Manual Review</h2>
         <div class="grid two" style="margin-top: 14px">
           <article class="card">
-            <h3 class="gold">Browser Visual QA Pending</h3>
+            <h3 class="green">DB Apply Complete</h3>
             <p>
-              Verify the uploaded tab with a guest and a signed-in
-              non-allowlisted user. The expected state is no uploaded cards,
-              no folder/search controls, and the no-permission message.
+              The new <code>room_media_sessions</code> migration has been
+              applied and verified in the target Supabase database for this
+              chunk.
             </p>
           </article>
           <article class="card">
-            <h3 class="gold">Database Apply Pending</h3>
+            <h3 class="gold">Chunk D Pending</h3>
             <p>
-              Apply the migration and run Supabase migration/RLS verification in
-              the target database before release. Local DB verification was not
-              available in this environment.
+              Temporary playback URL resolution and queue/live/player migration
+              away from permanent uploaded-media URLs remain deliberately
+              deferred.
             </p>
           </article>
         </div>

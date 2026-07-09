@@ -27,7 +27,7 @@ const sourceModulePath = path.join(tempDir, "uploaded-catalogue-policy.mjs");
 
 await writeFile(sourceModulePath, sourceJs);
 
-const { canAccessUploadedCatalogue, canStartUploadedMedia } = await import(
+const { canAccessUploadedCatalogue } = await import(
   pathToFileURL(sourceModulePath)
 );
 
@@ -133,45 +133,6 @@ test("allowlist rows must belong to the current account", () => {
       reason: "not_allowlisted",
       scope: "none",
     },
-  );
-});
-
-test("starting uploaded media requires catalogue access, room authority, and ready asset state", () => {
-  assert.equal(
-    canStartUploadedMedia({
-      account: activeMemberAccount,
-      assetStatus: "ready",
-      authorization: activeAuthorization,
-      roomAuthority: "allowed",
-    }),
-    true,
-  );
-  assert.equal(
-    canStartUploadedMedia({
-      account: activeMemberAccount,
-      assetStatus: "ready",
-      authorization: null,
-      roomAuthority: "allowed",
-    }),
-    false,
-  );
-  assert.equal(
-    canStartUploadedMedia({
-      account: activeMemberAccount,
-      assetStatus: "ready",
-      authorization: activeAuthorization,
-      roomAuthority: "denied",
-    }),
-    false,
-  );
-  assert.equal(
-    canStartUploadedMedia({
-      account: activeMemberAccount,
-      assetStatus: "processing",
-      authorization: activeAuthorization,
-      roomAuthority: "allowed",
-    }),
-    false,
   );
 });
 

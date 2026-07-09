@@ -485,6 +485,70 @@ export type Database = {
         };
         Relationships: [];
       };
+      room_media_sessions: {
+        Row: {
+          created_at: string;
+          ended_at: string | null;
+          expires_at: string;
+          id: string;
+          media_asset_id: string;
+          room_id: string;
+          started_at: string;
+          started_by_member_id: string | null;
+          started_by_user_id: string | null;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          ended_at?: string | null;
+          expires_at: string;
+          id?: string;
+          media_asset_id: string;
+          room_id: string;
+          started_at?: string;
+          started_by_member_id?: string | null;
+          started_by_user_id?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          ended_at?: string | null;
+          expires_at?: string;
+          id?: string;
+          media_asset_id?: string;
+          room_id?: string;
+          started_at?: string;
+          started_by_member_id?: string | null;
+          started_by_user_id?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "room_media_sessions_media_asset_id_fkey";
+            columns: ["media_asset_id"];
+            isOneToOne: false;
+            referencedRelation: "media_assets";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "room_media_sessions_room_id_fkey";
+            columns: ["room_id"];
+            isOneToOne: false;
+            referencedRelation: "rooms";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "room_media_sessions_started_by_member_id_fkey";
+            columns: ["started_by_member_id"];
+            isOneToOne: false;
+            referencedRelation: "room_members";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       member_permissions: {
         Row: {
           can_add_queue: boolean | null;

@@ -114,21 +114,3 @@ export function canAccessUploadedCatalogue(
     scope: "allowlisted",
   };
 }
-
-export function canStartUploadedMedia(input: {
-  account: UploadedCatalogueAccount;
-  assetStatus: string;
-  authorization: UploadedCatalogueAuthorization | null;
-  roomAuthority: UploadedMediaRoomAuthority;
-}) {
-  const catalogueAccess = canAccessUploadedCatalogue(
-    input.account,
-    input.authorization,
-  );
-
-  return (
-    catalogueAccess.allowed &&
-    input.roomAuthority === "allowed" &&
-    input.assetStatus === "ready"
-  );
-}
