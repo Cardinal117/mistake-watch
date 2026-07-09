@@ -257,6 +257,11 @@
 - Unsupported MKV/HEVC/unknown files continue through the existing approval and CloudConvert pipeline.
 - Non-owner users cannot upload, approve conversion, or trigger first-party source ingestion.
 - The UI remains compact and usable on desktop and mobile without nested panel clutter.
+- Repeated calls to `POST /api/media/uploads/[uploadId]/complete` return the existing media asset once the upload session has produced one.
+- Repeated completion or retry requests cannot create multiple CloudConvert jobs for the same uploaded source object.
+- A linked upload session is marked `ready` when CloudConvert succeeds and `failed` when CloudConvert fails, preventing completed sessions from remaining indefinitely reusable.
+- Stale CloudConvert webhook updates are ignored when the webhook job id does not match the media asset's active processing job id.
+- The database prevents duplicate active/media rows for the same owner and uploaded source object.
 - Static checks and production build pass.
 
 ## TASK-002.8I Signal State Vocabulary And Processing Status UX

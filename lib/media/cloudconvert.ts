@@ -186,6 +186,26 @@ export async function syncCloudConvertJob(input: {
     return input.asset;
   }
 
+  if (
+    job.id &&
+    input.asset.processing_job_id &&
+    job.id !== input.asset.processing_job_id
+  ) {
+    await recordCloudConvertEvent({
+      assetId: input.asset.id,
+      jobId: job.id,
+      message: "Ignored stale CloudConvert job update for this media asset.",
+      payload: {
+        activeJobId: input.asset.processing_job_id,
+        receivedJobId: job.id,
+        receivedStatus: job.status,
+      },
+      status: "ignored_stale_job",
+    });
+
+    return input.asset;
+  }
+
   await recordCloudConvertTasks(input.asset.id, job);
 
   if (job.status === "finished") {
@@ -255,6 +275,14 @@ export async function markCloudConvertAssetReady(
     throw error;
   }
 
+  await admin
+    .from("media_upload_sessions")
+    .update({
+      error_message: null,
+      status: "ready",
+    })
+    .eq("media_asset_id", asset.id);
+
   await recordCloudConvertEvent({
     assetId: asset.id,
     jobId: job?.id ?? asset.processing_job_id,
@@ -288,6 +316,14 @@ export async function markCloudConvertAssetFailed(
   if (error) {
     throw error;
   }
+
+  await admin
+    .from("media_upload_sessions")
+    .update({
+      error_message: message.slice(0, 1000),
+      status: "failed",
+    })
+    .eq("media_asset_id", asset.id);
 
   await recordCloudConvertEvent({
     assetId: asset.id,

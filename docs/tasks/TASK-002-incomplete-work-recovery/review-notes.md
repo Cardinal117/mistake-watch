@@ -1296,6 +1296,28 @@ Manual review pending:
 - Browser QA: refresh with an incomplete multipart upload and confirm recoverable session rows still resume with reselecting the same file.
 - Browser QA: confirm direct-ready MP4 files skip CloudConvert while MKV/HEVC files follow the approval/CloudConvert path.
 
+Corrective production incident hardening:
+
+- July 8, 2026: fixed a CloudConvert runaway condition where repeated upload-completion calls could create many media assets and many CloudConvert jobs for the same uploaded R2 source object.
+- Root cause:
+  - `completeMediaUpload` inserted a new `media_assets` row every time `/api/media/uploads/[uploadId]/complete` was called;
+  - upload sessions that had already produced an asset could remain in `processing`;
+  - successful CloudConvert processing changed `media_assets.r2_object_key` to the processed MP4 key but did not mark the upload session `ready`;
+  - `startCloudConvertProcessing` created a provider job every time it was called, even when the asset already had an active queued/processing job.
+- Backend hardening:
+  - upload completion now returns the existing session asset when `media_asset_id` is already set;
+  - upload completion now reuses an existing owner/source-object asset before inserting a new row;
+  - duplicate insert protection re-checks for an existing source asset before marking the upload failed;
+  - CloudConvert start now claims the asset before calling CloudConvert and returns the current asset if another request already started work;
+  - failed conversion retry clears stale job ids only as part of an intentional owner retry.
+- Provider/session hardening:
+  - CloudConvert success marks the linked upload session `ready`;
+  - CloudConvert failure marks the linked upload session `failed`;
+  - stale webhook updates are ignored when the received job id does not match the asset's active processing job id.
+- Database hardening:
+  - added a unique index on `(owner_user_id, source_object_key)` where `source_object_key is not null`, so one uploaded source object cannot create duplicate media rows for the same owner.
+- Operational note:
+  - keep the CloudConvert API token disabled until this fix is deployed and the migration has been applied in production.
 ## TASK-002.1 Implementation Notes
 
 - Listen queue drawer now has persisted Compact, Standard, and Tall height controls.

@@ -309,8 +309,53 @@ export async function completeMediaUpload(input: {
 }) {
   const owner = await requireOwnerSummary();
   const session = await getOwnerUploadSession(input.uploadId, owner.id);
+  const admin = createSupabaseAdminClient();
+
+  if (session.media_asset_id) {
+    const existingAsset = await getOwnerMediaAssetById({
+      admin,
+      assetId: session.media_asset_id,
+      ownerUserId: owner.id,
+    });
+
+    if (existingAsset) {
+      await markUploadSessionAttachedToAsset({
+        admin,
+        asset: existingAsset,
+        uploadId: session.id,
+      });
+
+      return toLibraryAsset(existingAsset, []);
+    }
+  }
 
   assertUploadSessionActive(session, { allowRecoverableFailed: true });
+
+  const existingSourceAsset = await findOwnerMediaAssetBySourceObjectKey({
+    admin,
+    ownerUserId: owner.id,
+    sourceObjectKey: session.object_key,
+  });
+
+  if (existingSourceAsset) {
+    await markUploadSessionAttachedToAsset({
+      admin,
+      asset: existingSourceAsset,
+      uploadId: session.id,
+    });
+
+    await recordCloudConvertEvent({
+      assetId: existingSourceAsset.id,
+      message: "Upload completion reused existing media asset.",
+      payload: {
+        sourceObjectKey: session.object_key,
+        uploadId: session.id,
+      },
+      status: "upload_reused",
+    });
+
+    return toLibraryAsset(existingSourceAsset, []);
+  }
 
   if (session.upload_mode === "multipart") {
     assertMultipartSession(session);
@@ -359,7 +404,6 @@ export async function completeMediaUpload(input: {
   const folderId = input.folderId
     ? await assertOwnerFolder(input.folderId, owner.id)
     : null;
-  const admin = createSupabaseAdminClient();
   const { data: asset, error: assetError } = await admin
     .from("media_assets")
     .insert({
@@ -406,6 +450,33 @@ export async function completeMediaUpload(input: {
     .single();
 
   if (assetError) {
+    const existingAsset = await findOwnerMediaAssetBySourceObjectKey({
+      admin,
+      ownerUserId: owner.id,
+      sourceObjectKey: session.object_key,
+    });
+
+    if (existingAsset) {
+      await markUploadSessionAttachedToAsset({
+        admin,
+        asset: existingAsset,
+        uploadId: session.id,
+      });
+
+      await recordCloudConvertEvent({
+        assetId: existingAsset.id,
+        message: "Upload completion reused existing media asset after duplicate insert protection.",
+        payload: {
+          insertError: assetError.message,
+          sourceObjectKey: session.object_key,
+          uploadId: session.id,
+        },
+        status: "upload_reused",
+      });
+
+      return toLibraryAsset(existingAsset, []);
+    }
+
     await markUploadFailed(session.id, assetError.message);
     throw assetError;
   }
@@ -469,6 +540,14 @@ export async function approveMediaAssetProcessing(input: { assetId: string }) {
     return toLibraryAsset(asset, []);
   }
 
+  if (
+    asset.processing_job_id &&
+    (asset.processing_status === "queued" ||
+      asset.processing_status === "processing")
+  ) {
+    return toLibraryAsset(asset, []);
+  }
+
   if (!asset.source_object_key) {
     throw new MediaAssetError("Media source object is missing.", 409);
   }
@@ -491,6 +570,7 @@ export async function approveMediaAssetProcessing(input: { assetId: string }) {
       owner_approved_at: new Date().toISOString(),
       owner_approval_required: false,
       processing_error_message: null,
+      processing_job_id: null,
       processing_started_at: new Date().toISOString(),
       processing_status: "queued",
       processing_strategy: "convert",
@@ -1400,6 +1480,64 @@ async function createAvailableFolderSlug(name: string, ownerUserId: string) {
   return `${baseSlug}-${Date.now()}`;
 }
 
+async function getOwnerMediaAssetById(input: {
+  admin: ReturnType<typeof createSupabaseAdminClient>;
+  assetId: string;
+  ownerUserId: string;
+}) {
+  const { data, error } = await input.admin
+    .from("media_assets")
+    .select()
+    .eq("id", input.assetId)
+    .eq("owner_user_id", input.ownerUserId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+async function findOwnerMediaAssetBySourceObjectKey(input: {
+  admin: ReturnType<typeof createSupabaseAdminClient>;
+  ownerUserId: string;
+  sourceObjectKey: string;
+}) {
+  const { data, error } = await input.admin
+    .from("media_assets")
+    .select()
+    .eq("owner_user_id", input.ownerUserId)
+    .eq("source_object_key", input.sourceObjectKey)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+async function markUploadSessionAttachedToAsset(input: {
+  admin: ReturnType<typeof createSupabaseAdminClient>;
+  asset: Tables<"media_assets">;
+  uploadId: string;
+}) {
+  const { error } = await input.admin
+    .from("media_upload_sessions")
+    .update({
+      error_message: null,
+      media_asset_id: input.asset.id,
+      status: input.asset.status === "ready" ? "ready" : "processing",
+    })
+    .eq("id", input.uploadId);
+
+  if (error) {
+    throw error;
+  }
+}
 async function markUploadFailed(uploadId: string, message: string) {
   const admin = createSupabaseAdminClient();
 
@@ -1419,9 +1557,58 @@ async function startCloudConvertProcessing(input: {
 }) {
   const admin = createSupabaseAdminClient();
 
+  if (
+    input.asset.status === "ready" ||
+    input.asset.processing_status === "ready" ||
+    input.asset.processing_status === "not_required"
+  ) {
+    return toLibraryAsset(input.asset, []);
+  }
+
+  if (
+    input.asset.processing_job_id &&
+    (input.asset.processing_status === "queued" ||
+      input.asset.processing_status === "processing")
+  ) {
+    return toLibraryAsset(input.asset, []);
+  }
+
+  const { data: lockedAsset, error: lockError } = await admin
+    .from("media_assets")
+    .update({
+      processing_error_message: null,
+      processing_started_at: new Date().toISOString(),
+      processing_status: "processing",
+      processing_strategy: "convert",
+      status: "processing",
+    })
+    .eq("id", input.asset.id)
+    .eq("processing_status", "queued")
+    .is("processing_job_id", null)
+    .select()
+    .maybeSingle();
+
+  if (lockError) {
+    throw lockError;
+  }
+
+  if (!lockedAsset) {
+    const currentAsset = await getOwnerMediaAssetById({
+      admin,
+      assetId: input.asset.id,
+      ownerUserId: input.asset.owner_user_id,
+    });
+
+    if (currentAsset) {
+      return toLibraryAsset(currentAsset, []);
+    }
+
+    throw new MediaAssetError("Media asset was not found.", 404);
+  }
+
   try {
     const processingJob = await createCloudConvertMediaJob({
-      asset: input.asset,
+      asset: lockedAsset,
       sourceObjectKey: input.sourceObjectKey,
     });
     const { data: processingAsset, error: processingAssetError } = await admin
@@ -1433,7 +1620,7 @@ async function startCloudConvertProcessing(input: {
         processing_strategy: "convert",
         thumbnail_object_key: processingJob.posterObjectKey,
       })
-      .eq("id", input.asset.id)
+      .eq("id", lockedAsset.id)
       .select()
       .single();
 
@@ -1452,7 +1639,7 @@ async function startCloudConvertProcessing(input: {
       await markUploadFailed(input.uploadId, message);
     }
 
-    await markCloudConvertAssetFailed(input.asset, message).catch(() => undefined);
+    await markCloudConvertAssetFailed(lockedAsset, message).catch(() => undefined);
 
     if (error instanceof CloudConvertError) {
       throw new MediaAssetError(error.message, error.status);
@@ -1461,7 +1648,6 @@ async function startCloudConvertProcessing(input: {
     throw error;
   }
 }
-
 function normalizeJsonPayload(payload: unknown): Json {
   return JSON.parse(JSON.stringify(payload)) as Json;
 }

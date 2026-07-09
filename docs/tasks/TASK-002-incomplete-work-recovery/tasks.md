@@ -1038,6 +1038,22 @@ Safe commit point:
 
 - Owners can batch-add a season of normal 20-40 minute videos without babysitting single-file uploads, while preserving the existing R2 and CloudConvert architecture.
 
+Corrective incident hardening:
+
+- Prevent repeated upload-completion calls from creating duplicate uploaded-media rows or duplicate CloudConvert jobs for the same R2 source object.
+- Make upload completion idempotent:
+  - return the existing attached media asset when `media_upload_sessions.media_asset_id` is already set;
+  - return and attach an existing asset when the same owner/source object already exists;
+  - record a compact processing event when an upload completion is reused instead of creating a new asset.
+- Make CloudConvert processing idempotent:
+  - do not create another provider job when an asset already has an active queued/processing job;
+  - lock the asset before calling CloudConvert so duplicate requests cannot launch multiple paid jobs;
+  - clear stale failed job ids only when the owner intentionally retries failed processing.
+- Keep upload session state aligned with CloudConvert terminal state:
+  - mark the linked upload session `ready` when processing succeeds;
+  - mark the linked upload session `failed` when processing fails.
+- Add a database uniqueness guard so one owner/source object can only have one media asset.
+- Ignore stale CloudConvert webhook updates when the webhook job id does not match the asset's active processing job.
 ## TASK-002.8I: Signal State Vocabulary And Processing Status UX
 
 Source task: loading/status corrective pass after upload, CloudConvert, metadata, and search states started using generic spinners or fake-looking progress.
