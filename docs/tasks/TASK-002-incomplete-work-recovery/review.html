@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TASK-002 Recovery Planning - Mistake Watch</title>
+    <title>TASK-002.8J Security Review - Mistake Watch</title>
     <style>
       :root {
         color-scheme: dark;
@@ -16,7 +16,6 @@
         --line: rgb(255 255 255 / 0.1);
         --cyan: #00dbe9;
         --gold: #ffba20;
-        --pink: #ff39ad;
         --green: #77d982;
         --danger: #ff7aa8;
       }
@@ -26,8 +25,8 @@
       body {
         margin: 0;
         background:
-          radial-gradient(circle at 16% 8%, rgb(255 57 173 / 0.2), transparent 34rem),
-          radial-gradient(circle at 92% 12%, rgb(0 219 233 / 0.14), transparent 30rem),
+          radial-gradient(circle at 10% 0%, rgb(0 219 233 / 0.16), transparent 34rem),
+          radial-gradient(circle at 90% 10%, rgb(255 186 32 / 0.12), transparent 30rem),
           var(--bg);
         color: var(--text);
         font-family: Inter, Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -39,16 +38,20 @@
         padding: 32px 0 56px;
       }
 
-      header, section, .card, .wire, .task {
+      header,
+      section,
+      .card,
+      .lane,
+      .flow {
         border: 1px solid var(--line);
         border-radius: 12px;
-        background: rgb(19 19 20 / 0.86);
+        background: rgb(19 19 20 / 0.88);
         backdrop-filter: blur(18px);
       }
 
       header {
         display: grid;
-        gap: 20px;
+        gap: 18px;
         padding: 28px;
       }
 
@@ -57,31 +60,46 @@
         padding: 22px;
       }
 
-      h1, h2, h3, p { margin: 0; }
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
 
       h1 {
-        max-width: 900px;
-        font-size: clamp(2rem, 5vw, 3.6rem);
+        max-width: 920px;
+        font-size: clamp(2rem, 5vw, 3.4rem);
         line-height: 1.04;
       }
 
       h2 { font-size: 1.25rem; }
       h3 { font-size: 1rem; }
 
-      p, li {
+      p,
+      li,
+      td {
         color: var(--muted);
         line-height: 1.6;
       }
 
-      ul { margin: 12px 0 0; padding-left: 20px; }
-      li + li { margin-top: 7px; }
+      ul {
+        margin: 12px 0 0;
+        padding-left: 20px;
+      }
 
+      li + li { margin-top: 7px; }
       a { color: var(--cyan); }
-      code, .label, .badge, .mono {
+
+      code,
+      .badge,
+      .label,
+      th {
         font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
       }
 
-      .label, .badge {
+      .label,
+      .badge {
         display: inline-flex;
         width: fit-content;
         align-items: center;
@@ -95,386 +113,349 @@
 
       .label { padding: 6px 10px; }
       .badge { padding: 4px 8px; }
-      .badge.pink { border-color: rgb(255 57 173 / 0.42); color: var(--pink); }
       .badge.gold { border-color: rgb(255 186 32 / 0.38); color: var(--gold); }
       .badge.green { border-color: rgb(119 217 130 / 0.38); color: var(--green); }
       .badge.danger { border-color: rgb(255 122 168 / 0.42); color: var(--danger); }
 
-      .grid {
-        display: grid;
-        gap: 14px;
-      }
-
-      .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-
-      .card, .task {
-        padding: 18px;
-        background: rgb(28 27 28 / 0.82);
-      }
-
-      .task {
-        display: grid;
-        gap: 12px;
-      }
-
-      .hero-row {
+      .hero-row,
+      .chips {
         display: flex;
         flex-wrap: wrap;
         gap: 10px;
         align-items: center;
       }
 
-      .wire {
-        padding: 18px;
-        overflow: hidden;
+      .grid {
+        display: grid;
+        gap: 14px;
       }
 
-      .wire-frame {
+      .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+      .card,
+      .lane {
+        padding: 18px;
+        background: rgb(28 27 28 / 0.84);
+      }
+
+      .card.danger {
+        border-color: rgb(255 122 168 / 0.32);
+        background: rgb(147 0 10 / 0.18);
+      }
+
+      .card.gold {
+        border-color: rgb(255 186 32 / 0.3);
+        background: rgb(65 45 0 / 0.18);
+      }
+
+      .flow {
         display: grid;
-        grid-template-columns: 290px minmax(0, 1fr);
-        min-height: 390px;
-        border: 1px solid rgb(255 255 255 / 0.12);
-        border-radius: 10px;
+        gap: 12px;
+        padding: 18px;
         background: rgb(0 0 0 / 0.28);
       }
 
-      .rail {
-        border-right: 1px solid rgb(255 255 255 / 0.12);
-        padding: 18px;
-        background:
-          linear-gradient(180deg, rgb(255 57 173 / 0.14), transparent 56%),
-          rgb(12 12 14 / 0.8);
-      }
-
-      .album {
-        aspect-ratio: 1;
-        border-radius: 8px;
-        border: 1px solid rgb(255 255 255 / 0.12);
-        background:
-          radial-gradient(circle at 58% 38%, rgb(255 57 173 / 0.72), transparent 34%),
-          linear-gradient(135deg, #24112c, #0a0a0b 58%);
-        margin: 18px 0;
-      }
-
-      .main-surface {
-        padding: 20px;
+      .flow-row {
         display: grid;
-        gap: 18px;
-        align-content: start;
-      }
-
-      .avatar-row {
-        display: flex;
-        gap: 8px;
-      }
-
-      .avatar {
-        width: 28px;
-        height: 28px;
-        border-radius: 999px;
-        border: 1px solid rgb(255 57 173 / 0.72);
-        background: radial-gradient(circle, rgb(0 219 233 / 0.5), rgb(24 24 26));
-      }
-
-      .title-row, .mode-row, .actions {
-        display: flex;
+        grid-template-columns: 1fr auto 1fr auto 1fr;
+        gap: 10px;
         align-items: center;
-        justify-content: space-between;
-        gap: 16px;
       }
 
-      .tabs {
-        display: flex;
-        gap: 26px;
-        border-bottom: 1px solid rgb(255 255 255 / 0.1);
-        padding-bottom: 10px;
-      }
-
-      .tab-active {
-        color: var(--pink);
-        border-bottom: 2px solid var(--pink);
-        padding-bottom: 10px;
-        margin-bottom: -12px;
-      }
-
-      .search {
-        min-width: min(420px, 45%);
+      .node {
+        min-height: 84px;
         border: 1px solid rgb(255 255 255 / 0.12);
         border-radius: 8px;
-        padding: 11px 14px;
-        color: var(--muted);
+        padding: 14px;
         background: rgb(255 255 255 / 0.04);
       }
 
-      .button {
-        border: 1px solid rgb(255 57 173 / 0.5);
-        border-radius: 8px;
-        padding: 12px 16px;
-        color: var(--pink);
-        background: rgb(255 57 173 / 0.08);
+      .arrow {
+        color: var(--gold);
+        font-family: "JetBrains Mono", ui-monospace, monospace;
       }
 
-      .cards {
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+
+      th,
+      td {
+        padding: 12px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        color: var(--text);
+        font-size: 12px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        background: rgb(255 255 255 / 0.05);
+      }
+
+      tr:last-child td { border-bottom: 0; }
+
+      .task-list {
+        counter-reset: step;
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .task-step {
+        counter-increment: step;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
         gap: 12px;
+        align-items: start;
       }
 
-      .pick {
-        min-height: 180px;
-        border: 1px solid rgb(255 255 255 / 0.12);
+      .task-step::before {
+        content: counter(step);
+        display: grid;
+        place-items: center;
+        width: 32px;
+        height: 32px;
         border-radius: 8px;
-        background: rgb(255 255 255 / 0.04);
+        border: 1px solid rgb(0 219 233 / 0.34);
+        color: var(--cyan);
+        font-family: "JetBrains Mono", ui-monospace, monospace;
       }
 
-      .divider {
-        height: 1px;
-        background: var(--line);
-        margin: 12px 0;
+      .small {
+        font-size: 13px;
       }
 
-      @media (max-width: 840px) {
-        .grid.three, .grid.two { grid-template-columns: 1fr; }
-        .wire-frame { grid-template-columns: 1fr; }
-        .rail { border-right: 0; border-bottom: 1px solid rgb(255 255 255 / 0.12); }
-        .title-row, .mode-row { align-items: stretch; flex-direction: column; }
-        .search { min-width: 100%; }
-        .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      @media (max-width: 780px) {
+        main { width: min(100% - 24px, 1180px); }
+        .grid.two,
+        .grid.three,
+        .flow-row {
+          grid-template-columns: 1fr;
+        }
+        .arrow { display: none; }
       }
     </style>
   </head>
   <body>
     <main>
       <header>
-        <span class="label">Spec-first review</span>
-        <h1>TASK-002 recovery planning and status states</h1>
-        <p>
-          This review surface now includes TASK-002.8I, the implemented local slice for replacing generic loading states with a small Signal state vocabulary, shared primitives, and a media/upload processing resolver. TASK-002.8H remains the next owner batch-upload workflow that will build on this foundation.
-        </p>
         <div class="hero-row">
-          <span class="badge green">TASK-002.8I Implemented locally</span>
-          <span class="badge gold">TASK-002.8H Upload queue</span>
-          <span class="badge pink">TASK-002.5F Header and presence</span>
-          <span class="badge gold">TASK-002.5G Player rail and discovery</span>
-          <span class="badge pink">TASK-002.5K TV view mode</span>
+          <span class="label">TASK-002.8J</span>
+          <span class="badge danger">Security checkpoint</span>
+          <span class="badge gold">Spec-first</span>
+          <span class="badge">Generated 2026-07-07</span>
         </div>
+        <h1>Uploaded media access hardening and room playback sessions</h1>
+        <p>
+          Current recommendation: implement the uploaded-media security slice before more catalogue UI polish or roadmap progression.
+          The goal is a private uploaded catalogue with shared room playback, without leaking permanent private R2 URLs.
+        </p>
       </header>
 
-      <section>
-        <div class="hero-row">
-          <span class="badge green">Local implementation task</span>
-          <span class="badge">TASK-002.8I</span>
-          <span class="badge gold">State resolver first</span>
+      <section aria-labelledby="summary-heading">
+        <h2 id="summary-heading">Executive Summary</h2>
+        <div class="grid three" style="margin-top: 14px">
+          <article class="card danger">
+            <span class="badge danger">Immediate risk</span>
+            <h3 style="margin-top: 10px">Permanent URL leakage</h3>
+            <p>
+              Private uploaded assets can still move through source-match, queue, live room, dashboard, or player state as permanent URLs.
+              Hiding the uploaded tab is not enough.
+            </p>
+          </article>
+          <article class="card gold">
+            <span class="badge gold">Model</span>
+            <h3 style="margin-top: 10px">Private catalogue, shared playback</h3>
+            <p>
+              Only authorized Google users browse/start uploaded media. Once started, valid room participants can watch the active session without catalogue access.
+            </p>
+          </article>
+          <article class="card">
+            <span class="badge">Next action</span>
+            <h3 style="margin-top: 10px">Implement in batches</h3>
+            <p>
+              Start with source-match no-leak filtering, then add permission helpers, room media sessions, playback URL resolution, and final QA gates.
+            </p>
+          </article>
         </div>
-        <h2 style="margin-top: 12px">Signal state vocabulary and processing status UX</h2>
-        <p style="margin-top: 8px">
-          TASK-002.8I creates a normalized display-state layer for upload and media processing states before replacing UI instances. The implementation stops treating every waiting state as loading, stops showing fake progress for CloudConvert, and makes recoverable/blocked/failed states expose the next action clearly.
-        </p>
+      </section>
+
+      <section aria-labelledby="files-heading">
+        <h2 id="files-heading">Files To Review</h2>
         <div class="grid three" style="margin-top: 14px">
           <article class="card">
-            <h3>State Vocabulary</h3>
+            <span class="badge danger">Must review</span>
             <ul>
-              <li>Use waiting, loading, uploading, processing, queued, blocked, recoverable, failed, and ready.</li>
-              <li>Map raw provider/session/media data into one normalized display object.</li>
-              <li>Keep long-running jobs honest about lifecycle stage and next action.</li>
+              <li><a href="./tasks.md">tasks.md</a> - TASK-002.8J implementation batches and safe commit points.</li>
+              <li><a href="./acceptance-criteria.md">acceptance-criteria.md</a> - security acceptance and production QA gates.</li>
+              <li><a href="./design.md">design.md</a> - uploaded media access architecture.</li>
             </ul>
           </article>
           <article class="card">
-            <h3>Shared Primitives</h3>
+            <span class="badge gold">Background</span>
             <ul>
-              <li>SignalInlineStatus for short async states.</li>
-              <li>SignalSkeleton for layout-preserving placeholders.</li>
-              <li>SignalProgressBar only for real measurable progress.</li>
-              <li>SignalStatusChip for compact labels.</li>
+              <li><a href="./review-notes.md">review-notes.md</a> - current checkpoint, decisions, and planning notes.</li>
+              <li><a href="./proposal.md">proposal.md</a> - overall TASK-002 recovery scope and risks.</li>
             </ul>
           </article>
           <article class="card">
-            <h3>Scope Boundaries</h3>
+            <span class="badge">Generated</span>
             <ul>
-              <li>No new upload backend, CloudConvert behavior, or batch queue implementation.</li>
-              <li>No fake percentages, progress-looking idle states, or waveform-as-loader reuse.</li>
-              <li>No broad redesign outside targeted status/loading surfaces.</li>
+              <li><a href="./review.html">review.html</a> - this first-open review dashboard.</li>
+              <li>Markdown remains canonical. This page is only the review layer.</li>
             </ul>
           </article>
         </div>
       </section>
 
-      <section>
-        <h2>Files To Review</h2>
-        <div class="grid three" style="margin-top: 14px">
-          <article class="card">
-            <h3>Must Review</h3>
-            <ul>
-              <li><a href="./tasks.md">tasks.md</a> - TASK-002.8I status vocabulary and resolver plus existing upload/listen task context.</li>
-              <li><a href="./acceptance-criteria.md">acceptance-criteria.md</a> - pass/fail checks.</li>
-              <li><a href="./review-notes.md">review-notes.md</a> - current status, locked decisions, and state vocabulary notes.</li>
-              <li><a href="./status-state-vocabulary.md">status-state-vocabulary.md</a> - state vocabulary, resolver boundary, and component responsibilities.</li>
-            </ul>
-          </article>
-          <article class="card">
-            <h3>Useful Context</h3>
-            <ul>
-              <li><a href="./brain-dump.md">brain-dump.md</a> - raw user requirements and search behavior.</li>
-              <li><a href="./design.md">design.md</a> - reference layout and UI rules.</li>
-            </ul>
-          </article>
-          <article class="card">
-            <h3>Background</h3>
-            <ul>
-              <li><a href="./proposal.md">proposal.md</a> - roadmap scope update.</li>
-              <li><a href="./implementation-report.html">implementation-report.html</a> - local implementation evidence.</li>
-            </ul>
-          </article>
-        </div>
-      </section>
-
-      <section>
-        <h2>Current Priority: Listen TV Mode</h2>
-        <div class="grid two" style="margin-top: 14px">
-          <article class="task">
-            <div class="hero-row">
-              <span class="badge pink">TASK-002.5K</span>
-              <span class="badge">Client-only</span>
+      <section aria-labelledby="model-heading">
+        <h2 id="model-heading">Target Permission Model</h2>
+        <div class="flow" style="margin-top: 14px">
+          <div class="flow-row">
+            <div class="node">
+              <span class="badge">Catalogue</span>
+              <h3 style="margin-top: 8px">canAccessUploadedCatalogue</h3>
+              <p class="small">Google-authenticated and app-authorized user can browse, search, select, and see private metadata.</p>
             </div>
-            <h3>TV presentation surface</h3>
-            <p>
-              Add a local listen-room TV view that looks close to the neon reference: full-viewport media focus, top-left room pill, top-right Exit TV Mode, large now-playing title, wide progress, centered transport, compact Up Next, and volume/fullscreen controls.
-            </p>
-            <ul>
-              <li>Do not change shared room mode or other members' layouts.</li>
-              <li>Use thumbnail-driven accent colors for progress, controls, glass glow, and metadata.</li>
-              <li>Hide management surfaces such as Room Picks, Add Media, search, queue drawer, permissions, and account panels.</li>
-            </ul>
-          </article>
-          <article class="task">
-            <div class="hero-row">
-              <span class="badge gold">Playback boundary</span>
-              <span class="badge">YouTube overlay</span>
+            <div class="arrow">=&gt;</div>
+            <div class="node">
+              <span class="badge gold">Start</span>
+              <h3 style="margin-top: 8px">canStartUploadedMedia</h3>
+              <p class="small">Authorized user plus room authority plus ready asset creates a room-scoped playback session.</p>
             </div>
-            <h3>Custom controls over app shell</h3>
-            <p>
-              For YouTube sources, hide native iframe controls where possible and render Mistake Watch controls over the app TV shell. Fullscreen should target the app wrapper, not the cross-origin YouTube iframe, so custom overlays remain visible.
-            </p>
-            <ul>
-              <li>Reuse existing playback, queue, volume, and dynamic accent state.</li>
-              <li>Do not introduce separate autoplay semantics for TV mode.</li>
-              <li>Keep unavoidable YouTube branding secondary to the Mistake Watch overlay.</li>
-            </ul>
-          </article>
-        </div>
-      </section>
-
-      <section>
-        <h2>Target Shape</h2>
-        <div class="wire" style="margin-top: 14px">
-          <div class="wire-frame" aria-label="Listen room target wireframe">
-            <aside class="rail">
-              <p class="mono" style="color: var(--pink); font-size: 12px">MISTAKE WATCH / SIGNAL ROOM</p>
-              <div class="album"></div>
-              <p class="mono" style="color: var(--pink); font-size: 12px">NOW PLAYING</p>
-              <h3 style="margin-top: 8px">'Back To The 80's' mix</h3>
-              <p>ThePrimeThanatos</p>
-              <div class="divider"></div>
-              <p class="mono">Progress / transport / volume</p>
-              <div class="divider"></div>
-              <p class="mono" style="color: var(--pink); font-size: 12px">UP NEXT</p>
-              <p>Suggested next item and queue count stay grounded in this rail.</p>
-            </aside>
-            <div class="main-surface">
-              <div class="avatar-row" title="Top member avatar row">
-                <span class="avatar"></span>
-                <span class="avatar"></span>
-                <span class="avatar"></span>
-              </div>
-              <div class="title-row">
-                <div>
-                  <h2>MOVIEESS</h2>
-                  <p class="mono">Room ID: 8F3B-KYBY * 1 connected * Listen mode * 18 upcoming</p>
-                </div>
-                <div class="actions">
-                  <span class="button">+ Add Media</span>
-                  <span class="avatar"></span>
-                  <span class="button">Cog</span>
-                </div>
-              </div>
-              <div class="mode-row">
-                <div class="tabs">
-                  <span>video Watch</span>
-                  <span class="tab-active">headphones Listen</span>
-                </div>
-                <div class="search">Search YouTube, playlists, artists...</div>
-              </div>
-              <div>
-                <h2>Room picks</h2>
-                <div class="cards" style="margin-top: 14px">
-                  <div class="pick"></div>
-                  <div class="pick"></div>
-                  <div class="pick"></div>
-                  <div class="pick"></div>
-                </div>
-              </div>
+            <div class="arrow">=&gt;</div>
+            <div class="node">
+              <span class="badge green">Watch</span>
+              <h3 style="margin-top: 8px">canWatchRoomMedia</h3>
+              <p class="small">Any valid current room participant may resolve temporary playback for the active room session.</p>
             </div>
           </div>
         </div>
       </section>
 
-      <section>
-        <h2>Two-Part Scope</h2>
-        <div class="grid two" style="margin-top: 14px">
-          <article class="task">
-            <div class="hero-row">
-              <span class="badge pink">Part 1</span>
-              <span class="badge">TASK-002.5F</span>
+      <section aria-labelledby="batches-heading">
+        <h2 id="batches-heading">Implementation Batches</h2>
+        <div class="task-list" style="margin-top: 14px">
+          <article class="task-step card">
+            <div>
+              <h3>Patch current source-match leaks</h3>
+              <p>Return only authorized uploaded matches. Do not expose private asset URLs or object keys. Add no-leak tests.</p>
             </div>
-            <h3>Listen Room Header And Presence Refinement</h3>
-            <p>
-              Changes the room shell: compact reference-style header, top avatar presence, settings cog menu, permissions pop-out, icon tabs, search bar, state-aware save, and pink leave action.
-            </p>
+          </article>
+          <article class="task-step card">
+            <div>
+              <h3>Add authorization helpers and allowlist model</h3>
+              <p>Google identity is not catalogue authorization. Add server-side helpers and app-owned records with tests.</p>
+            </div>
+          </article>
+          <article class="task-step card">
+            <div>
+              <h3>Add room media sessions</h3>
+              <p>Create active uploaded-media playback sessions only after start authorization passes.</p>
+            </div>
+          </article>
+          <article class="task-step card">
+            <div>
+              <h3>Add playback URL resolver</h3>
+              <p>Validate room participant plus active session, then issue a temporary R2 URL. Do not persist signed URLs.</p>
+            </div>
+          </article>
+          <article class="task-step card">
+            <div>
+              <h3>Migrate queue, live state, and player flow</h3>
+              <p>Private uploaded media should use opaque session references, not permanent public URLs.</p>
+            </div>
+          </article>
+          <article class="task-step card">
+            <div>
+              <h3>Run production security QA</h3>
+              <p>Test owner, whitelisted user, non-whitelisted signed-in user, and guest. Inspect serialized payloads for leakage.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="matrix-heading">
+        <h2 id="matrix-heading">Required Actor Matrix</h2>
+        <table style="margin-top: 14px">
+          <thead>
+            <tr>
+              <th>Actor</th>
+              <th>Catalogue</th>
+              <th>Start uploaded media</th>
+              <th>Watch active room session</th>
+              <th>Upload/manage</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Owner</td>
+              <td>Allowed</td>
+              <td>Allowed with room authority</td>
+              <td>Allowed in room</td>
+              <td>Allowed</td>
+            </tr>
+            <tr>
+              <td>Whitelisted Google user</td>
+              <td>Allowed</td>
+              <td>Allowed with room authority</td>
+              <td>Allowed in room</td>
+              <td>Blocked for now</td>
+            </tr>
+            <tr>
+              <td>Signed-in non-whitelisted user</td>
+              <td>Blocked</td>
+              <td>Blocked</td>
+              <td>Allowed only for active room session</td>
+              <td>Blocked</td>
+            </tr>
+            <tr>
+              <td>Guest participant</td>
+              <td>Blocked</td>
+              <td>Blocked</td>
+              <td>Allowed only for active room session</td>
+              <td>Blocked</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section aria-labelledby="qa-heading">
+        <h2 id="qa-heading">Production-Level Checks</h2>
+        <div class="grid two" style="margin-top: 14px">
+          <article class="card">
+            <span class="badge">Automated</span>
             <ul>
-              <li>Remove the permanent right members sidebar.</li>
-              <li>Move members above the room title as icon-only avatars with tooltips.</li>
-              <li>Move copy/share/save/permissions/leave to the cog menu.</li>
-              <li>Add the search shell beside the Watch/Listen tabs.</li>
-              <li>Preserve existing permission authority.</li>
+              <li>Permission helper and route tests for catalogue/start/watch paths.</li>
+              <li>Source-match no-leak tests for owner-only assets.</li>
+              <li>Queue/live-state tests proving private permanent URLs are absent.</li>
+              <li><code>npm run typecheck</code>, <code>npm run lint</code>, relevant media/identity/queue/sync/SpacetimeDB tests, and <code>npm run build</code>.</li>
             </ul>
           </article>
-          <article class="task">
-            <div class="hero-row">
-              <span class="badge gold">Part 2</span>
-              <span class="badge">TASK-002.5G</span>
-            </div>
-            <h3>Listen Player Rail And Discovery Cleanup</h3>
-            <p>
-              Changes the lower listen layout: left player becomes the rail itself, player grows modestly, tall layouts get intentional Up Next context, Room Picks breathe more, Future AI DJ and Recently Added are hidden/removed.
-            </p>
+          <article class="card">
+            <span class="badge gold">Manual</span>
             <ul>
-              <li>Keep the media/player card concept but integrate it into the left rail.</li>
-              <li>Target 380-420px player rail where space allows.</li>
-              <li>Give Room Picks cards 12-16px more vertical room.</li>
-              <li>Hide Future AI DJ until TASK-002.10B.</li>
-              <li>Remove Recently Added from listen mode.</li>
+              <li>Owner starts uploaded media and confirms room playback works.</li>
+              <li>Guest can watch the active session but cannot browse catalogue.</li>
+              <li>Non-whitelisted signed-in user cannot browse or start uploaded media.</li>
+              <li>Serialized room, queue, dashboard, source-match, and player payloads contain no permanent private R2 URLs.</li>
             </ul>
           </article>
         </div>
       </section>
 
-      <section>
-        <h2>Approval Notes</h2>
-        <div class="grid three" style="margin-top: 14px">
-          <article class="card">
-            <h3>Confirmed</h3>
-            <p>The reference image is the desired look for listen mode. The implementation should prioritize that shape even where the current room shell differs.</p>
-          </article>
-          <article class="card">
-            <h3>Protected</h3>
-            <p>Playback, queue reducers, permissions, sync, Add Media, and recommendation honesty should remain unchanged unless a listed task explicitly requires UI relocation.</p>
-          </article>
-          <article class="card">
-            <h3>Deferred</h3>
-            <p>Real Odysseus AI/session intelligence, provider account scopes, fake recommendations, and broader social/history work remain later tasks.</p>
-          </article>
-        </div>
+      <section aria-labelledby="approval-heading">
+        <h2 id="approval-heading">Approval Checkpoint</h2>
+        <p style="margin-top: 10px">
+          Recommended mode: Spec-First. Approve TASK-002.8J for implementation only when the team accepts the private-catalogue/shared-playback model, the MVP signed-URL tradeoff, and the staged safe commit points.
+        </p>
       </section>
     </main>
   </body>

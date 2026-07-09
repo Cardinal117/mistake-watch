@@ -160,6 +160,24 @@ Server-generated signed R2 upload URLs should support drag-and-drop from the exp
 
 Movie/direct-media ingestion means owner-uploaded files or authorized direct media URLs. Do not include hidden-stream scraping, DRM bypass, ad circumvention, anti-bot circumvention, or piracy-site automation.
 
+### Uploaded Media Access Hardening
+
+TASK-002.8J changes the uploaded-media model from "uploaded media is a direct URL" to "uploaded media is a permissioned catalogue item that can create a room-scoped playback session."
+
+The architecture must keep three permissions separate:
+
+- `canAccessUploadedCatalogue(user)`: only app-authorized Google-authenticated users may browse, search, select, or view private uploaded catalogue metadata.
+- `canStartUploadedMedia(user, roomId, assetId)`: only catalogue-authorized users with the required room authority may add/start uploaded media in a room.
+- `canWatchRoomMedia(userOrGuest, roomId, roomMediaSessionId)`: any valid current room participant may watch/listen to an active uploaded-media session that was started by an authorized user.
+
+Google OAuth proves identity only. App-owned allowlist/authorization records decide catalogue access. Do not use client-side email checks, hidden UI, or editable auth metadata as an authorization boundary.
+
+Private uploaded media must not be represented as permanent R2 URLs in durable queue state, SpacetimeDB live room state, source-match responses, dashboard state, or player props. Room state should carry an opaque uploaded-media reference/session id where possible. The player must resolve a temporary playback URL through a server endpoint after validating room membership, active room media session, and ready backing asset state.
+
+`owner_only` visibility is metadata privacy unless the object URL is also protected. Treat permanent `publicUrl` values as safe only for genuinely public/demo media. For owner-only/private media, store object keys/storage references server-side and generate temporary playback URLs only after `canWatchRoomMedia` passes.
+
+For MVP, a signed URL with a practical expiry is acceptable as a friends-and-family tradeoff, but it remains shareable while active. Do not treat this as strong content protection. Stronger future options include signed HLS segment access, tokenized delivery, or a controlled media proxy.
+
 ### Google OAuth And Owner Authority
 
 The Google OAuth and owner-role foundation belongs in TASK-002.8A, before R2 media-library work. Full friends, invites, notifications, and listening-history product work remains in TASK-002.10.

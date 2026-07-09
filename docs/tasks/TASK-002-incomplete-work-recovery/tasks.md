@@ -1054,6 +1054,7 @@ Corrective incident hardening:
   - mark the linked upload session `failed` when processing fails.
 - Add a database uniqueness guard so one owner/source object can only have one media asset.
 - Ignore stale CloudConvert webhook updates when the webhook job id does not match the asset's active processing job.
+
 ## TASK-002.8I: Signal State Vocabulary And Processing Status UX
 
 Source task: loading/status corrective pass after upload, CloudConvert, metadata, and search states started using generic spinners or fake-looking progress.
@@ -1104,6 +1105,91 @@ Review checkpoint:
 Safe commit point:
 
 - Loading/status UI has a small normalized foundation that can support TASK-002.8H batch uploads without scattering conditionals through the room UI.
+
+## TASK-002.8J: Uploaded Media Access Hardening And Room Playback Sessions
+
+Source task: security review after owner-uploaded R2 media became usable and inspection found private catalogue assets can still leak through `source-matches`, queue/live room `sourceUrl`, and permanent `publicUrl` fields.
+
+Work:
+
+- Apply an immediate leak patch before broader architecture changes:
+  - update `/api/media/source-matches` and its media lookup helper so owner-only/private uploaded assets are never returned to unauthorized users;
+  - ensure unauthorized responses do not include `publicUrl`, R2 object keys, source object keys, processed object keys, thumbnail object keys, or private uploaded metadata;
+  - preserve YouTube fallback behavior when no authorized uploaded match can be returned.
+- Add explicit uploaded-media authorization helpers:
+  - `canAccessUploadedCatalogue(user)` for browsing/searching/selecting uploaded catalogue media;
+  - `canStartUploadedMedia(user, roomId, assetId)` for adding/starting uploaded media in a room;
+  - `canWatchRoomMedia(userOrGuest, roomId, roomMediaSessionId)` for participant playback of the active room media session.
+- Formalize catalogue allowlisting:
+  - Google sign-in proves identity only;
+  - app-owned authorization records decide who can browse/select/start uploaded catalogue items;
+  - role/status checks must be server-side and auditable;
+  - upload remains owner-only unless a later explicit uploader role is approved.
+- Introduce a room-scoped uploaded-media playback session abstraction:
+  - add `room_media_sessions` or an equivalent durable server-side table/model;
+  - store room id, asset id, started-by user/member context, active/expired state, started timestamp, expiry timestamp, and audit timestamps;
+  - require the session to be created by `canStartUploadedMedia`;
+  - allow current room participants, including guests, to watch only through `canWatchRoomMedia`.
+- Stop treating private uploaded media as plain direct URLs:
+  - do not pass permanent uploaded-media `publicUrl` values into durable queue state;
+  - do not pass permanent uploaded-media `publicUrl` values into SpacetimeDB live room session state;
+  - represent uploaded room media with an opaque uploaded-media/session reference where possible;
+  - keep normal YouTube, direct URL, and HLS behavior unchanged.
+- Add a server playback URL resolver endpoint:
+  - validate room membership or valid room guest/session context;
+  - validate the room media session is active and belongs to the requested room;
+  - validate the backing media asset is ready/startable;
+  - generate a temporary R2 playback URL only after access passes;
+  - never store generated playback URLs in Supabase queue rows or SpacetimeDB live room state.
+- Update uploaded-media player flow:
+  - players resolve uploaded playback URLs through the server endpoint;
+  - unauthorized, expired, inactive, missing, or unrelated sessions show explicit failure states;
+  - refresh behavior for long videos is documented and tested as an MVP tradeoff.
+- Add security-focused tests and review gates:
+  - guest cannot browse/search/access the uploaded catalogue;
+  - signed-in non-whitelisted user cannot browse/search/access the uploaded catalogue;
+  - whitelisted Google user can browse/select/start uploaded catalogue media;
+  - owner remains the only upload/management authority;
+  - guest in the active room can watch an uploaded session started by an authorized user;
+  - guest cannot watch inactive, expired, or unrelated room media sessions;
+  - source-matches does not leak owner-only uploaded assets or permanent URLs;
+  - queue and live room state do not contain permanent private uploaded-media URLs;
+  - existing YouTube/direct/HLS queue and playback tests remain green.
+- Run production-level verification before commit:
+  - unit and route tests for permission helpers and source-match filtering;
+  - reducer/live-room tests for uploaded-media references and no permanent URL leakage;
+  - Supabase migration/RLS review for new authorization/session tables;
+  - `npm run typecheck`;
+  - `npm run lint`;
+  - relevant media, queue, sync, SpacetimeDB, and identity tests;
+  - `npm run build`;
+  - manual production-like QA with an owner, a whitelisted non-owner if supported, a signed-in non-whitelisted user, and a guest participant.
+- Keep this task security/access-model focused:
+  - do not build a new full catalogue UI;
+  - do not expose upload in listen mode;
+  - do not add friend sharing, public catalogue discovery, DRM/restricted media bypass, scraping, Cloudflare Stream migration, or a new transcoding backend;
+  - do not rely on client-side email checks or hidden UI as the security boundary.
+
+Review checkpoint:
+
+- Owner-only/private uploaded assets no longer leak through `source-matches`, queue state, live room state, dashboard state, or player props.
+- Catalogue access and room playback access are visibly separate in code, tests, and docs.
+- Authorized users can start uploaded media, while guests/non-whitelisted users cannot browse or start it.
+- Current room participants can watch an active uploaded-media room session without gaining catalogue access.
+- Temporary playback URL generation is server-validated, auditable, and never persisted into live/durable room state.
+- Existing YouTube, direct URL, HLS, upload, CloudConvert, queue, and watch/listen playback behavior remain intact.
+
+Safe commit points:
+
+- Commit A: source-match leak patch and permission helper tests.
+- Commit B: uploaded catalogue allowlist/authorization records and RLS verification.
+- Commit C: room media session model plus create/resolve playback endpoints.
+- Commit D: queue/live/player migration away from permanent private uploaded URLs.
+- Commit E: final QA, security checklist, docs updates, and commit-prep report.
+
+Safe commit point:
+
+- Mistake Watch has a production-grade uploaded-media access boundary: private catalogue access is whitelisted, room playback is session-scoped, and permanent private R2 URLs are not leaked through app state.
 
 ## TASK-002.8G: Live Room Reconnect And Stale Queue Recovery
 

@@ -2,13 +2,13 @@
 
 ## Current Status
 
-Status: TASK-002.8 R2 Media Library and Authorized Upload Pipeline is implemented through TASK-002.8F Multipart Upload Recovery And Cleanup, with production QA ongoing for large-upload resume and owner media-library UX.
+Status: TASK-002.8 R2 Media Library and Authorized Upload Pipeline has progressed through upload recovery, status-state cleanup, and batch-upload planning/implementation notes. A security review found that uploaded private catalogue assets still need a stronger access boundary before more uploaded-media UX or roadmap work proceeds.
 
 TASK-002.5F Listen Room Header And Presence Refinement and TASK-002.5G Listen Player Rail And Discovery Cleanup were added as a two-part corrective listen-room reference refinement. Both are implemented pending browser visual QA on the live listen room.
 
 TASK-002.5H YouTube Search In Add Media is implemented pending browser QA in watch/listen Add Media surfaces.
 
-TASK-002.8I Signal State Vocabulary And Processing Status UX is approved for implementation as the current corrective status-language slice. It should add a small normalized state resolver and shared Signal status primitives before replacing targeted generic loading/status UI.
+TASK-002.8J Uploaded Media Access Hardening And Room Playback Sessions is the next user-directed security checkpoint. It should patch current private-media leaks first, then separate catalogue access from room playback access before private uploaded media continues to flow through queue/live/player state.
 
 TASK-002.1 Listen Mode Quality Pass is complete pending manual visual review in a live room.
 
@@ -42,9 +42,9 @@ Current user-directed corrective listen-room refinement checkpoint: TASK-002.5F 
 
 Current provider-search checkpoint: TASK-002.5H is implemented pending browser QA.
 
-Current status-language checkpoint: TASK-002.8I is approved for implementation.
+Current uploaded-media security checkpoint: TASK-002.8J is the next task packet slice to implement before additional uploaded catalogue UI polish or roadmap progression.
 
-Normal roadmap checkpoint after the corrective listen-room refinement, TASK-002.8 manual QA, and TASK-002.8I status cleanup: TASK-002.9 Voting and Suggested Next.
+Normal roadmap checkpoint after TASK-002.8J security hardening and remaining manual QA: TASK-002.9 Voting and Suggested Next.
 
 ## Decisions Locked
 
@@ -74,6 +74,14 @@ Normal roadmap checkpoint after the corrective listen-room refinement, TASK-002.
 - The current Future AI DJ panel should be hidden until the later TASK-002.10B session-intelligence work can make it useful and truthful.
 - TASK-002.8I must not treat every waiting state as loading. Use `waiting`, `loading`, `uploading`, `processing`, `queued`, `blocked`, `recoverable`, `failed`, and `ready` as the shared UI state vocabulary.
 - TASK-002.8I must add the media/upload display-state resolver before replacing UI instances so R2 uploads, recoverable multipart sessions, CloudConvert states, approval-required media, failed media, and ready media all consume one normalized shape.
+- TASK-002.8J locks in the private-catalogue/shared-room-playback model:
+  - uploaded catalogue access and uploaded room playback access are separate;
+  - only app-authorized Google-authenticated users may browse/search/select/start uploaded catalogue media;
+  - upload and management remain owner-only unless a later uploader role is explicitly approved;
+  - all valid current room participants, including guests, may watch an active uploaded-media session started by an authorized user;
+  - guests and non-whitelisted users must not gain catalogue access through room playback.
+- TASK-002.8J must treat Google OAuth as identity only. App-owned allowlist/authorization records decide catalogue access. Client-side email checks, hidden tabs, or editable auth metadata are not acceptable security boundaries.
+- TASK-002.8J must stop private uploaded-media permanent URLs from leaking through `/api/media/source-matches`, durable queue rows, SpacetimeDB live room state, dashboard state, or player props.
 
 ## Important Assumptions
 
@@ -87,6 +95,8 @@ Normal roadmap checkpoint after the corrective listen-room refinement, TASK-002.
 - Live room authority must not rely on browser-provided role or host-member fields when seeding a SpacetimeDB room session.
 - Google OAuth starts with basic profile identity in TASK-002.8A. Playlist/history scopes and offline access are added only when the related account features are implemented and consent boundaries are clear.
 - The owner role for Stream/R2 upload and source ingestion must be server-verifiable before TASK-002.8 starts. Client UI flags are not an acceptable authorization boundary.
+- `owner_only` uploaded-media visibility is only metadata privacy while the backing R2 URL remains public. Private catalogue media needs server-resolved temporary playback URLs or another protected delivery strategy before it can be considered private.
+- MVP temporary signed playback URLs are acceptable for friends-and-family use if they are generated only after room-session validation and are not persisted into live/durable room state. They remain shareable while active, so stronger HLS/tokenized delivery is a future hardening option.
 - Guest-first remains a product rule after accounts. Guests can create/join rooms, queue/chat/control where room permissions allow, and preserve temporary display/avatar identity without signing in.
 - A signed-in account gives durable identity, preferences, saved rooms, first-party history, and later social/provider features. It is an enhancement layer, not an entry requirement.
 - Friending is signed-in-only. Guests must not be inserted into durable friend graphs, friend search, or friend request flows because guest identities are temporary session participants.
@@ -94,6 +104,92 @@ Normal roadmap checkpoint after the corrective listen-room refinement, TASK-002.
 - App/media owner authority, current room host authority, signed-in account membership, and guest session identity are separate concepts and must not be collapsed into one role flag.
 - Queue add permission, queue management permission, playback permission, and host authority should be treated as distinct capabilities in TASK-002.5D.
 - Duplicate queue policy should default to warn-first and allow explicit add-anyway. The `Remember my choice` preference is local-only until accounts/preferences exist.
+
+## TASK-002.8J Uploaded Media Security Planning Notes
+
+- Security finding: the current private-catalogue intent is only partially protected because uploaded assets can still flow through `publicUrl` / `sourceUrl` paths outside the uploaded catalogue UI.
+- Highest-risk immediate patch: `/api/media/source-matches` must not return owner-only/private uploaded assets or permanent uploaded-media URLs to unauthorized users.
+- Implementation should proceed in manageable batches:
+  1. Patch source-match filtering and add no-leak tests.
+  2. Add/formalize catalogue authorization helpers and app-owned allowlist records.
+  3. Add room-scoped uploaded-media playback sessions.
+  4. Add a server playback URL resolver that validates room membership and active session state.
+  5. Migrate uploaded queue/live/player flows away from permanent private URLs.
+  6. Run production-level security QA and document the remaining MVP signed-URL tradeoff.
+- Permission model:
+  - `canAccessUploadedCatalogue(user)` gates catalogue browse/search/select/private metadata.
+  - `canStartUploadedMedia(user, roomId, assetId)` gates queue/start/session creation for uploaded media.
+  - `canWatchRoomMedia(userOrGuest, roomId, roomMediaSessionId)` gates playback URL resolution for active room sessions and must not require catalogue whitelist status.
+- Test matrix must include at least four actors:
+  - owner account;
+  - whitelisted signed-in Google user when that role exists;
+  - signed-in non-whitelisted Google user;
+  - guest room participant.
+- Production QA must inspect actual serialized room/queue/session payloads for permanent private uploaded-media URL leakage, not only UI visibility.
+- This is a sensitive security task set. Do not merge or deploy if tests only prove hidden UI behavior without proving server-side authorization and no-leak state boundaries.
+
+## TASK-002.8J Chunk A Implementation Notes
+
+- Implemented the source-match leak patch in `lib/media/assets.ts` by applying account-aware visibility filtering before returning matched media assets.
+- Added `lib/media/source-match-access.ts` as a pure, unit-testable access helper for source-match catalogue exposure:
+  - guests and signed-in non-owner members can only match ready public assets;
+  - active owners can also match their own ready owner-only/private assets;
+  - disabled owners and unrelated owners cannot match owner-only/private assets;
+  - non-ready assets are never exposed through source matching.
+- Source-match responses now redact `thumbnailObjectKey` so this lookup path does not return private storage object identifiers.
+- The patch intentionally does not implement catalogue allowlists, room-scoped uploaded-media playback sessions, temporary playback URL resolution, queue/live-state migration, or whitelisted Google-user access. Those remain Chunk B and later work.
+- Added `tests/media/source-match-access.test.mjs` covering the permission matrix, visibility filter selection, response redaction, and static wiring from `/api/media/source-matches` to the protected lookup helper.
+
+Verification:
+
+- `node --test tests\media\source-match-access.test.mjs` passed with 10 tests.
+- `node --test tests\media\*.test.mjs` passed with 23 tests.
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
+
+Manual QA / follow-up:
+
+- No browser QA is required for Chunk A because the change is server-side API filtering with no UI surface changes.
+- Chunk B should add the app-owned catalogue authorization helper/allowlist model so whitelisted Google users can browse uploaded catalogue media while non-whitelisted signed-in users and guests see no uploaded catalogue content.
+- Later chunks must still remove permanent private uploaded-media URLs from durable queue/live/player state and introduce room-scoped playback URL resolution.
+
+## TASK-002.8J Chunk B Implementation Notes
+
+- Added `public.uploaded_catalogue_authorizations` as the app-owned uploaded catalogue allowlist table.
+  - Google OAuth remains identity only.
+  - Active owner accounts are implicitly authorized through the existing owner role.
+  - Signed-in non-owner accounts require an active allowlist row.
+  - Guests, disabled accounts, missing allowlist rows, revoked rows, and mismatched rows are denied.
+- The allowlist table has RLS enabled and grants direct table access only to `service_role`; no direct `anon` or `authenticated` access is granted.
+- Added pure catalogue policy helpers in `lib/media/uploaded-catalogue-policy.ts`:
+  - `canAccessUploadedCatalogue(...)`;
+  - `canStartUploadedMedia(...)` for the start gate contract, currently checking catalogue access, room authority, and ready asset state.
+- Added the server helper `getUploadedCatalogueAccess(...)` in `lib/media/uploaded-catalogue-access.ts`.
+- Wired `listReadyMediaAssets()` through the catalogue access helper:
+  - denied users receive `{ assets: [], folders: [], access: ... }`;
+  - active owners retain owner-management access;
+  - active allowlisted non-owner users can browse ready uploaded catalogue assets, including owner-only catalogue rows.
+- Updated the uploaded media tab so denied users do not see uploaded folders, search controls, or media cards. The surface shows `No permission to access uploaded content` with the server-provided reason.
+- Chunk B intentionally does not create room-scoped uploaded-media sessions, temporary playback URL resolution, queue/live-state migration, or permanent URL removal from player props. Those remain Chunk C and later.
+
+Verification:
+
+- Supabase documentation check completed against the official changelog and RLS guide. Relevant current guidance: enable RLS on public tables, use app-owned authorization data rather than user-editable metadata, and do not rely on client-side checks.
+- `node --test tests\media\uploaded-catalogue-policy.test.mjs` passed with 10 tests.
+- `node --test tests\media\*.test.mjs` passed with 33 tests.
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
+- Local runtime smoke: `GET http://127.0.0.1:5371/api/media/assets` as a guest returned `assets: []`, `folders: []`, and `canAccessUploadedCatalogue: false`.
+- `supabase migration list --local` could not run because the local Supabase Postgres service was not listening on `127.0.0.1:54322`.
+
+Manual QA / follow-up:
+
+- Browser visual QA is still needed for the small uploaded-tab denied state with a guest and a signed-in non-allowlisted user.
+- Supabase migration/RLS should be applied and checked in the target database before release; local DB verification was blocked by the stopped local Postgres service.
+- Chunk C should add room-scoped uploaded-media session records and create/resolve access endpoints.
+- Chunk D should remove permanent private uploaded-media URLs from queue/live/player state.
 
 ## Live Authority Inspection Notes
 
@@ -1318,6 +1414,7 @@ Corrective production incident hardening:
   - added a unique index on `(owner_user_id, source_object_key)` where `source_object_key is not null`, so one uploaded source object cannot create duplicate media rows for the same owner.
 - Operational note:
   - keep the CloudConvert API token disabled until this fix is deployed and the migration has been applied in production.
+
 ## TASK-002.1 Implementation Notes
 
 - Listen queue drawer now has persisted Compact, Standard, and Tall height controls.

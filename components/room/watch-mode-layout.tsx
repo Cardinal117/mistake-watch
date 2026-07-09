@@ -105,6 +105,19 @@ type MediaLibraryAsset = {
   waveformPeaksUrl: string | null;
   waveformStatus: string;
 };
+type MediaLibraryAccess = {
+  allowed: boolean;
+  canAccessUploadedCatalogue: boolean;
+  message: string;
+  reason:
+    | "active_allowlist"
+    | "active_owner"
+    | "disabled_account"
+    | "guest"
+    | "not_allowlisted"
+    | "revoked_allowlist";
+  scope: "allowlisted" | "none" | "owner";
+};
 type MediaFolder = {
   createdAt: string;
   defaultSortDirection: MediaFolderSortDirection;
@@ -637,6 +650,9 @@ function WatchMediaHubDiscovery({
   const [assets, setAssets] = useState<MediaLibraryAsset[]>([]);
   const [assetError, setAssetError] = useState<string | null>(null);
   const [assetLoading, setAssetLoading] = useState(true);
+  const [libraryAccess, setLibraryAccess] = useState<MediaLibraryAccess | null>(
+    null,
+  );
   const [activeHubTab, setActiveHubTab] =
     useState<WatchMediaHubTab>("discover");
   const [dragActive, setDragActive] = useState(false);
@@ -686,6 +702,7 @@ function WatchMediaHubDiscovery({
           cache: "no-store",
         });
         const payload = (await response.json()) as {
+          access?: MediaLibraryAccess;
           assets?: MediaLibraryAsset[];
           error?: string;
           folders?: MediaFolder[];
@@ -696,6 +713,7 @@ function WatchMediaHubDiscovery({
         }
 
         if (!cancelled) {
+          setLibraryAccess(payload.access ?? null);
           setAssets(payload.assets ?? []);
           setFolders(payload.folders ?? []);
         }
@@ -726,6 +744,7 @@ function WatchMediaHubDiscovery({
       cache: "no-store",
     });
     const payload = (await response.json()) as {
+      access?: MediaLibraryAccess;
       assets?: MediaLibraryAsset[];
       error?: string;
       folders?: MediaFolder[];
@@ -735,6 +754,7 @@ function WatchMediaHubDiscovery({
       throw new Error(payload.error ?? "Media library could not load.");
     }
 
+    setLibraryAccess(payload.access ?? null);
     setAssets(payload.assets ?? []);
     setFolders(payload.folders ?? []);
   }
@@ -1792,6 +1812,7 @@ function WatchMediaHubDiscovery({
           ))
         : (
             <UploadedMediaLibrary
+              access={libraryAccess}
               assets={sortedLibraryItems}
               allAssets={libraryItems}
               canAddQueue={canAddQueue}
@@ -2162,6 +2183,7 @@ function WatchMediaHubSection({
 }
 
 function UploadedMediaLibrary({
+  access,
   assets,
   allAssets,
   canAddQueue,
@@ -2185,6 +2207,7 @@ function UploadedMediaLibrary({
   setViewMode,
   viewMode,
 }: {
+  access: MediaLibraryAccess | null;
   assets: WatchMediaHubItem[];
   allAssets: WatchMediaHubItem[];
   canAddQueue?: boolean;
@@ -2227,6 +2250,29 @@ function UploadedMediaLibrary({
   setViewMode(viewMode: UploadedLibraryViewMode): void;
   viewMode: UploadedLibraryViewMode;
 }) {
+  if (access && !access.canAccessUploadedCatalogue) {
+    return (
+      <section className="grid gap-3">
+        <div>
+          <p className="technical-label text-primary-fixed-dim">
+            Uploaded media
+          </p>
+          <p className="mt-1 text-label-sm text-on-surface-variant">
+            Uploaded catalogue content is hidden for this account.
+          </p>
+        </div>
+        <div className="rounded-md border border-dashed border-white/10 bg-background/10 px-3 py-8 text-center">
+          <p className="text-label-sm font-semibold text-on-surface">
+            No permission to access uploaded content
+          </p>
+          <p className="mx-auto mt-2 max-w-xl text-label-sm text-on-surface-variant">
+            {access.message}
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   const selectedFolder = folders.find((folder) => folder.id === selectedFolderId);
   const folderActionItems = selectedFolder
     ? sortUploadedLibraryItems(

@@ -37,6 +37,7 @@ TASK-002 covers:
 - Avatar motion polish.
 - Google OAuth and owner authority foundation.
 - Cloudflare Stream + R2 media library uploads.
+- Uploaded-media access hardening so private catalogue access, room playback access, and temporary R2 playback delivery remain separate.
 - Voting and suggested-next queue collaboration.
 - Accounts, friends, and friend invites.
 - Shared browser prototype.
@@ -61,6 +62,7 @@ This packet also does not replace `TASK-001` as historical context. TASK-001 rem
 
 - Some later tasks, especially live authority hardening, Cloudflare Stream/R2 media library work, Google OAuth/accounts, shared browser, and broad hardening, may require separate deeper design packets before implementation.
 - Stream/R2 media work depends on server-verifiable owner identity, so the Google OAuth/owner-authority foundation must exist before owner-only upload and ingestion are implemented.
+- Uploaded media is security-sensitive because hiding catalogue UI is insufficient if private assets still leak through source-match APIs, queue state, live room state, player props, or permanent object URLs.
 - Real audio-reactive waveform work has provider limitations because YouTube iframe audio cannot be sampled directly.
 - YouTube availability can reduce failed playback but cannot guarantee every third-party video is playable in an embedded room.
 - Provider recommendations must remain honest and avoid fake "personalized" data before accounts exist.

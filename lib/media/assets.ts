@@ -36,6 +36,15 @@ import {
   multipartUploadThresholdBytes,
   validateR2UploadInput,
 } from "./r2";
+import {
+  canExposeSourceMatchedAsset,
+  getSourceMatchVisibilityFilter,
+  redactSourceMatchedAssetForResponse,
+} from "./source-match-access";
+import {
+  getUploadedCatalogueAccess,
+  type UploadedCatalogueAccess,
+} from "./uploaded-catalogue-access";
 
 export type MediaLibraryAsset = {
   createdAt: string;
@@ -75,6 +84,10 @@ export type MediaFolder = {
   name: string;
   sortOrder: number;
   updatedAt: string;
+};
+
+export type MediaLibraryAccess = UploadedCatalogueAccess & {
+  canAccessUploadedCatalogue: boolean;
 };
 
 export type MediaFolderSortDirection = "asc" | "desc";
@@ -804,6 +817,16 @@ export async function cleanupExpiredMultipartUploads() {
 export async function listReadyMediaAssets() {
   const admin = createSupabaseAdminClient();
   const account = await getAccountSummary();
+  const catalogueAccess = await getUploadedCatalogueAccess(account);
+
+  if (!catalogueAccess.allowed) {
+    return {
+      access: toMediaLibraryAccess(catalogueAccess),
+      assets: [],
+      folders: [],
+    };
+  }
+
   const isOwner =
     account.status === "signed-in" &&
     account.role === "owner" &&
@@ -823,9 +846,8 @@ export async function listReadyMediaAssets() {
           .from("media_assets")
           .select()
           .eq("status", "ready")
-          .eq("visibility", "public")
           .order("created_at", { ascending: false })
-          .limit(120),
+          .limit(160),
     admin
       .from("media_folders")
       .select()
@@ -879,6 +901,7 @@ export async function listReadyMediaAssets() {
       : folders.filter((folder) => publicFolderIds.has(folder.id));
 
   return {
+    access: toMediaLibraryAccess(catalogueAccess),
     assets: assets.map((asset) =>
       toLibraryAsset(asset, matchesByAssetId.get(asset.id) ?? []),
     ),
@@ -941,11 +964,23 @@ export async function findReadyMediaMatches(
     return [];
   }
 
-  const { data: assets, error: assetsError } = await admin
+  const account = await getAccountSummary();
+  const visibilityFilter = getSourceMatchVisibilityFilter(account);
+  let assetsQuery = admin
     .from("media_assets")
     .select()
     .eq("status", "ready")
     .in("id", assetIds);
+
+  if (visibilityFilter.kind === "owner") {
+    assetsQuery = assetsQuery.or(
+      `visibility.eq.public,owner_user_id.eq.${visibilityFilter.ownerUserId}`,
+    );
+  } else {
+    assetsQuery = assetsQuery.eq("visibility", "public");
+  }
+
+  const { data: assets, error: assetsError } = await assetsQuery;
 
   if (assetsError) {
     throw assetsError;
@@ -961,13 +996,19 @@ export async function findReadyMediaMatches(
         return null;
       }
 
-      return toLibraryAsset(asset, [
-        {
-          sourceId: match.source_id,
-          sourceType: match.source_type,
-          status: match.status,
-        },
-      ]);
+      if (!canExposeSourceMatchedAsset(asset, account)) {
+        return null;
+      }
+
+      return redactSourceMatchedAssetForResponse(
+        toLibraryAsset(asset, [
+          {
+            sourceId: match.source_id,
+            sourceType: match.source_type,
+            status: match.status,
+          },
+        ]),
+      );
     })
     .filter((asset): asset is MediaLibraryAsset => Boolean(asset));
 }
@@ -1538,6 +1579,7 @@ async function markUploadSessionAttachedToAsset(input: {
     throw error;
   }
 }
+
 async function markUploadFailed(uploadId: string, message: string) {
   const admin = createSupabaseAdminClient();
 
@@ -1648,6 +1690,7 @@ async function startCloudConvertProcessing(input: {
     throw error;
   }
 }
+
 function normalizeJsonPayload(payload: unknown): Json {
   return JSON.parse(JSON.stringify(payload)) as Json;
 }
@@ -1738,6 +1781,15 @@ function calculateCompletedBytes(input: {
 
 function normalizeEtag(etag: string) {
   return etag.trim();
+}
+
+function toMediaLibraryAccess(
+  access: UploadedCatalogueAccess,
+): MediaLibraryAccess {
+  return {
+    ...access,
+    canAccessUploadedCatalogue: access.allowed,
+  };
 }
 
 function toLibraryAsset(

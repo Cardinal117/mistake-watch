@@ -282,6 +282,29 @@
 - Existing playback, queue reducers, upload endpoints, CloudConvert endpoints, Add Media, watch mode, listen mode, and room sync behavior remain unchanged.
 - Static checks and production build pass.
 
+## TASK-002.8J Uploaded Media Access Hardening And Room Playback Sessions
+
+- `/api/media/source-matches` does not return owner-only/private uploaded assets, permanent uploaded-media URLs, R2 object keys, source object keys, processed object keys, thumbnail object keys, or private uploaded metadata to unauthorized users.
+- Normal YouTube fallback behavior remains available when an uploaded match is absent or unauthorized.
+- Uploaded catalogue access is enforced server-side through `canAccessUploadedCatalogue(user)` or an equivalent helper.
+- Google authentication is treated as identity only; app-owned authorization records decide whether a user is whitelisted for uploaded catalogue browse/search/select/start access.
+- Guests cannot browse, search, select, or see private uploaded catalogue metadata.
+- Signed-in non-whitelisted users cannot browse, search, select, or see private uploaded catalogue metadata.
+- Whitelisted Google-authenticated users can browse/select/start uploaded catalogue media when their account and allowlist records are active.
+- Upload and catalogue management remain owner-only unless a later explicit uploader role is approved.
+- Starting uploaded media requires `canStartUploadedMedia(user, roomId, assetId)` or an equivalent helper that validates catalogue authorization, room authority, and ready/startable asset state.
+- Starting uploaded media creates an active room-scoped playback session, such as `room_media_sessions`, instead of exposing a permanent R2 URL as the playback authority.
+- Any valid current room participant, including guests and non-whitelisted users, can watch/listen to an active uploaded-media session through `canWatchRoomMedia(userOrGuest, roomId, roomMediaSessionId)` or an equivalent helper.
+- Room playback access does not grant catalogue browsing, search, upload, folder management, visibility management, or access to unrelated uploaded assets.
+- Guests and non-whitelisted users cannot watch inactive, expired, deleted, unrelated-room, or never-authorized uploaded media sessions.
+- Permanent private uploaded-media `publicUrl` values are not stored in durable queue rows, SpacetimeDB live room session state, dashboard now-playing state, or player props.
+- Temporary playback URLs are generated only by a server endpoint after validating room membership, active room media session, and ready backing media asset state.
+- Temporary playback URLs are not stored in Supabase queue state, SpacetimeDB state, room history, source-match responses, or durable logs.
+- Expired or invalid playback URL/session states surface clear player errors without silently falling back to permanent object URLs.
+- Existing YouTube, direct URL, HLS, queue, upload, CloudConvert, watch mode, and listen mode behavior remains intact.
+- Tests cover guest catalogue denial, non-whitelisted catalogue denial, whitelisted catalogue access, owner-only upload/management, authorized uploaded-media start, room participant playback, inactive/unrelated session denial, source-match no-leak behavior, and no permanent private URL leakage in queue/live state.
+- Production readiness requires `npm run typecheck`, `npm run lint`, relevant media/identity/queue/sync/SpacetimeDB tests, `npm run build`, Supabase migration/RLS review for authorization/session tables, and manual production-like QA with owner, whitelisted, non-whitelisted, and guest actors.
+
 ## TASK-002.8G Live Room Reconnect And Stale Queue Recovery
 
 - A transient SpacetimeDB disconnect does not require a full browser refresh to recover room controls.

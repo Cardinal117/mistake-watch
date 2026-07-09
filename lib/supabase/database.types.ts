@@ -452,6 +452,39 @@ export type Database = {
           },
         ];
       };
+      uploaded_catalogue_authorizations: {
+        Row: {
+          created_at: string;
+          granted_by_user_id: string | null;
+          id: string;
+          note: string | null;
+          revoked_at: string | null;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          granted_by_user_id?: string | null;
+          id?: string;
+          note?: string | null;
+          revoked_at?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          granted_by_user_id?: string | null;
+          id?: string;
+          note?: string | null;
+          revoked_at?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       member_permissions: {
         Row: {
           can_add_queue: boolean | null;
