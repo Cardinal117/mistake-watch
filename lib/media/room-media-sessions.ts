@@ -37,7 +37,10 @@ export type CreatedRoomMediaSession = {
 };
 
 export type RoomMediaPlaybackAccessResult = {
-  asset: Pick<Tables<"media_assets">, "id" | "status"> | null;
+  asset: Pick<
+    Tables<"media_assets">,
+    "id" | "processed_object_key" | "r2_object_key" | "status"
+  > | null;
   decision: UploadedRoomPlaybackDecision;
   participant:
     | {
@@ -200,7 +203,7 @@ async function getReadyAsset(assetId: string) {
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
     .from("media_assets")
-    .select("id,status")
+    .select("id,processed_object_key,r2_object_key,status")
     .eq("id", assetId)
     .maybeSingle();
 
@@ -234,6 +237,8 @@ async function getSignedInRoomAuthority({
   roomId: string;
 }) {
   const admin = createSupabaseAdminClient();
+  const cookieStore = await cookies();
+  const token = cookieStore.get(getGuestIdentityCookieName(roomId))?.value;
   const [{ data: room, error: roomError }, { data: member, error: memberError }] =
     await Promise.all([
       admin.from("rooms").select("id,status").eq("id", roomId).maybeSingle(),
@@ -253,13 +258,48 @@ async function getSignedInRoomAuthority({
     throw memberError;
   }
 
-  if (!room || room.status !== "open" || !member) {
+  if (!room || room.status !== "open") {
     return {
       allowed: false,
       memberId: null,
     };
   }
 
+  if (member) {
+    return getRoomAuthorityForSignedInMember({
+      account,
+      member,
+      roomId,
+    });
+  }
+
+  const guestSession = token
+    ? await reclaimGuestMembership({ roomId, token })
+    : null;
+
+  if (guestSession?.room.id === roomId && guestSession.room.status === "open") {
+    return getRoomAuthorityForGuestMember({
+      guestIdentityId: guestSession.guestIdentity.id,
+      member: guestSession.member,
+      roomId,
+    });
+  }
+
+  return {
+    allowed: false,
+    memberId: null,
+  };
+}
+
+async function getRoomAuthorityForSignedInMember({
+  account,
+  member,
+  roomId,
+}: {
+  account: Extract<AccountSummary, { status: "signed-in" }>;
+  member: Pick<Tables<"room_members">, "id" | "role" | "user_id">;
+  roomId: string;
+}) {
   if (member.role === "host") {
     return {
       allowed: true,
@@ -267,11 +307,46 @@ async function getSignedInRoomAuthority({
     };
   }
 
+  const admin = createSupabaseAdminClient();
   const { data: permission, error: permissionError } = await admin
     .from("member_permissions")
     .select("can_control_playback")
     .eq("room_id", roomId)
     .eq("user_id", account.id)
+    .maybeSingle();
+
+  if (permissionError) {
+    throw permissionError;
+  }
+
+  return {
+    allowed: permission?.can_control_playback === true,
+    memberId: member.id,
+  };
+}
+
+async function getRoomAuthorityForGuestMember({
+  guestIdentityId,
+  member,
+  roomId,
+}: {
+  guestIdentityId: string;
+  member: Pick<Tables<"room_members">, "id" | "role">;
+  roomId: string;
+}) {
+  if (member.role === "host") {
+    return {
+      allowed: true,
+      memberId: member.id,
+    };
+  }
+
+  const admin = createSupabaseAdminClient();
+  const { data: permission, error: permissionError } = await admin
+    .from("member_permissions")
+    .select("can_control_playback")
+    .eq("room_id", roomId)
+    .eq("guest_identity_id", guestIdentityId)
     .maybeSingle();
 
   if (permissionError) {

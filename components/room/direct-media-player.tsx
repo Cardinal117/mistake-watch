@@ -14,6 +14,10 @@ import {
   readStoredPlayerVolume,
   type PlayerVolumeEvent,
 } from "@/lib/player/local-controls";
+import {
+  parseUploadedAssetReference,
+  parseUploadedSessionReference,
+} from "@/lib/media/uploaded-playback-reference";
 
 type DirectMediaPlayerProps = {
   className?: string;
@@ -81,6 +85,7 @@ function DirectMediaPlayerCore({
   const source = canonicalState?.source;
   const sourceKind = source?.kind ?? null;
   const sourceUrl = source?.url ?? null;
+  const roomId = canonicalState?.roomId ?? null;
 
   useLayoutEffect(() => {
     advanceToNextQueueItemRef.current = liveRoom.advanceToNextQueueItem;
@@ -160,6 +165,8 @@ function DirectMediaPlayerCore({
       return;
     }
 
+    let disposed = false;
+
     media.volume = readStoredPlayerVolume();
     media.muted = false;
 
@@ -183,8 +190,6 @@ function DirectMediaPlayerCore({
         media.load();
         return cleanup;
       }
-
-      let disposed = false;
 
       void import("hls.js")
         .then(({ default: Hls }) => {
@@ -233,12 +238,68 @@ function DirectMediaPlayerCore({
       };
     }
 
+    const uploadedSessionId = parseUploadedSessionReference(sourceUrl);
+
+    if (uploadedSessionId) {
+      if (!roomId) {
+        window.setTimeout(() => {
+          if (!disposed) {
+            setLocalError("Uploaded media room context is missing.");
+          }
+        }, 0);
+        return cleanup;
+      }
+
+      void resolveUploadedPlaybackUrl({
+        roomId,
+        sessionId: uploadedSessionId,
+      })
+        .then((playbackUrl) => {
+          if (disposed || !mediaRef.current || mediaRef.current !== media) {
+            return;
+          }
+
+          mediaSourceUrlRef.current = sourceUrl;
+          media.src = playbackUrl;
+          media.load();
+        })
+        .catch(() => {
+          if (!disposed) {
+            setLocalError("Uploaded media access expired or is not allowed.");
+            setPlaybackStateRef.current({
+              playbackRate: 1,
+              positionSeconds: media.currentTime,
+              status: "error",
+            });
+          }
+        });
+
+      return () => {
+        disposed = true;
+        cleanup();
+      };
+    }
+
+    if (parseUploadedAssetReference(sourceUrl)) {
+      window.setTimeout(() => {
+        if (!disposed) {
+          setLocalError("Uploaded media must be started through a room session.");
+        }
+      }, 0);
+      setPlaybackStateRef.current({
+        playbackRate: 1,
+        positionSeconds: media.currentTime,
+        status: "error",
+      });
+      return cleanup;
+    }
+
     mediaSourceUrlRef.current = sourceUrl;
     media.src = sourceUrl;
     media.load();
 
     return cleanup;
-  }, [sourceKind, sourceUrl]);
+  }, [roomId, sourceKind, sourceUrl]);
 
   useEffect(() => {
     function handleVolume(event: Event) {
@@ -508,6 +569,28 @@ async function playMedia(
   } catch {
     setAutoplayBlocked(true);
   }
+}
+
+async function resolveUploadedPlaybackUrl(input: {
+  roomId: string;
+  sessionId: string;
+}) {
+  const response = await fetch(
+    `/api/media/room-sessions/${encodeURIComponent(
+      input.sessionId,
+    )}/playback?roomId=${encodeURIComponent(input.roomId)}`,
+    { method: "GET" },
+  );
+  const payload = (await response.json()) as {
+    error?: string;
+    playbackUrl?: string;
+  };
+
+  if (!response.ok || !payload.playbackUrl) {
+    throw new Error(payload.error ?? "Uploaded media playback URL failed.");
+  }
+
+  return payload.playbackUrl;
 }
 
 function safeDurationSeconds(value: number) {

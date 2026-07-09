@@ -14,6 +14,10 @@ import {
 } from "@/lib/rooms/actions";
 import type { QueueMode } from "@/lib/queue/model";
 import type { RoomParticipant, RoomSnapshot } from "@/lib/rooms";
+import {
+  createUploadedSessionReference,
+  parseUploadedAssetReference,
+} from "@/lib/media/uploaded-playback-reference";
 import { DbConnection } from "./generated";
 import type {
   RoomError as GeneratedRoomError,
@@ -811,6 +815,37 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       return;
     }
 
+    const uploadedQueueItem = snapshot.queue.find(
+      (item) => item.queueItemId === queueItemId,
+    );
+    const uploadedAssetId = parseUploadedAssetReference(
+      uploadedQueueItem?.sourceUrl,
+    );
+
+    if (uploadedQueueItem && uploadedAssetId) {
+      const uploadedSession = await createUploadedPlaybackSession({
+        assetId: uploadedAssetId,
+        roomId: room.id,
+      });
+
+      await reducers.loadMediaSource({
+        actorMemberId: currentMember.id,
+        roomId: room.id,
+        sourceTitle: uploadedQueueItem.title ?? "Uploaded media",
+        sourceType: "direct",
+        sourceUrl: createUploadedSessionReference(uploadedSession.id),
+      });
+
+      await reducers.setPlaybackState({
+        actorMemberId: currentMember.id,
+        playbackRate: 1,
+        positionSeconds: 0,
+        roomId: room.id,
+        status: "playing",
+      });
+      return;
+    }
+
     await reducers.playQueueItem({
       actorMemberId: currentMember.id,
       queueItemId,
@@ -837,6 +872,46 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       (input?.autoplay !== false && !session.queueAutoplayEnabled)
     ) {
       return;
+    }
+
+    const nextQueueItem = snapshot.queue
+      .filter((item) => item.status === "queued")
+      .sort((left, right) => left.position - right.position)
+      .at(0);
+    const nextUploadedQueueItem = parseUploadedAssetReference(
+      nextQueueItem?.sourceUrl,
+    )
+      ? nextQueueItem
+      : null;
+
+    if (nextUploadedQueueItem) {
+      const uploadedAssetId = parseUploadedAssetReference(
+        nextUploadedQueueItem.sourceUrl,
+      );
+
+      if (uploadedAssetId) {
+        const uploadedSession = await createUploadedPlaybackSession({
+          assetId: uploadedAssetId,
+          roomId: room.id,
+        });
+
+        await reducers.loadMediaSource({
+          actorMemberId: currentMember.id,
+          roomId: room.id,
+          sourceTitle: nextUploadedQueueItem.title ?? "Uploaded media",
+          sourceType: "direct",
+          sourceUrl: createUploadedSessionReference(uploadedSession.id),
+        });
+
+        await reducers.setPlaybackState({
+          actorMemberId: currentMember.id,
+          playbackRate: 1,
+          positionSeconds: 0,
+          roomId: room.id,
+          status: "playing",
+        });
+        return;
+      }
     }
 
     await reducers.advanceQueueItem({
@@ -1048,6 +1123,29 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     updateMediaTitle,
     snapshot,
   };
+}
+
+async function createUploadedPlaybackSession(input: {
+  assetId: string;
+  roomId: string;
+}) {
+  const response = await fetch("/api/media/room-sessions", {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+  const payload = (await response.json()) as {
+    error?: string;
+    session?: {
+      id: string;
+    };
+  };
+
+  if (!response.ok || !payload.session) {
+    throw new Error(payload.error ?? "Uploaded media session could not start.");
+  }
+
+  return payload.session;
 }
 
 function buildFallbackSnapshot(room: RoomSnapshot): LiveRoomSnapshot {

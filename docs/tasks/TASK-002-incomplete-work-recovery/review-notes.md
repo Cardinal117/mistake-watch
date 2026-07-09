@@ -222,6 +222,39 @@ Manual QA / follow-up:
 - Applied and verified `supabase/migrations/20260709092938_room_media_sessions.sql` in the target Supabase database before release of Chunk C.
 - Chunk D should add the temporary playback URL resolver and migrate queue/live/player state away from permanent uploaded-media URLs.
 
+## TASK-002.8J Chunk D Implementation Notes
+
+- Added opaque uploaded playback references:
+  - `mw-uploaded-asset:<assetId>` can be stored in queue/live setup paths without exposing a permanent R2 URL.
+  - `mw-uploaded-session:<sessionId>` represents an active room playback session after an authorized user starts uploaded media.
+- Added `GET /api/media/room-sessions/[sessionId]/playback`:
+  - validates the current room participant, active room media session, matching room id, and ready backing asset through `getRoomMediaPlaybackAccess(...)`;
+  - chooses `processed_object_key` when available, otherwise `r2_object_key`;
+  - signs a short-lived R2 GET URL only after access passes.
+- Updated uploaded media Play flow:
+  - uploaded catalogue cards no longer load `asset.publicUrl` directly;
+  - Play creates a room media session through `POST /api/media/room-sessions`;
+  - live room state receives `mw-uploaded-session:<sessionId>`, not the generated playback URL.
+- Updated uploaded media queue/reference flow:
+  - uploaded catalogue and first-party source-match queue inputs now use `mw-uploaded-asset:<assetId>` instead of `asset.publicUrl`;
+  - the host/client playback path converts the first queued uploaded asset ref into a room session before loading it into live playback;
+  - the direct media player fails closed if an unresolved uploaded asset ref reaches the media element.
+- Updated the direct media player so `mw-uploaded-session:<sessionId>` is resolved through the server playback endpoint before assigning `media.src`.
+- Chunk D intentionally keeps the signed URL as an MVP/friends-and-family tradeoff. A copied signed URL remains usable until expiry; stronger future protection would require tokenized HLS/segment access or a controlled media proxy.
+
+Verification so far:
+
+- `node --test tests\media\*.test.mjs` passed with 44 tests.
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
+
+Manual QA / follow-up:
+
+- Owner should play an uploaded item from the uploaded catalogue and confirm `room_media_sessions` gains a row while live playback still works for a guest participant.
+- Vercel logs should show the playback resolver request when a participant starts loading uploaded media.
+- Continue to verify that live room state contains `mw-uploaded-session:<id>` and not a permanent R2 URL.
+
 ## Live Authority Inspection Notes
 
 - Current SpacetimeDB live session seeding accepts a browser-provided `host_member_id` when no session exists. That creates a front-run risk after a live database reset, expired session, or first-connect race.

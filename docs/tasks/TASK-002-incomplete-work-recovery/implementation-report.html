@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TASK-002.8J Chunk C Room Media Sessions</title>
+    <title>TASK-002.8J Chunk D Temporary Playback URLs</title>
     <style>
       :root {
         color-scheme: dark;
@@ -207,43 +207,40 @@
     <main>
       <header>
         <span class="label">Implementation Report</span>
-        <h1>TASK-002.8J Chunk C: Room Media Sessions</h1>
+        <h1>TASK-002.8J Chunk D: Temporary Playback URLs</h1>
         <p class="summary">
-          Implemented locally. Uploaded media can now be represented by an
-          internal room-scoped playback session record before temporary URL
-          resolution is added. Start access is separate from room watch access,
-          and room watch access does not grant catalogue browsing.
+          Implemented locally. Uploaded media catalogue actions now use opaque
+          room/session references, and the player resolves short-lived R2
+          playback URLs through a server endpoint after room-session validation.
         </p>
         <div class="row" style="margin-top: 18px">
-          <span class="badge green">Chunk C implemented</span>
+          <span class="badge green">Chunk D implemented</span>
           <span class="badge green">Tests passed</span>
           <span class="badge green">Typecheck passed</span>
-          <span class="badge green">Build passed</span>
-          <span class="badge gold">DB apply pending</span>
-          <span class="badge gold">Chunk D pending</span>
+          <span class="badge green">Lint/build passed</span>
+          <span class="badge gold">Manual QA pending</span>
         </div>
       </header>
 
       <section>
         <h2>Approved Scope</h2>
         <p>
-          Add the room-scoped uploaded-media playback session model and
-          server-side start/watch policy helpers. This chunk creates the
-          session authority foundation only; temporary R2 playback URL
-          resolution and player/live-state migration remain deferred.
+          Add a server playback URL resolver and migrate uploaded media playback
+          away from permanent private R2 URLs in queue/live/player state while
+          preserving existing YouTube, direct URL, and HLS behavior.
         </p>
       </section>
 
       <section>
         <h2>Files To Review</h2>
         <ul>
-          <li><code>supabase/migrations/20260709092938_room_media_sessions.sql</code> - room-scoped uploaded-media session table, indexes, RLS, and grants.</li>
-          <li><code>lib/media/room-media-session-policy.ts</code> - pure start/watch policy helpers.</li>
-          <li><code>lib/media/room-media-sessions.ts</code> - server helper for creating sessions and evaluating room playback access.</li>
-          <li><code>app/api/media/room-sessions/route.ts</code> - create-session endpoint for authorized uploaded-media starts.</li>
-          <li><code>lib/media/uploaded-catalogue-policy.ts</code> - catalogue-only policy boundary after moving start checks to room-session policy.</li>
-          <li><code>tests/media/room-media-session-policy.test.mjs</code> - start/watch policy and migration tests.</li>
-          <li><code>lib/supabase/database.types.ts</code> - local Supabase type surface for the new table.</li>
+          <li><code>app/api/media/room-sessions/[sessionId]/playback/route.ts</code> - room-session validated temporary R2 playback URL resolver.</li>
+          <li><code>lib/media/uploaded-playback-reference.ts</code> - opaque uploaded asset/session reference helpers.</li>
+          <li><code>components/room/watch-mode-layout.tsx</code> - uploaded catalogue play and queue actions now use uploaded references.</li>
+          <li><code>components/room/direct-media-player.tsx</code> - resolves uploaded session refs before assigning media source URLs.</li>
+          <li><code>lib/spacetime/use-live-room.ts</code> - converts queued uploaded asset refs into session refs when playback starts.</li>
+          <li><code>lib/media/r2.ts</code> - signed R2 GET URL support.</li>
+          <li><code>tests/media/uploaded-playback-reference.test.mjs</code> - opaque reference and no-public-url regression tests.</li>
         </ul>
       </section>
 
@@ -251,25 +248,25 @@
         <h2>Implementation Summary</h2>
         <div class="grid three" style="margin-top: 14px">
           <article class="card">
-            <h3>Room Session Authority</h3>
+            <h3>Opaque References</h3>
             <p>
-              <code>room_media_sessions</code> stores active uploaded-media
-              playback sessions per room, with starter identity, member
-              context, expiry, and audit timestamps.
+              Uploaded catalogue cards and first-party queue matches now use
+              <code>mw-uploaded-asset</code> or
+              <code>mw-uploaded-session</code> references instead of R2 URLs.
             </p>
           </article>
           <article class="card">
-            <h3>Start Gate</h3>
+            <h3>Server Resolver</h3>
             <p>
-              Session creation requires catalogue authorization, room playback
-              authority, and a ready uploaded media asset.
+              The playback endpoint validates room membership, active session,
+              matching room, and ready asset state before signing R2 access.
             </p>
           </article>
           <article class="card">
-            <h3>Watch Gate</h3>
+            <h3>Player Resolution</h3>
             <p>
-              Current room participants can be authorized to watch an active
-              uploaded-media session without gaining catalogue browse access.
+              The direct media player resolves uploaded session refs at load
+              time and fails closed on unresolved uploaded asset refs.
             </p>
           </article>
         </div>
@@ -287,34 +284,34 @@
           </thead>
           <tbody>
             <tr>
-              <td>Starting uploaded media creates a room-scoped playback session.</td>
+              <td>Temporary playback URLs are server validated.</td>
               <td><span class="badge green">Met</span></td>
-              <td><code>POST /api/media/room-sessions</code> creates <code>room_media_sessions</code> rows after server authorization.</td>
+              <td><code>GET /api/media/room-sessions/[sessionId]/playback</code> validates room/session/asset state before signing R2.</td>
             </tr>
             <tr>
-              <td>Start access validates catalogue authorization, room authority, and ready asset state.</td>
+              <td>Generated playback URLs are not persisted into live state.</td>
               <td><span class="badge green">Met</span></td>
-              <td><code>canStartUploadedMedia(...)</code> moved to the room-session policy helper and is covered by tests.</td>
+              <td>Live state receives <code>mw-uploaded-session:&lt;id&gt;</code>; the player fetches the signed URL locally.</td>
             </tr>
             <tr>
-              <td>Room participants can watch active uploaded sessions without catalogue access.</td>
+              <td>Uploaded queue/catalogue inputs avoid permanent R2 URLs.</td>
               <td><span class="badge green">Met</span></td>
-              <td><code>canWatchRoomMedia(...)</code> validates participant/session state without allowlist input.</td>
+              <td>Catalogue and source-match queue conversion use <code>mw-uploaded-asset:&lt;id&gt;</code>.</td>
             </tr>
             <tr>
-              <td>Inactive, expired, and unrelated sessions are denied.</td>
+              <td>Unresolved uploaded asset refs do not become browser media URLs.</td>
+              <td><span class="badge green">Met</span></td>
+              <td>The direct media player shows an uploaded-session error instead of assigning <code>mw-uploaded-asset:</code> as <code>media.src</code>.</td>
+            </tr>
+            <tr>
+              <td>Existing YouTube/direct/HLS behavior remains unchanged.</td>
               <td><span class="badge green">Preserved</span></td>
-              <td>Policy tests cover missing/inactive participants, unrelated room, expired session, inactive session, and non-ready assets.</td>
+              <td>Only uploaded reference prefixes enter the new resolver path.</td>
             </tr>
             <tr>
-              <td>Temporary playback URL resolver.</td>
+              <td>Strong content protection.</td>
               <td><span class="badge gold">Deferred</span></td>
-              <td>Reserved for Chunk D; this chunk does not return playback URLs.</td>
-            </tr>
-            <tr>
-              <td>Permanent private URL removal from queue/live/player state.</td>
-              <td><span class="badge gold">Deferred</span></td>
-              <td>Reserved for Chunk D.</td>
+              <td>Signed R2 URLs remain shareable until expiry; stronger protection needs future tokenized HLS or proxy delivery.</td>
             </tr>
           </tbody>
         </table>
@@ -323,13 +320,10 @@
       <section>
         <h2>Verification</h2>
         <ul>
-          <li>Official Supabase changelog and RLS guide checked before schema/RLS work.</li>
-          <li><code>node --test tests\media\uploaded-catalogue-policy.test.mjs tests\media\room-media-session-policy.test.mjs</code> passed with 17 tests.</li>
-          <li><code>node --test tests\media\*.test.mjs</code> passed with 40 tests.</li>
+          <li><code>node --test tests\media\*.test.mjs</code> passed with 44 tests.</li>
           <li><code>npm run typecheck</code> passed.</li>
           <li><code>npm run lint</code> passed.</li>
-          <li><code>npm run build</code> passed and includes <code>/api/media/room-sessions</code>.</li>
-          <li>Supabase migration/RLS target-database apply was completed and verified for the new <code>room_media_sessions</code> table.</li>
+          <li><code>npm run build</code> passed and includes <code>/api/media/room-sessions/[sessionId]/playback</code>.</li>
         </ul>
       </section>
 
@@ -337,19 +331,18 @@
         <h2>Manual Review</h2>
         <div class="grid two" style="margin-top: 14px">
           <article class="card">
-            <h3 class="green">DB Apply Complete</h3>
+            <h3 class="gold">Manual QA Needed</h3>
             <p>
-              The new <code>room_media_sessions</code> migration has been
-              applied and verified in the target Supabase database for this
-              chunk.
+              Play uploaded media as the owner, then verify guests can watch
+              while live room state contains an uploaded session reference
+              rather than a permanent R2 URL.
             </p>
           </article>
           <article class="card">
-            <h3 class="gold">Chunk D Pending</h3>
+            <h3 class="gold">MVP Tradeoff</h3>
             <p>
-              Temporary playback URL resolution and queue/live/player migration
-              away from permanent uploaded-media URLs remain deliberately
-              deferred.
+              The signed R2 playback URL is short lived but shareable while
+              active. Stronger access requires a future delivery layer.
             </p>
           </article>
         </div>

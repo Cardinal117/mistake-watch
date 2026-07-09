@@ -6,6 +6,7 @@ const defaultUploadMaxBytes = 10 * 1024 * 1024 * 1024;
 export const multipartUploadThresholdBytes = 500 * 1024 * 1024;
 export const multipartUploadPartSizeBytes = 64 * 1024 * 1024;
 const uploadUrlTtlSeconds = 15 * 60;
+const playbackUrlTtlSeconds = 30 * 60;
 const supportedMimePrefixes = ["video/"];
 const supportedVideoExtensions = new Set([
   ".avi",
@@ -213,6 +214,20 @@ export function createPresignedR2UploadPartUrl(input: {
       ["partNumber", String(input.partNumber)],
       ["uploadId", input.multipartUploadId],
     ],
+  });
+}
+
+export function createPresignedR2GetUrl(input: {
+  expiresSeconds?: number;
+  objectKey: string;
+}) {
+  const config = getR2Config();
+
+  return signR2Url({
+    config,
+    expiresSeconds: input.expiresSeconds ?? playbackUrlTtlSeconds,
+    method: "GET",
+    objectKey: input.objectKey,
   });
 }
 

@@ -51,6 +51,11 @@ import {
   getYouTubeThumbnailUrl,
   parseYouTubeVideoId,
 } from "@/lib/player/source";
+import {
+  createUploadedAssetReference,
+  createUploadedSessionReference,
+  parseUploadedAssetReference,
+} from "@/lib/media/uploaded-playback-reference";
 import type { RoomSnapshot } from "@/lib/rooms";
 import { setRoomSavedAction } from "@/lib/rooms/actions";
 import type { LiveRoomState } from "@/lib/spacetime";
@@ -580,6 +585,7 @@ function WatchQueueSheet({
             liveRoom.setQueueItemPriority(queueItemId, { isPlayNext: true })
           }
           onPlayQueueItem={liveRoom.playQueueItemNow}
+          roomId={room.id}
         />
         <div className="min-h-0 overflow-y-auto rounded-md border border-white/10 bg-background/10 p-3 shadow-[inset_0_0_24px_rgb(229_226_227_/_0.018)] [scrollbar-color:rgb(0_219_233_/_0.32)_transparent] [scrollbar-width:thin]">
           <QueuePanel
@@ -621,6 +627,7 @@ function WatchMediaHubDiscovery({
   onLoadSource,
   onPlayNext,
   onPlayQueueItem,
+  roomId,
 }: {
   canAddQueue?: boolean;
   canLoadSource?: boolean;
@@ -646,6 +653,7 @@ function WatchMediaHubDiscovery({
   }): void;
   onPlayNext?(queueItemId: string): void;
   onPlayQueueItem?(queueItemId: string): void;
+  roomId: string;
 }) {
   const [assets, setAssets] = useState<MediaLibraryAsset[]>([]);
   const [assetError, setAssetError] = useState<string | null>(null);
@@ -1807,6 +1815,7 @@ function WatchMediaHubDiscovery({
               onLoadSource={onLoadSource}
               onPlayNext={onPlayNext}
               onPlayQueueItem={onPlayQueueItem}
+              roomId={roomId}
               section={section}
             />
           ))
@@ -1882,6 +1891,7 @@ function WatchMediaHubDiscovery({
               onLoadSource={onLoadSource}
               onPlayNext={onPlayNext}
               onPlayQueueItem={onPlayQueueItem}
+              roomId={roomId}
               onVisibilityChange={async (assetId, visibility) => {
                 const asset = await updateAssetVisibility(assetId, visibility);
                 setAssets((current) =>
@@ -2120,6 +2130,7 @@ function WatchMediaHubSection({
   onLoadSource,
   onPlayNext,
   onPlayQueueItem,
+  roomId,
   section,
 }: {
   canAddQueue?: boolean;
@@ -2144,6 +2155,7 @@ function WatchMediaHubSection({
   }): void;
   onPlayNext?(queueItemId: string): void;
   onPlayQueueItem?(queueItemId: string): void;
+  roomId: string;
   section: WatchMediaHubSectionConfig;
 }) {
   return (
@@ -2169,6 +2181,7 @@ function WatchMediaHubSection({
               onLoadSource={onLoadSource}
               onPlayNext={onPlayNext}
               onPlayQueueItem={onPlayQueueItem}
+              roomId={roomId}
             />
           ))}
         </div>
@@ -2199,6 +2212,7 @@ function UploadedMediaLibrary({
   onLoadSource,
   onPlayNext,
   onPlayQueueItem,
+  roomId,
   onVisibilityChange,
   searchQuery,
   selectedFolderId,
@@ -2242,6 +2256,7 @@ function UploadedMediaLibrary({
   }): void;
   onPlayNext?(queueItemId: string): void;
   onPlayQueueItem?(queueItemId: string): void;
+  roomId: string;
   onVisibilityChange(assetId: string, visibility: "owner_only" | "public"): Promise<void>;
   searchQuery: string;
   selectedFolderId: string;
@@ -2561,6 +2576,7 @@ function UploadedMediaLibrary({
                 onLoadSource={onLoadSource}
                 onPlayNext={onPlayNext}
                 onPlayQueueItem={onPlayQueueItem}
+                roomId={roomId}
                 onVisibilityChange={onVisibilityChange}
               />
             ))}
@@ -2584,6 +2600,7 @@ function UploadedMediaLibrary({
                 onLoadSource={onLoadSource}
                 onPlayNext={onPlayNext}
                 onPlayQueueItem={onPlayQueueItem}
+                roomId={roomId}
                 onVisibilityChange={onVisibilityChange}
               />
             ))}
@@ -2613,6 +2630,7 @@ function WatchMediaHubCard({
   onLoadSource,
   onPlayNext,
   onPlayQueueItem,
+  roomId,
   onVisibilityChange,
 }: {
   canAddQueue?: boolean;
@@ -2644,6 +2662,7 @@ function WatchMediaHubCard({
   }): void;
   onPlayNext?(queueItemId: string): void;
   onPlayQueueItem?(queueItemId: string): void;
+  roomId: string;
   onVisibilityChange?(
     assetId: string,
     visibility: "owner_only" | "public",
@@ -2704,13 +2723,29 @@ function WatchMediaHubCard({
     });
   }
 
-  function playNow() {
+  async function playNow() {
     if (queued) {
       onPlayQueueItem?.(item.id);
       return;
     }
 
     if (!canUseQueueSource || !item.sourceType || !item.sourceUrl) {
+      return;
+    }
+
+    const assetId = parseUploadedAssetReference(item.sourceUrl);
+
+    if (assetId) {
+      const session = await createUploadedPlaybackSession({
+        assetId,
+        roomId,
+      });
+
+      onLoadSource?.({
+        sourceTitle: item.title,
+        sourceType: "direct",
+        sourceUrl: createUploadedSessionReference(session.id),
+      });
       return;
     }
 
@@ -3131,7 +3166,7 @@ function mediaAssetToHubItem(asset: MediaLibraryAsset): WatchMediaHubItem {
     processingStatus: asset.processingStatus,
     processingStrategy: asset.processingStrategy,
     sourceType: "direct",
-    sourceUrl: asset.publicUrl,
+    sourceUrl: createUploadedAssetReference(asset.id),
     status: "library",
     thumbnailUrl: asset.thumbnailUrl ?? undefined,
     title: asset.title,
@@ -3179,6 +3214,29 @@ async function updateAssetVisibility(
   }
 
   return payload.asset;
+}
+
+async function createUploadedPlaybackSession(input: {
+  assetId: string;
+  roomId: string;
+}) {
+  const response = await fetch("/api/media/room-sessions", {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+  const payload = (await response.json()) as {
+    error?: string;
+    session?: {
+      id: string;
+    };
+  };
+
+  if (!response.ok || !payload.session) {
+    throw new Error(payload.error ?? "Uploaded media session could not start.");
+  }
+
+  return payload.session;
 }
 
 async function approveAssetProcessing(assetId: string) {

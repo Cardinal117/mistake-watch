@@ -47,6 +47,7 @@ import type { LiveRoomError } from "@/lib/spacetime";
 import { cx } from "@/lib/ui";
 import { fetchPlaylistPreview } from "@/lib/youtube/playlist-client";
 import { fetchYouTubeMetadata } from "@/lib/youtube/metadata-client";
+import { createUploadedAssetReference } from "@/lib/media/uploaded-playback-reference";
 import type {
   YouTubePlaylistItem,
   YouTubePlaylistPreviewResponse,
@@ -1367,7 +1368,7 @@ function firstPartyAssetToQueueInput(
     playlistTitle: "Matched first-party media",
     sourceTitle: asset.title || item.title,
     sourceType: "direct",
-    sourceUrl: asset.publicUrl,
+    sourceUrl: createUploadedAssetReference(asset.id),
     thumbnailUrl: asset.thumbnailUrl ?? item.thumbnailUrl ?? undefined,
   };
 }
