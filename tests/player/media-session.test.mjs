@@ -58,6 +58,7 @@ test("metadata normalization trims values and filters invalid artwork", () => {
       artwork: [
         {
           sizes: "512x512",
+          sourceKind: "youtube",
           src: "  https://img.example.test/poster.jpg  ",
           type: " image/jpeg ",
         },
@@ -69,16 +70,58 @@ test("metadata normalization trims values and filters invalid artwork", () => {
     {
       album: "Test room",
       artist: "Test channel",
-      artwork: [
-        {
-          sizes: "512x512",
-          src: "https://img.example.test/poster.jpg",
-          type: "image/jpeg",
-        },
-      ],
+      artwork: [],
       title: "Track title",
     },
   );
+});
+
+test("artwork safety allows only trusted app icons and public YouTube thumbnails", () => {
+  const metadata = normalizeMediaSessionMetadata({
+    artwork: [
+      {
+        sizes: "512x512",
+        sourceKind: "youtube",
+        src: "https://i.ytimg.com/vi/test/maxresdefault.jpg",
+        type: "image/jpeg",
+      },
+      {
+        sizes: "192x192",
+        sourceKind: "app",
+        src: "/web-app-manifest-192x192.png",
+        type: "image/png",
+      },
+      { sourceKind: "youtube", src: "mw-uploaded-asset:private-asset-id" },
+      { sourceKind: "youtube", src: "mw-uploaded-session:private-session-id" },
+      {
+        sourceKind: "youtube",
+        src: "https://account.r2.cloudflarestorage.com/bucket/media/private.mp4?X-Amz-Signature=secret",
+      },
+      {
+        sourceKind: "youtube",
+        src: "https://public-bucket.r2.dev/media-posters/private/poster.jpg",
+      },
+      { sourceKind: "youtube", src: "media-posters/private/poster.jpg" },
+      {
+        sourceKind: "youtube",
+        src: "https://i.ytimg.com.evil.test/vi/test/maxresdefault.jpg",
+      },
+      { src: "https://cdn.example.test/unproven-uploaded-poster.jpg" },
+    ],
+  });
+
+  assert.deepEqual(metadata.artwork, [
+    {
+      sizes: "512x512",
+      src: "https://i.ytimg.com/vi/test/maxresdefault.jpg",
+      type: "image/jpeg",
+    },
+    {
+      sizes: "192x192",
+      src: "/web-app-manifest-192x192.png",
+      type: "image/png",
+    },
+  ]);
 });
 
 test("metadata normalization supplies safe app fallbacks", () => {
@@ -215,6 +258,9 @@ test("room media session hook gates mutating actions behind playback permission"
   assert.match(hookSource, /seekto:\s*null/);
   assert.match(hookSource, /publishMediaSessionMetadata/);
   assert.match(hookSource, /setMediaSessionPositionState/);
+  assert.match(hookSource, /sourceKind:\s*"app"/);
+  assert.match(hookSource, /sourceKind:\s*"youtube"/);
+  assert.doesNotMatch(hookSource, /sourceKind:\s*"uploaded"/);
 });
 
 test("transport controls wire room media session through existing live room actions", async () => {

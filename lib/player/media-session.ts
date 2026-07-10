@@ -1,8 +1,11 @@
 export type MediaSessionArtworkInput = {
   sizes?: string | null;
+  sourceKind?: MediaSessionArtworkSourceKind | null;
   src?: string | null;
   type?: string | null;
 };
+
+export type MediaSessionArtworkSourceKind = "app" | "youtube";
 
 export type MediaSessionMetadataInput = {
   album?: string | null;
@@ -36,6 +39,14 @@ export type NormalizedMediaSessionMetadata = {
 const defaultTitle = "Mistake Watch";
 const defaultArtist = "Mistake Watch";
 const defaultAlbum = "Mistake Watch";
+const trustedAppArtworkPaths = new Set([
+  "/web-app-manifest-192x192.png",
+  "/web-app-manifest-512x512.png",
+]);
+const trustedYouTubeArtworkHosts = new Set([
+  "i.ytimg.com",
+  "img.youtube.com",
+]);
 
 export function getMediaSessionEnvironment(): MediaSessionEnvironment {
   return {
@@ -162,7 +173,7 @@ function normalizeArtwork(
   return (artwork ?? []).reduce<MediaImage[]>((items, item) => {
     const src = normalizeText(item.src);
 
-    if (!src) {
+    if (!src || !isTrustedArtworkSource(src, item.sourceKind)) {
       return items;
     }
 
@@ -174,6 +185,34 @@ function normalizeArtwork(
 
     return items;
   }, []);
+}
+
+function isTrustedArtworkSource(
+  src: string,
+  sourceKind: MediaSessionArtworkSourceKind | null | undefined,
+) {
+  if (sourceKind === "app") {
+    return trustedAppArtworkPaths.has(src);
+  }
+
+  if (sourceKind !== "youtube") {
+    return false;
+  }
+
+  try {
+    const url = new URL(src);
+
+    return (
+      url.protocol === "https:" &&
+      !url.username &&
+      !url.password &&
+      !url.search &&
+      !url.hash &&
+      trustedYouTubeArtworkHosts.has(url.hostname.toLowerCase())
+    );
+  } catch {
+    return false;
+  }
 }
 
 function normalizeText(value: string | null | undefined) {

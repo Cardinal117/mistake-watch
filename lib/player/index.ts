@@ -40,6 +40,7 @@ export type {
 export type {
   MediaSessionActionHandlers,
   MediaSessionArtworkInput,
+  MediaSessionArtworkSourceKind,
   MediaSessionEnvironment,
   MediaSessionMetadataInput,
   MediaSessionPositionInput,

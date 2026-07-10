@@ -79,3 +79,41 @@ Use this Iron Man-themed approval phrase to start implementation:
   - controller account should see browser media metadata and media keys should control the room;
   - non-controller/guest account should see metadata where supported but media keys must not mutate playback;
   - YouTube, direct/HLS, and uploaded playback should continue working normally.
+
+## Task 3 Implementation Notes
+
+- Task 3 implemented:
+  - added explicit `app` and `youtube` artwork provenance to the React-free Media Session helper contract;
+  - restricted app artwork to the two known manifest icons;
+  - restricted provider artwork to HTTPS URLs on `i.ytimg.com` and `img.youtube.com` with no credentials, query string, or fragment;
+  - rejected uploaded playback references, signed R2 URLs, permanent R2 URLs, object-key-shaped values, lookalike YouTube hosts, and unproven external artwork;
+  - kept direct, HLS, and uploaded room media on the safe app-icon fallback;
+  - added focused regression coverage for the private artwork leak boundary.
+- No safe private-poster delivery contract is currently proven for browser Media Session artwork, so uploaded posters remain intentionally deferred.
+- This task does not change upload processing, R2 delivery, Supabase, SpacetimeDB, queue behavior, visible room UI, or Media Session action authorization.
+
+## Task 3 Verification Notes
+
+- `node --test tests\player\media-session.test.mjs` passed with 12 tests.
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
+- Task 4 remains responsible for live Chromium and Opera GX manual QA across YouTube, direct/HLS, and uploaded playback paths.
+
+## Task 4 QA And Release Gate Notes
+
+- QA disposition: **Ready** for report-first commit preparation.
+- User-confirmed live QA on 2026-07-10:
+  - active media metadata appears on the device lock screen;
+  - the Opera GX dedicated player does not surface the site metadata;
+  - the Opera result is accepted as a browser-owned limitation because native Opera music-service integration is outside TASK-006.
+- Earlier live-room QA confirmed the uploaded catalogue remains hidden from unauthorized guests while owner-started uploaded media remains watchable by room participants.
+- Automated verification for the final implementation:
+  - `node --test tests\player\media-session.test.mjs` passed with 12 tests;
+  - `npm run typecheck` passed;
+  - `npm run lint` passed;
+  - `npm run build` passed;
+  - `git diff --check` passed.
+- Scope review passed: no database, upload pipeline, queue reducer, room-authority, dependency, or visible UI changes are included.
+- Accepted residual QA note: direct/HLS-specific lock-screen presentation was not separately evidenced in this pass. Their playback paths are unchanged, and non-YouTube artwork remains covered by the safe app-icon fallback policy.
+- No QA blocker or important pre-commit finding remains.

@@ -33,11 +33,13 @@ type RoomMediaSessionInput = {
 const appArtwork: MediaSessionArtworkInput[] = [
   {
     sizes: "192x192",
+    sourceKind: "app",
     src: "/web-app-manifest-192x192.png",
     type: "image/png",
   },
   {
     sizes: "512x512",
+    sourceKind: "app",
     src: "/web-app-manifest-512x512.png",
     type: "image/png",
   },
@@ -174,6 +176,7 @@ function buildArtwork(
   return [
     {
       sizes: "512x512",
+      sourceKind: "youtube",
       src: youtubeThumbnail,
       type: "image/jpeg",
     },

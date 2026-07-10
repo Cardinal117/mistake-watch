@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TASK-006 Task 2 Implementation Report</title>
+    <title>TASK-006 Complete - QA Ready</title>
     <style>
       :root {
         color-scheme: dark;
@@ -170,31 +170,31 @@
   </head>
   <body>
     <main>
-      <div class="eyebrow">Implementation Report · TASK-006 Task 2</div>
-      <h1>Media Session room wiring is implemented through the shared transport.</h1>
+      <div class="eyebrow">Implementation Report · TASK-006 Complete</div>
+      <h1>Media Session controls are QA ready with the Opera limitation documented.</h1>
       <p>
-        Task 2 connects the helper foundation to active room playback metadata and
-        permission-aware browser media-key actions. It does not change visible UI,
-        queue reducers, upload storage, or database schema.
+        Lock-screen metadata is verified on live playback. The Opera GX dedicated
+        player does not adopt ordinary sidebar-site metadata, which is accepted as
+        a browser-owned limitation outside the web-standard integration.
       </p>
 
       <section class="grid" aria-label="Implementation summary">
         <article class="card third">
           <span class="badge">Status</span>
-          <h2>Task 2 Complete</h2>
-          <p>Room metadata, playback state, position state, and media-key handlers are wired.</p>
+          <h2>Tasks 1-4 Complete</h2>
+          <p>Helper, room wiring, artwork safety, automated verification, and manual QA are complete.</p>
         </article>
 
         <article class="card third">
           <span class="badge">Security</span>
-          <h2>Permission Gated</h2>
-          <p>Mutating Media Session actions bind only when `liveRoom.canControlPlayback` is true.</p>
+          <h2>QA Gate Ready</h2>
+          <p>No blocker or important pre-commit finding remains after scope and acceptance review.</p>
         </article>
 
         <article class="card third">
-          <span class="badge gold">Manual QA</span>
-          <h2>Browser Owned</h2>
-          <p>Opera GX and Chromium media surfaces still need live-room manual testing.</p>
+          <span class="badge gold">Known Limitation</span>
+          <h2>Opera Player Unsupported</h2>
+          <p>Opera's dedicated player does not expose this sidebar site's Media Session metadata.</p>
         </article>
 
         <article class="card full">
@@ -211,17 +211,17 @@
               <tr>
                 <td>Must review</td>
                 <td><a href="../../../components/room/use-room-media-session.ts">components/room/use-room-media-session.ts</a></td>
-                <td>New hook that publishes room Media Session metadata and permission-aware action handlers.</td>
+                <td>Labels known app icons and public YouTube thumbnails with explicit artwork provenance.</td>
               </tr>
               <tr>
                 <td>Must review</td>
-                <td><a href="../../../components/room/transport-controls.tsx">components/room/transport-controls.tsx</a></td>
-                <td>Integrates the hook with existing visible transport actions.</td>
+                <td><a href="../../../lib/player/media-session.ts">lib/player/media-session.ts</a></td>
+                <td>Enforces the trusted app and YouTube artwork policy before browser metadata is published.</td>
               </tr>
               <tr>
                 <td>Must review</td>
                 <td><a href="../../../tests/player/media-session.test.mjs">tests/player/media-session.test.mjs</a></td>
-                <td>Adds static wiring checks for permission gating and transport integration.</td>
+                <td>Adds regression coverage for uploaded references, signed and permanent R2 URLs, object keys, and lookalike hosts.</td>
               </tr>
               <tr>
                 <td>Supporting</td>
@@ -235,21 +235,21 @@
         <article class="card">
           <span class="badge">Implemented</span>
           <ul>
-            <li>Current room item metadata is published to the Media Session API where supported.</li>
-            <li>Playback state and position state follow the existing transport clock.</li>
-            <li>Play, pause, seek, next, and previous actions delegate to existing room actions.</li>
-            <li>Non-controller users receive metadata but null mutating handlers.</li>
-            <li>YouTube artwork uses provider thumbnails; non-YouTube media uses app icons.</li>
+            <li>Known manifest icons are the only accepted app artwork paths.</li>
+            <li>Public YouTube artwork must use HTTPS on an exact trusted thumbnail host.</li>
+            <li>Credentials, query strings, fragments, and lookalike provider hosts are rejected.</li>
+            <li>Direct, HLS, and uploaded media continue to use safe app-icon fallback artwork.</li>
+            <li>The artwork filter runs in the shared helper before browser metadata publication.</li>
           </ul>
         </article>
 
         <article class="card">
           <span class="badge gold">Deferred</span>
           <ul>
-            <li>No Opera-specific native integration.</li>
-            <li>No visible room UI changes.</li>
-            <li>No upload, R2, Supabase, or SpacetimeDB schema changes.</li>
-            <li>Task 3 remains the place for stricter uploaded-media artwork policy work.</li>
+            <li>Private uploaded posters remain deferred until their browser delivery contract is proven safe.</li>
+            <li>Opera-specific native music-service integration remains out of scope.</li>
+            <li>No upload, R2, Supabase, SpacetimeDB, or visible UI changes.</li>
+            <li>Direct/HLS-specific lock-screen presentation was not separately evidenced in this pass.</li>
           </ul>
         </article>
 
@@ -267,7 +267,7 @@
               <tr>
                 <td><code>node --test tests\player\media-session.test.mjs</code></td>
                 <td>Passed</td>
-                <td>11 tests passed.</td>
+                <td>12 tests passed, including private artwork leak regressions.</td>
               </tr>
               <tr>
                 <td><code>npm run typecheck</code></td>
@@ -289,12 +289,12 @@
         </article>
 
         <article class="card full">
-          <span class="badge gold">Manual Review Points</span>
+          <span class="badge">Manual QA Evidence</span>
           <ul>
-            <li>Controller account: verify browser media keys can play, pause, seek, next, and previous.</li>
-            <li>Guest without playback permission: verify media keys do not mutate room playback.</li>
-            <li>Opera GX sidebar: verify metadata appears where Opera exposes Media Session data.</li>
-            <li>Uploaded media: verify playback still works and browser metadata does not expose playback URLs.</li>
+            <li>Verified: active playback metadata appears on the device lock screen.</li>
+            <li>Accepted limitation: metadata does not appear in Opera GX's dedicated player.</li>
+            <li>Previously verified: unauthorized guests cannot browse uploaded content.</li>
+            <li>Previously verified: owner-started uploaded media remains watchable by room participants.</li>
           </ul>
         </article>
       </section>
