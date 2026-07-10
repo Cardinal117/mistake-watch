@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TASK-006 Task 1 Implementation Report</title>
+    <title>TASK-006 Task 2 Implementation Report</title>
     <style>
       :root {
         color-scheme: dark;
@@ -14,7 +14,6 @@
         --line: #3b494b;
         --cyan: #00dbe9;
         --gold: #ffba20;
-        --danger: #ffb4ab;
         --ok: #7df4ff;
       }
 
@@ -47,7 +46,7 @@
       }
 
       h1 {
-        max-width: 860px;
+        max-width: 880px;
         margin: 10px 0 16px;
         font-size: clamp(32px, 5vw, 52px);
         line-height: 1.06;
@@ -133,11 +132,6 @@
         color: var(--gold);
       }
 
-      .badge.danger {
-        border-color: rgba(255, 180, 171, 0.45);
-        color: var(--danger);
-      }
-
       table {
         width: 100%;
         border-collapse: collapse;
@@ -176,30 +170,31 @@
   </head>
   <body>
     <main>
-      <div class="eyebrow">Implementation Report · TASK-006 Task 1</div>
-      <h1>Media Session helper is implemented and ready for room wiring.</h1>
+      <div class="eyebrow">Implementation Report · TASK-006 Task 2</div>
+      <h1>Media Session room wiring is implemented through the shared transport.</h1>
       <p>
-        Task 1 added the browser-safe helper layer only. It does not yet bind
-        Mistake Watch room controls or update live playback UI behavior.
+        Task 2 connects the helper foundation to active room playback metadata and
+        permission-aware browser media-key actions. It does not change visible UI,
+        queue reducers, upload storage, or database schema.
       </p>
 
       <section class="grid" aria-label="Implementation summary">
         <article class="card third">
           <span class="badge">Status</span>
-          <h2>Task 1 Complete</h2>
-          <p>Helper and tests are implemented. Room hook and transport wiring remain Task 2.</p>
+          <h2>Task 2 Complete</h2>
+          <p>Room metadata, playback state, position state, and media-key handlers are wired.</p>
         </article>
 
         <article class="card third">
-          <span class="badge">Scope</span>
-          <h2>No Room Behavior Change</h2>
-          <p>The helper is React-free and does not call live room reducers or player components.</p>
+          <span class="badge">Security</span>
+          <h2>Permission Gated</h2>
+          <p>Mutating Media Session actions bind only when `liveRoom.canControlPlayback` is true.</p>
         </article>
 
         <article class="card third">
-          <span class="badge gold">Next</span>
-          <h2>Task 2</h2>
-          <p>Wire the helper through a room hook and `TransportControls` with permission-aware handlers.</p>
+          <span class="badge gold">Manual QA</span>
+          <h2>Browser Owned</h2>
+          <p>Opera GX and Chromium media surfaces still need live-room manual testing.</p>
         </article>
 
         <article class="card full">
@@ -215,23 +210,23 @@
             <tbody>
               <tr>
                 <td>Must review</td>
-                <td><a href="../../../lib/player/media-session.ts">lib/player/media-session.ts</a></td>
-                <td>New browser-safe Media Session helper functions.</td>
+                <td><a href="../../../components/room/use-room-media-session.ts">components/room/use-room-media-session.ts</a></td>
+                <td>New hook that publishes room Media Session metadata and permission-aware action handlers.</td>
+              </tr>
+              <tr>
+                <td>Must review</td>
+                <td><a href="../../../components/room/transport-controls.tsx">components/room/transport-controls.tsx</a></td>
+                <td>Integrates the hook with existing visible transport actions.</td>
               </tr>
               <tr>
                 <td>Must review</td>
                 <td><a href="../../../tests/player/media-session.test.mjs">tests/player/media-session.test.mjs</a></td>
-                <td>Focused tests for helper behavior and no-op safety.</td>
-              </tr>
-              <tr>
-                <td>Supporting</td>
-                <td><a href="../../../lib/player/index.ts">lib/player/index.ts</a></td>
-                <td>Exports the new helper API for later room wiring.</td>
+                <td>Adds static wiring checks for permission gating and transport integration.</td>
               </tr>
               <tr>
                 <td>Supporting</td>
                 <td><a href="./review-notes.md">review-notes.md</a></td>
-                <td>Records verification, known blocker, and deferred browser QA.</td>
+                <td>Records implementation notes, verification, and manual QA boundary.</td>
               </tr>
             </tbody>
           </table>
@@ -240,21 +235,21 @@
         <article class="card">
           <span class="badge">Implemented</span>
           <ul>
-            <li>Feature detection for `navigator.mediaSession` and `MediaMetadata`.</li>
-            <li>Metadata normalization with safe Mistake Watch fallbacks.</li>
-            <li>Playback state and position state helpers.</li>
-            <li>Safe action handler binding and cleanup.</li>
-            <li>Injectable test environment for Node-based verification.</li>
+            <li>Current room item metadata is published to the Media Session API where supported.</li>
+            <li>Playback state and position state follow the existing transport clock.</li>
+            <li>Play, pause, seek, next, and previous actions delegate to existing room actions.</li>
+            <li>Non-controller users receive metadata but null mutating handlers.</li>
+            <li>YouTube artwork uses provider thumbnails; non-YouTube media uses app icons.</li>
           </ul>
         </article>
 
         <article class="card">
           <span class="badge gold">Deferred</span>
           <ul>
-            <li>No `TransportControls` wiring yet.</li>
-            <li>No browser media-key behavior yet.</li>
-            <li>No uploaded-media artwork policy beyond generic helper filtering yet.</li>
-            <li>No Opera GX manual QA yet.</li>
+            <li>No Opera-specific native integration.</li>
+            <li>No visible room UI changes.</li>
+            <li>No upload, R2, Supabase, or SpacetimeDB schema changes.</li>
+            <li>Task 3 remains the place for stricter uploaded-media artwork policy work.</li>
           </ul>
         </article>
 
@@ -272,7 +267,7 @@
               <tr>
                 <td><code>node --test tests\player\media-session.test.mjs</code></td>
                 <td>Passed</td>
-                <td>9 tests passed.</td>
+                <td>11 tests passed.</td>
               </tr>
               <tr>
                 <td><code>npm run typecheck</code></td>
@@ -285,12 +280,22 @@
                 <td>ESLint completed without errors.</td>
               </tr>
               <tr>
-                <td><code>node --test tests\player\*.test.mjs</code></td>
-                <td>Blocked by existing failures</td>
-                <td>`youtube-autoplay-atomic.test.mjs` fails on existing direct/uploaded-player behavior outside this helper task.</td>
+                <td><code>npm run build</code></td>
+                <td>Passed</td>
+                <td>Production build completed successfully.</td>
               </tr>
             </tbody>
           </table>
+        </article>
+
+        <article class="card full">
+          <span class="badge gold">Manual Review Points</span>
+          <ul>
+            <li>Controller account: verify browser media keys can play, pause, seek, next, and previous.</li>
+            <li>Guest without playback permission: verify media keys do not mutate room playback.</li>
+            <li>Opera GX sidebar: verify metadata appears where Opera exposes Media Session data.</li>
+            <li>Uploaded media: verify playback still works and browser metadata does not expose playback URLs.</li>
+          </ul>
         </article>
       </section>
     </main>

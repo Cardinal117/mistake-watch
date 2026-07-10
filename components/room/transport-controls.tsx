@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Film,
   Maximize2,
@@ -34,6 +34,7 @@ import type { RoomSnapshot } from "@/lib/rooms";
 import type { LiveRoomState } from "@/lib/spacetime";
 import { cx } from "@/lib/ui";
 import { useWaveformEnvironment } from "./use-waveform-environment";
+import { useRoomMediaSession } from "./use-room-media-session";
 import { YouTubeMetadataLine } from "./youtube-metadata-line";
 
 type TransportControlsProps = {
@@ -64,21 +65,21 @@ export function TransportControls({
   const currentQueueItem = session?.activeQueueItemId
     ? liveRoom.snapshot.queue.find(
         (item) => item.queueItemId === session.activeQueueItemId,
-      )
+      ) ?? null
     : null;
   const title = session?.sourceTitle ?? room.nowPlaying.title;
   const durationSeconds =
     currentQueueItem?.durationSeconds ?? session?.sourceDurationSeconds ?? 0;
   const nextQueueItem = liveRoom.snapshot.queue
     .filter((item) => item.status === "queued")
-    .sort((left, right) => left.position - right.position)[0];
+    .sort((left, right) => left.position - right.position)[0] ?? null;
   const previousQueueItem = liveRoom.snapshot.queue
     .filter((item) => item.status === "played")
     .sort(
       (left, right) =>
         (left.playedSequence ?? 0) - (right.playedSequence ?? 0),
     )
-    .at(-1);
+    .at(-1) ?? null;
   const nextTitle = nextQueueItem
     ? getSourceDisplayTitle({
         sourceType: nextQueueItem.sourceType,
@@ -130,31 +131,64 @@ export function TransportControls({
     dispatchPlayerVolume(volume / 100);
   }, [volume]);
 
-  function setPlayback(status: "paused" | "playing") {
-    liveRoom.setPlaybackState({
-      positionSeconds: currentPosition,
-      status,
-    });
-  }
+  const setPlayback = useCallback(
+    (status: "paused" | "playing") => {
+      liveRoom.setPlaybackState({
+        positionSeconds: currentPosition,
+        status,
+      });
+    },
+    [currentPosition, liveRoom],
+  );
 
-  function seekRelative(deltaSeconds: number) {
-    liveRoom.setPlaybackState({
-      positionSeconds: Math.max(0, currentPosition + deltaSeconds),
-      status: session?.status === "playing" ? "playing" : "paused",
-    });
-  }
+  const seekRelative = useCallback(
+    (deltaSeconds: number) => {
+      liveRoom.setPlaybackState({
+        positionSeconds: Math.max(0, currentPosition + deltaSeconds),
+        status: session?.status === "playing" ? "playing" : "paused",
+      });
+    },
+    [currentPosition, liveRoom, session?.status],
+  );
 
-  function playPreviousQueueItem() {
+  const seekTo = useCallback(
+    (positionSeconds: number) => {
+      liveRoom.setPlaybackState({
+        positionSeconds: Math.max(0, positionSeconds),
+        status: session?.status === "playing" ? "playing" : "paused",
+      });
+    },
+    [liveRoom, session?.status],
+  );
+
+  const playPreviousQueueItem = useCallback(() => {
     if (previousQueueItem) {
       liveRoom.playQueueItemNow(previousQueueItem.queueItemId);
     }
-  }
+  }, [liveRoom, previousQueueItem]);
 
-  function playNextQueueItem() {
+  const playNextQueueItem = useCallback(() => {
     if (nextQueueItem) {
       liveRoom.playQueueItemNow(nextQueueItem.queueItemId);
     }
-  }
+  }, [liveRoom, nextQueueItem]);
+
+  useRoomMediaSession({
+    canControlPlayback: canControl,
+    currentPositionSeconds: currentPosition,
+    currentQueueItem,
+    durationSeconds,
+    nextQueueItem,
+    onNextTrack: playNextQueueItem,
+    onPause: () => setPlayback("paused"),
+    onPlay: () => setPlayback("playing"),
+    onPreviousTrack: playPreviousQueueItem,
+    onSeekRelative: seekRelative,
+    onSeekTo: seekTo,
+    previousQueueItem,
+    room,
+    session,
+  });
 
   function setLocalVolume(nextVolume: number) {
     const safeVolume = Math.min(100, Math.max(0, nextVolume));

@@ -56,3 +56,26 @@ Use this Iron Man-themed approval phrase to start implementation:
   - `live room autoplay uses the atomic advance reducer` sees the existing uploaded-media branch in `advanceToNextQueueItem` calling `reducers.setPlaybackState`;
   - `passive player pause and buffer events do not publish canonical room state` sees existing `onPause`, `onPlay`, and `onSeeked` handlers in `DirectMediaPlayer`.
 - Browser/Opera GX runtime behavior is not tested yet because Task 1 is helper-only and has no room wiring.
+
+## Task 2 Implementation Notes
+
+- Task 2 implemented:
+  - added `components/room/use-room-media-session.ts` as the client hook that publishes active room metadata, playback state, position state, and Media Session action handlers;
+  - wired `TransportControls` into the hook using the existing visible transport actions for play, pause, seek, next, and previous;
+  - kept mutating action handlers behind `liveRoom.canControlPlayback`;
+  - left non-controller participants with metadata updates only and explicit null action handlers;
+  - used YouTube/provider thumbnails when the active item is YouTube and app icon artwork for non-YouTube/direct/uploaded paths to avoid private uploaded URL leakage in this slice;
+  - extended `tests/player/media-session.test.mjs` with static wiring checks for permission gating and transport integration.
+- This task does not add visible controls, schema changes, upload changes, queue reducer changes, or Opera-specific native integration.
+- Uploaded/direct/HLS artwork remains intentionally conservative. Task 3 can improve artwork only if a safe poster-delivery path is proven.
+
+## Task 2 Verification Notes
+
+- `node --test tests\player\media-session.test.mjs` passed with 11 tests.
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed after the Task 2 implementation.
+- Browser/Opera GX manual QA is still required on a live or local room:
+  - controller account should see browser media metadata and media keys should control the room;
+  - non-controller/guest account should see metadata where supported but media keys must not mutate playback;
+  - YouTube, direct/HLS, and uploaded playback should continue working normally.

@@ -199,6 +199,41 @@ test("action binding cleanup is a no-op without media session support", () => {
   assert.doesNotThrow(() => cleanup());
 });
 
+test("room media session hook gates mutating actions behind playback permission", async () => {
+  const hookSource = await readFile(
+    path.join(rootDir, "components/room/use-room-media-session.ts"),
+    "utf8",
+  );
+
+  assert.match(hookSource, /if \(!input\.canControlPlayback\)/);
+  assert.match(hookSource, /nexttrack:\s*null/);
+  assert.match(hookSource, /pause:\s*null/);
+  assert.match(hookSource, /play:\s*null/);
+  assert.match(hookSource, /previoustrack:\s*null/);
+  assert.match(hookSource, /seekbackward:\s*null/);
+  assert.match(hookSource, /seekforward:\s*null/);
+  assert.match(hookSource, /seekto:\s*null/);
+  assert.match(hookSource, /publishMediaSessionMetadata/);
+  assert.match(hookSource, /setMediaSessionPositionState/);
+});
+
+test("transport controls wire room media session through existing live room actions", async () => {
+  const transportSource = await readFile(
+    path.join(rootDir, "components/room/transport-controls.tsx"),
+    "utf8",
+  );
+
+  assert.match(transportSource, /import \{ useRoomMediaSession \}/);
+  assert.match(transportSource, /useRoomMediaSession\(\{/);
+  assert.match(transportSource, /canControlPlayback:\s*canControl/);
+  assert.match(transportSource, /onPlay:\s*\(\) => setPlayback\("playing"\)/);
+  assert.match(transportSource, /onPause:\s*\(\) => setPlayback\("paused"\)/);
+  assert.match(transportSource, /onSeekRelative:\s*seekRelative/);
+  assert.match(transportSource, /onSeekTo:\s*seekTo/);
+  assert.match(transportSource, /onNextTrack:\s*playNextQueueItem/);
+  assert.match(transportSource, /onPreviousTrack:\s*playPreviousQueueItem/);
+});
+
 class FakeMediaMetadata {
   constructor(options) {
     this.options = options;
