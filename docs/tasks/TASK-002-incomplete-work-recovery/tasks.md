@@ -527,7 +527,7 @@ Safe commit point:
 
 ### Batch D: Failure Resilience And Event Visibility
 
-Status: implemented locally on July 13, 2026; automated checks, local SpacetimeDB publish, and 332-item room integration QA passed. Production SpacetimeDB publication and live removed/private/embed-blocked scenario QA remain pending.
+Status: released to production on July 13, 2026 in commit `644d668`; Maincloud schema/reducer publication, Vercel deployment, health checks, isolated-room connection QA, transient failure containment, and unavailable YouTube preflight QA passed. A naturally occurring runtime-only removed/private or embed-blocked YouTube event remains pending because known unavailable videos are rejected before playback.
 
 Implementation:
 

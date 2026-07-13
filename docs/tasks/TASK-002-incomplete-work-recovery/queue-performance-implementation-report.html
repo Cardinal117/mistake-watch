@@ -105,7 +105,7 @@
         <tr><td>Privacy</td><td>Event serialization contains no raw source URL. YouTube uses its provider id; direct/private media uses an opaque queue id.</td></tr>
       </tbody></table></section>
 
-      <section aria-labelledby="next"><h2 id="next">Next Decision</h2><p class="intro">Batch D is locally implemented. Publish the SpacetimeDB module to Maincloud before deploying its frontend commit, then run live removed/private, embed-blocked, generic-error, and fourth-failure circuit QA. Production P75 INP remains pending until at least 50 post-deployment room samples exist.</p></section>
+      <section aria-labelledby="next"><h2 id="next">Production Release</h2><p class="intro">Batches A-D are live in commit <code>644d668</code> through Vercel deployment <code>dpl_Cwh8aiMM2J2XCdg3eQm8MmfZjhsL</code>. Maincloud received the additive failure-event schema and reducer before the frontend deployment. Health, room reconnection, unavailable YouTube preflight, and isolated transient-failure containment passed: a broken direct source remained visibly failed while a valid queued item stayed queued. Runtime-only removed/private or embed-blocked History visibility remains an observation item because known unavailable videos are rejected before playback. Production P75 INP remains pending until at least 50 post-deployment room samples exist.</p></section>
     </main>
   </body>
 </html>

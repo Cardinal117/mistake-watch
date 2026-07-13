@@ -1553,13 +1553,19 @@ Verification:
 - The 332-item local room reconnected after the schema publish, retained the bounded drawer behavior, and opened the independent History view without schema/client errors.
 - `npm run test:sync` passed 62 tests with the same two pre-existing uploaded-media atomicity and passive direct-media publication failures; all new Batch D tests passed.
 
-Manual production QA pending:
+Production release verification on July 13, 2026:
 
-- Publish the SpacetimeDB module to Maincloud before deploying the frontend commit.
-- Verify removed/private and embed-blocked YouTube items record visible events and advance once when allowed.
-- Verify generic player, provider, transient, and unknown failures stop with a visible event and do not advance.
-- Verify a fourth permanent failure inside 30 seconds records the failure but does not continue draining the queue.
-- Confirm History shows normalized YouTube ids only and never exposes private uploaded-media or signed URLs.
+- Committed as `644d668 feat(queue): harden media failure recovery` and pushed to `origin/main`.
+- Published the additive SpacetimeDB schema and `report_media_failure` reducer to Maincloud database identity `c2002b3535d2c6109cd2141bff9f9b30bf491a85905c2f5803a63a65dd27d83a` before deploying the matching frontend.
+- Deployed Vercel production deployment `dpl_Cwh8aiMM2J2XCdg3eQm8MmfZjhsL`; `watch.mistakestudios.com`, `mistake-watch.vercel.app`, and the deployment URL returned healthy responses.
+- Created isolated production room `Batch D Release QA`; the room reconnected to Maincloud and enabled room controls after the expected schema-publish disconnect.
+- Loaded a deliberately missing direct-media URL and confirmed the player showed an explicit error while a valid queued YouTube item remained at queue count 1. The transient failure did not advance or consume the queue.
+- Confirmed an unavailable YouTube id is rejected by metadata preflight before it can enter runtime playback.
+- Maincloud logs showed the program update and expected client disconnect with no subsequent module errors. Vercel release-window logs showed successful room, metadata, source-match, and health requests without application-level 5xx responses.
+
+Remaining production observation:
+
+- A true runtime-only removed/private or embed-blocked YouTube event cannot be forced reliably through the production UI because known unavailable items are rejected during preview. The permanent skip, fourth-failure circuit stop, normalized event payload, and signed/private URL redaction remain covered by deterministic tests; confirm the visible History record when a real queued video becomes unavailable after admission.
 
 ## TASK-002.5K Planning Notes
 
