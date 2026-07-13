@@ -17,6 +17,10 @@ const liveRoomSource = await readFile(
   path.join(root, "lib/spacetime/use-live-room.ts"),
   "utf8",
 );
+const spacetimeModuleSource = await readFile(
+  path.join(root, "spacetime/src/index.ts"),
+  "utf8",
+);
 
 function sectionBetween(source, start, end) {
   const startIndex = source.indexOf(start);
@@ -126,6 +130,28 @@ test("passive player pause and buffer events do not publish canonical room state
   assert.doesNotMatch(directElement, /publishMediaState\("paused"\)/);
   assert.doesNotMatch(directElement, /publishMediaState\("buffering"\)/);
   assert.doesNotMatch(directElement, /publishMediaState\("playing"\)/);
+});
+
+test("room mode switching preserves canonical playback continuity", () => {
+  const clientSwitch = sectionBetween(
+    liveRoomSource,
+    'async function switchMode(mode: "listen" | "watch")',
+    "function setQueueAutoplay",
+  );
+  const serverSwitch = sectionBetween(
+    spacetimeModuleSource,
+    "export const update_room_mode",
+    "export const set_queue_autoplay",
+  );
+
+  assert.match(clientSwitch, /\.\.\.currentSnapshot\.session/);
+  assert.match(clientSwitch, /mode:\s*result\.mode/);
+  assert.doesNotMatch(clientSwitch, /positionSeconds:\s*0/);
+  assert.doesNotMatch(clientSwitch, /sourceDurationSeconds:\s*(?:0|null)/);
+  assert.match(serverSwitch, /\.\.\.authority\.session/);
+  assert.match(serverSwitch, /mode:\s*normalizeRoomMode\(mode\)/);
+  assert.doesNotMatch(serverSwitch, /position_seconds:\s*0/);
+  assert.doesNotMatch(serverSwitch, /source_duration_seconds:\s*(?:0|null)/);
 });
 
 test("youtube iframe errors report stale-safe failure decisions to room authority", () => {

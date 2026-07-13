@@ -16,13 +16,13 @@ const tempDir = await mkdtemp(
 );
 const sourcePath = path.join(rootDir, "lib/queue/virtualization.ts");
 const source = await readFile(sourcePath, "utf8");
-const listenLayoutSource = await readFile(
-  path.join(rootDir, "components/room/listen-mode-layout.tsx"),
+const listenDrawerSource = await readFile(
+  path.join(rootDir, "components/room/listen/queue/queue-drawer.tsx"),
   "utf8",
 );
-const listenDrawerSource = listenLayoutSource.slice(
-  listenLayoutSource.indexOf("function ListenQueueDrawer"),
-  listenLayoutSource.indexOf("function ListenQueueRow"),
+const listenHooksSource = await readFile(
+  path.join(rootDir, "components/room/listen/hooks/listen-hooks.ts"),
+  "utf8",
 );
 const output = ts.transpileModule(source, {
   compilerOptions: {
@@ -196,7 +196,7 @@ test("listen drawer renders only the virtual queue slice with stable keys", () =
 
 test("listen drawer keeps its intended default height without a stored preference", () => {
   assert.match(
-    listenLayoutSource,
+    listenHooksSource,
     /if \(stored === null\) \{\s*return DEFAULT_LISTEN_DRAWER_HEIGHT;/,
   );
 });

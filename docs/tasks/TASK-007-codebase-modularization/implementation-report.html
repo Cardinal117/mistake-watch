@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TASK-007 Batch 1 Implementation Report</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0e0e0f; --surface:#1c1b1c; --raised:#242325; --line:#3b494b; --text:#e5e2e3; --muted:#b9cacb; --blue:#00dbe9; --gold:#ffba20; --good:#6ee7a8; --warn:#ffd27a; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    main { width:min(1180px,calc(100% - 32px)); margin:0 auto; padding:32px 0 56px; }
+    header { border-top:3px solid var(--blue); padding:24px 0 20px; }
+    h1,h2,h3,p { margin-top:0; }
+    h1 { margin-bottom:8px; font-size:clamp(28px,5vw,42px); letter-spacing:0; }
+    h2 { margin:0 0 14px; font-size:21px; }
+    h3 { margin-bottom:6px; font-size:16px; }
+    .eyebrow,.mono { font-family:"JetBrains Mono",Consolas,monospace; }
+    .eyebrow { color:var(--blue); font-size:12px; text-transform:uppercase; letter-spacing:.08em; }
+    .lede,.muted { color:var(--muted); }
+    .lede { max-width:820px; font-size:17px; }
+    .status { display:inline-flex; align-items:center; gap:8px; border:1px solid #2f7552; background:#163827; color:var(--good); padding:6px 10px; border-radius:6px; font-weight:700; }
+    .grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:14px; margin:18px 0; }
+    .card { grid-column:span 4; background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:18px; }
+    .wide { grid-column:span 8; }
+    .full { grid-column:1/-1; }
+    .metric { font-size:29px; font-weight:750; line-height:1.1; }
+    .metric small { display:block; margin-top:7px; color:var(--muted); font-size:12px; font-weight:500; }
+    .good { color:var(--good); }
+    .warn { color:var(--warn); }
+    table { width:100%; border-collapse:collapse; }
+    th,td { padding:11px 10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:var(--muted); font-size:12px; text-transform:uppercase; }
+    code { color:#dbfcff; }
+    ul { margin:8px 0 0; padding-left:20px; }
+    li + li { margin-top:6px; }
+    .callout { border-left:3px solid var(--gold); background:#2b2416; padding:14px 16px; }
+    .bar { height:7px; margin-top:10px; background:#353436; border-radius:4px; overflow:hidden; }
+    .bar span { display:block; height:100%; background:var(--blue); }
+    a { color:var(--blue); }
+    @media (max-width:780px) { .card,.wide { grid-column:1/-1; } main { width:min(100% - 24px,1180px); padding-top:16px; } table { font-size:13px; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">TASK-007 / Batch 1</div>
+    <h1>Room layout modularization</h1>
+    <p class="lede">The listen and watch monoliths are now compatibility entrypoints over bounded feature modules. Authenticated QA exposed a direct-player remount race; the branch now prevents passive media events from resetting canonical playback during mode switches.</p>
+    <span class="status">Continuity fix implemented; live QA required</span>
+  </header>
+
+  <section class="grid" aria-label="Implementation summary">
+    <article class="card"><div class="metric">6,046 → 1<small>Listen compatibility entrypoint lines</small></div></article>
+    <article class="card"><div class="metric">4,418 → 1<small>Watch compatibility entrypoint lines</small></div></article>
+    <article class="card"><div class="metric">38<small>New bounded feature modules</small></div></article>
+    <article class="card"><div class="metric good">678<small>Largest new module; ceiling is 700</small></div></article>
+    <article class="card"><div class="metric good">125/125<small>Identity, dev, queue, SpacetimeDB, YouTube, media tests</small></div></article>
+    <article class="card"><div class="metric warn">64/65<small>Sync suite; continuity fixed, one separate defect remains</small></div></article>
+  </section>
+
+  <section class="grid">
+    <article class="card full">
+      <h2>Discovered Issues</h2>
+      <table>
+        <thead><tr><th>Priority</th><th>Finding</th><th>Disposition</th></tr></thead>
+        <tbody>
+          <tr><td class="warn">P1 confirmed</td><td>Uploaded autoplay performs separate source-load and playback-state writes.</td><td>Focused sync/realtime fix before broad realtime decomposition.</td></tr>
+          <tr><td class="good">P1 fixed; QA pending</td><td>Passive direct-player events reset canonical position to <code>0:00</code> during a modularized mode-switch remount.</td><td>Passive pause/play/seek observations no longer write room state; repeat authenticated continuity QA before merge.</td></tr>
+          <tr><td class="warn">MW-SEC-001</td><td><code>owner_only</code> changes catalogue metadata but does not revoke permanent R2 URL access.</td><td>No current private rows exist; confirm with a dedicated owner-only test asset before approving a storage fix.</td></tr>
+          <tr><td>P2 release</td><td>Owner Watch/upload interaction cannot be authenticated locally.</td><td>Required preview smoke gate before merge.</td></tr>
+          <tr><td>P2 performance</td><td>Both room modes remain statically imported; gzip grew by 1.3 KB.</td><td>Dynamic boundaries remain Batch 3 scope.</td></tr>
+          <tr><td>P2 architecture</td><td>Queue panel, media assets, live-room hook, and Spacetime module remain above 1,500 lines.</td><td>Decompose in Batches 2-3, ordered by blast radius.</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">The full evidence, lower-priority observations, and recommended order are recorded in <code>discovered-issues.md</code>.</p>
+    </article>
+  </section>
+
+  <section class="grid">
+    <article class="card wide">
+      <h2>Files To Review</h2>
+      <table>
+        <thead><tr><th>Area</th><th>Review focus</th><th>Commit</th></tr></thead>
+        <tbody>
+          <tr><td><code>components/room/listen/**</code></td><td>Composition, queue virtualization, Add Media, TV, discovery, headers, theme.</td><td><code>1b3dfda</code></td></tr>
+          <tr><td><code>components/room/watch/**</code></td><td>Owner upload state, media hub, catalogue access, playback references, audience and queue.</td><td><code>77ff3b3</code></td></tr>
+          <tr><td><code>tests/helpers</code> and source-inspection tests</td><td>Assertions now inspect responsible module trees; no security assertion was removed.</td><td>Integration patch</td></tr>
+          <tr><td><code>direct-media-player.tsx</code> and player regression tests</td><td>Explicit controls remain authoritative; passive remount events cannot overwrite canonical playback state.</td><td>Continuity patch</td></tr>
+          <tr><td><code>review-notes.md</code></td><td>Evidence, caveats, bundle checkpoint, and preview QA requirement.</td><td>Integration patch</td></tr>
+        </tbody>
+      </table>
+    </article>
+    <aside class="card">
+      <h2>Scope Guard</h2>
+      <ul>
+        <li>No schema or migration changes.</li>
+        <li>No API or reducer payload changes.</li>
+        <li>No permission or storage-key changes.</li>
+        <li>No dependency additions.</li>
+        <li>No visual redesign.</li>
+        <li>No push or deployment.</li>
+      </ul>
+    </aside>
+  </section>
+
+  <section class="grid">
+    <article class="card full">
+      <h2>Verification Evidence</h2>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>Compile and quality</td><td class="good">Passed</td><td>Typecheck, full lint, diff check, Next.js production build, and import graph audit with 0 cycles.</td></tr>
+          <tr><td>Core automated suites</td><td class="good">Passed</td><td>Identity 2/2; dev 8/8; queue 52/52; SpacetimeDB 16/16; YouTube 3/3; media/security 44/44.</td></tr>
+          <tr><td>Sync/player</td><td class="warn">Improved</td><td>64/65. Passive-event and mode-switch continuity assertions pass. Only atomic uploaded autoplay remains as a separate known failure.</td></tr>
+          <tr><td>Local browser</td><td class="good">Passed where available</td><td>331-item listen room, open queue virtual slice, Add Media, desktop and 390px mobile. No captured console errors or horizontal overflow.</td></tr>
+          <tr><td>Owner watch QA</td><td class="warn">Preview required</td><td>Local guest cannot switch room mode; Google owner authentication is live-only.</td></tr>
+        </tbody>
+      </table>
+    </article>
+  </section>
+
+  <section class="grid">
+    <article class="card wide">
+      <h2>Bundle Checkpoint</h2>
+      <p><strong>Room JavaScript:</strong> 592.8 KB raw / 151.7 KB gzip, versus 588.4 / 150.4 KB baseline.</p>
+      <div class="bar" aria-label="Room JavaScript is less than one percent above baseline"><span style="width:99.2%"></span></div>
+      <p class="muted">The approximately 0.7–0.9% increase is recorded module-boundary overhead. CSS is unchanged at 157.8 KB raw / 22.3 KB gzip. Dynamic loading and measurable payload reduction remain Batch 3 scope.</p>
+    </article>
+    <aside class="card callout">
+      <h2>Release Decision</h2>
+      <p>Do not merge yet. Temporarily deploy the continuity patch and repeat owner Watch/Listen switching while paused and playing for YouTube, direct, and uploaded sources. After that gate, Batch 2 starts with <code>queue-panel.tsx</code>, followed by <code>lib/media/assets.ts</code>.</p>
+    </aside>
+  </section>
+</main>
+</body>
+</html>

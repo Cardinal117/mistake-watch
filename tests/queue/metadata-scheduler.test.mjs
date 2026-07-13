@@ -279,16 +279,15 @@ test("priority order keeps current, next, initial, visible, and overscan work ah
 
 test("queue integration uses progressive batches, shared cache reuse, and row priorities", async () => {
   const [
-    listenSource,
+    listenHooksSource,
+    listenQueueRowSource,
     metadataClientSource,
     nextPreparationSource,
     queueSchedulerSource,
   ] =
     await Promise.all([
-      readFile(
-        path.join(rootDir, "components/room/listen-mode-layout.tsx"),
-        "utf8",
-      ),
+      readFile(path.join(rootDir, "components/room/listen/hooks/listen-hooks.ts"), "utf8"),
+      readFile(path.join(rootDir, "components/room/listen/queue/queue-row.tsx"), "utf8"),
       readFile(path.join(rootDir, "lib/youtube/metadata-client.ts"), "utf8"),
       readFile(
         path.join(rootDir, "lib/player/next-item-preparation.ts"),
@@ -299,9 +298,9 @@ test("queue integration uses progressive batches, shared cache reuse, and row pr
         "utf8",
       ),
     ]);
-  const durationHookSource = listenSource.slice(
-    listenSource.indexOf("function useRemainingQueueSeconds"),
-    listenSource.indexOf("function toSmartShuffleItem"),
+  const durationHookSource = listenHooksSource.slice(
+    listenHooksSource.indexOf("function useRemainingQueueSeconds"),
+    listenHooksSource.indexOf("function toSmartShuffleItem"),
   );
 
   assert.match(
@@ -310,7 +309,7 @@ test("queue integration uses progressive batches, shared cache reuse, and row pr
   );
   assert.match(durationHookSource, /Promise\.allSettled\(/);
   assert.doesNotMatch(durationHookSource, /Promise\.all\(/);
-  assert.match(listenSource, /queuePriority: metadataPriority/);
+  assert.match(listenQueueRowSource, /queuePriority: metadataPriority/);
   assert.match(queueSchedulerSource, /MAX_QUEUE_METADATA_CONCURRENCY = 3/);
   assert.match(queueSchedulerSource, /readCachedYouTubeMetadata\(input\)/);
   assert.match(metadataClientSource, /metadataCache\.set\(key, fallback\)/);
