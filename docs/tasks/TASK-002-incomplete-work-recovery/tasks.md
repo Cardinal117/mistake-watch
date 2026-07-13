@@ -472,6 +472,8 @@ Safe commit point:
 
 ### Batch B: Bounded Metadata Scheduler
 
+Status: implemented and verified on July 13, 2026 through automated checks, a production build, and 332-item local browser resource inspection. Browser resource inventory confirmed request budget, deduplication, progressive loading, and close cancellation; exact simultaneous in-flight timing remains deterministic-test evidence because the browser surface does not expose request timing.
+
 Implementation:
 
 - Resolve metadata for the first 10 upcoming items immediately.

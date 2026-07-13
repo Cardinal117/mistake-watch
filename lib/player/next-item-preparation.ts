@@ -1,8 +1,10 @@
 import { getNextQueueItemIdForMode } from "../queue/model";
+import { getQueueMetadataPriority } from "../queue/metadata-priority";
 import { getYouTubeThumbnailUrl, parseYouTubeVideoId } from "./source";
 import type { QueueMode } from "../queue/model";
 import type { LiveQueueItem, LiveRoomSnapshot } from "../spacetime/types";
 import { loadYouTubeIframeApi } from "../youtube/iframe-api";
+import { scheduleQueueYouTubeMetadata } from "../youtube/queue-metadata-scheduler";
 
 export type NextItemPreparationTarget = {
   durationSeconds: number | null;
@@ -387,14 +389,13 @@ async function warmHlsManifest(sourceUrl: string, signal?: AbortSignal) {
 }
 
 async function preloadYouTubeMetadata(videoId: string, signal?: AbortSignal) {
-  const response = await fetch(
-    `/api/youtube/metadata?videoId=${encodeURIComponent(videoId)}`,
-    { signal },
-  );
-
-  if (!response.ok) {
-    throw new Error("YouTube metadata preload failed.");
-  }
+  await scheduleQueueYouTubeMetadata(videoId, {
+    priority: getQueueMetadataPriority({
+      itemIndex: 0,
+      queuedIndex: 0,
+    }),
+    signal,
+  });
 }
 
 function getNetworkSkipReason() {

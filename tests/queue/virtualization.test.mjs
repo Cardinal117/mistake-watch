@@ -61,6 +61,7 @@ test("empty queues produce an empty virtual window", () => {
       offsetTop: 0,
       startIndex: 0,
       totalHeight: 0,
+      visibleEndIndex: 0,
     },
   );
 });

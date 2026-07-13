@@ -17,6 +17,7 @@ export type QueueVirtualWindow = {
   offsetTop: number;
   startIndex: number;
   totalHeight: number;
+  visibleEndIndex: number;
 };
 
 function toNonNegativeInteger(value: number) {
@@ -56,6 +57,7 @@ export function getQueueVirtualWindow({
       offsetTop: 0,
       startIndex: 0,
       totalHeight: 0,
+      visibleEndIndex: 0,
     };
   }
 
@@ -72,6 +74,10 @@ export function getQueueVirtualWindow({
     safeItemCount,
     Math.max(1, Math.ceil(safeViewportHeight / safeRowHeight) + 1),
   );
+  const visibleEndIndex = Math.min(
+    safeItemCount,
+    firstVisibleIndex + visibleItemCount,
+  );
   const desiredStartIndex = Math.max(0, firstVisibleIndex - safeOverscan);
   const desiredEndIndex = Math.min(
     safeItemCount,
@@ -87,6 +93,7 @@ export function getQueueVirtualWindow({
     offsetTop: startIndex * safeRowHeight,
     startIndex,
     totalHeight,
+    visibleEndIndex,
   };
 }
 

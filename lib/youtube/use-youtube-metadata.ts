@@ -3,16 +3,18 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { parseYouTubeVideoId } from "@/lib/player/source";
-import { beginQueueMetadataRequest } from "@/lib/performance/queue";
+import { isMetadataScheduleAbort } from "@/lib/queue/metadata-scheduler";
 import { UNKNOWN_YOUTUBE_AVAILABILITY } from "./availability";
 import type { YouTubeMetadataResponse } from "./metadata";
-
-const clientCache = new Map<string, YouTubeMetadataResponse>();
-const pendingRequests = new Map<string, Promise<YouTubeMetadataResponse>>();
+import {
+  fetchYouTubeMetadata,
+  readCachedYouTubeMetadata,
+} from "./metadata-client";
+import { scheduleQueueYouTubeMetadata } from "./queue-metadata-scheduler";
 
 export function useYouTubeMetadata(
   sourceUrl?: string | null,
-  options?: { instrumentQueue?: boolean },
+  options?: { instrumentQueue?: boolean; queuePriority?: number },
 ) {
   const videoId = useMemo(
     () => (sourceUrl ? parseYouTubeVideoId(sourceUrl) : null),
@@ -26,7 +28,7 @@ export function useYouTubeMetadata(
     videoId && resolved?.videoId === videoId
       ? resolved.result
       : videoId
-        ? (clientCache.get(videoId) ?? null)
+        ? readCachedYouTubeMetadata(sourceUrl ?? videoId)
         : null;
 
   useEffect(() => {
@@ -34,23 +36,33 @@ export function useYouTubeMetadata(
       return;
     }
 
-    if (clientCache.has(videoId)) {
+    const metadataInput = sourceUrl ?? videoId;
+
+    if (readCachedYouTubeMetadata(metadataInput)) {
       return;
     }
 
-    const request = getMetadataRequest(videoId, options?.instrumentQueue);
-    let cancelled = false;
+    const controller = new AbortController();
+    const request =
+      typeof options?.queuePriority === "number"
+        ? scheduleQueueYouTubeMetadata(metadataInput, {
+            priority: options.queuePriority,
+            signal: controller.signal,
+          })
+        : fetchYouTubeMetadata(metadataInput, {
+            instrumentQueue: options?.instrumentQueue,
+          });
 
     request
       .then((response) => {
-        if (cancelled) {
+        if (controller.signal.aborted) {
           return;
         }
 
         setResolved({ result: response, videoId });
       })
       .catch((error: unknown) => {
-        if (cancelled) {
+        if (controller.signal.aborted || isMetadataScheduleAbort(error)) {
           return;
         }
 
@@ -60,14 +72,13 @@ export function useYouTubeMetadata(
           reason: "YouTube metadata unavailable.",
           status: "unavailable",
         };
-        clientCache.set(videoId, fallback);
         setResolved({ result: fallback, videoId });
       });
 
     return () => {
-      cancelled = true;
+      controller.abort();
     };
-  }, [options?.instrumentQueue, videoId]);
+  }, [options?.instrumentQueue, options?.queuePriority, sourceUrl, videoId]);
 
   return {
     loading: Boolean(videoId && !result),
@@ -76,45 +87,4 @@ export function useYouTubeMetadata(
     status: result?.status ?? (videoId ? "unavailable" : "unavailable"),
     videoId,
   };
-}
-
-function getMetadataRequest(videoId: string, instrumentQueue = false) {
-  const cached = clientCache.get(videoId);
-
-  if (cached) {
-    return Promise.resolve(cached);
-  }
-
-  const pending = pendingRequests.get(videoId);
-
-  if (pending) {
-    return pending;
-  }
-
-  const completeInstrumentation = instrumentQueue
-    ? beginQueueMetadataRequest({ client: "metadata-hook" })
-    : null;
-  const request = fetch(
-    `/api/youtube/metadata?videoId=${encodeURIComponent(videoId)}`,
-  )
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error("metadata request failed");
-      }
-
-      return response.json() as Promise<YouTubeMetadataResponse>;
-    })
-    .then((metadata) => {
-      clientCache.set(videoId, metadata);
-
-      return metadata;
-    })
-    .finally(() => {
-      pendingRequests.delete(videoId);
-      completeInstrumentation?.();
-    });
-
-  pendingRequests.set(videoId, request);
-
-  return request;
 }

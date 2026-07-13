@@ -1478,6 +1478,55 @@ Conclusion:
 - Batch B bounded metadata scheduling is the next performance slice so only current, first-10, visible, and overscan rows initiate metadata work.
 - Production P75 INP improvement remains unverified until this work is deployed and at least 50 post-deployment room samples are available.
 
+### Batch B Bounded Metadata Scheduler - July 13, 2026
+
+Status: implemented and verified through deterministic tests, static checks, local service readiness, a production build, and local browser resource inspection against the 332-item room.
+
+Implementation:
+
+- Added one shared metadata scheduler with a hard maximum of three active requests.
+- Queue jobs deduplicate by normalized YouTube video id and queued jobs can be promoted when a higher-priority subscriber appears.
+- Priority order covers current, next, first 10, visible, overscan, then background work.
+- The YouTube metadata hook now reuses the shared metadata client cache and detaches aborted row subscribers without applying stale results.
+- The listen queue drawer exposes its open state to the duration summary lifecycle.
+- Closed drawers resolve only the first 10 unresolved durations; open drawers progress through bounded 10-item batches.
+- Drawer closure, room changes, queue removal, and virtual-row unmounting abort subscribers or safely ignore obsolete active results.
+- Remaining-duration calculation no longer uses whole-queue Promise.all fanout.
+- Provider unavailable responses remain cached as explicit unavailable results, preventing automatic retry storms.
+- The compact drawer handle reserves its existing dimensions and shows either a partial duration with + or Calculating time while metadata remains unresolved.
+- Browser QA found the older next-item preparation path issuing a duplicate direct metadata fetch. It now uses the same next-priority scheduler and normalized cache key.
+
+Automated verification:
+
+- npm run test:queue - 51 passed, 0 failed.
+- npm run test:youtube - 3 passed, 0 failed.
+- npm run test:sync - 57 passed, 2 known pre-existing failures in uploaded-media autoplay atomicity and passive direct-media pause publication; the Batch B next-item preparation tests passed.
+- npm run typecheck - passed.
+- npm run lint - passed with 0 warnings.
+- npm run build - passed.
+- npm run dev:check - 20 passed, 0 warnings, 0 failures.
+- git diff --check - passed.
+
+Deterministic coverage:
+
+- A 250-item fixture schedules only the initial 10 jobs and starts only 3 while those requests are blocked.
+- Peak active work never exceeds 3.
+- Duplicate subscribers share one provider call.
+- Queued jobs are reprioritized when a current/visible subscriber arrives.
+- Aborted queued jobs never start.
+- Aborted active subscribers reject and cannot apply late results.
+- Provider failures settle all deduplicated subscribers without scheduler retries.
+
+Browser resource QA:
+
+- Fresh closed drawer: 9 metadata request resources for 9 unique video ids, within the first-10 budget, with 0 mounted queue rows.
+- The first inspection exposed one duplicate next-item request from the old preload path; a fresh tab after the corrective patch showed 0 duplicates.
+- Open drawer: 8 mounted rows and 12 unique metadata resources.
+- Fast scroll: 12 mounted rows around indexes 71-82.
+- Progressive settlement: resource inventory increased from 12 to 24 unique ids after the scrolled window became active, with 0 duplicates.
+- Close cancellation: mounted rows returned to 0 and metadata resources remained at 24 after 1.2 seconds, with 0 post-close growth.
+- The browser resource inventory exposes request identity but not request start/end timing. Maximum active concurrency remains verified by the deterministic blocked-request scheduler test, which observed a hard peak of 3.
+
 ## TASK-002.5K Planning Notes
 
 - User wants listen-room TV view mode pulled forward before the larger queue-resilience/performance implementation.

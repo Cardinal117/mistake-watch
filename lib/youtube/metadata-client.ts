@@ -3,15 +3,29 @@
 import { UNKNOWN_YOUTUBE_AVAILABILITY } from "./availability";
 import type { YouTubeMetadataResponse } from "./metadata";
 import { beginQueueMetadataRequest } from "@/lib/performance/queue";
+import { parseYouTubeVideoId } from "@/lib/player/source";
 
 const metadataCache = new Map<string, YouTubeMetadataResponse>();
-const pendingMetadataRequests = new Map<string, Promise<YouTubeMetadataResponse>>();
+const pendingMetadataRequests = new Map<
+  string,
+  Promise<YouTubeMetadataResponse>
+>();
+
+export function getYouTubeMetadataCacheKey(input: string) {
+  const trimmedInput = input.trim();
+
+  return parseYouTubeVideoId(trimmedInput) ?? trimmedInput;
+}
+
+export function readCachedYouTubeMetadata(input: string) {
+  return metadataCache.get(getYouTubeMetadataCacheKey(input)) ?? null;
+}
 
 export function fetchYouTubeMetadata(
   input: string,
   options?: { instrumentQueue?: boolean },
 ) {
-  const key = input.trim();
+  const key = getYouTubeMetadataCacheKey(input);
   const cached = metadataCache.get(key);
 
   if (cached) {

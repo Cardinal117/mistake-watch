@@ -87,6 +87,11 @@ import {
 } from "@/lib/queue/model";
 import { deriveQueueState, type DerivedQueueState } from "@/lib/queue/derived";
 import {
+  getQueueMetadataPriority,
+  INITIAL_QUEUE_METADATA_COUNT,
+} from "@/lib/queue/metadata-priority";
+import { isMetadataScheduleAbort } from "@/lib/queue/metadata-scheduler";
+import {
   getQueueScrollTopForIndex,
   getQueueVirtualWindow,
 } from "@/lib/queue/virtualization";
@@ -111,6 +116,7 @@ import { cx } from "@/lib/ui";
 import { fetchPlaylistPreview } from "@/lib/youtube/playlist-client";
 import { fetchYouTubeMetadata } from "@/lib/youtube/metadata-client";
 import { fetchYouTubeRecommendations } from "@/lib/youtube/recommendations-client";
+import { scheduleQueueYouTubeMetadata } from "@/lib/youtube/queue-metadata-scheduler";
 import type {
   YouTubePlaylistItem,
   YouTubePlaylistPreviewResponse,
@@ -208,6 +214,7 @@ export function ListenModeLayout({
   const [tvMode, setTvMode] = useState(false);
   const [tvSettings, setTvSettings] = usePersistentListenTvSettings();
   const [volume, setVolume] = useState(DEFAULT_LISTEN_VOLUME);
+  const [queueDrawerOpen, setQueueDrawerOpen] = useState(false);
   const liveQueueItems = useListenQueueItems(liveRoom, room);
   const queueState = useMemo(
     () => deriveQueueState(liveQueueItems),
@@ -257,7 +264,10 @@ export function ListenModeLayout({
   const canManageQueue = liveRoom.canManageQueue;
   const isConnected = liveRoom.connectionStatus === "connected";
   const nextPreparation = useNextItemPreparation(liveRoom);
-  const remainingQueueSeconds = useRemainingQueueSeconds(liveRoom);
+  const {
+    loading: remainingQueueMetadataLoading,
+    seconds: remainingQueueSeconds,
+  } = useRemainingQueueSeconds(liveRoom, room.id, queueDrawerOpen);
   useEffect(() => {
     const timer = window.setInterval(() => setClockMs(Date.now()), 500);
 
@@ -535,6 +545,7 @@ export function ListenModeLayout({
         canManageQueue={canManageQueue}
         isConnected={isConnected}
         nextPreparation={nextPreparation}
+        onOpenChange={setQueueDrawerOpen}
         onAddQueueItem={liveRoom.addQueueItem}
         onClearQueue={liveRoom.clearQueue}
         onMoveQueueItem={liveRoom.moveQueueItem}
@@ -546,6 +557,8 @@ export function ListenModeLayout({
         onSmartShuffle={() => applyQueueShuffle("smart")}
         queueState={queueState}
         queueMode={session?.queueMode ?? "normal"}
+        open={queueDrawerOpen}
+        remainingLoading={remainingQueueMetadataLoading}
         remainingSeconds={remainingQueueSeconds}
         desktopShell={desktopShell}
       />
@@ -4011,6 +4024,7 @@ function ListenQueueDrawer({
   desktopShell,
   isConnected,
   nextPreparation,
+  onOpenChange,
   onAddQueueItem,
   onClearQueue,
   onMoveQueueItem,
@@ -4020,7 +4034,9 @@ function ListenQueueDrawer({
   onRemoveQueueItem,
   onShuffle,
   onSmartShuffle,
+  open,
   queueState,
+  remainingLoading,
   remainingSeconds,
 }: {
   canAddQueue: boolean;
@@ -4028,6 +4044,7 @@ function ListenQueueDrawer({
   desktopShell: boolean;
   isConnected: boolean;
   nextPreparation: ReturnType<typeof useNextItemPreparation>;
+  onOpenChange(open: boolean): void;
   onAddQueueItem(input: QueueAddInput): void;
   onClearQueue(): void;
   onMoveQueueItem(queueItemId: string, position: number): void;
@@ -4040,12 +4057,13 @@ function ListenQueueDrawer({
   onRemoveQueueItem(queueItemId: string): void;
   onShuffle(): void;
   onSmartShuffle(): void;
+  open: boolean;
   queueState: DerivedQueueState<RoomQueueItem>;
   queueMode: QueueMode;
+  remainingLoading: boolean;
   remainingSeconds: number | null;
 }) {
   const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
   const [drawerView, setDrawerView] = useState<"history" | "queue">("queue");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const drawerOpenMeasureRef = useRef<QueuePerformanceMeasure | null>(null);
@@ -4093,8 +4111,10 @@ function ListenQueueDrawer({
       ? `${historyItems.length} played`
       : activeQueueLabel;
   const compactRemainingLabel = remainingSeconds
-    ? formatQueueRemainingDuration(remainingSeconds)
-    : null;
+    ? `${formatQueueRemainingDuration(remainingSeconds)}${remainingLoading ? " +" : ""}`
+    : remainingLoading
+      ? "Calculating time"
+      : null;
   const nextPreview =
     nextPreparation.status !== "idle" ? nextPreparation.target : null;
   const collapsedDrawerHeight = nextPreview ? "4.5rem" : "3rem";
@@ -4251,7 +4271,7 @@ function ListenQueueDrawer({
       );
     }
 
-    setOpen((current) => !current);
+    onOpenChange(!open);
   }
 
   function setHeight(nextHeight: number) {
@@ -4529,6 +4549,15 @@ function ListenQueueDrawer({
                     index={index}
                     item={item}
                     manageDisabled={manageDisabled}
+                    metadataPriority={getQueueMetadataPriority({
+                      current: item.id === currentItem?.id,
+                      firstVisibleIndex: virtualWindow.firstVisibleIndex,
+                      itemIndex: index,
+                      overscanEndIndex: virtualWindow.endIndex,
+                      overscanStartIndex: virtualWindow.startIndex,
+                      queuedIndex,
+                      visibleEndIndex: virtualWindow.visibleEndIndex,
+                    })}
                     onAddQueueItem={onAddQueueItem}
                           onMoveQueueItem={(queueItemId, position) =>
                             measureQueueAction("move", () =>
@@ -4580,6 +4609,7 @@ function ListenQueueRow({
   index,
   item,
   manageDisabled,
+  metadataPriority,
   onAddQueueItem,
   onMoveQueueItem,
   onPlayQueueItem,
@@ -4595,6 +4625,7 @@ function ListenQueueRow({
   index: number;
   item: RoomQueueItem;
   manageDisabled: boolean;
+  metadataPriority: number;
   onAddQueueItem(input: QueueAddInput): void;
   onMoveQueueItem(queueItemId: string, position: number): void;
   onPlayQueueItem(queueItemId: string): void;
@@ -4609,7 +4640,7 @@ function ListenQueueRow({
 }) {
   const metadata = useYouTubeMetadata(
     item.sourceType === "youtube" ? item.sourceUrl : null,
-    { instrumentQueue: true },
+    { queuePriority: metadataPriority },
   );
   const title = metadata.metadata?.title ?? item.title;
   const channel =
@@ -5444,25 +5475,58 @@ function useDenseListenQueueRows() {
   return denseQueueRows;
 }
 
-function useRemainingQueueSeconds(liveRoom: LiveRoomState) {
-  const [metadataDurations, setMetadataDurations] = useState<
-    Record<string, number>
-  >({});
+function useRemainingQueueSeconds(
+  liveRoom: LiveRoomState,
+  roomId: string,
+  drawerOpen: boolean,
+) {
+  const generationRef = useRef(0);
+  const [metadataState, setMetadataState] = useState<{
+    durations: Record<string, number | null>;
+    roomId: string;
+  }>(() => ({ durations: {}, roomId }));
+  const metadataDurations = useMemo(
+    () => (metadataState.roomId === roomId ? metadataState.durations : {}),
+    [metadataState, roomId],
+  );
   const missingDurationItems = useMemo(
-    () =>
-      liveRoom.snapshot.queue.filter(
-        (item) =>
-          item.status === "queued" &&
+    () => {
+      const missingItems: Array<{
+        item: LiveQueueItem;
+        queuedIndex: number;
+      }> = [];
+      let queuedIndex = 0;
+
+      for (const item of liveRoom.snapshot.queue) {
+        if (item.status !== "queued") {
+          continue;
+        }
+
+        const itemQueuedIndex = queuedIndex;
+
+        queuedIndex += 1;
+
+        if (
           item.sourceType === "youtube" &&
           typeof item.durationSeconds !== "number" &&
-          Boolean(item.sourceUrl),
-      ),
-    [liveRoom.snapshot.queue],
+          Boolean(item.sourceUrl) &&
+          metadataDurations[item.queueItemId] === undefined
+        ) {
+          missingItems.push({ item, queuedIndex: itemQueuedIndex });
+        }
+      }
+
+      return missingItems;
+    },
+    [liveRoom.snapshot.queue, metadataDurations],
   );
   const missingDurationKey = useMemo(
     () =>
       missingDurationItems
-        .map((item) => `${item.queueItemId}:${item.sourceUrl}`)
+        .map(
+          ({ item, queuedIndex }) =>
+            `${item.queueItemId}:${item.sourceUrl}:${queuedIndex}`,
+        )
         .join("|"),
     [missingDurationItems],
   );
@@ -5475,52 +5539,103 @@ function useRemainingQueueSeconds(liveRoom: LiveRoomState) {
       return;
     }
 
-    let cancelled = false;
+    const controller = new AbortController();
+    const generation = generationRef.current + 1;
+    const itemsToResolve = drawerOpen
+      ? missingDurationItems
+      : missingDurationItems.filter(
+          ({ queuedIndex }) =>
+            queuedIndex < INITIAL_QUEUE_METADATA_COUNT,
+        );
 
-    void Promise.all(
-      missingDurationItems.map(async (item) => {
-        const response = await fetchYouTubeMetadata(item.sourceUrl, {
-          instrumentQueue: true,
-        });
-        const durationSeconds = response.metadata?.durationSeconds;
+    generationRef.current = generation;
 
-        return typeof durationSeconds === "number" && durationSeconds > 0
-          ? ([item.queueItemId, durationSeconds] as const)
-          : null;
-      }),
-    ).then((entries) => {
-      if (cancelled) {
-        return;
-      }
-
-      const resolvedEntries = entries.filter(
-        (entry): entry is readonly [string, number] => Boolean(entry),
-      );
-
-      if (resolvedEntries.length === 0) {
-        return;
-      }
-
-      setMetadataDurations((current) => {
-        const next = { ...current };
-
-        for (const [queueItemId, durationSeconds] of resolvedEntries) {
-          next[queueItemId] = durationSeconds;
+    async function resolveDurations() {
+      for (
+        let batchStart = 0;
+        batchStart < itemsToResolve.length;
+        batchStart += INITIAL_QUEUE_METADATA_COUNT
+      ) {
+        if (controller.signal.aborted) {
+          return;
         }
 
-        return next;
-      });
-    });
+        const batch = itemsToResolve.slice(
+          batchStart,
+          batchStart + INITIAL_QUEUE_METADATA_COUNT,
+        );
+        const results = await Promise.allSettled(
+          batch.map(({ item, queuedIndex }) =>
+            scheduleQueueYouTubeMetadata(item.sourceUrl, {
+              priority: getQueueMetadataPriority({
+                itemIndex: queuedIndex,
+                queuedIndex,
+              }),
+              signal: controller.signal,
+            }),
+          ),
+        );
+
+        if (controller.signal.aborted || generationRef.current !== generation) {
+          return;
+        }
+
+        setMetadataState((current) => {
+          const durations =
+            current.roomId === roomId ? { ...current.durations } : {};
+
+          results.forEach((result, index) => {
+            if (
+              result.status === "rejected" &&
+              isMetadataScheduleAbort(result.reason)
+            ) {
+              return;
+            }
+
+            const queueItemId = batch[index]?.item.queueItemId;
+
+            if (!queueItemId) {
+              return;
+            }
+
+            const durationSeconds =
+              result.status === "fulfilled"
+                ? result.value.metadata?.durationSeconds
+                : null;
+
+            durations[queueItemId] =
+              typeof durationSeconds === "number" && durationSeconds > 0
+                ? durationSeconds
+                : null;
+          });
+
+          return { durations, roomId };
+        });
+      }
+    }
+
+    void resolveDurations();
 
     return () => {
-      cancelled = true;
+      controller.abort();
     };
-  }, [liveRoom.connectionStatus, missingDurationItems, missingDurationKey]);
+  }, [
+    drawerOpen,
+    liveRoom.connectionStatus,
+    missingDurationItems,
+    missingDurationKey,
+    roomId,
+  ]);
 
-  return useMemo(
+  const seconds = useMemo(
     () => getRemainingQueueSeconds(liveRoom.snapshot.queue, metadataDurations),
     [liveRoom.snapshot.queue, metadataDurations],
   );
+
+  return {
+    loading: missingDurationItems.length > 0,
+    seconds,
+  };
 }
 
 function toSmartShuffleItem(item: RoomQueueItem, index = 0) {
@@ -5577,7 +5692,7 @@ function buildCanonicalState(
 
 function getRemainingQueueSeconds(
   queueItems: LiveQueueItem[],
-  metadataDurations: Record<string, number>,
+  metadataDurations: Record<string, number | null>,
 ) {
   const remainingSeconds = queueItems.reduce((total, item) => {
     if (item.status !== "queued") {

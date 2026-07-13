@@ -43,6 +43,14 @@ await writeFile(
   path.join(tempDir, "iframe-api.mjs"),
   "export function loadYouTubeIframeApi() { return Promise.resolve({}); }\n",
 );
+await writeFile(
+  path.join(tempDir, "metadata-priority.mjs"),
+  "export function getQueueMetadataPriority() { return 1; }\n",
+);
+await writeFile(
+  path.join(tempDir, "queue-metadata-scheduler.mjs"),
+  "export function scheduleQueueYouTubeMetadata() { return Promise.resolve({}); }\n",
+);
 
 const {
   getNextItemInvalidationKey,
@@ -55,8 +63,16 @@ const {
   (source) =>
     source
       .replace('from "../queue/model"', 'from "./queue-model.mjs"')
+      .replace(
+        'from "../queue/metadata-priority"',
+        'from "./metadata-priority.mjs"',
+      )
       .replace('from "./source"', 'from "./source.mjs"')
-      .replace('from "../youtube/iframe-api"', 'from "./iframe-api.mjs"'),
+      .replace('from "../youtube/iframe-api"', 'from "./iframe-api.mjs"')
+      .replace(
+        'from "../youtube/queue-metadata-scheduler"',
+        'from "./queue-metadata-scheduler.mjs"',
+      ),
 );
 
 test.after(async () => {

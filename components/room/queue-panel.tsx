@@ -43,6 +43,7 @@ import {
   type SmartShuffleItem,
 } from "@/lib/queue/model";
 import { deriveQueueState } from "@/lib/queue/derived";
+import { getQueueMetadataPriority } from "@/lib/queue/metadata-priority";
 import { useQueueActionPerformance } from "@/lib/performance/use-queue-action-performance";
 import type { RoomQueueItem } from "@/lib/rooms";
 import type { LiveRoomError } from "@/lib/spacetime";
@@ -1880,7 +1881,13 @@ function QueueRow({
 }) {
   const metadata = useYouTubeMetadata(
     item.sourceType === "youtube" ? item.sourceUrl : null,
-    { instrumentQueue: true },
+    {
+      queuePriority: getQueueMetadataPriority({
+        current: item.status === "now",
+        itemIndex: Math.max(0, queuedIndex),
+        queuedIndex,
+      }),
+    },
   );
   const title = metadata.metadata?.title ?? item.title;
   const channel = metadata.metadata?.channelTitle ?? item.channelName;

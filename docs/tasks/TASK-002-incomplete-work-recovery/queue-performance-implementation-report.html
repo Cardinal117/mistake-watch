@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TASK-002.5J Batch A Implementation - Mistake Watch</title>
+    <title>TASK-002.5J Queue Performance Implementation - Mistake Watch</title>
     <style>
       :root { color-scheme: dark; --bg:#0e0e0f; --surface:#131314; --panel:#1c1b1c; --text:#e5e2e3; --muted:#b9cacb; --line:rgb(255 255 255 / .1); --cyan:#00dbe9; --gold:#ffba20; --green:#77d982; --red:#ffb4ab; }
       * { box-sizing: border-box; }
@@ -26,25 +26,26 @@
   <body>
     <main>
       <header>
-        <div class="badges"><span class="badge">TASK-002.5J Batches A + C</span><span class="badge green">Implemented locally</span><span class="badge gold">Deployment pending</span></div>
-        <h1>Linear queue state and viewport-scaled drawer rendering</h1>
-        <p>The queue surfaces derive canonical views once per queue revision, use direct row indexes, unmount heavy content while closed, and render only the visible plus overscan rows while open.</p>
+        <div class="badges"><span class="badge">TASK-002.5J Batches A + B + C</span><span class="badge green">Automated QA passed</span><span class="badge gold">Network QA pending</span></div>
+        <h1>Bounded rendering and metadata work for large queues</h1>
+        <p>Queue state is linear, the drawer mounts only its viewport window, and YouTube metadata now resolves through a shared priority scheduler capped at three active requests.</p>
       </header>
 
       <section aria-labelledby="result"><h2 id="result">Measured Result</h2><div class="grid four">
         <article class="metric"><span>Pre-change P75</span><strong>94.996 ms</strong></article>
         <article class="metric"><span>Optimized P75</span><strong>7.794 ms</strong></article>
         <article class="metric"><span>P75 improvement</span><strong>91.795%</strong></article>
-        <article class="metric"><span>Queue/YouTube tests</span><strong>35 / 35</strong></article>
+        <article class="metric"><span>Queue/YouTube tests</span><strong>54 / 54</strong></article>
       </div><p class="intro">Local Node.js CPU benchmark, 250 deterministic items, 25 samples, 500 iterations each. This is not browser/mobile field evidence.</p></section>
 
       <section aria-labelledby="files"><h2 id="files">Files To Review</h2><div class="grid two">
-        <article><span class="badge">Core</span><ul><li><code>lib/queue/derived.ts</code></li><li><code>components/room/listen-mode-layout.tsx</code></li><li><code>components/room/queue-panel.tsx</code></li></ul></article>
-        <article><span class="badge gold">Evidence</span><ul><li><code>tests/queue/derived.test.mjs</code> and <code>fixtures.mjs</code></li><li><code>scripts/benchmark-queue-derived-state.mjs</code></li><li><code>lib/performance/queue.ts</code> and action hook</li></ul></article>
+        <article><span class="badge">Core</span><ul><li><code>lib/queue/metadata-scheduler.ts</code> and <code>metadata-priority.ts</code></li><li><code>lib/youtube/queue-metadata-scheduler.ts</code> and shared metadata client/hook</li><li><code>components/room/listen-mode-layout.tsx</code> and <code>queue-panel.tsx</code></li></ul></article>
+        <article><span class="badge gold">Evidence</span><ul><li><code>tests/queue/metadata-scheduler.test.mjs</code></li><li><code>tests/queue/virtualization.test.mjs</code></li><li><code>scripts/benchmark-queue-derived-state.mjs</code> and <code>lib/performance/queue.ts</code></li></ul></article>
       </div></section>
 
       <section aria-labelledby="verification"><h2 id="verification">Verification</h2><table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody>
-        <tr><td>Queue and YouTube tests</td><td>Passed, 35 tests.</td></tr>
+        <tr><td>Queue tests</td><td>Passed, 51 tests.</td></tr>
+        <tr><td>YouTube cache tests</td><td>Passed, 3 tests.</td></tr>
         <tr><td>TypeScript</td><td>Passed directly and during production build.</td></tr>
         <tr><td>ESLint</td><td>Passed.</td></tr>
         <tr><td>Production build</td><td>Passed.</td></tr>
@@ -52,8 +53,8 @@
       </tbody></table></section>
 
       <section aria-labelledby="boundary"><h2 id="boundary">Scope And Remaining QA</h2><div class="grid two">
-        <article><span class="badge red">Existing failures</span><p class="intro">Two player atomicity tests remain failing in untouched uploaded-autoplay and direct-media paths. They are documented, not attributed to Batch A.</p></article>
-        <article><span class="badge gold">Manual QA</span><p class="intro">A development room with 250 items must capture drawer timing, mounted rows, metadata pressure, and queue action latency through <code>mistake-watch:queue:*</code> entries.</p></article>
+        <article><span class="badge green">Browser resources passed</span><p class="intro">The fresh 332-item room stayed within the first-10 budget, produced no duplicate video ids after the corrective preload patch, loaded progressively, and stopped growing after closure.</p></article>
+        <article><span class="badge gold">Timing boundary</span><p class="intro">The browser inventory exposes resource identity but not simultaneous in-flight timing. The hard maximum of three is verified by the deterministic blocked-request test.</p></article>
       </div></section>
 
       <section aria-labelledby="live-qa"><h2 id="live-qa">332-Item Live Room QA</h2><table><thead><tr><th>Observation</th><th>Measured result</th></tr></thead><tbody>
@@ -84,7 +85,16 @@
         <tr><td>Responsive drawer</td><td>Flex sizing keeps the list inside the drawer after mobile controls wrap; an unset preference now uses the intended 56vh default.</td></tr>
       </tbody></table><p class="intro">The drawer now scales with viewport size rather than total queue length. No virtualization dependency was added.</p></section>
 
-      <section aria-labelledby="next"><h2 id="next">Next Decision</h2><p class="intro">Implement Batch B bounded metadata scheduling against the current, first-10, visible, and overscan priorities. Rendering cost is bounded; offscreen metadata request pressure is now the next large-queue constraint.</p></section>
+      <section aria-labelledby="metadata"><h2 id="metadata">Bounded Metadata Result</h2><table><thead><tr><th>Contract</th><th>Verified result</th></tr></thead><tbody>
+        <tr><td>Initial work</td><td>The closed drawer registers only the first 10 unresolved YouTube duration jobs.</td></tr>
+        <tr><td>Concurrency</td><td>A shared scheduler caps active queue metadata work at 3; the blocked-request fixture observed exactly 3.</td></tr>
+        <tr><td>Priority</td><td>Current, next, first 10, visible, and overscan jobs outrank background work; queued jobs can be promoted.</td></tr>
+        <tr><td>Deduplication</td><td>Normalized video ids share the existing cache, one in-flight provider request, and one scheduler job.</td></tr>
+        <tr><td>Cancellation</td><td>Drawer closure, row unmount, queue removal, and room changes detach subscribers; late active results cannot update stale consumers.</td></tr>
+        <tr><td>Failure behavior</td><td>Unavailable responses settle into cached explicit fallback state without automatic scheduler retries.</td></tr>
+      </tbody></table><p class="intro">The remaining-duration summary progresses in 10-item batches with <code>Promise.allSettled</code>; whole-queue <code>Promise.all</code> fanout has been removed.</p></section>
+
+      <section aria-labelledby="next"><h2 id="next">Next Decision</h2><p class="intro">Batch B is ready for report-first commit preparation. Production P75 INP remains a post-deployment field gate after at least 50 room samples.</p></section>
     </main>
   </body>
 </html>
