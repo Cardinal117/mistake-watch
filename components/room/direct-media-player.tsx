@@ -478,16 +478,6 @@ function DirectMediaPlayerCore({
           publishMediaState("error");
         }}
         onLoadedMetadata={publishMediaMetadata}
-        onPause={() => publishMediaState("paused")}
-        onPlay={() => {
-          setAutoplayBlocked(false);
-          publishMediaState("playing");
-        }}
-        onSeeked={() => {
-          const media = mediaRef.current;
-
-          publishMediaState(media?.paused ? "paused" : "playing");
-        }}
         playsInline
         ref={(element) => {
           mediaRef.current = element;

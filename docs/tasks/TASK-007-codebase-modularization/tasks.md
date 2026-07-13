@@ -36,6 +36,22 @@ branch. Listen desktop/mobile browser QA passed. Local owner-authenticated watch
 interaction remains a manual release check because Google OAuth is unavailable
 on localhost.
 
+### Batch 1.1: Mode-switch continuity release blocker
+
+- [x] Confirm the temporary modularized deployment resets direct/uploaded
+  playback to `0:00` while the production baseline preserves position.
+- [x] Prevent passive direct-player pause, play, and seek events from writing
+  canonical room state during player remount and synchronization.
+- [x] Add regression coverage for passive event authority and mode-reducer
+  preservation of playback position and duration metadata.
+- [x] Run player, queue, media/security, SpacetimeDB, typecheck, lint, and build
+  gates.
+- [ ] Repeat owner-authenticated Listen/Watch switching for paused and playing
+  YouTube, direct, and uploaded sources on a temporary deployment.
+
+Batch 1.1 status: implementation and automated QA complete. Live owner QA is
+the remaining release gate; the branch must not merge before it passes.
+
 ## Batch 2: Shared workflow and server boundaries
 
 - Split `queue-panel.tsx` into queue rendering, controls, history, notifications, and Add Media modules.

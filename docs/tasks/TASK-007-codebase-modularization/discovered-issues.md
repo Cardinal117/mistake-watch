@@ -9,7 +9,7 @@ not change these behaviors unless explicitly noted.
 | ID | Priority | Validation state | Finding | Required closing evidence |
 | --- | --- | --- | --- | --- |
 | MW-BUG-001 | P1 | Confirmed code-contract defect; runtime incident not reproduced | Uploaded-media autoplay is not atomic | Atomic reducer tests plus two-client uploaded autoplay QA |
-| MW-BUG-002 | P1 | Confirmed code-contract defect; runtime incident not reproduced | Passive direct-player events publish canonical room state | Event-intent unit tests plus two-client pause/buffer/seek QA |
+| MW-BUG-002 | P1 | Fix implemented; authenticated live QA pending | Passive direct-player events published canonical room state and reset mode-switch position | Event-intent tests plus owner Listen/Watch continuity QA |
 | MW-SEC-001 | P1 | Code/storage condition confirmed; owner-only end-to-end reproduction pending | `owner_only` appears not to revoke permanent R2 URL access | Anonymous URL denial for owner-only object plus response-redaction tests |
 | MW-QA-001 | P2 | Confirmed release gap | Owner-authenticated watch/upload QA is live-only | Preview owner/member/guest checklist passes |
 | MW-PERF-001 | P2 | Confirmed performance fact, not a bug | Both room modes remain statically imported | Before/after bundle and interaction measurement |
@@ -52,8 +52,10 @@ Recommended action:
 
 ## MW-BUG-002: Passive direct-player events can overwrite canonical state
 
-**Status:** Confirmed code-contract defect. Passive handlers do publish
-canonical state; a visible multi-client desync has not yet been reproduced.
+**Status:** Fix implemented on the modularization branch; authenticated live QA
+is still required. Temporary-production QA reproduced the visible symptom:
+switching from Listen to Watch reset playback to `0:00`, while the restored
+production baseline preserved the position.
 
 `direct-media-player.tsx` publishes room state from native `onPause`, `onPlay`,
 and `onSeeked` callbacks. These events can be caused by applying canonical room
@@ -75,6 +77,19 @@ Recommended action:
   user action token proves intent.
 - Add multi-client reconciliation tests for pause, buffer, seek, source change,
   reconnect, and autoplay rejection.
+
+Implementation evidence:
+
+- Native direct-player `pause`, `play`, and `seeked` events no longer write
+  canonical room state. Explicit authorized transport controls remain the
+  canonical write path.
+- Ended and error handling remain active because they are terminal media
+  outcomes rather than passive synchronization observations.
+- The player regression suite now asserts both sides of the continuity
+  contract: mode reducers preserve session fields, and a remounting direct
+  player cannot publish an initial `0:00` observation.
+- Close this issue only after owner-authenticated Listen/Watch switching passes
+  for paused and playing YouTube, direct, and uploaded media.
 
 ## MW-SEC-001: `owner_only` does not revoke permanent R2 access
 

@@ -77,8 +77,12 @@ Proceed with Gate 0, then parallel Batch 1 listen/watch move-only decomposition.
 ## Remaining Batch 1 release checks
 
 - Review the implementation report and integration diff.
-- Run owner-authenticated watch/listen switching and uploaded-media smoke QA on
-  a preview deployment before merging to `main`.
+- Re-run owner-authenticated watch/listen switching after the direct-player
+  continuity fix. The first temporary-production QA exposed a direct-player
+  remount race that reset canonical position to `0:00`; the production baseline
+  did not reproduce it.
+- Verify paused and playing YouTube, direct, and uploaded media in both switch
+  directions before merging to `main`.
 - Do not push or deploy until explicit approval.
 
 ## Discovered issue register
