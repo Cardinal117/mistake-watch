@@ -2,10 +2,8 @@ import type { RefObject } from "react";
 
 import type { AccountSummary } from "@/lib/account/types";
 import type { SignalDisplayState } from "@/lib/status/display-state";
-import type { RoomSnapshot } from "@/lib/rooms";
+import type { RoomQueueItem, RoomSnapshot } from "@/lib/rooms";
 import type { LiveRoomState } from "@/lib/spacetime";
-
-import type { getQueueItems } from "./presentation";
 
 export type WatchModeLayoutProps = {
   account: AccountSummary;
@@ -87,7 +85,7 @@ export type ClientMediaInspection = {
 };
 
 export type WatchMediaHubItem = Omit<
-  ReturnType<typeof getQueueItems>[number],
+  RoomQueueItem,
   "status"
 > & {
   addedAt?: string;
