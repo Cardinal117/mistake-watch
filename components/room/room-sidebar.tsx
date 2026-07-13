@@ -73,6 +73,10 @@ export function RoomSidebar({
       typeof item.durationSeconds === "number"
         ? formatDuration(item.durationSeconds)
         : "Metadata pending",
+    failureCode: item.failureCode ?? undefined,
+    failureCount: item.failureCount || undefined,
+    failureCreatedMs: item.failureCreatedMs ?? undefined,
+    failureReason: item.failureReason ?? undefined,
     id: item.queueItemId,
     isPinned: item.isPinned,
     isPlayNext: item.isPlayNext,

@@ -21,6 +21,7 @@ import {
   readStoredPlayerVolume,
   type PlayerVolumeEvent,
 } from "@/lib/player/local-controls";
+import { reserveRuntimeErrorAutoSkip as reserveRuntimeErrorAutoSkipSlot } from "@/lib/player/media-failure-circuit";
 import { parseYouTubeVideoId } from "@/lib/player/source";
 import {
   isNearYouTubeEnd,
@@ -46,8 +47,6 @@ type YoutubeMediaPlayerProps = {
 };
 
 const AUTOPLAY_ADVANCE_IN_FLIGHT_TIMEOUT_MS = 6_000;
-const RUNTIME_ERROR_AUTOSKIP_LIMIT = 3;
-const RUNTIME_ERROR_AUTOSKIP_WINDOW_MS = 30_000;
 
 export function YoutubeMediaPlayer({
   className,
@@ -69,6 +68,7 @@ export function YoutubeMediaPlayer({
   const hydratedPlaybackKeyRef = useRef<string | null>(null);
   const metadataRefreshTimerRef = useRef<number | null>(null);
   const runtimeErrorAutoSkipTimestampsRef = useRef<number[]>([]);
+  const reportMediaFailureRef = useRef(liveRoom.reportMediaFailure);
   const setPlaybackStateRef = useRef(liveRoom.setPlaybackState);
   const updateMediaTitleRef = useRef(liveRoom.updateMediaTitle);
   const activeSourceUrlRef = useRef(liveRoom.snapshot.session?.sourceUrl);
@@ -100,6 +100,7 @@ export function YoutubeMediaPlayer({
     );
     queueAutoplayEnabledRef.current =
       liveRoom.snapshot.session?.queueAutoplayEnabled ?? true;
+    reportMediaFailureRef.current = liveRoom.reportMediaFailure;
     setPlaybackStateRef.current = liveRoom.setPlaybackState;
     updateMediaTitleRef.current = liveRoom.updateMediaTitle;
     activeSourceUrlRef.current = liveRoom.snapshot.session?.sourceUrl;
@@ -116,6 +117,7 @@ export function YoutubeMediaPlayer({
   }, [
     liveRoom.advanceToNextQueueItem,
     liveRoom.canControlPlayback,
+    liveRoom.reportMediaFailure,
     liveRoom.setPlaybackState,
     canonicalState,
     liveRoom.snapshot.queue,
@@ -151,18 +153,12 @@ export function YoutubeMediaPlayer({
   }, []);
 
   const reserveRuntimeErrorAutoSkip = useCallback(() => {
-    const now = Date.now();
-    const recentSkips = runtimeErrorAutoSkipTimestampsRef.current.filter(
-      (timestamp) => now - timestamp < RUNTIME_ERROR_AUTOSKIP_WINDOW_MS,
+    const reservation = reserveRuntimeErrorAutoSkipSlot(
+      runtimeErrorAutoSkipTimestampsRef.current,
     );
 
-    if (recentSkips.length >= RUNTIME_ERROR_AUTOSKIP_LIMIT) {
-      runtimeErrorAutoSkipTimestampsRef.current = recentSkips;
-      return false;
-    }
-
-    runtimeErrorAutoSkipTimestampsRef.current = [...recentSkips, now];
-    return true;
+    runtimeErrorAutoSkipTimestampsRef.current = reservation.timestamps;
+    return reservation.allowed;
   }, []);
 
   const publishCurrentMetadata = useCallback((player: YoutubePlayer) => {
@@ -481,16 +477,16 @@ export function YoutubeMediaPlayer({
             },
             onError: (event: YoutubePlayerEvent) => {
               const availability = classifyYouTubeIframeError(event.data);
+              const canAutoSkip =
+                shouldAutoSkipYouTubeRuntimeError(availability) &&
+                queueAutoplayEnabledRef.current &&
+                hasNextQueueItemRef.current &&
+                canControlPlaybackRef.current &&
+                reserveRuntimeErrorAutoSkip();
 
               setLocalError(availability.reason);
 
-              if (
-                shouldAutoSkipYouTubeRuntimeError(availability) &&
-                reserveRuntimeErrorAutoSkip() &&
-                queueAutoplayEnabledRef.current &&
-                hasNextQueueItemRef.current &&
-                canControlPlaybackRef.current
-              ) {
+              if (canAutoSkip) {
                 const activeKey = getActivePlaybackKey(
                   canonicalStateRef.current,
                 );
@@ -500,11 +496,17 @@ export function YoutubeMediaPlayer({
                     activeKey &&
                     activeKey === getActivePlaybackKey(canonicalStateRef.current)
                   ) {
-                    requestAutoplayAdvance();
+                    reportMediaFailureRef.current({
+                      allowAutoplayAdvance: true,
+                      failureCode: availability.status,
+                    });
                   }
                 }, 900);
               } else {
-                publishPlaybackState("error");
+                reportMediaFailureRef.current({
+                  allowAutoplayAdvance: false,
+                  failureCode: availability.status,
+                });
               }
             },
             onReady: () => {

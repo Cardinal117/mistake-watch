@@ -29,4 +29,8 @@ export default __t.row({
   playlistTitle: __t.option(__t.string()).name("playlist_title"),
   thumbnailUrl: __t.option(__t.string()).name("thumbnail_url"),
   playedSequence: __t.u32().name("played_sequence"),
+  failureCode: __t.option(__t.string()).name("failure_code"),
+  failureReason: __t.option(__t.string()).name("failure_reason"),
+  failureCreatedMs: __t.option(__t.i64()).name("failure_created_ms"),
+  failureCount: __t.u32().name("failure_count"),
 });

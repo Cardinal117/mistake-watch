@@ -151,6 +151,14 @@ type LiveReducers = {
     roomName: string;
     seedToken: string;
   }): Promise<void>;
+  reportMediaFailure(params: {
+    actorMemberId: string;
+    allowAutoplayAdvance?: boolean;
+    expectedActiveQueueItemId?: string;
+    expectedSourceUrl: string;
+    failureCode: string;
+    roomId: string;
+  }): Promise<void>;
   setMemberPermissions(params: {
     actorMemberId: string;
     canAddQueue: boolean;
@@ -245,9 +253,16 @@ export type LiveRoomState = {
   removalNotice: string | null;
   removeIdleMember(memberId: string): void;
   removeQueueItem(queueItemId: string): void;
+  reportMediaFailure(input: {
+    allowAutoplayAdvance: boolean;
+    failureCode: string;
+  }): void;
   renameRoom(roomName: string): Promise<void>;
   revokeControl(): void;
-  sendChatMessage(input: { clientMessageId: string; text: string }): Promise<void>;
+  sendChatMessage(input: {
+    clientMessageId: string;
+    text: string;
+  }): Promise<void>;
   switchMode(mode: "listen" | "watch"): Promise<void>;
   setPermission(
     memberId: string,
@@ -923,6 +938,31 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     });
   }
 
+  function reportMediaFailure(input: {
+    allowAutoplayAdvance: boolean;
+    failureCode: string;
+  }) {
+    const session = snapshot.session;
+
+    if (
+      !currentMember ||
+      !canControlPlayback ||
+      !reducers ||
+      !session?.sourceUrl
+    ) {
+      return;
+    }
+
+    void reducers.reportMediaFailure({
+      actorMemberId: currentMember.id,
+      allowAutoplayAdvance: input.allowAutoplayAdvance,
+      expectedActiveQueueItemId: session.activeQueueItemId ?? undefined,
+      expectedSourceUrl: session.sourceUrl,
+      failureCode: input.failureCode,
+      roomId: room.id,
+    });
+  }
+
   function moveQueueItem(queueItemId: string, position: number) {
     if (!currentMember || !canManageQueue || !reducers) {
       return;
@@ -959,7 +999,10 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     });
   }
 
-  async function sendChatMessage(input: { clientMessageId: string; text: string }) {
+  async function sendChatMessage(input: {
+    clientMessageId: string;
+    text: string;
+  }) {
     if (!currentMember || !reducers || connectionStatus !== "connected") {
       throw new Error("Room chat is not connected.");
     }
@@ -1111,6 +1154,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     removalNotice,
     removeIdleMember,
     removeQueueItem,
+    reportMediaFailure,
     renameRoom,
     revokeControl,
     sendChatMessage,
@@ -1190,6 +1234,10 @@ function buildFallbackSnapshot(room: RoomSnapshot): LiveRoomSnapshot {
       artist: item.artist ?? null,
       channelName: item.channelName ?? null,
       durationSeconds: null,
+      failureCode: null,
+      failureCount: 0,
+      failureCreatedMs: null,
+      failureReason: null,
       isPinned: item.isPinned ?? false,
       isPlayNext: item.isPlayNext ?? false,
       isUnavailable: item.isUnavailable ?? false,
@@ -1250,12 +1298,23 @@ function readLiveSnapshot(liveDb: LiveDb): LiveRoomSnapshot {
         text: message.text,
       })),
     errors: errors.map((error) => ({
+      actorMemberId: error.actorMemberId ?? null,
+      actorSource:
+        error.actorSource === "actor" || error.actorSource === "system"
+          ? error.actorSource
+          : null,
       code: error.code,
       createdMs: toNumber(error.createdMs),
       errorId: error.errorId,
+      eventType: error.eventType ?? null,
       message: error.message,
+      permanent: error.permanent ?? false,
+      providerId: error.providerId ?? null,
+      queueItemId: error.queueItemId ?? null,
       roomId: error.roomId,
       severity: toSeverity(error.severity),
+      sourceType: toSourceType(error.sourceType),
+      title: error.title ?? null,
     })),
     kicks: [...liveDb.room_kick.iter()].map((kick) => ({
       actorMemberId: kick.actorMemberId,
@@ -1318,6 +1377,13 @@ function readLiveSnapshot(liveDb: LiveDb): LiveRoomSnapshot {
           typeof item.durationSeconds === "number"
             ? item.durationSeconds
             : null,
+        failureCode: item.failureCode ?? null,
+        failureCount: item.failureCount ?? 0,
+        failureCreatedMs:
+          item.failureCreatedMs === undefined
+            ? null
+            : toNumber(item.failureCreatedMs),
+        failureReason: item.failureReason ?? null,
         isPinned: item.isPinned ?? false,
         isPlayNext: item.isPlayNext ?? false,
         isUnavailable: item.isUnavailable ?? false,
@@ -1393,10 +1459,10 @@ function shouldPreserveCurrentSnapshotDuringReconnect(
 ) {
   return Boolean(
     recoveringConnection &&
-      currentSnapshot.session &&
-      currentSnapshot.queue.length > 0 &&
-      !nextSnapshot.session &&
-      nextSnapshot.queue.length === 0,
+    currentSnapshot.session &&
+    currentSnapshot.queue.length > 0 &&
+    !nextSnapshot.session &&
+    nextSnapshot.queue.length === 0,
   );
 }
 

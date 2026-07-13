@@ -26,30 +26,32 @@
   <body>
     <main>
       <header>
-        <div class="badges"><span class="badge">TASK-002.5J Batches A + B + C</span><span class="badge green">Automated QA passed</span><span class="badge gold">Network QA pending</span></div>
-        <h1>Bounded rendering and metadata work for large queues</h1>
-        <p>Queue state is linear, the drawer mounts only its viewport window, and YouTube metadata now resolves through a shared priority scheduler capped at three active requests.</p>
+        <div class="badges"><span class="badge">TASK-002.5J Batches A-D</span><span class="badge green">Local QA passed</span><span class="badge gold">Production failure QA pending</span></div>
+        <h1>Bounded, visible, failure-resilient large queues</h1>
+        <p>Queue rendering and metadata work are bounded, while classified playback failures now flow through room authority, remain visible in History, and cannot silently drain the queue.</p>
       </header>
 
       <section aria-labelledby="result"><h2 id="result">Measured Result</h2><div class="grid four">
-        <article class="metric"><span>Pre-change P75</span><strong>94.996 ms</strong></article>
-        <article class="metric"><span>Optimized P75</span><strong>7.794 ms</strong></article>
-        <article class="metric"><span>P75 improvement</span><strong>91.795%</strong></article>
-        <article class="metric"><span>Queue/YouTube tests</span><strong>54 / 54</strong></article>
+        <article class="metric"><span>Pre-change P75</span><strong>104.711 ms</strong></article>
+        <article class="metric"><span>Optimized P75</span><strong>6.508 ms</strong></article>
+        <article class="metric"><span>P75 improvement</span><strong>93.785%</strong></article>
+        <article class="metric"><span>New focused checks</span><strong>60 / 60</strong></article>
       </div><p class="intro">Local Node.js CPU benchmark, 250 deterministic items, 25 samples, 500 iterations each. This is not browser/mobile field evidence.</p></section>
 
       <section aria-labelledby="files"><h2 id="files">Files To Review</h2><div class="grid two">
         <article><span class="badge">Core</span><ul><li><code>lib/queue/metadata-scheduler.ts</code> and <code>metadata-priority.ts</code></li><li><code>lib/youtube/queue-metadata-scheduler.ts</code> and shared metadata client/hook</li><li><code>components/room/listen-mode-layout.tsx</code> and <code>queue-panel.tsx</code></li></ul></article>
-        <article><span class="badge gold">Evidence</span><ul><li><code>tests/queue/metadata-scheduler.test.mjs</code></li><li><code>tests/queue/virtualization.test.mjs</code></li><li><code>scripts/benchmark-queue-derived-state.mjs</code> and <code>lib/performance/queue.ts</code></li></ul></article>
+        <article><span class="badge gold">Failure resilience</span><ul><li><code>spacetime/src/media-failure.ts</code> and <code>report_media_failure</code></li><li><code>components/room/youtube-media-player.tsx</code> and live-room bindings</li><li><code>tests/player/media-failure-resilience.test.mjs</code></li></ul></article>
       </div></section>
 
       <section aria-labelledby="verification"><h2 id="verification">Verification</h2><table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody>
-        <tr><td>Queue tests</td><td>Passed, 51 tests.</td></tr>
+        <tr><td>Queue tests</td><td>Passed, 52 tests.</td></tr>
         <tr><td>YouTube cache tests</td><td>Passed, 3 tests.</td></tr>
+        <tr><td>Failure resilience</td><td>Passed, 5 focused tests covering classification, URL redaction, circuit recovery, stale guards, and a 250-error sequence.</td></tr>
+        <tr><td>SpacetimeDB</td><td>Module build, generated bindings, 16 tests, and local additive schema publish passed.</td></tr>
         <tr><td>TypeScript</td><td>Passed directly and during production build.</td></tr>
         <tr><td>ESLint</td><td>Passed.</td></tr>
         <tr><td>Production build</td><td>Passed.</td></tr>
-        <tr><td>Algorithmic benchmark</td><td>Passed the 40% gate with 91.795% P75 improvement.</td></tr>
+        <tr><td>Algorithmic benchmark</td><td>Passed the 40% gate with 93.785% P75 improvement.</td></tr>
       </tbody></table></section>
 
       <section aria-labelledby="boundary"><h2 id="boundary">Scope And Remaining QA</h2><div class="grid two">
@@ -94,7 +96,16 @@
         <tr><td>Failure behavior</td><td>Unavailable responses settle into cached explicit fallback state without automatic scheduler retries.</td></tr>
       </tbody></table><p class="intro">The remaining-duration summary progresses in 10-item batches with <code>Promise.allSettled</code>; whole-queue <code>Promise.all</code> fanout has been removed.</p></section>
 
-      <section aria-labelledby="next"><h2 id="next">Next Decision</h2><p class="intro">Batch B is ready for report-first commit preparation. Production P75 INP remains a post-deployment field gate after at least 50 room samples.</p></section>
+      <section aria-labelledby="failure"><h2 id="failure">Failure Resilience Result</h2><table><thead><tr><th>Contract</th><th>Implemented result</th></tr></thead><tbody>
+        <tr><td>Mutation boundary</td><td>Runtime errors report through a playback-authorized reducer with expected queue-item and source guards.</td></tr>
+        <tr><td>Permanent-only skip</td><td>Only removed/private and embed-blocked failures may advance. Generic player, provider, transient, and unknown errors stop in visible error state.</td></tr>
+        <tr><td>Drain protection</td><td>The client circuit permits at most three permanent-failure advances in 30 seconds; a 250-error deterministic sequence advanced only three times.</td></tr>
+        <tr><td>Room visibility</td><td>History shows compact failure events with title, server-owned reason, timestamp, system/member origin, and normalized provider id.</td></tr>
+        <tr><td>Known problems</td><td>Permanent failures mark matching room queue rows unavailable; later additions inherit the known-problem state and repeated count.</td></tr>
+        <tr><td>Privacy</td><td>Event serialization contains no raw source URL. YouTube uses its provider id; direct/private media uses an opaque queue id.</td></tr>
+      </tbody></table></section>
+
+      <section aria-labelledby="next"><h2 id="next">Next Decision</h2><p class="intro">Batch D is locally implemented. Publish the SpacetimeDB module to Maincloud before deploying its frontend commit, then run live removed/private, embed-blocked, generic-error, and fourth-failure circuit QA. Production P75 INP remains pending until at least 50 post-deployment room samples exist.</p></section>
     </main>
   </body>
 </html>

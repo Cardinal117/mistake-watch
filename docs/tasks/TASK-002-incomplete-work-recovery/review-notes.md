@@ -1527,6 +1527,40 @@ Browser resource QA:
 - Close cancellation: mounted rows returned to 0 and metadata resources remained at 24 after 1.2 seconds, with 0 post-close growth.
 - The browser resource inventory exposes request identity but not request start/end timing. Maximum active concurrency remains verified by the deterministic blocked-request scheduler test, which observed a hard peak of 3.
 
+## TASK-002.5J Batch D Implementation Notes
+
+- Added a stale-safe `report_media_failure` SpacetimeDB reducer guarded by playback authority, expected active queue item, and expected source URL.
+- Preserved permanent-only automatic advancement: `removed-private` and `embed-blocked` may advance; player, provider, transient, and unknown failures record an error state without consuming the queue.
+- Kept the existing client circuit breaker and extracted it into a deterministic helper capped at three automatic failure advances per 30 seconds.
+- Extended room error records with compact media-event metadata: normalized provider id, title, queue item id, timestamp, actor/system source, event type, and permanent status.
+- Event serialization never stores raw source URLs. YouTube events store the 11-character provider id; direct/private sources use the opaque queue item id.
+- Added a five-second room-side duplicate-event guard so multiple authorized clients cannot record the same playback failure concurrently.
+- Extended live queue rows with failure code, reason, timestamp, and count. Permanent failures mark matching room queue rows unavailable, including duplicate sources.
+- New queue additions inherit known permanent failure state from prior room/session queue rows, keeping repeated bad sources visibly blocked.
+- History remains independent from upcoming queue state and now includes the ten latest media failure events with title, reason, time, source/provider id, and system/member origin.
+- Listen, watch, and sidebar queue mappings preserve failure metadata. Affected rows show the server-owned failure reason and repeated count without adding new layout surfaces.
+- Local SpacetimeDB migration added only defaulted columns to `live_queue_item` and `room_error`; no Supabase migration is involved.
+
+Verification:
+
+- SpacetimeDB module build passed.
+- Local SpacetimeDB publish passed with the generated additive migration plan.
+- `npm run test:queue` passed: 52 tests.
+- `npm run test:youtube` passed: 3 tests.
+- Focused media-failure resilience tests passed: 5 tests.
+- `npm run test:spacetime` passed: 16 tests.
+- `npm run typecheck` passed.
+- The 332-item local room reconnected after the schema publish, retained the bounded drawer behavior, and opened the independent History view without schema/client errors.
+- `npm run test:sync` passed 62 tests with the same two pre-existing uploaded-media atomicity and passive direct-media publication failures; all new Batch D tests passed.
+
+Manual production QA pending:
+
+- Publish the SpacetimeDB module to Maincloud before deploying the frontend commit.
+- Verify removed/private and embed-blocked YouTube items record visible events and advance once when allowed.
+- Verify generic player, provider, transient, and unknown failures stop with a visible event and do not advance.
+- Verify a fourth permanent failure inside 30 seconds records the failure but does not continue draining the queue.
+- Confirm History shows normalized YouTube ids only and never exposes private uploaded-media or signed URLs.
+
 ## TASK-002.5K Planning Notes
 
 - User wants listen-room TV view mode pulled forward before the larger queue-resilience/performance implementation.

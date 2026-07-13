@@ -25,6 +25,10 @@ export type RoomQueueItem = {
   status: "now" | "played" | "queued";
   artist?: string;
   channelName?: string;
+  failureCode?: string;
+  failureCount?: number;
+  failureCreatedMs?: number;
+  failureReason?: string;
   isPinned?: boolean;
   isPlayNext?: boolean;
   isUnavailable?: boolean;

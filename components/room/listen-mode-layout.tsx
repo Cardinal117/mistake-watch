@@ -4682,8 +4682,14 @@ function ListenQueueRow({
         <p className="overflow-hidden break-words text-body-md font-semibold leading-5 text-on-surface [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] xl:min-h-12 xl:leading-6">
           {title}
         </p>
-        <p className="truncate text-label-sm text-on-surface-variant">
-          {channel ?? "Room source"}
+        <p
+          className={cx(
+            "truncate text-label-sm",
+            item.failureReason ? "text-error" : "text-on-surface-variant",
+          )}
+          title={item.failureReason ?? undefined}
+        >
+          {item.failureReason ?? channel ?? "Room source"}
           {!desktopShell ? <span> · {duration}</span> : null}
         </p>
         <p
@@ -5393,6 +5399,10 @@ function useListenQueueItems(liveRoom: LiveRoomState, room: RoomSnapshot) {
         typeof item.durationSeconds === "number"
           ? item.durationSeconds
           : undefined,
+      failureCode: item.failureCode ?? undefined,
+      failureCount: item.failureCount || undefined,
+      failureCreatedMs: item.failureCreatedMs ?? undefined,
+      failureReason: item.failureReason ?? undefined,
       id: item.queueItemId,
       isPinned: item.isPinned,
       isPlayNext: item.isPlayNext,

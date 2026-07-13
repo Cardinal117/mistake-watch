@@ -29,6 +29,10 @@ export const LiveQueueItem = __t.object("LiveQueueItem", {
   playlistTitle: __t.option(__t.string()),
   thumbnailUrl: __t.option(__t.string()),
   playedSequence: __t.u32(),
+  failureCode: __t.option(__t.string()),
+  failureReason: __t.option(__t.string()),
+  failureCreatedMs: __t.option(__t.i64()),
+  failureCount: __t.u32(),
 });
 export type LiveQueueItem = __Infer<typeof LiveQueueItem>;
 
@@ -52,6 +56,14 @@ export const RoomError = __t.object("RoomError", {
   message: __t.string(),
   roomId: __t.string(),
   severity: __t.string(),
+  actorMemberId: __t.option(__t.string()),
+  actorSource: __t.option(__t.string()),
+  eventType: __t.option(__t.string()),
+  permanent: __t.bool(),
+  providerId: __t.option(__t.string()),
+  queueItemId: __t.option(__t.string()),
+  sourceType: __t.option(__t.string()),
+  title: __t.option(__t.string()),
 });
 export type RoomError = __Infer<typeof RoomError>;
 

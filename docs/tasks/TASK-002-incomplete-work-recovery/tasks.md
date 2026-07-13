@@ -527,6 +527,8 @@ Safe commit point:
 
 ### Batch D: Failure Resilience And Event Visibility
 
+Status: implemented locally on July 13, 2026; automated checks, local SpacetimeDB publish, and 332-item room integration QA passed. Production SpacetimeDB publication and live removed/private/embed-blocked scenario QA remain pending.
+
 Implementation:
 
 - Preserve the existing rule that generic YouTube provider/player/unknown errors do not auto-skip.

@@ -212,6 +212,14 @@ export function QueuePanel({
     queuedItems,
     upcomingItems,
   } = queueState;
+  const mediaEvents = useMemo(
+    () =>
+      roomErrors
+        .filter((error) => error.eventType?.startsWith("media-"))
+        .sort((left, right) => right.createdMs - left.createdMs)
+        .slice(0, 10),
+    [roomErrors],
+  );
   const measureQueueAction = useQueueActionPerformance(items);
   const isConnected = connectionStatus === "connected";
   const addDisabled = !canAddQueue || !isConnected;
@@ -1259,11 +1267,49 @@ export function QueuePanel({
               : "No queue items yet. Add a YouTube, playlist, direct media, or HLS URL."}
           </div>
         )
-      ) : previousItems.length > 0 ? (
+      ) : previousItems.length > 0 || mediaEvents.length > 0 ? (
         <div className="grid gap-2">
           <p className="text-label-sm text-on-surface-variant">
             Showing server-recorded playback history in played order.
           </p>
+          {mediaEvents.length > 0 ? (
+            <section aria-label="Playback events" className="grid gap-1.5">
+              <p className="technical-label text-on-surface-variant">
+                Playback events
+              </p>
+              <ol className="grid gap-1.5">
+                {mediaEvents.map((event) => (
+                  <li
+                    className="grid gap-1 rounded-sm border border-white/10 bg-surface-container-low px-3 py-2"
+                    key={event.errorId}
+                  >
+                    <div className="flex min-w-0 items-center justify-between gap-3">
+                      <span className="truncate text-label-sm font-semibold text-on-surface">
+                        {event.title ?? "Playback failure"}
+                      </span>
+                      <time
+                        className="technical-label shrink-0 text-on-surface-variant"
+                        dateTime={new Date(event.createdMs).toISOString()}
+                      >
+                        {new Date(event.createdMs).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </time>
+                    </div>
+                    <p className="text-label-sm text-on-surface-variant">
+                      {event.message}
+                    </p>
+                    <span className="technical-label text-on-surface-variant/75">
+                      {event.actorSource === "system" ? "System" : "Member"}
+                      {event.sourceType ? ` / ${event.sourceType}` : ""}
+                      {event.providerId ? ` / ${event.providerId}` : ""}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ) : null}
           <ol className="grid gap-2">
             {previousItems.map((item) => (
               <QueueRow
@@ -1950,6 +1996,9 @@ function QueueRow({
           {item.isPlayNext ? <Badge tone="neutral">Play Next</Badge> : null}
           {item.playlistId ? <Badge tone="neutral">Playlist</Badge> : null}
           {item.isUnavailable ? <Badge tone="amber">Unavailable</Badge> : null}
+          {(item.failureCount ?? 0) > 1 ? (
+            <Badge tone="neutral">Repeated {item.failureCount}</Badge>
+          ) : null}
         </div>
         {item.sourceType === "youtube" && metadata.status !== "available" ? (
           metadata.loading ? (
@@ -1962,7 +2011,8 @@ function QueueRow({
         ) : null}
         {isBlocked ? (
           <p className="mt-1 text-label-sm text-error">
-            {metadata.metadata?.availability.reason ??
+            {item.failureReason ??
+              metadata.metadata?.availability.reason ??
               "This YouTube item is known unavailable."}
           </p>
         ) : null}

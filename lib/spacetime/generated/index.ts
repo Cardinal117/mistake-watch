@@ -48,6 +48,7 @@ import MoveQueueItemReducer from "./move_queue_item_reducer";
 import PlayQueueItemReducer from "./play_queue_item_reducer";
 import RemoveIdleMemberReducer from "./remove_idle_member_reducer";
 import RemoveQueueItemReducer from "./remove_queue_item_reducer";
+import ReportMediaFailureReducer from "./report_media_failure_reducer";
 import RevokeRoomControlReducer from "./revoke_room_control_reducer";
 import SeedRoomSessionReducer from "./seed_room_session_reducer";
 import SendRoomChatMessageReducer from "./send_room_chat_message_reducer";
@@ -199,6 +200,7 @@ const reducersSchema = __reducers(
   __reducerSchema("play_queue_item", PlayQueueItemReducer),
   __reducerSchema("remove_idle_member", RemoveIdleMemberReducer),
   __reducerSchema("remove_queue_item", RemoveQueueItemReducer),
+  __reducerSchema("report_media_failure", ReportMediaFailureReducer),
   __reducerSchema("revoke_room_control", RevokeRoomControlReducer),
   __reducerSchema("seed_room_session", SeedRoomSessionReducer),
   __reducerSchema("send_room_chat_message", SendRoomChatMessageReducer),

@@ -128,13 +128,15 @@ test("passive player pause and buffer events do not publish canonical room state
   assert.doesNotMatch(directElement, /publishMediaState\("playing"\)/);
 });
 
-test("youtube iframe errors skip to next without publishing error when autoplay can continue", () => {
+test("youtube iframe errors report stale-safe failure decisions to room authority", () => {
   const errorHandler = sectionBetween(
     youtubePlayerSource,
     "onError: (event: YoutubePlayerEvent)",
     "onReady: () =>",
   );
 
-  assert.match(errorHandler, /requestAutoplayAdvance\(\)/);
-  assert.match(errorHandler, /else\s*{\s*publishPlaybackState\("error"\);/);
+  assert.match(errorHandler, /reportMediaFailureRef\.current\(\{/);
+  assert.match(errorHandler, /allowAutoplayAdvance: true/);
+  assert.match(errorHandler, /allowAutoplayAdvance: false/);
+  assert.doesNotMatch(errorHandler, /requestAutoplayAdvance\(\)/);
 });

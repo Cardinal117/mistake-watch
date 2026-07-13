@@ -1,4 +1,10 @@
 import { schema, table, t } from "spacetimedb/server";
+import {
+  createMediaFailureEvent,
+  isPermanentMediaFailureCode,
+  mediaProviderId,
+  normalizeMediaFailure,
+} from "./media-failure";
 
 const KICK_REJOIN_BLOCK_MS = 8_000;
 
@@ -120,6 +126,10 @@ const liveQueueItem = table(
     playlist_title: t.option(t.string()).default(undefined),
     thumbnail_url: t.option(t.string()).default(undefined),
     played_sequence: t.u32().default(0),
+    failure_code: t.option(t.string()).default(undefined),
+    failure_reason: t.option(t.string()).default(undefined),
+    failure_created_ms: t.option(t.i64()).default(undefined),
+    failure_count: t.u32().default(0),
   },
 );
 
@@ -142,6 +152,14 @@ const roomError = table(
     message: t.string(),
     room_id: t.string(),
     severity: t.string(),
+    actor_member_id: t.option(t.string()).default(undefined),
+    actor_source: t.option(t.string()).default(undefined),
+    event_type: t.option(t.string()).default(undefined),
+    permanent: t.bool().default(false),
+    provider_id: t.option(t.string()).default(undefined),
+    queue_item_id: t.option(t.string()).default(undefined),
+    source_type: t.option(t.string()).default(undefined),
+    title: t.option(t.string()).default(undefined),
   },
 );
 
@@ -321,24 +339,56 @@ function kickKey(roomId: string, memberId: string) {
 function recordRoomError(
   ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
   {
+    actorMemberId,
+    actorSource,
     code,
+    eventType,
     message,
+    permanent = false,
+    providerId,
+    queueItemId,
     roomId,
     severity = "warning",
+    sourceType,
+    title,
   }: {
+    actorMemberId?: string;
+    actorSource?: "actor" | "system";
     code: string;
+    eventType?: string;
     message: string;
+    permanent?: boolean;
+    providerId?: string;
+    queueItemId?: string;
     roomId: string;
     severity?: "info" | "warning" | "error";
+    sourceType?: string;
+    title?: string;
   },
 ) {
   ctx.db.room_error.insert({
+    actor_member_id: actorMemberId,
+    actor_source: actorSource,
     code,
     created_ms: nowMs(),
     error_id: ctx.newUuidV7().toString(),
+    event_type: eventType,
     message,
+    permanent,
+    provider_id: providerId,
+    queue_item_id: queueItemId,
     room_id: roomId,
     severity,
+    source_type: sourceType,
+    title,
+  });
+
+  const roomErrors = [...ctx.db.room_error.iter()]
+    .filter((error) => error.room_id === roomId)
+    .sort((left, right) => Number(right.created_ms - left.created_ms));
+
+  roomErrors.slice(100).forEach((error) => {
+    ctx.db.room_error.delete(error);
   });
 }
 
@@ -613,10 +663,7 @@ function activeQueueItems(
   roomId: string,
 ) {
   return roomQueueItems(ctx, roomId)
-    .filter(
-      (item) =>
-        (item.status === "queued" || item.status === "playing"),
-    )
+    .filter((item) => item.status === "queued" || item.status === "playing")
     .sort((a, b) => a.position - b.position);
 }
 
@@ -640,6 +687,25 @@ function findDuplicateActiveQueueItem(
 
   return activeQueueItems(ctx, roomId).find(
     (item) =>
+      normalizeSourceType(item.source_type) === normalizedSourceType &&
+      normalizeSourceUrl(item.source_url) === normalizedSourceUrl,
+  );
+}
+
+function findKnownProblemQueueItem(
+  ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
+  roomId: string,
+  sourceType: string,
+  sourceUrl: string,
+) {
+  const normalizedSourceType = normalizeSourceType(sourceType);
+  const normalizedSourceUrl = normalizeSourceUrl(sourceUrl);
+
+  return [...ctx.db.live_queue_item.iter()].find(
+    (item) =>
+      item.room_id === roomId &&
+      item.is_unavailable &&
+      isPermanentMediaFailureCode(item.failure_code) &&
       normalizeSourceType(item.source_type) === normalizedSourceType &&
       normalizeSourceUrl(item.source_url) === normalizedSourceUrl,
   );
@@ -690,9 +756,7 @@ function nextPlaybackQueueItem(
     return queuedItem;
   }
 
-  return items.find(
-    (item) => item.status === "played" && !item.is_unavailable,
-  );
+  return items.find((item) => item.status === "played" && !item.is_unavailable);
 }
 
 function playNextQueuePosition(
@@ -1057,7 +1121,8 @@ export const issue_room_seed_grant = spacetimedb.reducer(
     if (!room_id.trim() || !host_member_id.trim() || trimmedToken.length < 32) {
       recordRoomError(ctx, {
         code: "seed_grant_invalid",
-        message: "Seed grant ignored because its room, host, or token was invalid.",
+        message:
+          "Seed grant ignored because its room, host, or token was invalid.",
         roomId: room_id,
       });
       return;
@@ -1458,6 +1523,13 @@ export const add_queue_item = spacetimedb.reducer(
       return;
     }
 
+    const knownProblem = findKnownProblemQueueItem(
+      ctx,
+      room_id,
+      source_type,
+      trimmedUrl,
+    );
+
     const position = is_play_next
       ? playNextQueuePosition(ctx, room_id)
       : nextQueuePosition(ctx, room_id);
@@ -1471,9 +1543,13 @@ export const add_queue_item = spacetimedb.reducer(
       artist: artist?.trim() || undefined,
       channel_name: channel_name?.trim() || undefined,
       duration_seconds: normalizeDurationSeconds(duration_seconds),
+      failure_code: knownProblem?.failure_code,
+      failure_count: knownProblem?.failure_count ?? 0,
+      failure_created_ms: knownProblem?.failure_created_ms,
+      failure_reason: knownProblem?.failure_reason,
       is_pinned,
       is_play_next,
-      is_unavailable,
+      is_unavailable: is_unavailable || Boolean(knownProblem),
       played_sequence: 0,
       playlist_id: playlist_id?.trim() || undefined,
       playlist_title: playlist_title?.trim() || undefined,
@@ -1685,6 +1761,170 @@ export const advance_queue_item = spacetimedb.reducer(
     });
 
     normalizeQueuedPositions(ctx, room_id);
+  },
+);
+
+export const report_media_failure = spacetimedb.reducer(
+  {
+    actor_member_id: t.string(),
+    allow_autoplay_advance: t.bool().default(false),
+    expected_active_queue_item_id: t.option(t.string()),
+    expected_source_url: t.string(),
+    failure_code: t.string(),
+    room_id: t.string(),
+  },
+  (
+    ctx,
+    {
+      actor_member_id,
+      allow_autoplay_advance,
+      expected_active_queue_item_id,
+      expected_source_url,
+      failure_code,
+      room_id,
+    },
+  ) => {
+    const authority = getAuthorizedPlaybackActor(ctx, room_id, actor_member_id);
+
+    if (!authority) {
+      return;
+    }
+
+    const expectedActiveQueueItemId =
+      expected_active_queue_item_id?.trim() || undefined;
+    const expectedSourceUrl = normalizeSourceUrl(expected_source_url);
+    const activeSourceUrl = normalizeSourceUrl(
+      authority.session.source_url ?? "",
+    );
+
+    if (
+      !expectedSourceUrl ||
+      expectedSourceUrl !== activeSourceUrl ||
+      (expectedActiveQueueItemId &&
+        authority.session.active_queue_item_id !== expectedActiveQueueItemId)
+    ) {
+      return;
+    }
+
+    const activeQueueItemId = authority.session.active_queue_item_id;
+    const activeQueueItem = activeQueueItemId
+      ? ctx.db.live_queue_item.queue_item_id.find(activeQueueItemId)
+      : undefined;
+    const failure = normalizeMediaFailure(failure_code);
+    const failureCreatedMs = nowMs();
+    const sourceType = normalizeSourceType(
+      authority.session.source_type ?? activeQueueItem?.source_type ?? "direct",
+    );
+    const title = (
+      activeQueueItem?.title ??
+      authority.session.source_title ??
+      "Current media"
+    )
+      .trim()
+      .slice(0, 160);
+    const providerId = mediaProviderId(
+      sourceType,
+      activeSourceUrl,
+      activeQueueItemId,
+    );
+    const duplicateEvent = [...ctx.db.room_error.iter()].find(
+      (error) =>
+        error.room_id === room_id &&
+        error.code === `media_${failure.code}` &&
+        error.provider_id === providerId &&
+        Number(failureCreatedMs - error.created_ms) < 5_000,
+    );
+
+    if (duplicateEvent) {
+      return;
+    }
+
+    for (const item of [...ctx.db.live_queue_item.iter()]) {
+      const matchesCurrent = item.queue_item_id === activeQueueItemId;
+      const matchesPermanentSource =
+        failure.permanent &&
+        item.room_id === room_id &&
+        normalizeSourceType(item.source_type) === sourceType &&
+        normalizeSourceUrl(item.source_url) === activeSourceUrl;
+
+      if (!matchesCurrent && !matchesPermanentSource) {
+        continue;
+      }
+
+      replaceQueueItem(ctx, item, {
+        failure_code: failure.code,
+        failure_count: (item.failure_count ?? 0) + 1,
+        failure_created_ms: failureCreatedMs,
+        failure_reason: failure.reason,
+        is_unavailable: item.is_unavailable || failure.permanent,
+      });
+    }
+
+    const nextQueueItem = nextPlaybackQueueItem(
+      ctx,
+      room_id,
+      authority.session.queue_mode,
+    );
+    const canAdvance = Boolean(
+      failure.permanent &&
+      allow_autoplay_advance &&
+      authority.session.queue_autoplay_enabled &&
+      nextQueueItem &&
+      nextQueueItem.queue_item_id !== activeQueueItemId,
+    );
+
+    recordRoomError(
+      ctx,
+      createMediaFailureEvent({
+        actorMemberId: actor_member_id,
+        canAdvance,
+        failure,
+        queueItemId: activeQueueItemId,
+        roomId: room_id,
+        sourceType,
+        sourceUrl: activeSourceUrl,
+        title,
+      }),
+    );
+
+    if (canAdvance && nextQueueItem) {
+      for (const item of roomQueueItems(ctx, room_id)) {
+        if (item.queue_item_id === nextQueueItem.queue_item_id) {
+          replaceQueueItem(ctx, item, {
+            played_sequence: 0,
+            status: "playing",
+          });
+        } else if (item.status === "playing") {
+          replaceQueueItem(ctx, item, {
+            played_sequence: nextPlayedSequence(ctx, room_id),
+            status: "played",
+          });
+        }
+      }
+
+      ctx.db.room_session.delete(authority.session);
+      ctx.db.room_session.insert({
+        ...authority.session,
+        active_queue_item_id: nextQueueItem.queue_item_id,
+        playback_rate: 1,
+        position_seconds: 0,
+        server_updated_ms: nowMs(),
+        source_duration_seconds: nextQueueItem.duration_seconds,
+        source_title: nextQueueItem.title ?? nextQueueItem.source_url,
+        source_type: normalizeSourceType(nextQueueItem.source_type),
+        source_url: nextQueueItem.source_url,
+        status: "playing",
+      });
+      normalizeQueuedPositions(ctx, room_id);
+      return;
+    }
+
+    ctx.db.room_session.delete(authority.session);
+    ctx.db.room_session.insert({
+      ...authority.session,
+      server_updated_ms: nowMs(),
+      status: "error",
+    });
   },
 );
 

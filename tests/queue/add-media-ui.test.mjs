@@ -93,6 +93,15 @@ test("server room errors are surfaced as queue notifications", () => {
   }
 });
 
+test("media failures remain visible in history and on affected queue rows", () => {
+  assert.match(queuePanelSource, /Playback events/);
+  assert.match(queuePanelSource, /event\.providerId/);
+  assert.match(queuePanelSource, /event\.actorSource === "system"/);
+  assert.match(queuePanelSource, /item\.failureReason/);
+  assert.match(queuePanelSource, /Repeated \{item\.failureCount\}/);
+  assert.match(listenLayoutSource, /item\.failureReason \? "text-error"/);
+});
+
 test("playlist selection uses row keys instead of collapsing duplicate video ids", () => {
   for (const source of [queuePanelSource, listenLayoutSource]) {
     assert.match(source, /function playlistItemKey\(item: PlaylistPreviewItem\)/);

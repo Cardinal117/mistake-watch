@@ -9,6 +9,7 @@ import type {
   IssueRoomSeedGrantPayload,
   MoveQueueItemPayload,
   QueueItemReducerPayload,
+  ReportMediaFailurePayload,
   RevokeRoomControlPayload,
   SeedRoomSessionPayload,
   SetMemberPermissionsPayload,
@@ -43,6 +44,7 @@ export type GeneratedConnection = {
     moveQueueItem(payload: MoveQueueItemPayload): void;
     playQueueItem(payload: QueueItemReducerPayload): void;
     removeQueueItem(payload: QueueItemReducerPayload): void;
+    reportMediaFailure(payload: ReportMediaFailurePayload): void;
     removeIdleMember(payload: {
       actorMemberId: string;
       roomId: string;

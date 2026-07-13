@@ -17,4 +17,12 @@ export default __t.row({
   message: __t.string(),
   roomId: __t.string().name("room_id"),
   severity: __t.string(),
+  actorMemberId: __t.option(__t.string()).name("actor_member_id"),
+  actorSource: __t.option(__t.string()).name("actor_source"),
+  eventType: __t.option(__t.string()).name("event_type"),
+  permanent: __t.bool(),
+  providerId: __t.option(__t.string()).name("provider_id"),
+  queueItemId: __t.option(__t.string()).name("queue_item_id"),
+  sourceType: __t.option(__t.string()).name("source_type"),
+  title: __t.option(__t.string()),
 });

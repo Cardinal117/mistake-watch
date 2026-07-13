@@ -64,6 +64,10 @@ export type LiveQueueItem = {
   isPinned: boolean;
   isPlayNext: boolean;
   isUnavailable: boolean;
+  failureCode: string | null;
+  failureReason: string | null;
+  failureCreatedMs: number | null;
+  failureCount: number;
   playedSequence: number;
   playlistId: string | null;
   playlistTitle: string | null;
@@ -72,11 +76,19 @@ export type LiveQueueItem = {
 };
 
 export type LiveRoomError = {
+  actorMemberId: string | null;
+  actorSource: "actor" | "system" | null;
   errorId: string;
   roomId: string;
   code: string;
+  eventType: string | null;
   message: string;
+  permanent: boolean;
+  providerId: string | null;
+  queueItemId: string | null;
   severity: "info" | "warning" | "error";
+  sourceType: "direct" | "hls" | "youtube" | null;
+  title: string | null;
   createdMs: number;
 };
 
@@ -216,6 +228,15 @@ export type AdvanceQueueItemPayload = {
   autoplay?: boolean;
   expectedActiveQueueItemId?: string;
   expectedSourceUrl?: string;
+  roomId: string;
+};
+
+export type ReportMediaFailurePayload = {
+  actorMemberId: string;
+  allowAutoplayAdvance?: boolean;
+  expectedActiveQueueItemId?: string;
+  expectedSourceUrl: string;
+  failureCode: string;
   roomId: string;
 };
 
