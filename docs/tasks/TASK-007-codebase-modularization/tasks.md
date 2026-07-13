@@ -2,10 +2,10 @@
 
 ## Gate 0: Safety and baseline
 
-- Create safety tag and integration branch.
-- Record LOC and room bundle baselines.
-- Run the complete pre-change verification suite.
-- Preserve unrelated untracked screenshots.
+- [x] Create safety tag and integration branch.
+- [x] Record LOC and room bundle baselines.
+- [x] Run the complete pre-change verification suite.
+- [x] Preserve unrelated untracked screenshots.
 
 Safe commit: task packet and baseline only.
 
@@ -13,23 +13,28 @@ Safe commit: task packet and baseline only.
 
 ### Agent A: listen mode
 
-- Move listen header, TV, discovery, queue, Add Media, settings, and theme responsibilities into `components/room/listen/**`.
-- Keep `components/room/listen-mode-layout.tsx` as a compatibility entrypoint or thin re-export.
-- Do not share or redesign behavior yet.
-- Do not modify watch, shared queue, media, realtime, config, tests, or task files.
+- [x] Move listen header, TV, discovery, queue, Add Media, settings, and theme responsibilities into `components/room/listen/**`.
+- [x] Keep `components/room/listen-mode-layout.tsx` as a compatibility entrypoint or thin re-export.
+- [x] Do not share or redesign behavior yet.
+- [x] Do not modify watch, shared queue, media, realtime, config, tests, or task files.
 
 ### Agent B: watch mode
 
-- Move watch header, audience, queue surface, media library, folder, and upload responsibilities into `components/room/watch/**`.
-- Keep `components/room/watch-mode-layout.tsx` as a compatibility entrypoint or thin re-export.
-- Do not change API calls, access checks, upload behavior, or UI.
-- Do not modify listen, shared queue, media, realtime, config, tests, or task files.
+- [x] Move watch header, audience, queue surface, media library, folder, and upload responsibilities into `components/room/watch/**`.
+- [x] Keep `components/room/watch-mode-layout.tsx` as a compatibility entrypoint or thin re-export.
+- [x] Do not change API calls, access checks, upload behavior, or UI.
+- [x] Do not modify listen, shared queue, media, realtime, config, tests, or task files.
 
 ### Integration checkpoint
 
-- Review and integrate each commit independently.
-- Run typecheck, lint, queue/media/player tests, build, and local watch/listen browser QA.
-- Reject hidden behavior changes or incomplete moves.
+- [x] Review and integrate each commit independently.
+- [x] Run typecheck, lint, queue/media/player tests, build, and available local browser QA.
+- [x] Reject hidden behavior changes or incomplete moves.
+
+Batch 1 status: implementation and automated QA complete on the integration
+branch. Listen desktop/mobile browser QA passed. Local owner-authenticated watch
+interaction remains a manual release check because Google OAuth is unavailable
+on localhost.
 
 ## Batch 2: Shared workflow and server boundaries
 
