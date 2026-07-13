@@ -7,6 +7,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import ts from "typescript";
 
+import { readSourceTree } from "../helpers/read-source-tree.mjs";
+
 const rootDir = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../..",
@@ -74,9 +76,10 @@ test("uploaded playback references reject empty or mismatched values", () => {
 });
 
 test("uploaded media queue and play paths do not persist public asset URLs", async () => {
-  const watchSource = await readFile(
-    path.join(rootDir, "components/room/watch-mode-layout.tsx"),
-    "utf8",
+  const watchSource = await readSourceTree(
+    rootDir,
+    "components/room/watch-mode-layout.tsx",
+    "components/room/watch",
   );
   const queueSource = await readFile(
     path.join(rootDir, "components/room/queue-panel.tsx"),

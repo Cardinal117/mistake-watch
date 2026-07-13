@@ -4,14 +4,17 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { readSourceTree } from "../helpers/read-source-tree.mjs";
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const queuePanelSource = await readFile(
   path.join(root, "components/room/queue-panel.tsx"),
   "utf8",
 );
-const listenLayoutSource = await readFile(
-  path.join(root, "components/room/listen-mode-layout.tsx"),
-  "utf8",
+const listenLayoutSource = await readSourceTree(
+  root,
+  "components/room/listen-mode-layout.tsx",
+  "components/room/listen",
 );
 const membersPanelSource = await readFile(
   path.join(root, "components/room/members-panel.tsx"),

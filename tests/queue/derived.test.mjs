@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import ts from "typescript";
 
+import { readSourceTree } from "../helpers/read-source-tree.mjs";
 import { createQueueFixture, queueFixtureSizes } from "./fixtures.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -14,7 +15,12 @@ const tempDir = await mkdtemp(path.join(tmpdir(), "mistake-watch-derived-queue-"
 const sourcePath = path.join(rootDir, "lib/queue/derived.ts");
 const source = await readFile(sourcePath, "utf8");
 const [listenLayoutSource, queuePanelSource] = await Promise.all([
-  readFile(path.join(rootDir, "components/room/listen-mode-layout.tsx"), "utf8"),
+  readSourceTree(
+    rootDir,
+    "components/room/listen-mode-layout.tsx",
+    "components/room/listen/listen-mode-layout.tsx",
+    "components/room/listen/queue",
+  ),
   readFile(path.join(rootDir, "components/room/queue-panel.tsx"), "utf8"),
 ]);
 const output = ts.transpileModule(source, {

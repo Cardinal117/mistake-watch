@@ -7,6 +7,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import ts from "typescript";
 
+import { readSourceTree } from "../helpers/read-source-tree.mjs";
+
 const rootDir = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../..",
@@ -158,9 +160,10 @@ test("catalogue API and UI are wired through the uploaded catalogue access resul
     path.join(rootDir, "lib/media/assets.ts"),
     "utf8",
   );
-  const watchLayoutSource = await readFile(
-    path.join(rootDir, "components/room/watch-mode-layout.tsx"),
-    "utf8",
+  const watchLayoutSource = await readSourceTree(
+    rootDir,
+    "components/room/watch-mode-layout.tsx",
+    "components/room/watch",
   );
 
   assert.match(assetsSource, /getUploadedCatalogueAccess/);
