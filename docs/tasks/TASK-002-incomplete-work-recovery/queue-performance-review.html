@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TASK-002.5J Queue Performance Review - Mistake Watch</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0e0e0f;
+        --surface: #131314;
+        --panel: #1c1b1c;
+        --panel-high: #2a2a2b;
+        --text: #e5e2e3;
+        --muted: #b9cacb;
+        --line: rgb(255 255 255 / 0.1);
+        --cyan: #00dbe9;
+        --gold: #ffba20;
+        --green: #77d982;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Geist, Inter, ui-sans-serif, system-ui, sans-serif;
+      }
+
+      main {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 32px 0 56px;
+      }
+
+      header,
+      section,
+      article {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--surface);
+      }
+
+      header { padding: 28px; }
+      section { margin-top: 16px; padding: 22px; }
+      article { padding: 18px; background: var(--panel); }
+
+      h1, h2, h3, p { margin: 0; }
+      h1 { max-width: 860px; margin-top: 14px; font-size: clamp(2rem, 5vw, 3.25rem); line-height: 1.06; }
+      h2 { font-size: 1.25rem; }
+      h3 { font-size: 1rem; }
+      p, li, td { color: var(--muted); line-height: 1.55; }
+      header p { max-width: 860px; margin-top: 14px; }
+      ul { margin: 10px 0 0; padding-left: 20px; }
+      li + li { margin-top: 6px; }
+      a { color: var(--cyan); }
+
+      code,
+      .badge,
+      th,
+      .metric strong {
+        font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+      }
+
+      .badges,
+      .grid,
+      .metrics {
+        display: grid;
+        gap: 12px;
+      }
+
+      .badges { grid-auto-flow: column; justify-content: start; }
+      .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 14px; }
+
+      .badge {
+        display: inline-flex;
+        width: fit-content;
+        padding: 5px 8px;
+        border: 1px solid rgb(0 219 233 / 0.4);
+        border-radius: 6px;
+        color: var(--cyan);
+        font-size: 12px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .badge.gold { border-color: rgb(255 186 32 / 0.4); color: var(--gold); }
+      .badge.green { border-color: rgb(119 217 130 / 0.4); color: var(--green); }
+
+      .metric {
+        min-height: 116px;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      .metric span { display: block; color: var(--muted); font-size: 13px; }
+      .metric strong { display: block; margin-top: 8px; color: var(--text); font-size: 1.4rem; }
+      .metric em { display: block; margin-top: 7px; color: var(--green); font-size: 12px; font-style: normal; }
+
+      table {
+        width: 100%;
+        margin-top: 14px;
+        border-collapse: collapse;
+        border: 1px solid var(--line);
+      }
+
+      th, td { padding: 11px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+      th { color: var(--text); background: var(--panel-high); font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; }
+      tr:last-child td { border-bottom: 0; }
+
+      .batch { border-left: 3px solid var(--cyan); }
+      .boundary { border-color: rgb(255 186 32 / 0.35); }
+      .section-intro { margin-top: 8px; }
+
+      @media (max-width: 800px) {
+        main { width: min(100% - 24px, 1120px); }
+        .grid.two, .grid.three, .metrics { grid-template-columns: 1fr; }
+        .badges { grid-auto-flow: row; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="badges">
+          <span class="badge">TASK-002.5J</span>
+          <span class="badge gold">Implementation ready</span>
+          <span class="badge green">Measured baseline</span>
+        </div>
+        <h1>Queue resilience and large-queue performance</h1>
+        <p>
+          Five controlled batches make 250-item rooms responsive without changing SpacetimeDB queue authority.
+          The release contract requires a 40% synthetic improvement and targets room P75 INP of 202 ms or better.
+        </p>
+      </header>
+
+      <section aria-labelledby="summary-heading">
+        <h2 id="summary-heading">Executive Summary</h2>
+        <div class="metrics">
+          <div class="metric"><span>Room P75 INP baseline</span><strong>336 ms</strong><em>51 production samples</em></div>
+          <div class="metric"><span>Field target</span><strong>&le; 202 ms</strong><em>40% reduction</em></div>
+          <div class="metric"><span>Initial metadata</span><strong>&le; 10</strong><em>Maximum 3 concurrent</em></div>
+          <div class="metric"><span>Mounted queue rows</span><strong>&le; 30</strong><em>At 250 total items</em></div>
+        </div>
+      </section>
+
+      <section aria-labelledby="files-heading">
+        <h2 id="files-heading">Files To Review</h2>
+        <div class="grid three" style="margin-top: 14px">
+          <article>
+            <span class="badge">Must review</span>
+            <ul>
+              <li><a href="./tasks.md">tasks.md</a> - batches, test gates, and safe commit points.</li>
+              <li><a href="./acceptance-criteria.md">acceptance-criteria.md</a> - measurable release contract.</li>
+            </ul>
+          </article>
+          <article>
+            <span class="badge gold">Evidence</span>
+            <ul>
+              <li><a href="./queue-performance-baseline-2026-07-13.md">queue performance baseline</a> - production metrics and benchmark protocol.</li>
+              <li><a href="./queue-performance-implementation-report.html">Batch A implementation report</a> - changed files, verification, and pending manual QA.</li>
+              <li><a href="./review-notes.md">review-notes.md</a> - observations, decisions, and risks.</li>
+            </ul>
+          </article>
+          <article>
+            <span class="badge green">Architecture</span>
+            <ul>
+              <li><a href="./design.md">design.md</a> - scheduling, virtualization, authority, and accessibility boundaries.</li>
+              <li>This page is the review layer; Markdown remains canonical.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="batches-heading">
+        <h2 id="batches-heading">Implementation Batches</h2>
+        <p class="section-intro">Each batch is independently testable and has a safe commit point.</p>
+        <div class="grid two" style="margin-top: 14px">
+          <article class="batch"><span class="badge">A</span><h3 style="margin-top: 10px">Benchmark and linear state</h3><p>Capture the baseline, add fixtures/instrumentation, and remove repeated per-row queue scans.</p></article>
+          <article class="batch"><span class="badge">B</span><h3 style="margin-top: 10px">Bounded metadata</h3><p>First 10 immediately, priority scheduling, maximum concurrency of 3, cancellation, and stale-result guards.</p></article>
+          <article class="batch"><span class="badge">C</span><h3 style="margin-top: 10px">Drawer isolation and virtualization</h3><p>Zero full rows while closed and at most 30 mounted rows for a 250-item open queue.</p></article>
+          <article class="batch"><span class="badge">D</span><h3 style="margin-top: 10px">Failure resilience and events</h3><p>Permanent-failure-only auto-skip, compact room events, known-bad labels, and no silent queue drain.</p></article>
+          <article class="batch"><span class="badge">E</span><h3 style="margin-top: 10px">Production release gate</h3><p>Full regression suite, same-profile benchmark, deploy, manual owner/guest QA, and post-deploy field comparison.</p></article>
+          <article class="boundary"><span class="badge gold">Scope boundary</span><h3 style="margin-top: 10px">Separate room-load follow-up</h3><p>Artwork/video LCP and root-shell CLS remain measurable but do not silently expand queue work.</p></article>
+        </div>
+      </section>
+
+      <section aria-labelledby="gates-heading">
+        <h2 id="gates-heading">Release Gates</h2>
+        <table>
+          <thead><tr><th>Gate</th><th>Requirement</th><th>Evidence</th></tr></thead>
+          <tbody>
+            <tr><td>Synthetic speed</td><td>At least 40% improvement on the same 250-item mobile profile.</td><td>Median and P75 across at least 5 runs.</td></tr>
+            <tr><td>Field speed</td><td>Room P75 INP at or below 202 ms.</td><td>At least 50 post-deploy samples.</td></tr>
+            <tr><td>Network pressure</td><td>No more than 10 initial and 3 concurrent metadata requests.</td><td>Scheduler tests and browser network QA.</td></tr>
+            <tr><td>DOM pressure</td><td>0 full rows closed; no more than 30 rows open at 250 items.</td><td>Component assertions and browser inspection.</td></tr>
+            <tr><td>Resilience</td><td>Generic/transient errors cannot auto-skip or drain the queue.</td><td>Classification, stale callback, and circuit-breaker tests.</td></tr>
+            <tr><td>Regression</td><td>Permissions, sync, uploaded media, Media Session, direct/HLS, and YouTube fallback remain intact.</td><td>Automated suite plus owner/guest production QA.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section aria-labelledby="decision-heading">
+        <h2 id="decision-heading">Implementation Decision</h2>
+        <div class="grid two" style="margin-top: 14px">
+          <article><span class="badge green">Proceed</span><h3 style="margin-top: 10px">Start with Batch A</h3><p>Do not optimize before the controlled pre-change benchmark is captured. Batch A also removes quadratic derived-state work with no intended visual change.</p></article>
+          <article><span class="badge gold">Do not combine</span><h3 style="margin-top: 10px">Keep batches reviewable</h3><p>Metadata scheduling, virtualization, and failure events have different regression risks and should not land as one large rewrite.</p></article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

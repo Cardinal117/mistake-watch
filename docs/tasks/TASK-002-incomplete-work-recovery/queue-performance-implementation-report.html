@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TASK-002.5J Batch A Implementation - Mistake Watch</title>
+    <style>
+      :root { color-scheme: dark; --bg:#0e0e0f; --surface:#131314; --panel:#1c1b1c; --text:#e5e2e3; --muted:#b9cacb; --line:rgb(255 255 255 / .1); --cyan:#00dbe9; --gold:#ffba20; --green:#77d982; --red:#ffb4ab; }
+      * { box-sizing: border-box; }
+      body { margin:0; background:var(--bg); color:var(--text); font-family:Geist,Inter,ui-sans-serif,system-ui,sans-serif; }
+      main { width:min(1080px,calc(100% - 32px)); margin:0 auto; padding:32px 0 56px; }
+      header,section,article { border:1px solid var(--line); border-radius:12px; background:var(--surface); }
+      header { padding:28px; } section { margin-top:16px; padding:22px; } article { padding:16px; background:var(--panel); }
+      h1,h2,h3,p { margin:0; } h1 { max-width:820px; margin-top:12px; font-size:clamp(2rem,5vw,3.1rem); line-height:1.06; } h2 { font-size:1.2rem; } h3 { font-size:1rem; }
+      p,li,td { color:var(--muted); line-height:1.55; } header p,.intro { margin-top:12px; } ul { margin:10px 0 0; padding-left:20px; } li+li { margin-top:6px; } a { color:var(--cyan); }
+      code,.badge,.metric strong,th { font-family:"JetBrains Mono",ui-monospace,Consolas,monospace; }
+      .badges { display:flex; flex-wrap:wrap; gap:8px; }
+      .badge { display:inline-flex; width:fit-content; padding:5px 8px; border:1px solid rgb(0 219 233 / .4); border-radius:6px; color:var(--cyan); font-size:12px; letter-spacing:.05em; text-transform:uppercase; }
+      .badge.green { color:var(--green); border-color:rgb(119 217 130 / .4); } .badge.gold { color:var(--gold); border-color:rgb(255 186 32 / .4); } .badge.red { color:var(--red); border-color:rgb(255 180 171 / .4); }
+      .grid { display:grid; gap:12px; margin-top:14px; } .grid.two { grid-template-columns:repeat(2,minmax(0,1fr)); } .grid.four { grid-template-columns:repeat(4,minmax(0,1fr)); }
+      .metric strong { display:block; margin-top:7px; font-size:1.3rem; } .metric span { color:var(--muted); font-size:13px; }
+      table { width:100%; margin-top:14px; border-collapse:collapse; border:1px solid var(--line); } th,td { padding:11px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; } th { color:var(--text); font-size:12px; letter-spacing:.05em; text-transform:uppercase; } tr:last-child td { border-bottom:0; }
+      @media (max-width:760px) { main { width:min(100% - 24px,1080px); } .grid.two,.grid.four { grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="badges"><span class="badge">TASK-002.5J Batches A + C</span><span class="badge green">Implemented locally</span><span class="badge gold">Deployment pending</span></div>
+        <h1>Linear queue state and viewport-scaled drawer rendering</h1>
+        <p>The queue surfaces derive canonical views once per queue revision, use direct row indexes, unmount heavy content while closed, and render only the visible plus overscan rows while open.</p>
+      </header>
+
+      <section aria-labelledby="result"><h2 id="result">Measured Result</h2><div class="grid four">
+        <article class="metric"><span>Pre-change P75</span><strong>94.996 ms</strong></article>
+        <article class="metric"><span>Optimized P75</span><strong>7.794 ms</strong></article>
+        <article class="metric"><span>P75 improvement</span><strong>91.795%</strong></article>
+        <article class="metric"><span>Queue/YouTube tests</span><strong>35 / 35</strong></article>
+      </div><p class="intro">Local Node.js CPU benchmark, 250 deterministic items, 25 samples, 500 iterations each. This is not browser/mobile field evidence.</p></section>
+
+      <section aria-labelledby="files"><h2 id="files">Files To Review</h2><div class="grid two">
+        <article><span class="badge">Core</span><ul><li><code>lib/queue/derived.ts</code></li><li><code>components/room/listen-mode-layout.tsx</code></li><li><code>components/room/queue-panel.tsx</code></li></ul></article>
+        <article><span class="badge gold">Evidence</span><ul><li><code>tests/queue/derived.test.mjs</code> and <code>fixtures.mjs</code></li><li><code>scripts/benchmark-queue-derived-state.mjs</code></li><li><code>lib/performance/queue.ts</code> and action hook</li></ul></article>
+      </div></section>
+
+      <section aria-labelledby="verification"><h2 id="verification">Verification</h2><table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody>
+        <tr><td>Queue and YouTube tests</td><td>Passed, 35 tests.</td></tr>
+        <tr><td>TypeScript</td><td>Passed directly and during production build.</td></tr>
+        <tr><td>ESLint</td><td>Passed.</td></tr>
+        <tr><td>Production build</td><td>Passed.</td></tr>
+        <tr><td>Algorithmic benchmark</td><td>Passed the 40% gate with 91.795% P75 improvement.</td></tr>
+      </tbody></table></section>
+
+      <section aria-labelledby="boundary"><h2 id="boundary">Scope And Remaining QA</h2><div class="grid two">
+        <article><span class="badge red">Existing failures</span><p class="intro">Two player atomicity tests remain failing in untouched uploaded-autoplay and direct-media paths. They are documented, not attributed to Batch A.</p></article>
+        <article><span class="badge gold">Manual QA</span><p class="intro">A development room with 250 items must capture drawer timing, mounted rows, metadata pressure, and queue action latency through <code>mistake-watch:queue:*</code> entries.</p></article>
+      </div></section>
+
+      <section aria-labelledby="live-qa"><h2 id="live-qa">332-Item Live Room QA</h2><table><thead><tr><th>Observation</th><th>Measured result</th></tr></thead><tbody>
+        <tr><td>Closed desktop drawer</td><td>332 full rows still mounted; 14,222 DOM elements, 664 move controls, and 345 images.</td></tr>
+        <tr><td>Queue to empty History</td><td>5.618 s browser round trip while unmounting 332 rows.</td></tr>
+        <tr><td>History back to Queue</td><td>2.126 s browser round trip while remounting 332 rows.</td></tr>
+        <tr><td>Collapsed drawer</td><td>2.408 s; all 332 rows remained mounted.</td></tr>
+        <tr><td>Mobile open and scroll</td><td>1.837 s to open and 1.749 s for the tested scroll at 375 x 844.</td></tr>
+        <tr><td>Reversible canonical move</td><td>1.667 s down and 1.848 s restored; original order verified.</td></tr>
+      </tbody></table><p class="intro">These include browser-automation overhead, but the DOM evidence and multi-second mount/unmount comparison fail the 100-150 ms perceived-response target. No console warnings or errors were captured.</p></section>
+
+      <section aria-labelledby="closed-fix"><h2 id="closed-fix">Closed-Drawer Corrective Result</h2><table><thead><tr><th>State</th><th>Before</th><th>After</th></tr></thead><tbody>
+        <tr><td>Desktop closed elements</td><td>14,222</td><td>564</td></tr>
+        <tr><td>Desktop closed rows</td><td>332</td><td>0</td></tr>
+        <tr><td>Desktop closed move controls</td><td>664</td><td>0</td></tr>
+        <tr><td>Desktop closed images</td><td>345</td><td>11</td></tr>
+        <tr><td>Mobile closed elements</td><td>14,505</td><td>511</td></tr>
+        <tr><td>Mobile closed rows</td><td>332</td><td>0</td></tr>
+      </tbody></table><p class="intro">The compact handle and next-item preview remain visible. Batch C2 now applies the same bounded-cost rule to the open drawer.</p></section>
+
+      <section aria-labelledby="virtualized"><h2 id="virtualized">Open-Drawer Virtualization Result</h2><table><thead><tr><th>Check</th><th>Verified result</th></tr></thead><tbody>
+        <tr><td>Desktop open / scrolled</td><td>13 mounted rows and 1,126 DOM elements around item 64, down from 332 rows and 14,218 elements.</td></tr>
+        <tr><td>Mobile open / scrolled</td><td>7 rows at the top and 11 around item 40 at 390 x 844.</td></tr>
+        <tr><td>Mounted-row ceiling</td><td>Never exceeded 13 in live QA; deterministic 250, 332, and 1000 item tests enforce a maximum of 30.</td></tr>
+        <tr><td>Row geometry</td><td>80 px desktop and 128 px compact; zero measured gaps or overlaps.</td></tr>
+        <tr><td>Scroll restoration</td><td>Closing at scrollTop 12000 mounted zero rows; reopening restored scrollTop 12000 and rows 146-157.</td></tr>
+        <tr><td>Keyboard focus</td><td>Tab focus crossed a virtual-window boundary and remained on the expected row control.</td></tr>
+        <tr><td>Responsive drawer</td><td>Flex sizing keeps the list inside the drawer after mobile controls wrap; an unset preference now uses the intended 56vh default.</td></tr>
+      </tbody></table><p class="intro">The drawer now scales with viewport size rather than total queue length. No virtualization dependency was added.</p></section>
+
+      <section aria-labelledby="next"><h2 id="next">Next Decision</h2><p class="intro">Implement Batch B bounded metadata scheduling against the current, first-10, visible, and overscan priorities. Rendering cost is bounded; offscreen metadata request pressure is now the next large-queue constraint.</p></section>
+    </main>
+  </body>
+</html>

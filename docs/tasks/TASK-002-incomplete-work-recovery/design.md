@@ -60,6 +60,40 @@ Implementation direction:
 
 Queue interaction must become explicit enough that a member's granted permissions match both the visible controls and the reducers that enforce room authority.
 
+### Large Queue Performance And Resilience
+
+TASK-002.5J keeps SpacetimeDB as the canonical queue authority while reducing client work to the visible and near-future queue surface.
+
+Data flow:
+
+1. Canonical SpacetimeDB queue rows are partitioned once per queue revision into current, upcoming, and history-facing derived views.
+2. One memoized item-id-to-index map supports row actions without per-row full-queue scans.
+3. A bounded metadata scheduler prioritizes current, next, the first 10 upcoming items, visible rows, and overscan rows before background work.
+4. Existing metadata cache and in-flight deduplication remain the shared fetch layer; scheduler cancellation and generation guards prevent stale room/queue results from committing.
+5. The closed drawer keeps only compact preview data mounted. The open drawer virtualizes the visible window and overscan instead of mounting the full queue.
+
+Performance boundaries:
+
+- At most 10 metadata requests begin in the initial queue pass.
+- At most 3 metadata requests are active concurrently.
+- A 250-item open queue mounts at most 30 rows including overscan.
+- A closed drawer mounts no full rows and starts no row-level metadata hooks.
+- Queue performance is measured separately from room artwork/video LCP and root-shell CLS so unrelated rendering work does not silently enter this task.
+
+Resilience boundaries:
+
+- Runtime errors are data to classify, not permission to mutate the queue by default.
+- Only confirmed permanent failures may auto-skip, and stale-playback checks plus the existing circuit breaker remain mandatory.
+- Room-visible events use normalized provider identifiers and readable reasons. They must not contain private uploaded-media URLs, signed URLs, credentials, or cross-room state.
+- Known-problem source labels are room/session scoped unless a later durable product decision explicitly expands their lifetime.
+
+UI and accessibility:
+
+- Loading rows reserve the final row footprint to avoid content jumps.
+- Virtualized rows retain stable keys, keyboard navigation, focus restoration, current-item visibility, and accessible list position semantics.
+- The queue handle remains immediately usable while metadata resolves and does not expose internal performance instructions in product copy.
+- Existing Obsidian Lounge colors, spacing, typography, and compact drawer hierarchy remain unchanged unless a separately approved visual task updates `DESIGN.md`.
+
 Implementation direction:
 
 - add explicit queue-management authority instead of treating queue add permission or host role as the only queue operation boundary;

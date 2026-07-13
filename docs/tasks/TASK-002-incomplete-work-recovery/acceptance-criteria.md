@@ -162,6 +162,22 @@
 - Room Picks, history, and playlist/recommendation tabs do not depend solely on active upcoming queue rows and can render useful cached/history-backed states when upcoming is empty.
 - Skeleton loaders appear for initially loading tab/card surfaces and disappear when cached or fetched content is ready.
 - Existing SpacetimeDB queue reducer contracts remain authoritative and are not replaced by client-only ordering.
+- Deterministic `0`, `1`, `10`, `250`, and `1000` item fixtures cover empty, normal, large, and stress queue behavior.
+- A repeatable pre-change and post-change 250-item mobile-profile benchmark records the same metric, device profile, run count, median, and P75.
+- The selected synthetic queue metric improves by at least 40% from its pre-change baseline.
+- `/rooms/[roomId]` P75 INP reaches `202 ms` or better after at least 50 post-deployment samples; before that threshold, field performance remains pending rather than passed.
+- A 250-item queue starts no more than 10 immediate metadata requests and never exceeds 3 concurrent metadata requests.
+- Closing or changing the queue/room cancels or safely ignores obsolete metadata work.
+- A closed queue drawer mounts zero full queue rows and no row-level metadata hooks.
+- An open 250-item queue mounts no more than 30 rows including overscan.
+- Queue indexing and partitioning avoid repeated per-row full-queue scans.
+- Virtualized rows preserve stable keys, current-item visibility, scroll position, focus, keyboard navigation, and reorder/remove behavior at viewport boundaries.
+- Queue loading placeholders reserve stable dimensions and do not introduce a room CLS regression.
+- Generic, transient, stale, and unknown player/provider failures cannot auto-skip or drain the queue.
+- Compact failure events do not expose private uploaded-media URLs, signed URLs, credentials, tokens, or cross-room data.
+- Controlled mobile QA observes queue actions within the `100-150 ms` perceived-response target or records the measured exception.
+- Overall room CLS does not regress; `0.1` or lower remains the broader room target.
+- Existing queue permissions, playback sync, uploaded-media access, Media Session metadata, direct/HLS playback, and YouTube fallback behavior remain unchanged.
 - Static checks and production build pass.
 
 ## TASK-002.5K Listen Room TV View Mode

@@ -435,37 +435,145 @@ Safe commit point:
 
 Source task: corrective follow-up from the June 24, 2026 queue disappearance bug and 250-item queue performance review.
 
-Work:
+Performance contract:
 
-- Harden YouTube autoplay continuity so runtime player/provider errors cannot silently consume a large queue.
-- Only auto-skip YouTube items for confirmed permanent runtime failures such as removed/private videos or embed-blocked videos.
-- Record compact room-visible queue/player events when an item is auto-skipped:
-  - source URL or normalized provider ID;
-  - readable reason such as `Owner does not allow embedded playback`;
-  - affected queue item title when available;
-  - timestamp and actor/system source.
-- Keep a lightweight known-problem source map for the current room/session so repeated unavailable URLs can be labeled in history and queue surfaces.
-- Add clear user-facing history labels for unavailable/skipped items so hosts understand why autoplay moved past them.
-- Reduce listen-mode metadata pressure for large queues:
-  - fetch duration/metadata for the first 10 queued items immediately;
-  - progressively lazy-load the remaining queue metadata over time with a small concurrency limit;
-  - prioritize visible drawer rows and near-future items before offscreen rows;
-  - show small loading indicators in the queue drawer handle and rows while metadata is still being resolved.
-- Virtualize or window large queue drawers so only visible rows and near-viewport rows render.
-- Keep queue drawer heavy content mounted only when the drawer is open or when a compact preview requires it.
-- Separate active upcoming queue state from session history/recommendation source data:
-  - Room Picks / For You / From Playlist should not go dead just because upcoming queue is temporarily empty;
-  - history and recommendation tabs should load/render only their active visible cards;
-  - use skeleton loaders during initial tab loads and cached results after first load.
-- Keep SpacetimeDB reducers authoritative for queue mutation; do not move queue ordering to client-only state.
-- Do not implement new provider recommendation algorithms, account history, or AI DJ behavior in this corrective task.
+- Use the July 13, 2026 production Speed Insights snapshot in `queue-performance-baseline-2026-07-13.md` as the field baseline.
+- Primary field target: reduce `/rooms/[roomId]` P75 INP from `336 ms` to `202 ms` or better after at least 50 post-deployment samples.
+- Synthetic target: improve the same-device 250-item queue benchmark by at least 40% from the pre-change baseline captured in Batch A.
+- Treat YouTube Music mobile as a perceived-responsiveness reference, not a claim of exact product parity: immediate shell, stable placeholders, deferred offscreen work, and responsive scrolling/actions.
+- Queue work may improve room hydration and responsiveness, but room artwork/video LCP and root-layout CLS remain separately measurable follow-ups if this task cannot move them without scope expansion.
+
+### Batch A: Benchmark And Derived-State Foundation
+
+Status: implemented locally on July 13, 2026; production/mobile manual QA and commit remain pending.
+
+Implementation:
+
+- Add deterministic queue fixtures for `0`, `1`, `10`, `250`, and stress-test `1000` items without changing production queue authority.
+- Add development/test instrumentation for drawer-open-to-committed-row time, mounted row count, metadata request count, peak metadata concurrency, and queue action latency.
+- Capture a pre-change 250-item mobile-profile benchmark before optimizing.
+- Replace repeated per-row queue scans with memoized queue partitions and one item-id-to-index map per queue update.
+- Preserve SpacetimeDB ordering and reducer authority; derived client state remains read-only.
+
+Automated checks:
+
+- Unit tests cover queue partitioning, index lookup, empty/current/upcoming/history boundaries, and stable output ordering.
+- Benchmark output records fixture size, device profile, run count, median, and P75 so before/after values are comparable.
+- Existing sync, queue reducer, typecheck, lint, and build checks pass.
+
+QA requirements:
+
+- Verify queue add, play-next, remove, reorder, previous/back, and clear behavior with `0`, `1`, `10`, and `250` items.
+- Confirm instrumentation is development/test-only and emits no user media details or production console noise.
+
+Safe commit point:
+
+- A repeatable baseline exists and queue-derived state is linear-time without changing visible behavior.
+
+### Batch B: Bounded Metadata Scheduler
+
+Implementation:
+
+- Resolve metadata for the first 10 upcoming items immediately.
+- Prioritize current, next, visible, and overscan rows before background items.
+- Limit metadata work to at most 3 concurrent requests.
+- Reuse the existing metadata cache and in-flight deduplication; add cancellation and stale-result guards for room changes, queue removal, and drawer closure.
+- Remove whole-queue `Promise.all` fanout from remaining-duration calculations and other queue summaries.
+- Keep stable loading dimensions for unresolved titles, durations, and thumbnails.
+
+Automated checks:
+
+- Scheduler tests prove first-10 priority, maximum concurrency of 3, deduplication, cancellation, reprioritization, cache reuse, and stale-result rejection.
+- A 250-item fixture starts no more than 10 initial metadata requests and never exceeds 3 active requests.
+- Provider failures settle into explicit unavailable/error state without retry storms or queue mutation.
+
+QA requirements:
+
+- Network inspection confirms initial request count and concurrency limits.
+- Opening, closing, scrolling, and switching rooms does not create duplicate requests or apply metadata from the previous room.
+
+Safe commit point:
+
+- Large queues load useful metadata progressively without whole-queue network pressure.
+
+### Batch C: Closed-Drawer Isolation And Virtualized Rendering
+
+Status: closed-drawer isolation and open-drawer virtualization implemented and verified locally on July 13, 2026; commit, deployment, and post-deployment field measurement are pending.
+
+Implementation:
+
+- Keep only the queue handle and compact preview mounted while the drawer is closed; do not mount full queue rows or row metadata hooks.
+- When open, virtualize/window the queue so a 250-item list mounts no more than 30 rows including overscan.
+- Preserve stable row dimensions, scroll position, selected/current state, focus behavior, and keyboard access.
+- Prefer an existing dependency or a small local strategy only after measuring dynamic-row needs and bundle impact; do not add a virtualization dependency by default.
+- Render history/recommendation heavy content only for the active visible tab and reuse cached results after first load.
+
+Automated checks:
+
+- Component tests prove zero full queue rows while closed and at most 30 mounted rows for a 250-item open queue.
+- Tests cover scroll-to-current, reorder/removal near viewport boundaries, stable keys, focus retention, and empty/loading/error states.
+- Bundle comparison documents any dependency cost.
+
+QA requirements:
+
+- Test desktop and mobile queue opening, fast scrolling, keyboard navigation, focus restoration, and orientation/viewport changes.
+- Confirm no overlapping rows, text clipping, scrollbar jumps, or cumulative layout shift from metadata resolution.
+
+Safe commit point:
+
+- Drawer cost scales with the visible viewport rather than total queue length.
+
+### Batch D: Failure Resilience And Event Visibility
+
+Implementation:
+
+- Preserve the existing rule that generic YouTube provider/player/unknown errors do not auto-skip.
+- Auto-skip only confirmed permanent failures such as removed/private or embed-blocked media, with the existing stale-playback guard and skip circuit breaker retained.
+- Record compact room-visible events with normalized source/provider id, readable reason, title when available, timestamp, and system/actor source.
+- Keep a lightweight room/session known-problem source map and label repeated unavailable items in queue/history surfaces.
+- Keep upcoming queue, history, and recommendation source state independent so empty upcoming state does not erase useful history or cached recommendations.
+
+Automated checks:
+
+- Failure-classification tests cover permanent, transient, unknown, stale, repeated, and circuit-breaker cases.
+- Event serialization tests prove compact, room-scoped records without private URLs, tokens, or unrelated room data.
+- Regression tests prove a sequence of provider errors cannot silently drain a 250-item queue.
+
+QA requirements:
+
+- Test removed/private, embed-blocked, transient network, generic player, stale callback, and repeated known-bad source scenarios.
+- Confirm every automatic move is understandable in the room event/history UI and authorized queue controls still behave normally.
+
+Safe commit point:
+
+- Playback failures are bounded, visible, and cannot silently consume the room queue.
+
+### Batch E: Production Performance And Release Gate
+
+Implementation and verification:
+
+- Run focused tests plus `npm run test:sync`, `npm run typecheck`, `npm run lint`, and `npm run build`.
+- Repeat the Batch A benchmark on the same device profile and require at least 40% improvement in the agreed synthetic queue metric.
+- Deploy to production, perform owner/guest room QA, and query Vercel Speed Insights after at least 50 new room INP samples.
+- Compare `/rooms/[roomId]` P75 INP, FCP, LCP, CLS, and TTFB against the July 13 baseline; do not claim field success before the sample threshold.
+- Record any remaining artwork/video LCP or root-shell CLS work as a separate performance follow-up rather than broadening this task.
+
+Release gates:
+
+- P75 room INP is `202 ms` or better after at least 50 post-deployment samples, or the task is reported as functionally complete but field-performance pending/failed.
+- Queue interactions target `100-150 ms` perceived response in controlled mobile QA.
+- Overall room CLS does not regress; the broader product target remains `0.1` or lower.
+- No queue authorization, ordering, playback sync, uploaded-media access, Media Session, or provider fallback regression is present.
+- QA evidence and remaining risks are recorded before commit preparation.
 
 Review checkpoint:
 
 - A bad YouTube embed or provider error cannot silently drain a 250-item queue.
 - Auto-skipped items are visible and understandable in room history or event surfaces.
 - Large queues stay responsive while still showing useful first-page queue metadata quickly.
-- Opening the queue drawer with 250+ items does not render every thumbnail/card at once.
+- Opening the queue drawer with 250+ items mounts no more than 30 rows including overscan.
+- A closed queue drawer mounts zero full queue rows and starts no row-level metadata work.
+- Initial metadata work is capped at 10 items and 3 concurrent requests.
 - Room Picks and history surfaces remain useful even after the upcoming queue is empty.
 
 Safe commit point:

@@ -3,13 +3,17 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { parseYouTubeVideoId } from "@/lib/player/source";
+import { beginQueueMetadataRequest } from "@/lib/performance/queue";
 import { UNKNOWN_YOUTUBE_AVAILABILITY } from "./availability";
 import type { YouTubeMetadataResponse } from "./metadata";
 
 const clientCache = new Map<string, YouTubeMetadataResponse>();
 const pendingRequests = new Map<string, Promise<YouTubeMetadataResponse>>();
 
-export function useYouTubeMetadata(sourceUrl?: string | null) {
+export function useYouTubeMetadata(
+  sourceUrl?: string | null,
+  options?: { instrumentQueue?: boolean },
+) {
   const videoId = useMemo(
     () => (sourceUrl ? parseYouTubeVideoId(sourceUrl) : null),
     [sourceUrl],
@@ -34,7 +38,7 @@ export function useYouTubeMetadata(sourceUrl?: string | null) {
       return;
     }
 
-    const request = getMetadataRequest(videoId);
+    const request = getMetadataRequest(videoId, options?.instrumentQueue);
     let cancelled = false;
 
     request
@@ -63,7 +67,7 @@ export function useYouTubeMetadata(sourceUrl?: string | null) {
     return () => {
       cancelled = true;
     };
-  }, [videoId]);
+  }, [options?.instrumentQueue, videoId]);
 
   return {
     loading: Boolean(videoId && !result),
@@ -74,7 +78,7 @@ export function useYouTubeMetadata(sourceUrl?: string | null) {
   };
 }
 
-function getMetadataRequest(videoId: string) {
+function getMetadataRequest(videoId: string, instrumentQueue = false) {
   const cached = clientCache.get(videoId);
 
   if (cached) {
@@ -87,6 +91,9 @@ function getMetadataRequest(videoId: string) {
     return pending;
   }
 
+  const completeInstrumentation = instrumentQueue
+    ? beginQueueMetadataRequest({ client: "metadata-hook" })
+    : null;
   const request = fetch(
     `/api/youtube/metadata?videoId=${encodeURIComponent(videoId)}`,
   )
@@ -104,6 +111,7 @@ function getMetadataRequest(videoId: string) {
     })
     .finally(() => {
       pendingRequests.delete(videoId);
+      completeInstrumentation?.();
     });
 
   pendingRequests.set(videoId, request);

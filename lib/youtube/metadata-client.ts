@@ -2,11 +2,15 @@
 
 import { UNKNOWN_YOUTUBE_AVAILABILITY } from "./availability";
 import type { YouTubeMetadataResponse } from "./metadata";
+import { beginQueueMetadataRequest } from "@/lib/performance/queue";
 
 const metadataCache = new Map<string, YouTubeMetadataResponse>();
 const pendingMetadataRequests = new Map<string, Promise<YouTubeMetadataResponse>>();
 
-export function fetchYouTubeMetadata(input: string) {
+export function fetchYouTubeMetadata(
+  input: string,
+  options?: { instrumentQueue?: boolean },
+) {
   const key = input.trim();
   const cached = metadataCache.get(key);
 
@@ -20,6 +24,9 @@ export function fetchYouTubeMetadata(input: string) {
     return pending;
   }
 
+  const completeInstrumentation = options?.instrumentQueue
+    ? beginQueueMetadataRequest({ client: "metadata-client" })
+    : null;
   const request = fetch(`/api/youtube/metadata?url=${encodeURIComponent(key)}`)
     .then((response) => {
       if (!response.ok) {
@@ -47,6 +54,7 @@ export function fetchYouTubeMetadata(input: string) {
     })
     .finally(() => {
       pendingMetadataRequests.delete(key);
+      completeInstrumentation?.();
     });
 
   pendingMetadataRequests.set(key, request);

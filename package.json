@@ -12,6 +12,7 @@
     "spacetime:generate": "spacetime generate",
     "spacetime:server-token": "node scripts/create-spacetime-server-token.mjs",
     "build": "next build",
+    "benchmark:queue": "node scripts/benchmark-queue-derived-state.mjs",
     "start": "next start",
     "test:identity": "node --test tests/identity/*.test.mjs",
     "test:dev": "node --test tests/dev/*.test.mjs",

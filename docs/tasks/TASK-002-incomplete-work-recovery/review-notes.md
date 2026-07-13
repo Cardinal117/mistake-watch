@@ -1253,6 +1253,231 @@ Verification:
 - `npm run typecheck` passed for the runtime-error guard fix.
 - `npm run lint` passed for the runtime-error guard fix.
 
+## TASK-002.5J Implementation Readiness - July 13, 2026
+
+Status: specification ready; production implementation not started in this pass.
+
+Measured production baseline:
+
+- `/rooms/[roomId]` P75 INP: `336 ms` from 51 samples.
+- `/rooms/[roomId]` P75 LCP: `7876 ms` from 21 samples.
+- `/rooms/[roomId]` P75 FCP: `3856 ms` from 21 samples.
+- `/rooms/[roomId]` P75 CLS: `0.5868` from 36 samples.
+- `/rooms/[roomId]` P75 TTFB: `1296 ms` from 29 samples.
+- Mobile room data has only 2 samples and is a warning, not a reliable baseline.
+
+Current code observations informing the batch order:
+
+- The listen queue drawer keeps heavy content mounted while visually closed.
+- Every visible queue row owns a metadata hook, so mounting the full list creates hook/effect pressure even with fetch cache and in-flight deduplication.
+- Remaining-duration metadata uses whole-list `Promise.all` fanout for missing items.
+- Queue rendering performs repeated per-row item-index scans, creating avoidable quadratic work at large queue sizes.
+- The queue surface maps every visible item without windowing.
+
+Approved direction:
+
+- First establish deterministic fixtures, instrumentation, and a same-device synthetic baseline.
+- Then remove repeated derived-state scans before layering scheduling and virtualization on top.
+- Resolve the first 10 metadata items immediately, cap concurrency at 3, and prioritize current/next/visible/overscan work.
+- Keep zero full rows mounted while the drawer is closed and no more than 30 rows mounted for a 250-item open queue.
+- Preserve permanent-failure-only auto-skip behavior, stale-result checks, and the skip circuit breaker.
+- Treat YouTube Music mobile as a perceived-response reference, not a promise of exact cross-product parity.
+
+Performance decisions:
+
+- Primary field target is a 40% room P75 INP reduction from `336 ms` to `202 ms` or better after at least 50 post-deployment samples.
+- The synthetic 250-item queue benchmark must improve at least 40% on the same controlled profile.
+- Queue actions target a perceived `100-150 ms` response in mobile QA.
+- LCP attribution currently points mainly to artwork/video and CLS attribution to the root room shell. Any remaining work there becomes a separate scoped follow-up rather than an unreviewed TASK-002.5J expansion.
+
+Implementation order:
+
+1. Batch A: benchmark and linear derived-state foundation.
+2. Batch B: bounded metadata scheduler.
+3. Batch C: closed-drawer isolation and virtualized rendering.
+4. Batch D: failure resilience and compact event visibility.
+5. Batch E: production performance and release gate.
+
+Key risks to test explicitly:
+
+- stale metadata committing after room change or queue removal;
+- virtualized focus, keyboard, scroll, and reorder behavior at viewport boundaries;
+- metadata retry storms or provider quota pressure;
+- queue authority accidentally moving from SpacetimeDB to local state;
+- generic provider failures regaining silent auto-skip behavior;
+- private uploaded-media URLs entering compact failure events;
+- field claims being made before enough post-deployment samples exist.
+
+## TASK-002.5J Batch A Implementation - July 13, 2026
+
+Status: implemented locally; commit and deployment not performed.
+
+Implementation:
+
+- Added `lib/queue/derived.ts` as the shared linear-time partition/index layer for current, queued, upcoming, input-order history, played-sequence history, and direct queued-item indexes.
+- Updated listen and standard queue surfaces to memoize this derived state and replace per-row queued-item `findIndex` scans with direct map lookups.
+- Preserved canonical input order for upcoming items and the two prior history semantics: input order for shuffle history, played-sequence order for visible previous/history rows.
+- Added deterministic queue fixtures for `0`, `1`, `10`, `250`, and `1000` items.
+- Added `npm run benchmark:queue`, which compares the retained pre-change derivation/index algorithm against the shared optimized implementation and fails below 40% P75 improvement.
+- Added development/test-only performance instrumentation for drawer-open-to-committed rows, mounted row count, metadata request count/active/peak concurrency, and queue action request-to-canonical-commit latency.
+- Production builds disable the instrumentation and produce no instrumentation console output.
+
+Measured result:
+
+- Fixture: 250 queue items.
+- Samples: 25 with 500 iterations per sample.
+- Pre-change P75: `94.996 ms`.
+- Optimized P75: `7.794 ms`.
+- P75 improvement: `91.795%`.
+- This is a local CPU algorithmic benchmark, not browser/mobile or production field evidence.
+
+Verification passed:
+
+- `node --test tests/queue/*.test.mjs tests/youtube/*.test.mjs` - 35 passed, 0 failed.
+- `npm run typecheck` - passed before final build; the production build repeated TypeScript validation.
+- `npm run lint` - passed.
+- `npm run build` - passed.
+- `npm run benchmark:queue` - passed the 40% threshold with `91.795%` P75 improvement.
+- `git diff --check` - pending final diff pass.
+
+Existing unrelated regression-suite failures:
+
+- The combined queue/YouTube/player run passed 91 of 93 tests and failed two existing `tests/player/youtube-autoplay-atomic.test.mjs` assertions.
+- `advanceToNextQueueItem` currently calls `reducers.setPlaybackState` for uploaded-media autoplay.
+- `direct-media-player.tsx` currently publishes passive `onPause` state.
+- Batch A does not modify either failing source path; these failures are not being silently folded into the queue-derived-state implementation.
+
+Manual QA still required:
+
+- Open a live room with a 250-item queue in development and capture drawer-open timing, mounted row count, metadata request count/peak concurrency, and queue action latency from `mistake-watch:queue:*` performance entries.
+- Confirm add, play-next, remove, reorder, previous/back, and clear behavior for `0`, `1`, `10`, and `250` item states.
+- Browser/mobile timing remains pending and must not be represented by the local Node benchmark.
+
+### Batch A Live 332-Item Room QA - July 13, 2026
+
+Room tested locally through the guest invite path with a temporary `Codex QA` room identity. Queue order was restored after the reversible action test.
+
+Observed state:
+
+- Queue contained 332 upcoming items and no played history rows.
+- Desktop viewport was `1281 x 856` at DPR 1.
+- Mobile override resolved to `375 x 844`.
+- No browser console warnings or errors were captured during the tested flow.
+
+Closed-drawer DOM finding:
+
+- The drawer reported `aria-expanded="false"`, but all 332 full queue rows remained mounted.
+- Desktop closed state contained 14,222 DOM elements, 332 remove controls, 664 move controls, and 345 images.
+- Mobile closed state contained 14,505 DOM elements and the same 332 full queue rows.
+- This confirms the visually closed drawer still pays full row, control, image, and metadata-hook cost.
+
+Browser automation round-trip timings:
+
+- Desktop drawer open: observed between `622 ms` and `2034 ms` across two sessions.
+- Desktop switch from Queue to empty History, unmounting 332 rows: `5618 ms`.
+- Desktop switch from History back to Queue, remounting 332 rows: `2126 ms`.
+- Desktop drawer collapse: `2408 ms`; all 332 rows and 14,226 DOM elements remained mounted afterward.
+- Mobile drawer open: `1837 ms`.
+- Mobile queue scroll: `1749 ms` and advanced from the first rows to approximately row 11.
+- Reversible first-item move down: `1667 ms`; canonical order changed correctly.
+- Restoration move up: `1848 ms`; the original first-two-item order was verified exactly.
+
+Instrumentation and limitations:
+
+- Development instrumentation emitted `drawer-open-to-committed-rows` and two `action:move` events.
+- The browser-control surface did not expose page Performance API detail or network resource timing, so metadata request count and peak concurrency could not be extracted from this run.
+- Timings include browser-automation round-trip overhead and should not be treated as isolated React commit duration. The multi-second values, DOM counts, and mount/unmount comparison are nevertheless sufficient to fail the `100-150 ms` perceived-response target.
+
+QA conclusion:
+
+- Functional queue ordering passed for the reversible move/restore check.
+- Performance QA failed: Batch A removed the quadratic derived-index scan, but the dominant live-room cost remains full 332-row mounting while closed and full-list remounting when returning to Queue.
+- Recommended corrective order: implement the closed-drawer unmount portion of Batch C before or together with Batch B, then add virtualization before declaring large-queue responsiveness ready.
+
+### Batch C1 Closed-Drawer Isolation - July 13, 2026
+
+Status: implemented and verified locally; commit and deployment not performed.
+
+Implementation:
+
+- Replaced CSS-only hidden drawer content with an `open ? ... : null` mount boundary.
+- The compact queue handle, queue count, remaining-duration label, and next-item preview remain mounted and usable while closed.
+- Search, tabs, controls, full rows, thumbnails, and row metadata hooks now unmount when the drawer closes.
+- Added a regression assertion that rejects the prior `aria-hidden={!open}` / pointer-events-only pattern.
+
+Verification passed:
+
+- `npm run test:queue` - 34 passed, 0 failed.
+- `npm run typecheck` - passed.
+- `npm run lint` - passed.
+- `npm run build` - passed.
+- Browser console - no warnings or errors during desktop/mobile open and close QA.
+
+Live 332-item comparison:
+
+- Desktop closed DOM elements: `14222 -> 564`, a reduction of approximately 96.0%.
+- Desktop closed full queue rows: `332 -> 0`.
+- Desktop closed move controls: `664 -> 0`.
+- Desktop closed images: `345 -> 11`.
+- Mobile closed DOM elements: `14505 -> 511`, a reduction of approximately 96.5%.
+- Mobile closed full queue rows: `332 -> 0`.
+- Compact mobile drawer handle and next-item preview remained visually correct.
+
+Remaining measured cost:
+
+- Desktop open still mounted all 332 rows and 14,218 DOM elements; Chrome browser round trip was `2989 ms`.
+- Desktop collapse unmounted the full list and returned to 564 elements; round trip was `2148 ms`.
+- Mobile open still mounted all 332 rows and 14,497 DOM elements; Chrome browser round trip was `771 ms`.
+- Mobile collapse returned to 511 elements; round trip was `2144 ms`.
+- Timings include browser-control overhead, but the row/DOM counts and visible delay confirm the open drawer still fails the `100-150 ms` target.
+
+Conclusion:
+
+- Closed-room and closed-drawer performance is materially corrected.
+- Full queue virtualization is now the dominant next implementation; bounded metadata scheduling should be integrated with the virtualized visible/overscan window so offscreen rows do not initiate work.
+
+### Batch C2 Open-Drawer Virtualization - July 13, 2026
+
+Status: implemented and verified locally; commit and deployment not performed.
+
+Implementation:
+
+- Added `lib/queue/virtualization.ts` with deterministic visible-window, overscan, mounted-row cap, and scroll-to-index calculations.
+- `ListenQueueDrawer` now slices only the active Queue or History virtual window while preserving canonical SpacetimeDB ordering and stable `item.id` React keys.
+- The virtual list exposes `role="list"`, `aria-posinset`, and `aria-setsize` so assistive technology retains each row's logical position in the full result set.
+- Scroll updates are requestAnimationFrame-throttled and observed for viewport/responsive changes.
+- Closing and reopening the drawer restores the saved scroll position. Search and Queue/History view changes intentionally reset to row one.
+- Rows use fixed dimensions matching the existing responsive layout: `80 px` at `xl` and `128 px` below `xl` so wrapped mobile controls cannot overlap adjacent rows.
+- Replaced the estimated row max-height with a constrained flex drawer so the list receives the true remaining height after responsive controls wrap.
+- Fixed an unset drawer-height preference incorrectly becoming `34vh` because `Number(null)` returned `0`; an unset preference now uses the intended `56vh` default.
+- No virtualization dependency was added.
+
+Automated verification:
+
+- `npm run test:queue` passed: 44 tests, including empty, `250`, `332`, and `1000` item windows, top/middle/bottom boundaries, the 30-row cap, scroll-to-current, stable-key/source integration, and default drawer-height regression coverage.
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm run build` passed.
+
+332-item browser QA:
+
+- Closed desktop state: `536` DOM elements and `0` mounted queue rows.
+- Desktop open/scrolled state: `13` mounted rows and `1,126` DOM elements around item 64, compared with the prior `332` rows and `14,218` elements.
+- Mobile open state at `390 x 844`: `7` mounted rows at the top and `11` around item 40; the logical scroll height remained `42,496 px`.
+- Desktop and mobile row geometry reported exactly `80 px` and `128 px` respectively, with `0` gaps and `0` overlaps.
+- Fast scrolling moved the mounted window from rows `0-6` to `35-45` while remaining below the 30-row contract.
+- Closing at `scrollTop: 12000` unmounted every row; reopening restored `scrollTop: 12000` and rows `146-157`.
+- Queue search reset to `scrollTop: 0`, exposed a filtered `aria-setsize` of `3`, and mounted only those three matches.
+- Empty History mounted `0` rows and retained its explicit empty state; switching back reset Queue to the top.
+- Keyboard Tab navigation moved focus from drawer controls into virtual rows and across a window boundary while retaining the focused row/control.
+- Desktop and mobile screenshots showed no row overlap, action-control collision, or clipped list viewport after the flex sizing correction.
+
+Conclusion:
+
+- Open and closed drawer DOM cost now scales with the visible viewport rather than the total queue length.
+- Batch B bounded metadata scheduling is the next performance slice so only current, first-10, visible, and overscan rows initiate metadata work.
+- Production P75 INP improvement remains unverified until this work is deployed and at least 50 post-deployment room samples are available.
+
 ## TASK-002.5K Planning Notes
 
 - User wants listen-room TV view mode pulled forward before the larger queue-resilience/performance implementation.

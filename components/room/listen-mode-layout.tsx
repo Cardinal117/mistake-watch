@@ -85,12 +85,28 @@ import {
   type QueueMode,
   type SmartShuffleItem,
 } from "@/lib/queue/model";
+import { deriveQueueState, type DerivedQueueState } from "@/lib/queue/derived";
+import {
+  getQueueScrollTopForIndex,
+  getQueueVirtualWindow,
+} from "@/lib/queue/virtualization";
+import {
+  completeQueuePerformanceMeasure,
+  recordQueuePerformanceGauge,
+  startQueuePerformanceMeasure,
+  type QueuePerformanceMeasure,
+} from "@/lib/performance/queue";
+import { useQueueActionPerformance } from "@/lib/performance/use-queue-action-performance";
 import {
   buildListenDiscoveryResult,
   type ListenDiscoveryTab,
 } from "@/lib/recommendations/listen-discovery";
 import type { RoomQueueItem, RoomSnapshot } from "@/lib/rooms";
-import type { LiveQueueItem, LiveRoomError, LiveRoomState } from "@/lib/spacetime";
+import type {
+  LiveQueueItem,
+  LiveRoomError,
+  LiveRoomState,
+} from "@/lib/spacetime";
 import { cx } from "@/lib/ui";
 import { fetchPlaylistPreview } from "@/lib/youtube/playlist-client";
 import { fetchYouTubeMetadata } from "@/lib/youtube/metadata-client";
@@ -160,6 +176,8 @@ type ListenTvSettings = {
 
 const MIN_LISTEN_DRAWER_HEIGHT = 34;
 const MAX_LISTEN_DRAWER_HEIGHT = 88;
+const COMPACT_QUEUE_ROW_HEIGHT = 128;
+const DENSE_QUEUE_ROW_HEIGHT = 80;
 const DEFAULT_LISTEN_TV_SETTINGS: ListenTvSettings = {
   dimness: 28,
   hideUiOnIdle: false,
@@ -191,18 +209,19 @@ export function ListenModeLayout({
   const [tvSettings, setTvSettings] = usePersistentListenTvSettings();
   const [volume, setVolume] = useState(DEFAULT_LISTEN_VOLUME);
   const liveQueueItems = useListenQueueItems(liveRoom, room);
+  const queueState = useMemo(
+    () => deriveQueueState(liveQueueItems),
+    [liveQueueItems],
+  );
   const session = liveRoom.snapshot.session;
-  const currentItem =
-    liveQueueItems.find((item) => item.status === "now") ?? null;
+  const currentItem = queueState.currentItem;
   const currentLiveQueueItem = session?.activeQueueItemId
     ? liveRoom.snapshot.queue.find(
         (item) => item.queueItemId === session.activeQueueItemId,
       )
     : null;
-  const queuedItems = liveQueueItems.filter((item) => item.status === "queued");
-  const previousItems = liveQueueItems
-    .filter((item) => item.status === "played")
-    .sort((a, b) => (a.playedSequence ?? 0) - (b.playedSequence ?? 0));
+  const queuedItems = queueState.queuedItems;
+  const previousItems = queueState.playedItemsBySequence;
   const activeArtworkUrl =
     currentItem?.thumbnailUrl ??
     (session?.sourceType === "youtube" && session.sourceUrl
@@ -231,7 +250,9 @@ export function ListenModeLayout({
     return canonicalState ? expectedPositionAt(canonicalState, clockMs) : 0;
   }, [clockMs, liveRoom]);
   const durationSeconds =
-    currentLiveQueueItem?.durationSeconds ?? session?.sourceDurationSeconds ?? 0;
+    currentLiveQueueItem?.durationSeconds ??
+    session?.sourceDurationSeconds ??
+    0;
   const canControl = liveRoom.canControlPlayback;
   const canManageQueue = liveRoom.canManageQueue;
   const isConnected = liveRoom.connectionStatus === "connected";
@@ -278,9 +299,7 @@ export function ListenModeLayout({
   }
 
   function playPrevious() {
-    const previous = [...previousItems]
-      .sort((a, b) => (a.playedSequence ?? 0) - (b.playedSequence ?? 0))
-      .at(-1);
+    const previous = previousItems.at(-1);
 
     if (previous) {
       liveRoom.playQueueItemNow(previous.id);
@@ -316,7 +335,9 @@ export function ListenModeLayout({
               const firstPinned = first.isPinned || first.isPlayNext ? 0 : 1;
               const secondPinned = second.isPinned || second.isPlayNext ? 0 : 1;
 
-              return firstPinned - secondPinned || first.position - second.position;
+              return (
+                firstPinned - secondPinned || first.position - second.position
+              );
             })
           : shuffleUpcomingQueue(queued);
 
@@ -508,14 +529,11 @@ export function ListenModeLayout({
             />
           </div>
         </section>
-
       </div>
       <ListenQueueDrawer
         canAddQueue={liveRoom.canAddQueue}
         canManageQueue={canManageQueue}
-        currentItem={currentItem}
         isConnected={isConnected}
-        items={liveQueueItems}
         nextPreparation={nextPreparation}
         onAddQueueItem={liveRoom.addQueueItem}
         onClearQueue={liveRoom.clearQueue}
@@ -526,8 +544,8 @@ export function ListenModeLayout({
         onRemoveQueueItem={liveRoom.removeQueueItem}
         onShuffle={() => applyQueueShuffle("shuffle")}
         onSmartShuffle={() => applyQueueShuffle("smart")}
+        queueState={queueState}
         queueMode={session?.queueMode ?? "normal"}
-        queuedItems={queuedItems}
         remainingSeconds={remainingQueueSeconds}
         desktopShell={desktopShell}
       />
@@ -583,7 +601,8 @@ function ListenNowPlayingPanel({
   const thumbnailUrl =
     currentItem?.thumbnailUrl ??
     (youtubeSource ? getYouTubeThumbnailUrl(liveSource) : null);
-  const title = session?.sourceTitle ?? currentItem?.title ?? room.nowPlaying.title;
+  const title =
+    session?.sourceTitle ?? currentItem?.title ?? room.nowPlaying.title;
   const artist =
     currentItem?.artist ??
     currentItem?.channelName ??
@@ -591,7 +610,8 @@ function ListenNowPlayingPanel({
     "Room source";
   const isPlaying = session?.status === "playing";
   const awaitingMedia = !liveSource;
-  const progressMax = durationSeconds || Math.max(100, Math.ceil(currentPosition));
+  const progressMax =
+    durationSeconds || Math.max(100, Math.ceil(currentPosition));
   const nextQueueItem = queuedItems[0] ?? null;
 
   return (
@@ -733,7 +753,9 @@ function ListenNowPlayingPanel({
                       : currentPosition
                 }
               />
-              <span>{durationSeconds ? formatSeconds(durationSeconds) : "--:--"}</span>
+              <span>
+                {durationSeconds ? formatSeconds(durationSeconds) : "--:--"}
+              </span>
             </div>
 
             <div className="flex items-center justify-center gap-3 py-1">
@@ -903,14 +925,16 @@ function ListenTvModeLayout({
   const thumbnailUrl =
     currentItem?.thumbnailUrl ??
     (youtubeSource ? getYouTubeThumbnailUrl(liveSource) : null);
-  const title = session?.sourceTitle ?? currentItem?.title ?? room.nowPlaying.title;
+  const title =
+    session?.sourceTitle ?? currentItem?.title ?? room.nowPlaying.title;
   const artist =
     currentItem?.artist ??
     currentItem?.channelName ??
     room.nowPlaying.artist ??
     "Room source";
   const isPlaying = session?.status === "playing";
-  const progressMax = durationSeconds || Math.max(100, Math.ceil(currentPosition));
+  const progressMax =
+    durationSeconds || Math.max(100, Math.ceil(currentPosition));
   const nextItem = queuedItems[0] ?? null;
   const dimOpacity = clampNumber(tvSettings.dimness, 0, 80) / 100;
   const visibleUiOpacity = clampNumber(tvSettings.uiBrightness, 45, 120) / 100;
@@ -977,7 +1001,11 @@ function ListenTvModeLayout({
             showNativeControls={false}
           />
         ) : liveSource ? (
-          <DirectMediaPlayer className="sr-only" liveRoom={liveRoom} mode="listen" />
+          <DirectMediaPlayer
+            className="sr-only"
+            liveRoom={liveRoom}
+            mode="listen"
+          />
         ) : (
           <div className="absolute inset-0 grid place-items-center bg-[radial-gradient(circle_at_50%_36%,rgb(var(--listen-primary)_/_0.26),transparent_32%),linear-gradient(145deg,rgb(14_14_15),rgb(0_0_0))] text-[rgb(var(--listen-primary))]">
             <Disc3 className="h-28 w-28" aria-hidden />
@@ -1004,7 +1032,10 @@ function ListenTvModeLayout({
       >
         <div className="flex items-start justify-between gap-4">
           <div className="pointer-events-auto inline-flex items-center gap-3 rounded-md border border-white/10 bg-black/36 px-4 py-3 shadow-[0_0_32px_rgb(var(--listen-shadow)/0.16)] backdrop-blur-xl">
-            <UsersRound className="h-5 w-5 text-[rgb(var(--listen-primary))]" aria-hidden />
+            <UsersRound
+              className="h-5 w-5 text-[rgb(var(--listen-primary))]"
+              aria-hidden
+            />
             <div className="min-w-0">
               <p className="max-w-[18rem] truncate text-title-sm font-semibold text-on-surface">
                 {session?.roomName ?? room.name}
@@ -1080,7 +1111,9 @@ function ListenTvModeLayout({
               />
               <div className="flex items-center justify-between text-label-md font-semibold text-on-surface">
                 <span>{formatSeconds(currentPosition)}</span>
-                <span>{durationSeconds ? formatSeconds(durationSeconds) : "--:--"}</span>
+                <span>
+                  {durationSeconds ? formatSeconds(durationSeconds) : "--:--"}
+                </span>
               </div>
             </div>
 
@@ -1091,7 +1124,11 @@ function ListenTvModeLayout({
                   controlsVisible ? "opacity-100" : "opacity-62",
                 )}
               >
-                <TvControlButton disabled={!canControl} label="Shuffle" onClick={onShuffle}>
+                <TvControlButton
+                  disabled={!canControl}
+                  label="Shuffle"
+                  onClick={onShuffle}
+                >
                   <Shuffle className="h-6 w-6" aria-hidden />
                   <span>Shuffle</span>
                 </TvControlButton>
@@ -1108,7 +1145,9 @@ function ListenTvModeLayout({
                   className="h-20 w-20 rounded-full bg-[rgb(var(--listen-primary))] text-background shadow-[0_0_42px_rgb(var(--listen-shadow)/0.52)] hover:bg-[rgb(var(--listen-primary)/0.9)]"
                   disabled={!canControl || !liveSource}
                   label={isPlaying ? "Pause" : "Play"}
-                  onClick={() => onPlaybackChange(isPlaying ? "paused" : "playing")}
+                  onClick={() =>
+                    onPlaybackChange(isPlaying ? "paused" : "playing")
+                  }
                   variant="ghost"
                 >
                   {isPlaying ? (
@@ -1128,8 +1167,12 @@ function ListenTvModeLayout({
                 </IconButton>
                 <TvControlButton
                   disabled={!canControl}
-                  label={queueAutoplayEnabled ? "Disable repeat" : "Enable repeat"}
-                  onClick={() => liveRoom.setQueueAutoplay(!queueAutoplayEnabled)}
+                  label={
+                    queueAutoplayEnabled ? "Disable repeat" : "Enable repeat"
+                  }
+                  onClick={() =>
+                    liveRoom.setQueueAutoplay(!queueAutoplayEnabled)
+                  }
                   selected={queueAutoplayEnabled}
                 >
                   <Repeat2 className="h-6 w-6" aria-hidden />
@@ -1145,9 +1188,15 @@ function ListenTvModeLayout({
               >
                 <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-white/8 bg-black/24 px-4 py-3 backdrop-blur-md">
                   {volume <= 0 ? (
-                    <VolumeX className="h-5 w-5 text-on-surface-variant" aria-hidden />
+                    <VolumeX
+                      className="h-5 w-5 text-on-surface-variant"
+                      aria-hidden
+                    />
                   ) : (
-                    <Volume2 className="h-5 w-5 text-on-surface-variant" aria-hidden />
+                    <Volume2
+                      className="h-5 w-5 text-on-surface-variant"
+                      aria-hidden
+                    />
                   )}
                   <Slider
                     label="TV mode volume"
@@ -1589,7 +1638,10 @@ function ListenMemberAvatarRow({
   const visibleParticipants = participants
     .filter((participant) => participant.status === "online")
     .slice(0, 10);
-  const hiddenCount = Math.max(0, participants.length - visibleParticipants.length);
+  const hiddenCount = Math.max(
+    0,
+    participants.length - visibleParticipants.length,
+  );
 
   if (participants.length === 0) {
     return null;
@@ -1776,7 +1828,9 @@ function ListenSearchShell({
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, [open]);
 
-  function youtubeSearchItemToQueueInput(item: YouTubeSearchItem): QueueAddInput {
+  function youtubeSearchItemToQueueInput(
+    item: YouTubeSearchItem,
+  ): QueueAddInput {
     return {
       artist: item.channelTitle ?? undefined,
       channelName: item.channelTitle ?? undefined,
@@ -2136,7 +2190,11 @@ function ListenRoomSettingsDialog({
               TV mode display
             </h2>
           </div>
-          <IconButton label="Close room settings" onClick={onClose} variant="ghost">
+          <IconButton
+            label="Close room settings"
+            onClick={onClose}
+            variant="ghost"
+          >
             <X className="h-5 w-5" aria-hidden />
           </IconButton>
         </div>
@@ -2173,8 +2231,8 @@ function ListenRoomSettingsDialog({
                   Hide all TV UI on inactivity
                 </span>
                 <span className="mt-1 block text-label-sm text-on-surface-variant">
-                  After the idle timer, the overlay and cursor disappear until mouse,
-                  touch, or keyboard activity returns.
+                  After the idle timer, the overlay and cursor disappear until
+                  mouse, touch, or keyboard activity returns.
                 </span>
               </span>
             </label>
@@ -2373,7 +2431,9 @@ function ListenRailQueueSummary({
         </span>
         <span className="text-label-sm text-on-surface-variant">
           Queue {queueCount}
-          {remainingSeconds ? ` / ${formatQueueRemainingDuration(remainingSeconds)}` : ""}
+          {remainingSeconds
+            ? ` / ${formatQueueRemainingDuration(remainingSeconds)}`
+            : ""}
         </span>
       </div>
       {nextItem ? (
@@ -2551,8 +2611,7 @@ function ListenDiscoveryPanel({
 }) {
   const [activeFilter, setActiveFilter] =
     useState<ListenDiscoveryTab>("for-you");
-  const [providerRecommendations, setProviderRecommendations] =
-    useState<{
+  const [providerRecommendations, setProviderRecommendations] = useState<{
       key: string;
       response: YouTubeRecommendationResponse;
   } | null>(null);
@@ -2568,7 +2627,10 @@ function ListenDiscoveryPanel({
     () =>
       providerRecommendations?.key === providerRequestKey
         ? providerRecommendations.response.items.map((item) =>
-        youtubeMetadataToQueueItem(item, room.currentMember?.name ?? "Provider"),
+            youtubeMetadataToQueueItem(
+              item,
+              room.currentMember?.name ?? "Provider",
+            ),
           )
         : [],
     [providerRecommendations, providerRequestKey, room.currentMember?.name],
@@ -2594,8 +2656,7 @@ function ListenDiscoveryPanel({
       providerRequestKey,
     ],
   );
-  const showProviderState =
-    activeFilter === "recommended";
+  const showProviderState = activeFilter === "recommended";
 
   function updatePicksScrollState() {
     const rail = picksRailRef.current;
@@ -2623,8 +2684,7 @@ function ListenDiscoveryPanel({
       kind: activeFilter,
       query: providerQuery,
       roomId: room.id,
-    })
-      .then((payload) => {
+    }).then((payload) => {
         if (!cancelled) {
           setProviderRecommendations({
             key: providerRequestKey,
@@ -2844,7 +2904,9 @@ function ListenAddMediaPopover({
       ? "allow"
       : "warn",
   );
-  const hasPreviewState = Boolean(url.trim() || singlePreview || playlistPreview);
+  const hasPreviewState = Boolean(
+    url.trim() || singlePreview || playlistPreview,
+  );
 
   useEffect(() => {
     if (notifiedRoomErrorIds.current === null) {
@@ -2866,13 +2928,13 @@ function ListenAddMediaPopover({
     }
   }, [roomErrors]);
 
-  function notify(
-    message: string,
-    tone: ListenNotification["tone"] = "info",
-  ) {
+  function notify(message: string, tone: ListenNotification["tone"] = "info") {
     const id = window.crypto.randomUUID();
 
-    setNotifications((current) => [...current.slice(-3), { id, message, tone }]);
+    setNotifications((current) => [
+      ...current.slice(-3),
+      { id, message, tone },
+    ]);
     window.setTimeout(() => {
       setNotifications((current) =>
         current.filter((notification) => notification.id !== id),
@@ -3061,7 +3123,9 @@ function ListenAddMediaPopover({
     } satisfies QueueAddInput;
   }
 
-  function youtubeSearchItemToQueueInput(item: YouTubeSearchItem): QueueAddInput {
+  function youtubeSearchItemToQueueInput(
+    item: YouTubeSearchItem,
+  ): QueueAddInput {
     return {
       artist: item.channelTitle ?? undefined,
       channelName: item.channelTitle ?? undefined,
@@ -3217,7 +3281,10 @@ function ListenAddMediaPopover({
           duplicates.length === 1 ? "" : "s"
         } detected.`,
       );
-      notify(`${duplicates.length} duplicate playlist items detected.`, "warning");
+      notify(
+        `${duplicates.length} duplicate playlist items detected.`,
+        "warning",
+      );
       return;
     }
 
@@ -3345,7 +3412,10 @@ function ListenAddMediaPopover({
                   setUrl(event.target.value);
                   setImportSummary(null);
                   setSinglePreview(null);
-                  if (detectUrlType(event.target.value) !== "youtube-playlist") {
+                        if (
+                          detectUrlType(event.target.value) !==
+                          "youtube-playlist"
+                        ) {
                     setPlaylistPreview(null);
                     setSelectedPlaylistIds(new Set());
                   }
@@ -3354,7 +3424,11 @@ function ListenAddMediaPopover({
                 value={url}
               />
               {hasPreviewState ? (
-                <Button onClick={clearAddMediaState} type="button" variant="ghost">
+                      <Button
+                        onClick={clearAddMediaState}
+                        type="button"
+                        variant="ghost"
+                      >
                   Clear
                 </Button>
               ) : null}
@@ -3365,7 +3439,9 @@ function ListenAddMediaPopover({
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button
-                  disabled={addDisabled || isImportingPlaylist || !singlePreview}
+                        disabled={
+                          addDisabled || isImportingPlaylist || !singlePreview
+                        }
                   size="sm"
                   type="submit"
                 >
@@ -3373,7 +3449,9 @@ function ListenAddMediaPopover({
                   Add to Queue
                 </Button>
                 <Button
-                  disabled={loadDisabled || isImportingPlaylist || !singlePreview}
+                        disabled={
+                          loadDisabled || isImportingPlaylist || !singlePreview
+                        }
                   onClick={() => void loadSingle()}
                   size="sm"
                   type="button"
@@ -3444,14 +3522,17 @@ function ListenAddMediaPopover({
                   <p className="text-label-sm text-on-surface-variant">
                     {selectedPlaylistIds.size} selected /{" "}
                     {
-                      playlistPreview.items.filter((item) => !item.isUnavailable)
-                        .length
+                            playlistPreview.items.filter(
+                              (item) => !item.isUnavailable,
+                            ).length
                     }{" "}
                     playable
                   </p>
                 </div>
                 <Button
-                  disabled={addDisabled || playlistPreview.items.length === 0}
+                        disabled={
+                          addDisabled || playlistPreview.items.length === 0
+                        }
                   onClick={() => {
                     setIsOpen(false);
                     setPlaylistReviewOpen(true);
@@ -3466,7 +3547,10 @@ function ListenAddMediaPopover({
             </div>
           ) : null}
           {importSummary ? (
-            <p className="text-label-sm text-primary-fixed-dim" role="status">
+                  <p
+                    className="text-label-sm text-primary-fixed-dim"
+                    role="status"
+                  >
               {importSummary}
             </p>
           ) : null}
@@ -3478,7 +3562,8 @@ function ListenAddMediaPopover({
           {pendingDuplicateInput ? (
             <div className="grid gap-3 rounded-md border border-secondary-fixed-dim/35 bg-secondary-fixed-dim/10 p-3">
               <p className="text-body-md font-semibold text-on-surface">
-                {pendingDuplicateInput.sourceTitle} is already in the queue.
+                      {pendingDuplicateInput.sourceTitle} is already in the
+                      queue.
               </p>
               <label className="inline-flex items-center gap-2 text-label-sm text-on-surface-variant">
                 <input
@@ -3534,7 +3619,8 @@ function ListenAddMediaPopover({
                 Duplicate playlist entries detected.
               </p>
               <p className="text-label-sm text-on-surface-variant">
-                Add the clean playlist items only, or add duplicates anyway.
+                      Add the clean playlist items only, or add duplicates
+                      anyway.
               </p>
               <label className="inline-flex items-center gap-2 text-label-sm text-on-surface-variant">
                 <input
@@ -3583,7 +3669,10 @@ function ListenAddMediaPopover({
                       pendingDuplicatePlaylist.label,
                       { allowDuplicates: true },
                     );
-                    notify("Duplicate playlist items added anyway.", "warning");
+                          notify(
+                            "Duplicate playlist items added anyway.",
+                            "warning",
+                          );
                     setPendingDuplicatePlaylist(null);
                   }}
                   size="sm"
@@ -3643,8 +3732,7 @@ function ListenPlaylistReviewOverlay({
   const [sortMode, setSortMode] = useState<
     "duplicate" | "duration" | "original" | "title"
   >("original");
-  const portalRoot =
-    typeof document === "undefined" ? null : document.body;
+  const portalRoot = typeof document === "undefined" ? null : document.body;
   const playableItems = preview.items.filter((item) => !item.isUnavailable);
   const isDuplicateItem = (item: PlaylistPreviewItem) =>
     duplicateSourceUrls.has(item.sourceUrl) ||
@@ -3920,10 +4008,8 @@ function ListenPlaylistReviewOverlay({
 function ListenQueueDrawer({
   canAddQueue,
   canManageQueue,
-  currentItem,
   desktopShell,
   isConnected,
-  items,
   nextPreparation,
   onAddQueueItem,
   onClearQueue,
@@ -3934,15 +4020,13 @@ function ListenQueueDrawer({
   onRemoveQueueItem,
   onShuffle,
   onSmartShuffle,
-  queuedItems,
+  queueState,
   remainingSeconds,
 }: {
   canAddQueue: boolean;
   canManageQueue: boolean;
-  currentItem: RoomQueueItem | null;
   desktopShell: boolean;
   isConnected: boolean;
-  items: RoomQueueItem[];
   nextPreparation: ReturnType<typeof useNextItemPreparation>;
   onAddQueueItem(input: QueueAddInput): void;
   onClearQueue(): void;
@@ -3956,28 +4040,45 @@ function ListenQueueDrawer({
   onRemoveQueueItem(queueItemId: string): void;
   onShuffle(): void;
   onSmartShuffle(): void;
+  queueState: DerivedQueueState<RoomQueueItem>;
   queueMode: QueueMode;
-  queuedItems: RoomQueueItem[];
   remainingSeconds: number | null;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [drawerView, setDrawerView] = useState<"history" | "queue">("queue");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const drawerOpenMeasureRef = useRef<QueuePerformanceMeasure | null>(null);
+  const rowsViewportRef = useRef<HTMLDivElement | null>(null);
+  const savedScrollTopRef = useRef(0);
+  const hasOpenedDrawerRef = useRef(false);
+  const denseQueueRows = useDenseListenQueueRows();
+  const [virtualViewport, setVirtualViewport] = useState({
+    height: 0,
+    scrollTop: 0,
+  });
   const [drawerHeight, setDrawerHeight] = useState<number>(
     DEFAULT_LISTEN_DRAWER_HEIGHT,
   );
-  const queueViewItems = items.filter(
-    (item) => item.status === "now" || item.status === "queued",
-  );
-  const historyItems = items.filter((item) => item.status === "played");
+  const {
+    currentItem,
+    playedItems: historyItems,
+    queuedIndexById,
+    queuedItems,
+    upcomingItems: queueViewItems,
+  } = queueState;
   const baseVisibleItems =
     drawerView === "history" ? historyItems : queueViewItems;
-  const visibleItems = baseVisibleItems.filter((item) => {
-    const searchable = `${item.title} ${item.artist ?? ""} ${item.channelName ?? ""}`.toLowerCase();
+  const visibleItems = useMemo(() => {
+    const normalizedQuery = query.toLowerCase();
 
-    return searchable.includes(query.toLowerCase());
+    return baseVisibleItems.filter((item) => {
+      const searchable =
+        `${item.title} ${item.artist ?? ""} ${item.channelName ?? ""}`.toLowerCase();
+
+      return searchable.includes(normalizedQuery);
   });
+  }, [baseVisibleItems, query]);
   const manageDisabled = !canManageQueue || !isConnected;
   const playDisabled = !canManageQueue || !isConnected;
   const activeIndex = currentItem
@@ -3997,10 +4098,33 @@ function ListenQueueDrawer({
   const nextPreview =
     nextPreparation.status !== "idle" ? nextPreparation.target : null;
   const collapsedDrawerHeight = nextPreview ? "4.5rem" : "3rem";
-  const rowsMaxHeight = `max(12rem, calc(${drawerHeight}vh - 10.5rem))`;
+  const queueRowHeight = denseQueueRows
+    ? DENSE_QUEUE_ROW_HEIGHT
+    : COMPACT_QUEUE_ROW_HEIGHT;
+  const virtualWindow = useMemo(
+    () =>
+      getQueueVirtualWindow({
+        itemCount: visibleItems.length,
+        rowHeight: queueRowHeight,
+        scrollTop: virtualViewport.scrollTop,
+        viewportHeight: virtualViewport.height,
+      }),
+    [
+      queueRowHeight,
+      virtualViewport.height,
+      virtualViewport.scrollTop,
+      visibleItems.length,
+    ],
+  );
+  const virtualItems = useMemo(
+    () => visibleItems.slice(virtualWindow.startIndex, virtualWindow.endIndex),
+    [visibleItems, virtualWindow.endIndex, virtualWindow.startIndex],
+  );
   const drawerStyle = {
+    height: open ? `${drawerHeight}vh` : collapsedDrawerHeight,
     maxHeight: open ? `${drawerHeight}vh` : collapsedDrawerHeight,
   } as CSSProperties;
+  const measureQueueAction = useQueueActionPerformance(queueState);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -4009,6 +4133,126 @@ function ListenQueueDrawer({
 
     return () => window.cancelAnimationFrame(frame);
   }, []);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const viewport = rowsViewportRef.current;
+
+    if (!viewport) {
+      return;
+    }
+
+    const viewportElement = viewport;
+
+    if (
+      !hasOpenedDrawerRef.current &&
+      drawerView === "queue" &&
+      query.length === 0 &&
+      activeIndex >= 0
+    ) {
+      savedScrollTopRef.current = getQueueScrollTopForIndex({
+        index: activeIndex,
+        itemCount: visibleItems.length,
+        rowHeight: queueRowHeight,
+        viewportHeight: viewportElement.clientHeight || queueRowHeight * 6,
+      });
+    }
+
+    hasOpenedDrawerRef.current = true;
+    viewportElement.scrollTop = savedScrollTopRef.current;
+
+    let scrollFrame = 0;
+
+    function syncViewport() {
+      savedScrollTopRef.current = viewportElement.scrollTop;
+      setVirtualViewport((current) => {
+        const nextHeight = viewportElement.clientHeight;
+        const nextScrollTop = viewportElement.scrollTop;
+
+        if (
+          current.height === nextHeight &&
+          current.scrollTop === nextScrollTop
+        ) {
+          return current;
+        }
+
+        return { height: nextHeight, scrollTop: nextScrollTop };
+      });
+    }
+
+    function scheduleViewportSync() {
+      if (scrollFrame !== 0) {
+        return;
+      }
+
+      scrollFrame = window.requestAnimationFrame(() => {
+        scrollFrame = 0;
+        syncViewport();
+      });
+    }
+
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(scheduleViewportSync);
+
+    syncViewport();
+    viewportElement.addEventListener("scroll", scheduleViewportSync, {
+      passive: true,
+    });
+    window.addEventListener("resize", scheduleViewportSync);
+    resizeObserver?.observe(viewportElement);
+
+    return () => {
+      if (scrollFrame !== 0) {
+        window.cancelAnimationFrame(scrollFrame);
+      }
+
+      viewportElement.removeEventListener("scroll", scheduleViewportSync);
+      window.removeEventListener("resize", scheduleViewportSync);
+      resizeObserver?.disconnect();
+    };
+  }, [
+    activeIndex,
+    drawerView,
+    open,
+    query,
+    queueRowHeight,
+    visibleItems.length,
+  ]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    recordQueuePerformanceGauge(
+      "mounted-rows",
+      virtualWindow.mountedItemCount,
+      {
+        drawerView,
+      },
+    );
+    completeQueuePerformanceMeasure(drawerOpenMeasureRef.current, {
+      drawerView,
+      mountedRows: virtualWindow.mountedItemCount,
+    });
+    drawerOpenMeasureRef.current = null;
+  }, [drawerView, open, virtualWindow.mountedItemCount]);
+
+  function toggleDrawer() {
+    if (!open) {
+      drawerOpenMeasureRef.current = startQueuePerformanceMeasure(
+        "drawer-open-to-committed-rows",
+        { queueItems: queueViewItems.length },
+      );
+    }
+
+    setOpen((current) => !current);
+  }
 
   function setHeight(nextHeight: number) {
     const safeHeight = clampNumber(
@@ -4027,10 +4271,32 @@ function ListenQueueDrawer({
     }
   }
 
+  function resetDrawerScroll() {
+    savedScrollTopRef.current = 0;
+
+    if (rowsViewportRef.current) {
+      rowsViewportRef.current.scrollTop = 0;
+    }
+
+    setVirtualViewport((current) =>
+      current.scrollTop === 0 ? current : { ...current, scrollTop: 0 },
+    );
+  }
+
+  function selectDrawerView(view: "history" | "queue") {
+    resetDrawerScroll();
+    setDrawerView(view);
+  }
+
+  function updateQuery(nextQuery: string) {
+    resetDrawerScroll();
+    setQuery(nextQuery);
+  }
+
   return (
     <section
       className={cx(
-        "fixed z-50 overflow-hidden border border-white/10 bg-surface/94 backdrop-blur-xl transition-[max-height,border-color,box-shadow,left,right,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+        "fixed z-50 flex flex-col overflow-hidden border border-white/10 bg-surface/94 backdrop-blur-xl transition-[height,max-height,border-color,box-shadow,left,right,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
         desktopShell
           ? "bottom-0 left-[var(--listen-player-rail-width)] right-0 rounded-t-md border-b-0 shadow-[0_-18px_48px_rgb(0_0_0_/_0.32)]"
           : "bottom-0 left-3 right-3 rounded-t-md border-b-0 shadow-[0_-18px_48px_rgb(0_0_0_/_0.32)]",
@@ -4044,10 +4310,10 @@ function ListenQueueDrawer({
         aria-expanded={open}
         aria-label={open ? "Collapse queue drawer" : "Open queue drawer"}
         className={cx(
-          "group mx-auto grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 py-2 text-[rgb(var(--listen-primary))] transition hover:bg-[rgb(var(--listen-primary)/0.08)] sm:px-4",
+          "group mx-auto grid min-h-11 w-full shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 py-2 text-[rgb(var(--listen-primary))] transition hover:bg-[rgb(var(--listen-primary)/0.08)] sm:px-4",
           open && "border-b border-white/10",
         )}
-        onClick={() => setOpen((current) => !current)}
+        onClick={toggleDrawer}
         type="button"
       >
           <span className="grid min-w-0 gap-1 text-left">
@@ -4089,16 +4355,9 @@ function ListenQueueDrawer({
           </span>
         </span>
       </button>
-      <div
-        aria-hidden={!open}
-        className={cx(
-          "transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-          open
-            ? "translate-y-0 opacity-100"
-            : "pointer-events-none translate-y-3 opacity-0",
-        )}
-      >
-        <div className="grid gap-3 border-b border-white/10 p-3 sm:p-4">
+      {open ? (
+        <div className="flex min-h-0 flex-1 translate-y-0 flex-col overflow-hidden opacity-100 transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]">
+        <div className="grid shrink-0 gap-3 border-b border-white/10 p-3 sm:p-4">
             <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2">
                 <h3 className="truncate text-body-lg font-semibold text-on-surface">
@@ -4121,13 +4380,13 @@ function ListenQueueDrawer({
                         : "text-on-surface-variant hover:bg-surface-variant/20 hover:text-on-surface",
                     )}
                     key={view}
-                    onClick={() => setDrawerView(view as "history" | "queue")}
+                    onClick={() =>
+                      selectDrawerView(view as "history" | "queue")
+                    }
                     type="button"
                   >
                     {label}
-                    <span className="ml-1 text-[11px] opacity-70">
-                      {count}
-                    </span>
+                    <span className="ml-1 text-[11px] opacity-70">{count}</span>
                   </button>
                 ))}
               </div>
@@ -4140,7 +4399,7 @@ function ListenQueueDrawer({
                 />
                 <input
                   className="min-w-32 bg-transparent text-label-sm text-on-surface outline-none placeholder:text-on-surface-variant/55"
-                  onChange={(event) => setQuery(event.target.value)}
+                  onChange={(event) => updateQuery(event.target.value)}
                   placeholder="Search in queue"
                   value={query}
                 />
@@ -4148,7 +4407,7 @@ function ListenQueueDrawer({
               <div className="flex min-w-0 flex-wrap items-center gap-2 md:justify-end">
               <Button
                 disabled={manageDisabled || queuedItems.length < 2}
-                onClick={onShuffle}
+                  onClick={() => measureQueueAction("shuffle", onShuffle)}
                 size="sm"
                 type="button"
                 variant="ghost"
@@ -4158,7 +4417,9 @@ function ListenQueueDrawer({
               </Button>
               <Button
                 disabled={manageDisabled || queuedItems.length < 2}
-                onClick={onSmartShuffle}
+                  onClick={() =>
+                    measureQueueAction("smart-shuffle", onSmartShuffle)
+                  }
                 size="sm"
                 type="button"
                 variant="ghost"
@@ -4168,7 +4429,9 @@ function ListenQueueDrawer({
               </Button>
               <Button
                 disabled={manageDisabled || queuedItems.length < 2}
-                onClick={onPinnedFirst}
+                  onClick={() =>
+                    measureQueueAction("pinned-first", onPinnedFirst)
+                  }
                 size="sm"
                 type="button"
                 variant="ghost"
@@ -4178,7 +4441,7 @@ function ListenQueueDrawer({
               </Button>
               <Button
                 disabled={manageDisabled || queuedItems.length === 0}
-                onClick={onClearQueue}
+                  onClick={() => measureQueueAction("clear", onClearQueue)}
                 size="sm"
                 type="button"
                 variant="ghost"
@@ -4228,35 +4491,74 @@ function ListenQueueDrawer({
             ) : null}
           </div>
           <div
-            className="overflow-y-auto"
-            style={{ maxHeight: rowsMaxHeight }}
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain [overflow-anchor:none]"
+            ref={rowsViewportRef}
           >
             {visibleItems.length > 0 ? (
-              visibleItems.map((item, index) => {
-                const queuedIndex = queuedItems.findIndex(
-                  (queuedItem) => queuedItem.id === item.id,
-                );
+              <div
+                aria-label={
+                  drawerView === "history" ? "Queue history" : "Queue items"
+                }
+                className="relative"
+                role="list"
+                style={{ height: virtualWindow.totalHeight }}
+              >
+                <div
+                  className="absolute inset-x-0 top-0"
+                  style={{
+                    transform: `translateY(${virtualWindow.offsetTop}px)`,
+                  }}
+                >
+                  {virtualItems.map((item, localIndex) => {
+                    const index = virtualWindow.startIndex + localIndex;
+                    const queuedIndex = queuedIndexById.get(item.id) ?? -1;
 
                 return (
+                      <div
+                        aria-posinset={index + 1}
+                        aria-setsize={visibleItems.length}
+                        data-queue-row-index={index}
+                        key={item.id}
+                        role="listitem"
+                        style={{ height: queueRowHeight }}
+                      >
                   <ListenQueueRow
                     canAddQueue={canAddQueue}
                     current={item.id === currentItem?.id}
                     desktopShell={desktopShell}
                     index={index}
                     item={item}
-                    key={item.id}
                     manageDisabled={manageDisabled}
                     onAddQueueItem={onAddQueueItem}
-                    onMoveQueueItem={onMoveQueueItem}
-                    onPlayQueueItem={onPlayQueueItem}
+                          onMoveQueueItem={(queueItemId, position) =>
+                            measureQueueAction("move", () =>
+                              onMoveQueueItem(queueItemId, position),
+                            )
+                          }
+                          onPlayQueueItem={(queueItemId) =>
+                            measureQueueAction("play", () =>
+                              onPlayQueueItem(queueItemId),
+                            )
+                          }
                     playDisabled={playDisabled}
-                    onQueueItemPriorityChange={onQueueItemPriorityChange}
-                    onRemoveQueueItem={onRemoveQueueItem}
+                          onQueueItemPriorityChange={(queueItemId, input) =>
+                            measureQueueAction("priority", () =>
+                              onQueueItemPriorityChange(queueItemId, input),
+                            )
+                          }
+                          onRemoveQueueItem={(queueItemId) =>
+                            measureQueueAction("remove", () =>
+                              onRemoveQueueItem(queueItemId),
+                            )
+                          }
                     queuedIndex={queuedIndex}
                     queuedItemsLength={queuedItems.length}
                   />
+                      </div>
                 );
-              })
+                  })}
+                </div>
+              </div>
             ) : (
               <p className="p-4 text-body-md text-on-surface-variant">
                 {drawerView === "history"
@@ -4266,6 +4568,7 @@ function ListenQueueDrawer({
             )}
           </div>
       </div>
+      ) : null}
     </section>
   );
 }
@@ -4306,9 +4609,11 @@ function ListenQueueRow({
 }) {
   const metadata = useYouTubeMetadata(
     item.sourceType === "youtube" ? item.sourceUrl : null,
+    { instrumentQueue: true },
   );
   const title = metadata.metadata?.title ?? item.title;
-  const channel = metadata.metadata?.channelTitle ?? item.channelName ?? item.artist;
+  const channel =
+    metadata.metadata?.channelTitle ?? item.channelName ?? item.artist;
   const thumbnailUrl = metadata.metadata?.thumbnailUrl ?? item.thumbnailUrl;
   const duration =
     metadata.metadata?.durationSeconds !== null &&
@@ -4333,7 +4638,7 @@ function ListenQueueRow({
   return (
     <div
       className={cx(
-        "group grid min-w-0 grid-cols-[1.25rem_1.5rem_3rem_minmax(0,1fr)_auto] items-center gap-2 border-b border-white/10 px-3 py-2.5 text-label-sm transition last:border-b-0 xl:min-w-[48rem] xl:grid-cols-[2rem_2rem_3.25rem_minmax(12rem,1fr)_5rem_9rem_7rem_8.5rem] xl:gap-3 xl:px-4 xl:py-2",
+        "group grid h-full min-w-0 grid-cols-[1.25rem_1.5rem_3rem_minmax(0,1fr)_auto] items-center gap-2 overflow-hidden border-b border-white/10 px-3 py-2.5 text-label-sm transition last:border-b-0 xl:min-w-[48rem] xl:grid-cols-[2rem_2rem_3.25rem_minmax(12rem,1fr)_5rem_9rem_7rem_8.5rem] xl:gap-3 xl:px-4 xl:py-2",
         current
           ? "bg-[rgb(var(--listen-primary)/0.1)] text-on-surface"
           : "text-on-surface-variant hover:bg-surface-variant/20 hover:text-on-surface",
@@ -4687,7 +4992,10 @@ function RecommendationCard({
               Now
             </span>
           ) : (
-            <Play className="h-8 w-8 drop-shadow-[0_0_16px_rgb(var(--listen-shadow)/0.35)]" aria-hidden />
+              <Play
+                className="h-8 w-8 drop-shadow-[0_0_16px_rgb(var(--listen-shadow)/0.35)]"
+                aria-hidden
+              />
           )}
         </span>
         </div>
@@ -5115,6 +5423,27 @@ function useDesktopListenShell() {
   return desktopShell;
 }
 
+function useDenseListenQueueRows() {
+  const [denseQueueRows, setDenseQueueRows] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 1280px)");
+
+    function updateDenseQueueRows() {
+      setDenseQueueRows(mediaQuery.matches);
+    }
+
+    updateDenseQueueRows();
+    mediaQuery.addEventListener("change", updateDenseQueueRows);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updateDenseQueueRows);
+    };
+  }, []);
+
+  return denseQueueRows;
+}
+
 function useRemainingQueueSeconds(liveRoom: LiveRoomState) {
   const [metadataDurations, setMetadataDurations] = useState<
     Record<string, number>
@@ -5150,7 +5479,9 @@ function useRemainingQueueSeconds(liveRoom: LiveRoomState) {
 
     void Promise.all(
       missingDurationItems.map(async (item) => {
-        const response = await fetchYouTubeMetadata(item.sourceUrl);
+        const response = await fetchYouTubeMetadata(item.sourceUrl, {
+          instrumentQueue: true,
+        });
         const durationSeconds = response.metadata?.durationSeconds;
 
         return typeof durationSeconds === "number" && durationSeconds > 0
@@ -5328,6 +5659,11 @@ function readStoredDrawerHeight() {
   }
 
   const stored = window.localStorage.getItem("mw_listen_queue_drawer_height");
+
+  if (stored === null) {
+    return DEFAULT_LISTEN_DRAWER_HEIGHT;
+  }
+
   const numericHeight = Number(stored);
 
   return Number.isFinite(numericHeight)
@@ -5372,7 +5708,11 @@ function getQueueItemDisplayDuration(
     return formatSeconds(metadata.metadata.durationSeconds);
   }
 
-  if (item.duration && item.duration !== "Metadata pending" && item.duration !== "-") {
+  if (
+    item.duration &&
+    item.duration !== "Metadata pending" &&
+    item.duration !== "-"
+  ) {
     return item.duration;
   }
 
@@ -5424,7 +5764,8 @@ function extractThemeFromImage(
         continue;
       }
 
-      const weight = alpha * (0.4 + saturation) * (1 - Math.abs(lightness - 0.52));
+      const weight =
+        alpha * (0.4 + saturation) * (1 - Math.abs(lightness - 0.52));
 
       red += r * weight;
       green += g * weight;
@@ -5558,7 +5899,8 @@ function clampNumber(value: number, min: number, max: number) {
 }
 
 function formatSeconds(totalSeconds: number) {
-  const safeValue = Number.isFinite(totalSeconds) && totalSeconds > 0 ? totalSeconds : 0;
+  const safeValue =
+    Number.isFinite(totalSeconds) && totalSeconds > 0 ? totalSeconds : 0;
   const minutes = Math.floor(safeValue / 60);
   const seconds = Math.floor(safeValue % 60);
 

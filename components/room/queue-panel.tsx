@@ -42,6 +42,8 @@ import {
   type QueueMode,
   type SmartShuffleItem,
 } from "@/lib/queue/model";
+import { deriveQueueState } from "@/lib/queue/derived";
+import { useQueueActionPerformance } from "@/lib/performance/use-queue-action-performance";
 import type { RoomQueueItem } from "@/lib/rooms";
 import type { LiveRoomError } from "@/lib/spacetime";
 import { cx } from "@/lib/ui";
@@ -200,17 +202,20 @@ export function QueuePanel({
     () => new Set(),
   );
   const notifiedRoomErrorIds = useRef<Set<string> | null>(null);
-  const queuedItems = items.filter((item) => item.status === "queued");
-  const previousItems = items
-    .filter((item) => item.status === "played")
-    .sort((a, b) => (a.playedSequence ?? 0) - (b.playedSequence ?? 0));
-  const upcomingItems = items.filter((item) => item.status !== "played");
+  const queueState = useMemo(() => deriveQueueState(items), [items]);
+  const {
+    currentItem,
+    playedItems: historyItems,
+    playedItemsBySequence: previousItems,
+    queuedIndexById,
+    queuedItems,
+    upcomingItems,
+  } = queueState;
+  const measureQueueAction = useQueueActionPerformance(items);
   const isConnected = connectionStatus === "connected";
   const addDisabled = !canAddQueue || !isConnected;
   const loadDisabled = !canLoadSource || !isConnected;
   const manageDisabled = !canManageQueue || !isConnected;
-  const currentItem = items.find((item) => item.status === "now") ?? null;
-  const historyItems = items.filter((item) => item.status === "played");
   const duplicateVideoIds = useMemo(
     () =>
       new Set(
@@ -1203,9 +1208,7 @@ export function QueuePanel({
         upcomingItems.length > 0 ? (
           <ol className="grid gap-2">
             {upcomingItems.map((item) => {
-              const queuedIndex = queuedItems.findIndex(
-                (queuedItem) => queuedItem.id === item.id,
-              );
+              const queuedIndex = queuedIndexById.get(item.id) ?? -1;
 
               return (
                 <QueueRow
@@ -1213,19 +1216,35 @@ export function QueuePanel({
                   key={item.id}
                   manageDisabled={manageDisabled}
                   mode={mode}
-                  onMoveQueueItem={onMoveQueueItem}
+                  onMoveQueueItem={(queueItemId, position) =>
+                    measureQueueAction("move", () =>
+                      onMoveQueueItem?.(queueItemId, position),
+                    )
+                  }
                   onPlayNext={(queueItem) => {
-                    onQueueItemPriorityChange?.(queueItem.id, {
-                      isPlayNext: !queueItem.isPlayNext,
-                    });
+                    measureQueueAction("play-next", () =>
+                      onQueueItemPriorityChange?.(queueItem.id, {
+                        isPlayNext: !queueItem.isPlayNext,
+                      }),
+                    );
                   }}
                   onPin={(queueItem) => {
-                    onQueueItemPriorityChange?.(queueItem.id, {
-                      isPinned: !queueItem.isPinned,
-                    });
+                    measureQueueAction("pin", () =>
+                      onQueueItemPriorityChange?.(queueItem.id, {
+                        isPinned: !queueItem.isPinned,
+                      }),
+                    );
                   }}
-                  onPlayQueueItem={onPlayQueueItem}
-                  onRemoveQueueItem={onRemoveQueueItem}
+                  onPlayQueueItem={(queueItemId) =>
+                    measureQueueAction("play", () =>
+                      onPlayQueueItem?.(queueItemId),
+                    )
+                  }
+                  onRemoveQueueItem={(queueItemId) =>
+                    measureQueueAction("remove", () =>
+                      onRemoveQueueItem?.(queueItemId),
+                    )
+                  }
                   queuedIndex={queuedIndex}
                   queuedItemsLength={queuedItems.length}
                 />
@@ -1252,32 +1271,44 @@ export function QueuePanel({
                 manageDisabled={manageDisabled}
                 mode={mode}
                 onPlayNext={(queueItem) => {
-                  onAddQueueItem?.({
-                    artist: queueItem.artist,
-                    channelName: queueItem.channelName,
-                    isPlayNext: true,
-                    playlistId: queueItem.playlistId,
-                    playlistTitle: queueItem.playlistTitle,
-                    sourceTitle: queueItem.title,
-                    sourceType: queueItem.sourceType ?? "youtube",
-                    sourceUrl: queueItem.sourceUrl ?? "",
-                    thumbnailUrl: queueItem.thumbnailUrl,
-                  });
+                  measureQueueAction("history-play-next", () =>
+                    onAddQueueItem?.({
+                      artist: queueItem.artist,
+                      channelName: queueItem.channelName,
+                      isPlayNext: true,
+                      playlistId: queueItem.playlistId,
+                      playlistTitle: queueItem.playlistTitle,
+                      sourceTitle: queueItem.title,
+                      sourceType: queueItem.sourceType ?? "youtube",
+                      sourceUrl: queueItem.sourceUrl ?? "",
+                      thumbnailUrl: queueItem.thumbnailUrl,
+                    }),
+                  );
                 }}
-                onPlayQueueItem={onPlayQueueItem}
+                onPlayQueueItem={(queueItemId) =>
+                  measureQueueAction("play-history", () =>
+                    onPlayQueueItem?.(queueItemId),
+                  )
+                }
                 onRequeue={(queueItem) => {
-                  onAddQueueItem?.({
-                    artist: queueItem.artist,
-                    channelName: queueItem.channelName,
-                    playlistId: queueItem.playlistId,
-                    playlistTitle: queueItem.playlistTitle,
-                    sourceTitle: queueItem.title,
-                    sourceType: queueItem.sourceType ?? "youtube",
-                    sourceUrl: queueItem.sourceUrl ?? "",
-                    thumbnailUrl: queueItem.thumbnailUrl,
-                  });
+                  measureQueueAction("history-requeue", () =>
+                    onAddQueueItem?.({
+                      artist: queueItem.artist,
+                      channelName: queueItem.channelName,
+                      playlistId: queueItem.playlistId,
+                      playlistTitle: queueItem.playlistTitle,
+                      sourceTitle: queueItem.title,
+                      sourceType: queueItem.sourceType ?? "youtube",
+                      sourceUrl: queueItem.sourceUrl ?? "",
+                      thumbnailUrl: queueItem.thumbnailUrl,
+                    }),
+                  );
                 }}
-                onRemoveQueueItem={onRemoveQueueItem}
+                onRemoveQueueItem={(queueItemId) =>
+                  measureQueueAction("remove-history", () =>
+                    onRemoveQueueItem?.(queueItemId),
+                  )
+                }
                 queuedIndex={-1}
                 queuedItemsLength={queuedItems.length}
               />
@@ -1849,6 +1880,7 @@ function QueueRow({
 }) {
   const metadata = useYouTubeMetadata(
     item.sourceType === "youtube" ? item.sourceUrl : null,
+    { instrumentQueue: true },
   );
   const title = metadata.metadata?.title ?? item.title;
   const channel = metadata.metadata?.channelTitle ?? item.channelName;
