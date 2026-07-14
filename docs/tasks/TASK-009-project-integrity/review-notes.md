@@ -2,9 +2,9 @@
 
 ## Current Status
 
-Status: implementation, migration, provider cutover, automated QA, and live
-owner/guest QA are complete. The reviewed feature branch is ready to merge to
-`main` and deploy from the exact merge commit.
+Status: complete and released. Implementation, migration, provider cutover,
+automated QA, live owner/guest QA, merge-to-main verification, and production
+deployment all passed.
 
 ## Resolved Decisions
 
@@ -90,7 +90,8 @@ owner/guest QA are complete. The reviewed feature branch is ready to merge to
 - Remove the obsolete Vercel production variable
   `CLOUDFLARE_R2_PUBLIC_BASE_URL` and redeploy the reviewed branch. Completed.
 - Merge the reviewed TASK-009 branch into `main` from a clean worktree, rerun the
-  release gate, push the merge commit, and deploy that exact commit.
+  release gate, push the merge commit, and deploy that exact commit. Completed
+  as merge `5c5ab4b` and deployment `dpl_4TGx7PqWASe2kFbHMYKtFr4kdKTx`.
 - Keep the CloudConvert migration-history discrepancy documented; do not rewrite
   remote history without a separate equivalence-backed repair task.
 - Track the SpacetimeDB row-cache warning separately; it did not affect the

@@ -29,7 +29,7 @@ TASK-009 consolidates:
 
 The Supabase migration, R2 public-access shutdown and cache purge, production
 deployment, signed owner delivery, public denial, and live owner/guest QA are
-complete. Merge-to-main verification is the final repository release step.
+complete. Merge commit `5c5ab4b` passed the full gate and is live in production.
 
 ## Immediate Engineering Follow-up
 

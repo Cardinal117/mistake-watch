@@ -9,11 +9,11 @@ rooms, SpacetimeDB live authority, YouTube and uploaded-media playback,
 large-queue performance work, media uploads/processing, and Media Session
 integration.
 
-TASK-009 implementation and release QA are complete on the isolated
-`task-009-project-integrity` branch. Its batches cover private object delivery,
+TASK-009 is complete on `main`. Its batches cover private object delivery,
 playlist-selection correctness, room startup/readiness, database integrity,
-test infrastructure, and documentation reconciliation. The branch still needs
-its verified merge into `main` and an exact-merge production deployment.
+test infrastructure, and documentation reconciliation. Merge commit `5c5ab4b`
+passed the complete release gate and was deployed to production as
+`dpl_4TGx7PqWASe2kFbHMYKtFr4kdKTx`.
 
 ## Required Reading
 
@@ -73,7 +73,7 @@ verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
 
-After TASK-009 merges, take one bounded Watch Media Hub performance pass for
+Take one bounded Watch Media Hub performance pass for
 uploaded-grid virtualization and lazy signed-poster loading. This protects the
 new private-delivery path from issuing unnecessary signatures or rendering the
 whole catalogue. Then start the dedicated first-party
