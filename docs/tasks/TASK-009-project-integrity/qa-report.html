@@ -100,12 +100,11 @@
   <body>
     <main>
       <header>
-        <span class="label">RELEASE: MANUAL GATES REMAIN</span>
+        <span class="label">RELEASE: GATES PASSED</span>
         <h1>TASK-009 QA Report</h1>
         <p>
-          Automated local QA is green. Cloud migration, provider configuration,
-          OAuth, and multi-participant checks remain intentionally outside local
-          proof.
+          Automated QA, cloud migration, provider cutover, authenticated owner
+          delivery, public denial, and user-run live room QA are green.
         </p>
       </header>
       <section>
@@ -121,8 +120,8 @@
           <tbody>
             <tr>
               <td>Permanent URL removal</td>
-              <td class="pass">Passed locally</td>
-              <td>Policy tests plus client-contract and route inspection.</td>
+              <td class="pass">Passed</td>
+              <td>Policy tests, route behavior, and public URL denial.</td>
             </tr>
             <tr>
               <td>Playlist correctness</td>
@@ -133,8 +132,8 @@
             </tr>
             <tr>
               <td>Fresh-room readiness</td>
-              <td class="pass">Passed locally</td>
-              <td>Typed lifecycle tests and dashboard browser smoke.</td>
+              <td class="pass">Passed</td>
+              <td>Typed lifecycle tests and dashboard/live browser smoke.</td>
             </tr>
             <tr>
               <td>Health/readiness</td>
@@ -143,26 +142,32 @@
             </tr>
             <tr>
               <td>Migration reconciliation</td>
-              <td class="pass">Documented</td>
+              <td class="pass">Applied and documented</td>
               <td>
-                Remote history, live uniqueness index, RLS/grants, and pending
-                index SQL reviewed read-only.
+                Remote history, live indexes, RLS/grants, and recovery notes
+                verified.
               </td>
             </tr>
             <tr>
               <td>Cloud migration/advisors</td>
-              <td class="manual">Pending approval</td>
-              <td>No DDL applied; rerun advisors after migration.</td>
+              <td class="pass">Passed</td>
+              <td>
+                Migration recorded remotely; missing-FK findings resolved.
+              </td>
             </tr>
             <tr>
               <td>Private R2 enforcement</td>
-              <td class="manual">Production QA</td>
-              <td>Disable public domain after signed-route validation.</td>
+              <td class="pass">Passed</td>
+              <td>
+                Custom domain disabled, cache purged, retained URLs denied.
+              </td>
             </tr>
             <tr>
               <td>OAuth and shared playback</td>
-              <td class="manual">Production QA</td>
-              <td>Requires live Google callback and two participants.</td>
+              <td class="pass">Passed by user</td>
+              <td>
+                Live owner, guest, uploaded playback, and sync QA confirmed.
+              </td>
             </tr>
           </tbody>
         </table>
@@ -179,7 +184,7 @@
           <tbody>
             <tr>
               <td><code>npm test</code></td>
-              <td class="pass">227 passed</td>
+              <td class="pass">229 passed</td>
             </tr>
             <tr>
               <td><code>npm run test:e2e</code></td>
@@ -207,9 +212,9 @@
       <section class="notice">
         <h2>Commit Readiness</h2>
         <p>
-          Ready for review and atomic commit preparation after final diff
-          validation. Not ready for production release until the migration and
-          provider/manual gates above are completed.
+          Release gates are complete. Merge from the clean reviewed branch,
+          rerun the gate on the merge result, then push and deploy that exact
+          commit.
         </p>
       </section>
       <section>

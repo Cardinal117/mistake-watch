@@ -25,7 +25,7 @@ evidence that DDL is missing.
 | `20260708130741_media_upload_completion_idempotency.sql` | No remote history row                                | Live index verified; history drift |
 | `20260709054334_uploaded_catalogue_authorization.sql`    | `20260709080604 uploaded_catalogue_authorization`    | Applied                            |
 | `20260709092938_room_media_sessions.sql`                 | `20260709092938 room_media_sessions`                 | Applied                            |
-| `20260714142309_task009_database_integrity_indexes.sql`  | Not present                                          | Pending approval                   |
+| `20260714142309_task009_database_integrity_indexes.sql`  | `20260714153348 task009_database_integrity_indexes`  | Applied                            |
 
 ## Verified Drift
 
@@ -42,9 +42,20 @@ That definition is equivalent to the guard in
 state is to document the discrepancy. Do not insert or modify migration-history
 rows without a separately reviewed repair plan.
 
+## TASK-009 Advisor Result
+
+The TASK-009 migration was applied on 2026-07-14 and the three missing
+foreign-key index findings no longer appear. The remaining performance notices
+are informational unused-index findings and need production traffic before any
+removal decision.
+
+Security advisors still report two intentional service-role-only tables with
+RLS enabled and no client policies, plus leaked-password protection disabled.
+The tables deny `anon` and `authenticated`; password authentication is not an
+active product path while Google remains the only account provider.
+
 ## Recovery Rule
 
-Before applying pending SQL, capture the current advisor output and index
-definitions. The three TASK-009 indexes are additive and can be rolled back with
+The three TASK-009 indexes are additive and can be rolled back with
 `drop index concurrently if exists public.<index_name>` in a separately
 reviewed recovery migration. Do not edit an already-applied migration file.

@@ -182,9 +182,9 @@ Deployment is not migration application. For a release containing schema work:
 4. deploy the pinned Git commit;
 5. verify aliases, `/api/health`, `/api/ready`, and manual QA.
 
-TASK-009 private-object hardening also requires R2 public access to be disabled
-after the signed delivery routes pass production QA. Application code cannot
-revoke old public URLs while a public R2 domain remains enabled.
+TASK-009 private-object hardening is live: the R2 custom domain is disabled and
+purged, while authorized application routes issue five-minute signed delivery
+redirects. Do not re-enable a public R2 domain for this bucket.
 
 ## Known Constraints
 
@@ -207,5 +207,7 @@ Read in order:
 4. `docs/ROADMAP.md`
 5. the active packet under `docs/tasks/`
 
-TASK-009 is the active cleanup/security packet until its QA, migration,
-production configuration, and release gates are complete.
+TASK-009 cleanup/security implementation and release QA are complete. The next
+engineering packet is the bounded Watch Media Hub performance pass recorded in
+`docs/HANDOFF.md`; the next product foundation is first-party recommendation
+intelligence.

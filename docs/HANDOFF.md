@@ -9,13 +9,11 @@ rooms, SpacetimeDB live authority, YouTube and uploaded-media playback,
 large-queue performance work, media uploads/processing, and Media Session
 integration.
 
-TASK-009 is active in the isolated `task-009-project-integrity` worktree. Its
-local batches cover private object delivery, playlist-selection correctness,
-room startup/readiness, database integrity preparation, test infrastructure,
-and documentation reconciliation.
-
-No TASK-009 cloud migration, push, merge, R2 configuration change, or production
-deployment is implied by the local work.
+TASK-009 implementation and release QA are complete on the isolated
+`task-009-project-integrity` branch. Its batches cover private object delivery,
+playlist-selection correctness, room startup/readiness, database integrity,
+test infrastructure, and documentation reconciliation. The branch still needs
+its verified merge into `main` and an exact-merge production deployment.
 
 ## Required Reading
 
@@ -58,17 +56,16 @@ Local browser QA cannot prove Google OAuth callback behavior, multi-participant
 sync, cloud R2 delivery, or provider playback. Record those as production/manual
 checks.
 
-## Release Gate
+## TASK-009 Release Evidence
 
-Before TASK-009 production release:
-
-1. review and explicitly approve the pending Supabase index migration;
-2. apply it and rerun security/performance advisors;
-3. commit and push reviewed atomic changes;
-4. deploy the pinned commit;
-5. verify owner catalogue, posters, uploaded playback, guests, and room sessions;
-6. verify no permanent R2 URL appears in responses or room state;
-7. disable R2 public-domain access and repeat uploaded-media QA.
+- Supabase migration `20260714153348 task009_database_integrity_indexes` is live.
+- The three missing-foreign-key advisor findings are resolved.
+- `r2.mistakestudios.com` is disabled and its hostname cache was purged.
+- Retained permanent R2 URLs return `401`.
+- Owner poster delivery redirects to private R2 with a five-minute signature;
+  unauthenticated access returns `403`.
+- `/api/health`, `/api/ready`, owner/guest catalogue authority, uploaded
+  playback, and shared room playback passed live QA.
 
 Do not repair migration-history rows by guesswork. The CloudConvert uniqueness
 index is live while its local migration is absent from remote history; the
@@ -76,7 +73,9 @@ verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
 
-After TASK-009 closes, start a dedicated first-party recommendation-intelligence
-packet. Add/Discover, Watch discovery, consented YouTube account signals, and AI
-DJ should build on that foundation in the order recorded in
+After TASK-009 merges, take one bounded Watch Media Hub performance pass for
+uploaded-grid virtualization and lazy signed-poster loading. This protects the
+new private-delivery path from issuing unnecessary signatures or rendering the
+whole catalogue. Then start the dedicated first-party
+recommendation-intelligence packet and follow the product order in
 `docs/ROADMAP.md`.

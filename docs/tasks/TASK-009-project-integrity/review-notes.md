@@ -2,9 +2,9 @@
 
 ## Current Status
 
-Status: local implementation and automated QA complete. The task is ready for
-human review, but not for production release. Stop before cloud migration, R2
-public-access changes, commit/push, or deployment without explicit approval.
+Status: implementation, migration, provider cutover, automated QA, and live
+owner/guest QA are complete. The reviewed feature branch is ready to merge to
+`main` and deploy from the exact merge commit.
 
 ## Resolved Decisions
 
@@ -40,20 +40,35 @@ public-access changes, commit/push, or deployment without explicit approval.
   build, and file-length policy passing.
 - A targeted recommendation/Add Media audit ran 44 tests successfully but found
   significant route/browser coverage gaps.
-- Final aggregate suite: 227 tests passed.
-- Typecheck, lint, production build, file-length policy, Prettier, and
-  `git diff --check` pass.
+- Final aggregate suite: 229 tests passed.
+- Typecheck, lint, production build, file-length policy, targeted Prettier for
+  TASK-009 closure files, and `git diff --check` pass. The repository-wide
+  Prettier command still reports 127 pre-existing files and is tracked as
+  formatting debt rather than rewritten in this security release.
 - Playwright smoke QA passed against the local application environment:
   dashboard shell, `/api/health`, and sanitized `/api/ready`.
-- Supabase was inspected read-only. The CloudConvert uniqueness index exists
-  live despite the missing remote history row. Three foreign-key indexes are
-  prepared in a new local migration and have not been applied.
+- The TASK-009 index migration was applied remotely as
+  `20260714153348 task009_database_integrity_indexes`. The CloudConvert
+  uniqueness index still exists live despite its missing remote history row.
 - Security advisors still report two intentional no-policy RLS notices and
   leaked-password protection disabled. The server-managed tables deny
   `anon`/`authenticated`; Google-only authentication reduces the immediate
   relevance of password protection.
-- Performance advisors still report the three unindexed foreign keys until the
-  pending migration is applied.
+- Performance advisors no longer report the three unindexed foreign keys.
+  Remaining findings are informational unused-index notices that need traffic
+  before any removal decision.
+- Production deployment `dpl_C9BWDE7zBVzzGCZw1MBAkebNBPUs` passed
+  `/api/health` and `/api/ready` checks.
+- The R2 custom domain `r2.mistakestudios.com` is disabled. A hostname-scoped
+  cache purge was accepted, and both a previously cached poster URL and a new
+  random object path now return `401`.
+- Authenticated owner poster delivery returns a `307` redirect to the private
+  R2 endpoint with `X-Amz-Expires=300`; the same application route returns
+  `403` without authentication. Vercel logs confirm both outcomes.
+- User-run live QA passed owner catalogue access, guest catalogue denial,
+  uploaded playback, room synchronization, and the remaining release smoke
+  checks before the final provider cutover. The signed poster route was repeated
+  successfully after the cutover.
 
 ## Implemented Batches
 
@@ -70,14 +85,13 @@ public-access changes, commit/push, or deployment without explicit approval.
 - Batch F: README, HANDOFF, roadmap, Supabase, SpacetimeDB, dependency, and
   future-product records are current.
 
-## Required Manual Release QA
+## Release Closure
 
-- Apply the pending Supabase migration only after explicit approval, then rerun
-  both advisor groups.
-- Deploy a pinned reviewed commit and verify owner catalogue cards, posters,
-  uploads, room-session playback, guests, and multi-participant sync.
-- Confirm network and room state contain application routes/session references,
-  not permanent R2 URLs.
-- Disable the R2 public domain only after signed delivery passes, then repeat
-  owner and guest playback QA. Old public URLs remain usable until this provider
-  setting is disabled.
+- Remove the obsolete Vercel production variable
+  `CLOUDFLARE_R2_PUBLIC_BASE_URL` and redeploy the reviewed branch. Completed.
+- Merge the reviewed TASK-009 branch into `main` from a clean worktree, rerun the
+  release gate, push the merge commit, and deploy that exact commit.
+- Keep the CloudConvert migration-history discrepancy documented; do not rewrite
+  remote history without a separate equivalence-backed repair task.
+- Track the SpacetimeDB row-cache warning separately; it did not affect the
+  bounded readiness or room smoke checks.

@@ -16,7 +16,7 @@ requirements and evidence record.
   owner/allowlist catalogue controls.
 - Media Session metadata and room transport wiring.
 
-## Active Integrity Work
+## Completed Integrity Work
 
 TASK-009 consolidates:
 
@@ -27,8 +27,18 @@ TASK-009 consolidates:
 - aggregate, route, and browser test foundations;
 - current documentation and roadmap truth.
 
-Cloud migration, R2 public-access shutdown, production deployment, and live
-OAuth/provider QA are explicit release gates, not local implementation steps.
+The Supabase migration, R2 public-access shutdown and cache purge, production
+deployment, signed owner delivery, public denial, and live owner/guest QA are
+complete. Merge-to-main verification is the final repository release step.
+
+## Immediate Engineering Follow-up
+
+Before product expansion, run one bounded Watch Media Hub performance task:
+
+- virtualize or progressively render large uploaded catalogues;
+- lazy-load private poster routes near the viewport;
+- preserve owner-only catalogue authorization and room-session playback;
+- measure signature/request count, open-drawer latency, and mobile behavior.
 
 ## Planned Product Sequence
 
