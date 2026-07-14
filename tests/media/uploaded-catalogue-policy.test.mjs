@@ -156,7 +156,11 @@ test("uploaded catalogue migration keeps allowlist app-owned and RLS enabled", a
 });
 
 test("catalogue API and UI are wired through the uploaded catalogue access result", async () => {
-  const assetsSource = await readFile(
+  const catalogueSource = await readFile(
+    path.join(rootDir, "lib/media/library/catalogue.ts"),
+    "utf8",
+  );
+  const assetsFacadeSource = await readFile(
     path.join(rootDir, "lib/media/assets.ts"),
     "utf8",
   );
@@ -166,8 +170,9 @@ test("catalogue API and UI are wired through the uploaded catalogue access resul
     "components/room/watch",
   );
 
-  assert.match(assetsSource, /getUploadedCatalogueAccess/);
-  assert.match(assetsSource, /canAccessUploadedCatalogue/);
+  assert.match(catalogueSource, /getUploadedCatalogueAccess/);
+  assert.match(catalogueSource, /toMediaLibraryAccess/);
+  assert.match(assetsFacadeSource, /listReadyMediaAssets/);
   assert.match(watchLayoutSource, /No permission to access uploaded content/);
   assert.match(watchLayoutSource, /canAccessUploadedCatalogue/);
 });

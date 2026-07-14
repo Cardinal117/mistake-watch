@@ -154,7 +154,11 @@ test("source-match response redaction removes storage object keys", () => {
 });
 
 test("source-match helper is wired through the access gate and response redaction", async () => {
-  const assetsSource = await readFile(
+  const sourceMatchServiceSource = await readFile(
+    path.join(rootDir, "lib/media/source-matches/service.ts"),
+    "utf8",
+  );
+  const assetsFacadeSource = await readFile(
     path.join(rootDir, "lib/media/assets.ts"),
     "utf8",
   );
@@ -163,8 +167,9 @@ test("source-match helper is wired through the access gate and response redactio
     "utf8",
   );
 
-  assert.match(assetsSource, /getSourceMatchVisibilityFilter/);
-  assert.match(assetsSource, /canExposeSourceMatchedAsset/);
-  assert.match(assetsSource, /redactSourceMatchedAssetForResponse/);
+  assert.match(sourceMatchServiceSource, /getSourceMatchVisibilityFilter/);
+  assert.match(sourceMatchServiceSource, /canExposeSourceMatchedAsset/);
+  assert.match(sourceMatchServiceSource, /redactSourceMatchedAssetForResponse/);
+  assert.match(assetsFacadeSource, /findReadyMediaMatches/);
   assert.match(routeSource, /findReadyMediaMatches/);
 });
