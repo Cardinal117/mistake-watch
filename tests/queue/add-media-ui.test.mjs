@@ -7,9 +7,11 @@ import { fileURLToPath } from "node:url";
 import { readSourceTree } from "../helpers/read-source-tree.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const queuePanelSource = await readFile(
-  path.join(root, "components/room/queue-panel.tsx"),
-  "utf8",
+const queuePanelSource = await readSourceTree(
+  root,
+  "components/room/queue-panel.tsx",
+  "components/room/queue",
+  "components/room/shared/add-media",
 );
 const listenLayoutSource = await readSourceTree(
   root,

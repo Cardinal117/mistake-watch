@@ -21,7 +21,11 @@ const [listenLayoutSource, queuePanelSource] = await Promise.all([
     "components/room/listen/listen-mode-layout.tsx",
     "components/room/listen/queue",
   ),
-  readFile(path.join(rootDir, "components/room/queue-panel.tsx"), "utf8"),
+  readSourceTree(
+    rootDir,
+    "components/room/queue-panel.tsx",
+    "components/room/queue",
+  ),
 ]);
 const output = ts.transpileModule(source, {
   compilerOptions: {
