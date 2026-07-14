@@ -13,10 +13,24 @@ const queuePanelSource = await readSourceTree(
   "components/room/queue",
   "components/room/shared/add-media",
 );
+const listenAddMediaControllerSource = await readFile(
+  path.join(root, "components/room/listen/add-media/add-media-popover.tsx"),
+  "utf8",
+);
+const queueAddMediaControllerSource = await readFile(
+  path.join(
+    root,
+    "components/room/shared/add-media/use-add-media-controller.ts",
+  ),
+  "utf8",
+);
 const listenLayoutSource = await readSourceTree(
   root,
   "components/room/listen-mode-layout.tsx",
   "components/room/listen",
+  "components/room/queue/contracts.ts",
+  "components/room/queue/queue-notifications.tsx",
+  "components/room/shared/add-media",
 );
 const membersPanelSource = await readFile(
   path.join(root, "components/room/members-panel.tsx"),
@@ -37,6 +51,29 @@ test("visible queue permission is not split into a hidden manage chip", () => {
   assert.match(liveRoomSource, /const queueAuthority = nextPermissions\.queue/);
   assert.match(liveRoomSource, /canAddQueue:\s*queueAuthority/);
   assert.match(liveRoomSource, /canManageQueue:\s*queueAuthority/);
+});
+
+test("listen and queue Add Media controllers reuse shared contracts and behavior", () => {
+  for (const source of [
+    listenAddMediaControllerSource,
+    queueAddMediaControllerSource,
+  ]) {
+    assert.match(source, /useQueueSourceDuplicates/);
+    assert.match(source, /useDuplicatePreference/);
+    assert.match(source, /resolveYouTubeQueueInput/);
+    assert.match(source, /youtubeSearchItemToQueueInput/);
+    assert.match(source, /playlistItemToQueueInput/);
+  }
+
+  assert.match(
+    listenAddMediaControllerSource,
+    /@\/components\/room\/queue\/contracts/,
+  );
+  assert.match(
+    listenAddMediaControllerSource,
+    /@\/components\/room\/shared\/add-media\/contracts/,
+  );
+  assert.doesNotMatch(listenAddMediaControllerSource, /listen\/shared/);
 });
 
 test("add media flow is url-driven instead of manual mode-card driven", () => {

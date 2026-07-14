@@ -10,7 +10,7 @@ import {
   type PlaylistPreview,
   type PlaylistPreviewItem,
   playlistItemKey,
-} from "@/components/room/listen/shared";
+} from "@/components/room/shared/add-media/contracts";
 import { QueueArtwork } from "@/components/room/listen/discovery/media-cards";
 
 export function ListenPlaylistReviewOverlay({

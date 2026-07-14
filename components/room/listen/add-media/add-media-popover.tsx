@@ -1,37 +1,34 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { createPortal } from "react-dom";
-import { ListMusic, Play, Plus, X } from "lucide-react";
-import { Badge, Button, SignalInlineStatus } from "@/components/ui";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   detectUrlType,
   parseYouTubePlaylist,
-  parseYouTubeVideoId,
   validateMediaSourceForMode,
 } from "@/lib/player/source";
 import type { RoomQueueItem } from "@/lib/rooms";
 import type { LiveRoomError } from "@/lib/spacetime";
-import { cx } from "@/lib/ui";
 import { fetchPlaylistPreview } from "@/lib/youtube/playlist-client";
-import { fetchYouTubeMetadata } from "@/lib/youtube/metadata-client";
 import type { YouTubeSearchItem } from "@/lib/youtube/search";
-import { YouTubeAddMediaSearch } from "@/components/room/youtube-add-media-search";
 import {
   type SourceLoadInput,
   type QueueAddInput,
+} from "@/components/room/queue/contracts";
+import { useQueueNotifications } from "@/components/room/queue/queue-notifications";
+import {
   type PlaylistPreview,
   type PlaylistPreviewItem,
-  type ListenNotification,
-  roomErrorToneBySeverity,
   playlistItemKey,
-} from "@/components/room/listen/shared";
-import { ListenPlaylistReviewOverlay } from "@/components/room/listen/add-media/playlist-review-overlay";
-import { ListenAddMediaView } from "@/components/room/listen/add-media/add-media-view";
+} from "@/components/room/shared/add-media/contracts";
 import {
-  QueueArtwork,
-  formatDurationSeconds,
-} from "@/components/room/listen/discovery/media-cards";
+  isDuplicateQueueSource,
+  resolveYouTubeQueueInput,
+  useDuplicatePreference,
+  useQueueSourceDuplicates,
+  youtubeSearchItemToQueueInput,
+} from "@/components/room/shared/add-media/controller-shared";
+import { playlistItemToQueueInput } from "@/components/room/shared/add-media/media-matches";
+import { ListenAddMediaView } from "@/components/room/listen/add-media/add-media-view";
 
 export function ListenAddMediaPopover({
   canAddQueue,
@@ -56,7 +53,6 @@ export function ListenAddMediaPopover({
   const [importSummary, setImportSummary] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isImportingPlaylist, setIsImportingPlaylist] = useState(false);
-  const [notifications, setNotifications] = useState<ListenNotification[]>([]);
   const [pendingDuplicateInput, setPendingDuplicateInput] =
     useState<QueueAddInput | null>(null);
   const [pendingDuplicatePlaylist, setPendingDuplicatePlaylist] = useState<{
@@ -73,73 +69,17 @@ export function ListenAddMediaPopover({
   const [selectedPlaylistIds, setSelectedPlaylistIds] = useState<Set<string>>(
     () => new Set(),
   );
-  const notifiedRoomErrorIds = useRef<Set<string> | null>(null);
   const [url, setUrl] = useState("");
   const addDisabled = !canAddQueue || connectionStatus !== "connected";
   const loadDisabled = !canLoadSource || connectionStatus !== "connected";
-  const duplicateSourceUrls = useMemo(
-    () =>
-      new Set(
-        items
-          .map((item) => item.sourceUrl)
-          .filter((sourceUrl): sourceUrl is string => Boolean(sourceUrl)),
-      ),
-    [items],
-  );
-  const duplicateVideoIds = useMemo(
-    () =>
-      new Set(
-        items
-          .map((item) => item.videoId)
-          .filter((videoId): videoId is string => Boolean(videoId)),
-      ),
-    [items],
-  );
-  const [duplicatePreference, setDuplicatePreference] = useState<
-    "allow" | "warn"
-  >(() =>
-    typeof window !== "undefined" &&
-    window.localStorage.getItem("mw_queue_duplicate_preference") === "allow"
-      ? "allow"
-      : "warn",
-  );
+  const { duplicateSourceUrls, duplicateVideoIds } =
+    useQueueSourceDuplicates(items);
+  const [duplicatePreference, setDuplicatePreference] =
+    useDuplicatePreference();
+  const { notifications, notify } = useQueueNotifications(roomErrors);
   const hasPreviewState = Boolean(
     url.trim() || singlePreview || playlistPreview,
   );
-
-  useEffect(() => {
-    if (notifiedRoomErrorIds.current === null) {
-      notifiedRoomErrorIds.current = new Set(
-        roomErrors.map((error) => error.errorId),
-      );
-      return;
-    }
-
-    const seen = notifiedRoomErrorIds.current;
-
-    for (const error of roomErrors) {
-      if (seen.has(error.errorId)) {
-        continue;
-      }
-
-      seen.add(error.errorId);
-      notify(error.message, roomErrorToneBySeverity[error.severity]);
-    }
-  }, [roomErrors]);
-
-  function notify(message: string, tone: ListenNotification["tone"] = "info") {
-    const id = window.crypto.randomUUID();
-
-    setNotifications((current) => [
-      ...current.slice(-3),
-      { id, message, tone },
-    ]);
-    window.setTimeout(() => {
-      setNotifications((current) =>
-        current.filter((notification) => notification.id !== id),
-      );
-    }, 4200);
-  }
 
   useEffect(() => {
     if (!isOpen) {
@@ -301,48 +241,20 @@ export function ListenAddMediaPopover({
   }
 
   async function checkYouTubeInput(input: SourceLoadInput) {
-    if (input.sourceType !== "youtube") {
-      return input;
+    const result = await resolveYouTubeQueueInput(input);
+
+    if (result.error) {
+      setErrorMessage(result.error);
     }
 
-    const metadata = await fetchYouTubeMetadata(input.sourceUrl);
-
-    if (metadata.availability?.playable === false) {
-      setErrorMessage(metadata.availability.reason);
-      return null;
-    }
-
-    return {
-      ...input,
-      artist: metadata.metadata?.channelTitle ?? undefined,
-      channelName: metadata.metadata?.channelTitle ?? undefined,
-      durationSeconds: metadata.metadata?.durationSeconds ?? undefined,
-      sourceTitle: metadata.metadata?.title ?? input.sourceTitle,
-      thumbnailUrl: metadata.metadata?.thumbnailUrl ?? undefined,
-    } satisfies QueueAddInput;
-  }
-
-  function youtubeSearchItemToQueueInput(
-    item: YouTubeSearchItem,
-  ): QueueAddInput {
-    return {
-      artist: item.channelTitle ?? undefined,
-      channelName: item.channelTitle ?? undefined,
-      durationSeconds: item.durationSeconds ?? undefined,
-      isUnavailable: item.availability.playable === false,
-      sourceTitle: item.title,
-      sourceType: "youtube",
-      sourceUrl: item.url,
-      thumbnailUrl: item.thumbnailUrl ?? undefined,
-    };
+    return result.input;
   }
 
   function isDuplicateSingle(input: Pick<QueueAddInput, "sourceUrl">) {
-    const videoId = parseYouTubeVideoId(input.sourceUrl);
-
-    return (
-      duplicateSourceUrls.has(input.sourceUrl) ||
-      Boolean(videoId && duplicateVideoIds.has(videoId))
+    return isDuplicateQueueSource(
+      input,
+      duplicateSourceUrls,
+      duplicateVideoIds,
     );
   }
 
@@ -496,17 +408,12 @@ export function ListenAddMediaPopover({
 
     playableItems.forEach((item) => {
       onAddQueueItem({
+        ...playlistItemToQueueInput(item, {
+          playlistId: playlistPreview.playlistId,
+          playlistTitle: playlistPreview.playlistTitle,
+        }),
         allowDuplicate: isDuplicatePlaylistItem(item),
-        artist: item.channelTitle ?? undefined,
-        channelName: item.channelTitle ?? undefined,
-        durationSeconds: item.durationSeconds ?? undefined,
         isUnavailable: item.isUnavailable,
-        playlistId: playlistPreview.playlistId ?? undefined,
-        playlistTitle: playlistPreview.playlistTitle ?? undefined,
-        sourceTitle: item.title,
-        sourceType: "youtube",
-        sourceUrl: item.sourceUrl,
-        thumbnailUrl: item.thumbnailUrl ?? undefined,
       });
       added += 1;
     });

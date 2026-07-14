@@ -6,20 +6,24 @@ import { ListMusic, Play, Plus, X } from "lucide-react";
 
 import { Badge, Button, SignalInlineStatus } from "@/components/ui";
 import { detectUrlType } from "@/lib/player/source";
-import { cx } from "@/lib/ui";
 import type { YouTubeSearchItem } from "@/lib/youtube/search";
 import { YouTubeAddMediaSearch } from "@/components/room/youtube-add-media-search";
 import { ListenPlaylistReviewOverlay } from "@/components/room/listen/add-media/playlist-review-overlay";
+import type {
+  QueueAddInput,
+  QueueNotification,
+} from "@/components/room/queue/contracts";
+import { QueueNotifications } from "@/components/room/queue/queue-notifications";
 import {
   QueueArtwork,
   formatDurationSeconds,
 } from "@/components/room/listen/discovery/media-cards";
 import type {
-  ListenNotification,
+  DuplicatePreference,
   PlaylistPreview,
   PlaylistPreviewItem,
-  QueueAddInput,
-} from "@/components/room/listen/shared";
+} from "@/components/room/shared/add-media/contracts";
+import { rememberDuplicatePreference } from "@/components/room/shared/add-media/controller-shared";
 
 type ListenAddMediaViewProps = {
   addDisabled: boolean;
@@ -45,8 +49,8 @@ type ListenAddMediaViewProps = {
   loadDisabled: boolean;
   loadSearchResult(item: YouTubeSearchItem): void;
   loadSingle(): Promise<void>;
-  notifications: ListenNotification[];
-  notify(message: string, tone?: ListenNotification["tone"]): void;
+  notifications: QueueNotification[];
+  notify(message: string, tone?: QueueNotification["tone"]): void;
   onAddQueueItem(input: QueueAddInput): void;
   pendingDuplicateInput: QueueAddInput | null;
   pendingDuplicatePlaylist: {
@@ -59,7 +63,7 @@ type ListenAddMediaViewProps = {
   previewLoading: boolean;
   roomId: string;
   selectedPlaylistIds: Set<string>;
-  setDuplicatePreference: Dispatch<SetStateAction<"allow" | "warn">>;
+  setDuplicatePreference: Dispatch<SetStateAction<DuplicatePreference>>;
   setErrorMessage: Dispatch<SetStateAction<string | null>>;
   setImportSummary: Dispatch<SetStateAction<string | null>>;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
@@ -136,31 +140,7 @@ export function ListenAddMediaView({
         <Plus className="h-5 w-5" aria-hidden />
         Add Media
       </Button>
-      {notifications.length > 0 ? (
-        <div
-          aria-live="polite"
-          className="fixed bottom-4 right-4 z-[130] grid w-[min(22rem,calc(100vw-2rem))] gap-2"
-        >
-          {notifications.map((notification) => (
-            <div
-              className={cx(
-                "rounded-md border bg-surface/95 p-3 text-label-sm shadow-[0_0_32px_rgb(0_0_0_/_0.38)] backdrop-blur-xl",
-                notification.tone === "success" &&
-                  "border-primary-fixed-dim/35 text-primary-fixed-dim",
-                notification.tone === "warning" &&
-                  "border-secondary-fixed-dim/35 text-secondary-fixed-dim",
-                notification.tone === "error" && "border-error/40 text-error",
-                notification.tone === "info" &&
-                  "border-white/10 text-on-surface-variant",
-              )}
-              key={notification.id}
-              role={notification.tone === "error" ? "alert" : "status"}
-            >
-              {notification.message}
-            </div>
-          ))}
-        </div>
-      ) : null}
+      <QueueNotifications notifications={notifications} />
       {isOpen && typeof document !== "undefined"
         ? createPortal(
             <div className="fixed inset-0 z-[120] grid place-items-center bg-background/72 p-4 backdrop-blur-xl">
@@ -350,10 +330,7 @@ export function ListenAddMediaView({
                         className="accent-secondary-fixed-dim"
                         onChange={(event) => {
                           if (event.currentTarget.checked) {
-                            window.localStorage.setItem(
-                              "mw_queue_duplicate_preference",
-                              "allow",
-                            );
+                            rememberDuplicatePreference(true);
                             setDuplicatePreference("allow");
                           }
                         }}
@@ -407,10 +384,7 @@ export function ListenAddMediaView({
                         className="accent-secondary-fixed-dim"
                         onChange={(event) => {
                           if (event.currentTarget.checked) {
-                            window.localStorage.setItem(
-                              "mw_queue_duplicate_preference",
-                              "allow",
-                            );
+                            rememberDuplicatePreference(true);
                             setDuplicatePreference("allow");
                           }
                         }}

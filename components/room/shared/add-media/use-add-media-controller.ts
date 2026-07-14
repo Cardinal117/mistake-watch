@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 import {
   detectUrlType,
@@ -16,7 +16,6 @@ import {
 } from "@/lib/queue/model";
 import type { RoomQueueItem } from "@/lib/rooms";
 import { fetchPlaylistPreview } from "@/lib/youtube/playlist-client";
-import { fetchYouTubeMetadata } from "@/lib/youtube/metadata-client";
 import type { YouTubeSearchItem } from "@/lib/youtube/search";
 import type {
   QueueAddInput,
@@ -24,19 +23,24 @@ import type {
   SourceLoadInput,
 } from "../../queue/contracts";
 import type {
-  DuplicatePreference,
   PendingDuplicateAdd,
   PlaylistPreview,
   PlaylistPreviewItem,
 } from "./contracts";
 import { playlistItemKey } from "./contracts";
 import {
+  isDuplicateQueueSource as isDuplicateSource,
+  rememberDuplicatePreference,
+  resolveYouTubeQueueInput,
+  useDuplicatePreference,
+  useQueueSourceDuplicates,
+  youtubeSearchItemToQueueInput,
+} from "./controller-shared";
+import {
   fetchFirstPartyMediaMatches,
   firstPartyAssetToQueueInput,
   playlistItemToQueueInput,
 } from "./media-matches";
-
-const duplicatePreferenceStorageKey = "mw_queue_duplicate_preference";
 
 export function useAddMediaController({
   addDisabled,
@@ -66,12 +70,7 @@ export function useAddMediaController({
   roomId: string;
 }) {
   const [duplicatePreference, setDuplicatePreference] =
-    useState<DuplicatePreference>(() =>
-      typeof window !== "undefined" &&
-      window.localStorage.getItem(duplicatePreferenceStorageKey) === "allow"
-        ? "allow"
-        : "warn",
-    );
+    useDuplicatePreference();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [importSummary, setImportSummary] = useState<string | null>(null);
   const [isImportingPlaylist, setIsImportingPlaylist] = useState(false);
@@ -87,24 +86,8 @@ export function useAddMediaController({
   const [selectedPlaylistIds, setSelectedPlaylistIds] = useState<Set<string>>(
     () => new Set(),
   );
-  const duplicateVideoIds = useMemo(
-    () =>
-      new Set(
-        items
-          .map((item) => item.videoId)
-          .filter((videoId): videoId is string => Boolean(videoId)),
-      ),
-    [items],
-  );
-  const duplicateSourceUrls = useMemo(
-    () =>
-      new Set(
-        items
-          .map((item) => item.sourceUrl)
-          .filter((sourceUrl): sourceUrl is string => Boolean(sourceUrl)),
-      ),
-    [items],
-  );
+  const { duplicateSourceUrls, duplicateVideoIds } =
+    useQueueSourceDuplicates(items);
 
   function clearPlaylistPreview() {
     setPlaylistPreview(null);
@@ -157,20 +140,13 @@ export function useAddMediaController({
   }
 
   async function checkYouTubeInput(input: SourceLoadInput) {
-    if (input.sourceType !== "youtube") return input;
-    const metadata = await fetchYouTubeMetadata(input.sourceUrl);
-    if (metadata.availability?.playable === false) {
-      setErrorMessage(metadata.availability.reason);
-      return null;
+    const result = await resolveYouTubeQueueInput(input);
+
+    if (result.error) {
+      setErrorMessage(result.error);
     }
-    return {
-      ...input,
-      artist: metadata.metadata?.channelTitle ?? undefined,
-      channelName: metadata.metadata?.channelTitle ?? undefined,
-      durationSeconds: metadata.metadata?.durationSeconds ?? undefined,
-      sourceTitle: metadata.metadata?.title ?? input.sourceTitle,
-      thumbnailUrl: metadata.metadata?.thumbnailUrl ?? undefined,
-    } satisfies QueueAddInput;
+
+    return result.input;
   }
 
   async function preferFirstPartyMediaMatch(input: QueueAddInput) {
@@ -192,11 +168,7 @@ export function useAddMediaController({
   }
 
   function isDuplicateQueueSource(input: Pick<QueueAddInput, "sourceUrl">) {
-    const videoId = parseYouTubeVideoId(input.sourceUrl);
-    return (
-      duplicateSourceUrls.has(input.sourceUrl) ||
-      Boolean(videoId && duplicateVideoIds.has(videoId))
-    );
+    return isDuplicateSource(input, duplicateSourceUrls, duplicateVideoIds);
   }
 
   function addQueueItemWithFeedback(input: QueueAddInput) {
@@ -207,21 +179,6 @@ export function useAddMediaController({
         : `Added to queue: ${input.sourceTitle}`,
       input.allowDuplicate ? "warning" : "success",
     );
-  }
-
-  function youtubeSearchItemToQueueInput(
-    item: YouTubeSearchItem,
-  ): QueueAddInput {
-    return {
-      artist: item.channelTitle ?? undefined,
-      channelName: item.channelTitle ?? undefined,
-      durationSeconds: item.durationSeconds ?? undefined,
-      isUnavailable: item.availability.playable === false,
-      sourceTitle: item.title,
-      sourceType: "youtube",
-      sourceUrl: item.url,
-      thumbnailUrl: item.thumbnailUrl ?? undefined,
-    };
   }
 
   async function resolveSearchResult(
@@ -434,7 +391,7 @@ export function useAddMediaController({
   function confirmDuplicate(remember: boolean) {
     if (!pendingDuplicateAdd) return;
     if (remember) {
-      window.localStorage.setItem(duplicatePreferenceStorageKey, "allow");
+      rememberDuplicatePreference(true);
       setDuplicatePreference("allow");
     }
     if (pendingDuplicateAdd.kind === "single") {
