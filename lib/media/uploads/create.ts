@@ -10,8 +10,6 @@ import {
   createR2MultipartUpload,
   createR2ObjectKey,
   getMediaUploadMaxBytes,
-  getR2Config,
-  getR2PublicUrl,
   multipartUploadPartSizeBytes,
   multipartUploadThresholdBytes,
   validateR2UploadInput,
@@ -26,7 +24,6 @@ export async function createMediaUpload(input: CreateUploadInput) {
     throw new MediaAssetError(validation.message, 400);
   }
 
-  const config = getR2Config();
   const folderId = await resolveOwnerFolderId({
     folderId: input.folderId,
     folderName: input.folderName,
@@ -36,7 +33,6 @@ export async function createMediaUpload(input: CreateUploadInput) {
     fileName: input.fileName,
     ownerUserId: owner.id,
   });
-  const publicUrl = getR2PublicUrl(objectKey, config);
   const uploadMode =
     input.fileSizeBytes >= multipartUploadThresholdBytes
       ? "multipart"
@@ -108,10 +104,8 @@ export async function createMediaUpload(input: CreateUploadInput) {
     fileSizeBytes: input.fileSizeBytes,
     folderId,
     maxFileSizeBytes: getMediaUploadMaxBytes(),
-    objectKey,
     partCount,
     partSizeBytes,
-    publicUrl,
     uploadId: data.id,
     uploadMode,
     uploadUrl,

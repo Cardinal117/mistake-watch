@@ -26,6 +26,7 @@ export {
   moveMediaAssetToFolder,
   updateMediaAssetVisibility,
 } from "./library/management";
+export { getCatalogueAssetDelivery } from "./library/delivery";
 export {
   approveMediaAssetProcessing,
   getMediaAssetProcessingStatus,

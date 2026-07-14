@@ -6,11 +6,11 @@ import { MediaAssetError, type MediaVisibility } from "../contracts";
 import { assertOwnerFolder } from "../folders/service";
 import {
   assertR2ObjectExists,
+  createPrivateR2Reference,
   createPresignedR2PutUrl,
   createR2PosterObjectKey,
   deleteR2Object,
   getR2Config,
-  getR2PublicUrl,
 } from "../r2";
 import { requireOwnerSummary, toLibraryAsset } from "../shared";
 
@@ -132,40 +132,54 @@ export async function createMediaPosterUpload(input: { assetId: string }) {
     contentType: "image/jpeg",
     objectKey,
   });
-  const publicUrl = getR2PublicUrl(objectKey);
-
-  await admin
+  const { error: updateError } = await admin
     .from("media_assets")
-    .update({ poster_status: "pending" })
+    .update({
+      poster_status: "pending",
+      thumbnail_object_key: objectKey,
+    })
     .eq("id", asset.id)
     .eq("owner_user_id", owner.id);
 
+  if (updateError) {
+    throw updateError;
+  }
+
   return {
-    objectKey,
-    publicUrl,
     uploadUrl,
   };
 }
 
-export async function completeMediaPoster(input: {
-  assetId: string;
-  objectKey: string;
-}) {
+export async function completeMediaPoster(input: { assetId: string }) {
   const owner = await requireOwnerSummary();
   const config = getR2Config();
-
-  await assertR2ObjectExists({
-    objectKey: input.objectKey,
-  });
-
   const admin = createSupabaseAdminClient();
-  const publicUrl = getR2PublicUrl(input.objectKey, config);
+  const { data: asset, error: assetError } = await admin
+    .from("media_assets")
+    .select("id,thumbnail_object_key")
+    .eq("id", input.assetId)
+    .eq("owner_user_id", owner.id)
+    .maybeSingle();
+
+  if (assetError) {
+    throw assetError;
+  }
+
+  if (!asset?.thumbnail_object_key) {
+    throw new MediaAssetError("Poster upload was not prepared.", 409);
+  }
+
+  await assertR2ObjectExists({ objectKey: asset.thumbnail_object_key });
+
+  const privateReference = createPrivateR2Reference({
+    bucket: config.bucket,
+    objectKey: asset.thumbnail_object_key,
+  });
   const { data, error } = await admin
     .from("media_assets")
     .update({
       poster_status: "ready",
-      thumbnail_object_key: input.objectKey,
-      thumbnail_url: publicUrl,
+      thumbnail_url: privateReference,
     })
     .eq("id", input.assetId)
     .eq("owner_user_id", owner.id)

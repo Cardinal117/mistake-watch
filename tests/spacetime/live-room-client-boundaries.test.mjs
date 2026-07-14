@@ -16,6 +16,10 @@ const snapshotHelpers = readFileSync(
   join(root, "lib/spacetime/live-room/snapshot.ts"),
   "utf8",
 );
+const connectionLifecycle = readFileSync(
+  join(root, "lib/spacetime/live-room/use-room-connection.ts"),
+  "utf8",
+);
 
 test("live room compatibility entrypoint delegates client boundaries", () => {
   assert.match(
@@ -23,6 +27,7 @@ test("live room compatibility entrypoint delegates client boundaries", () => {
     /export type \{ LiveRoomState \} from "\.\/live-room\/client-types";/,
   );
   assert.match(entrypoint, /from "\.\/live-room\/snapshot";/);
+  assert.match(entrypoint, /useRoomConnection\(room\)/);
 
   for (const helper of [
     "adjustSnapshotClock",
@@ -31,7 +36,10 @@ test("live room compatibility entrypoint delegates client boundaries", () => {
     "readLiveSnapshot",
     "shouldPreserveCurrentSnapshotDuringReconnect",
   ]) {
-    assert.match(entrypoint, new RegExp(`\\b${helper}\\(`));
+    const consumer =
+      helper === "mapLiveParticipants" ? entrypoint : connectionLifecycle;
+
+    assert.match(consumer, new RegExp(`\\b${helper}\\(`));
     assert.doesNotMatch(
       entrypoint,
       new RegExp(`function ${helper}\\(`),

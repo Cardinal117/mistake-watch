@@ -40,6 +40,7 @@ export async function listReadyMediaAssets() {
           .from("media_assets")
           .select()
           .eq("status", "ready")
+          .eq("visibility", "public")
           .order("created_at", { ascending: false })
           .limit(160),
     admin

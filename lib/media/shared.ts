@@ -60,6 +60,10 @@ export function toLibraryAsset(
   sourceMatches: MediaSourceMatch[],
 ): MediaLibraryAsset {
   return {
+    contentUrl:
+      asset.status === "ready"
+        ? `/api/media/assets/${encodeURIComponent(asset.id)}/content`
+        : null,
     createdAt: asset.created_at,
     durationSeconds: asset.duration_seconds,
     fileSizeBytes: asset.file_size_bytes,
@@ -79,11 +83,12 @@ export function toLibraryAsset(
       asset.owner_approval_required && asset.owner_approved_at === null,
     processingStatus: asset.processing_status,
     processingStrategy: asset.processing_strategy,
-    publicUrl: asset.public_url,
     sourceMatches,
     status: asset.status,
-    thumbnailObjectKey: asset.thumbnail_object_key,
-    thumbnailUrl: asset.thumbnail_url,
+    thumbnailUrl:
+      asset.poster_status === "ready" && asset.thumbnail_object_key
+        ? `/api/media/assets/${encodeURIComponent(asset.id)}/poster`
+        : null,
     title: asset.title,
     visibility: asset.visibility,
     waveformPeaksUrl: asset.waveform_peaks_url,

@@ -16,9 +16,11 @@ import {
 } from "@/components/room/queue/contracts";
 import { useQueueNotifications } from "@/components/room/queue/queue-notifications";
 import {
+  type PlaylistItemKey,
   type PlaylistPreview,
   type PlaylistPreviewItem,
-  playlistItemKey,
+  playlistItemKeys,
+  playlistItemsForSelection,
 } from "@/components/room/shared/add-media/contracts";
 import {
   isDuplicateQueueSource,
@@ -66,9 +68,9 @@ export function ListenAddMediaPopover({
     null,
   );
   const [previewLoading, setPreviewLoading] = useState(false);
-  const [selectedPlaylistIds, setSelectedPlaylistIds] = useState<Set<string>>(
-    () => new Set(),
-  );
+  const [selectedPlaylistIds, setSelectedPlaylistIds] = useState<
+    Set<PlaylistItemKey>
+  >(() => new Set());
   const [url, setUrl] = useState("");
   const addDisabled = !canAddQueue || connectionStatus !== "connected";
   const loadDisabled = !canLoadSource || connectionStatus !== "connected";
@@ -187,13 +189,7 @@ export function ListenAddMediaPopover({
       const payload = await fetchPlaylistPreview(input, roomId);
 
       setPlaylistPreview(payload);
-      setSelectedPlaylistIds(
-        new Set(
-          payload.items
-            .filter((item) => !item.isUnavailable)
-            .map((item) => item.videoId),
-        ),
-      );
+      setSelectedPlaylistIds(playlistItemKeys(payload.items));
 
       if (payload.status !== "available") {
         setErrorMessage(
@@ -443,8 +439,9 @@ export function ListenAddMediaPopover({
       return;
     }
 
-    const selectedItems = playlistPreview.items.filter((item) =>
-      selectedPlaylistIds.has(playlistItemKey(item)),
+    const selectedItems = playlistItemsForSelection(
+      playlistPreview.items,
+      selectedPlaylistIds,
     );
 
     importPlaylistItems(selectedItems, "selected tracks");

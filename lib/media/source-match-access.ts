@@ -64,10 +64,14 @@ export function canExposeSourceMatchedAsset(
 }
 
 export function redactSourceMatchedAssetForResponse<
-  TAsset extends { thumbnailObjectKey?: string | null },
+  TAsset extends {
+    contentUrl?: string | null;
+    thumbnailUrl?: string | null;
+  },
 >(asset: TAsset): TAsset {
   return {
     ...asset,
-    thumbnailObjectKey: null,
+    contentUrl: null,
+    thumbnailUrl: null,
   };
 }

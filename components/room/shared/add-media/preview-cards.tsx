@@ -18,10 +18,16 @@ import { cx } from "@/lib/ui";
 import { getYouTubeAvailabilityLabel } from "@/lib/youtube/availability";
 import type {
   PendingDuplicateAdd,
+  PlaylistItemKey,
   PlaylistPreview,
   PlaylistPreviewItem,
 } from "./contracts";
-import { playlistItemKey } from "./contracts";
+import {
+  arePlaylistItemsSelected,
+  playlistItemKey,
+  playlistItemKeys,
+  updatePlaylistItemSelection,
+} from "./contracts";
 
 export function SinglePreviewCard({
   duplicate,
@@ -78,9 +84,9 @@ export function PlaylistPreviewCard({
   mode: "listen" | "watch";
   onCancel(): void;
   onImport(strategy: "all" | "selected" | "shuffle" | "smart"): void;
-  onSelectionChange(ids: Set<string>): void;
+  onSelectionChange(ids: Set<PlaylistItemKey>): void;
   preview: PlaylistPreview;
-  selectedIds: Set<string>;
+  selectedIds: Set<PlaylistItemKey>;
 }) {
   const [durationFilter, setDurationFilter] = useState("all");
   const [moreOptionsOpen, setMoreOptionsOpen] = useState(false);
@@ -122,17 +128,15 @@ export function PlaylistPreviewCard({
         return Number(isDuplicateItem(second)) - Number(isDuplicateItem(first));
       return first.position - second.position;
     });
-  const allVisibleSelected =
-    visibleItems.length > 0 &&
-    visibleItems.every((item) => selectedIds.has(playlistItemKey(item)));
+  const allVisibleSelected = arePlaylistItemsSelected(
+    visibleItems,
+    selectedIds,
+  );
 
   function setVisibleSelected(selected: boolean) {
-    const next = new Set(selectedIds);
-    for (const item of visibleItems) {
-      if (selected) next.add(playlistItemKey(item));
-      else next.delete(playlistItemKey(item));
-    }
-    onSelectionChange(next);
+    onSelectionChange(
+      updatePlaylistItemSelection(selectedIds, visibleItems, selected),
+    );
   }
 
   return (
@@ -235,11 +239,7 @@ export function PlaylistPreviewCard({
         </Button>
         <Button
           disabled={playableItems.length === 0}
-          onClick={() =>
-            onSelectionChange(
-              new Set(playableItems.map((item) => playlistItemKey(item))),
-            )
-          }
+          onClick={() => onSelectionChange(playlistItemKeys(playableItems))}
           size="sm"
           type="button"
           variant="ghost"
@@ -278,10 +278,9 @@ export function PlaylistPreviewCard({
                 disabled={unavailable}
                 onChange={() => {
                   if (unavailable) return;
-                  const next = new Set(selectedIds);
-                  if (selected) next.delete(itemKey);
-                  else next.add(itemKey);
-                  onSelectionChange(next);
+                  onSelectionChange(
+                    updatePlaylistItemSelection(selectedIds, [item], !selected),
+                  );
                 }}
                 type="checkbox"
               />

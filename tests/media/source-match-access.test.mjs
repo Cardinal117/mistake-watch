@@ -142,15 +142,15 @@ test("visibility query filter is public-only unless the account is an active own
 test("source-match response redaction removes storage object keys", () => {
   assert.deepEqual(
     redactSourceMatchedAssetForResponse({
+      contentUrl: "/api/media/assets/asset-1/content",
       id: "asset-1",
-      publicUrl: "https://media.example.test/public.mp4",
-      thumbnailObjectKey: "private/posters/asset-1.jpg",
+      thumbnailUrl: "/api/media/assets/asset-1/poster",
       title: "Uploaded Video",
     }),
     {
+      contentUrl: null,
       id: "asset-1",
-      publicUrl: "https://media.example.test/public.mp4",
-      thumbnailObjectKey: null,
+      thumbnailUrl: null,
       title: "Uploaded Video",
     },
   );

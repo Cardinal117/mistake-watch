@@ -16,6 +16,7 @@ export type WatchModeLayoutProps = {
 export type WatchSurfaceId = "audience" | "queue";
 
 export type MediaLibraryAsset = {
+  contentUrl: string | null;
   createdAt: string;
   durationSeconds: number | null;
   fileSizeBytes: number;
@@ -32,14 +33,12 @@ export type MediaLibraryAsset = {
   processingRequiresApproval: boolean;
   processingStatus: string;
   processingStrategy: string;
-  publicUrl: string;
   sourceMatches: Array<{
     sourceId: string;
     sourceType: string;
     status: string;
   }>;
   status: string;
-  thumbnailObjectKey: string | null;
   thumbnailUrl: string | null;
   title: string;
   visibility: string;
@@ -84,10 +83,7 @@ export type ClientMediaInspection = {
   videoCodecs: string[];
 };
 
-export type WatchMediaHubItem = Omit<
-  RoomQueueItem,
-  "status"
-> & {
+export type WatchMediaHubItem = Omit<RoomQueueItem, "status"> & {
   addedAt?: string;
   folderId?: string | null;
   isLive?: boolean;

@@ -3,14 +3,15 @@
 import { useEffect, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { ShieldX } from "lucide-react";
+import { AlertTriangle, RefreshCw, ShieldX } from "lucide-react";
 
 import { Button } from "@/components/ui";
 import { completeRoomTransition } from "@/lib/performance/room-transition";
 import type { AccountSummary } from "@/lib/account/types";
 import type { RoomSnapshot } from "@/lib/rooms";
 import { PLAYER_FULLSCREEN_EVENT } from "@/lib/player/local-controls";
-import { useLiveRoom } from "@/lib/spacetime";
+import { useLiveRoom, type LiveRoomState } from "@/lib/spacetime";
+import { getRoomConnectionPresentation } from "@/lib/spacetime/live-room/connection-readiness";
 
 const ListenModeLayout = dynamic(
   () =>
@@ -73,10 +74,10 @@ export function RoomExperience({
   }, []);
 
   useEffect(() => {
-    if (liveRoom.connectionStatus === "connected") {
+    if (liveRoom.connectionReadiness.status === "ready") {
       completeRoomTransition("Room connection");
     }
-  }, [liveRoom.connectionStatus]);
+  }, [liveRoom.connectionReadiness.status]);
 
   useEffect(() => {
     if (accountNotice === "guest-room-attached") {
@@ -100,6 +101,15 @@ export function RoomExperience({
     return <RoomRemovedNotice message={liveRoom.removalNotice} />;
   }
 
+  if (liveRoom.connectionReadiness.status !== "ready") {
+    return (
+      <RoomConnectionBoundary
+        readiness={liveRoom.connectionReadiness}
+        retry={liveRoom.retryConnection}
+      />
+    );
+  }
+
   if (liveRoomSnapshot.mode === "listen") {
     return (
       <ListenModeLayout
@@ -119,6 +129,54 @@ export function RoomExperience({
       room={liveRoomSnapshot}
       stageRef={stageRef}
     />
+  );
+}
+
+function RoomConnectionBoundary({
+  readiness,
+  retry,
+}: {
+  readiness: Exclude<LiveRoomState["connectionReadiness"], { status: "ready" }>;
+  retry(): void;
+}) {
+  const presentation = getRoomConnectionPresentation(readiness);
+  const terminal = presentation.canRetry;
+
+  return (
+    <main className="grid min-h-screen place-items-center bg-background px-margin-mobile text-on-surface">
+      <section
+        aria-busy={!terminal}
+        aria-live={terminal ? "assertive" : "polite"}
+        className="grid w-full max-w-md gap-4 rounded-lg border border-white/10 bg-surface/95 p-6 text-center"
+        role={terminal ? "alert" : "status"}
+      >
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-md border border-primary-fixed-dim/30 bg-primary-fixed-dim/10 text-primary-fixed-dim">
+          {terminal ? (
+            <AlertTriangle className="h-6 w-6" aria-hidden />
+          ) : (
+            <RefreshCw
+              className="h-6 w-6 animate-spin motion-reduce:animate-none"
+              aria-hidden
+            />
+          )}
+        </div>
+        <div>
+          <p className="technical-label text-primary-fixed-dim">Room signal</p>
+          <h1 className="mt-2 text-headline-md font-semibold text-on-surface">
+            {presentation.label}
+          </h1>
+          <p className="mt-2 text-body-md text-on-surface-variant">
+            {presentation.detail}
+          </p>
+        </div>
+        {terminal ? (
+          <Button className="mx-auto" onClick={retry} type="button">
+            <RefreshCw className="h-4 w-4" aria-hidden />
+            Retry connection
+          </Button>
+        ) : null}
+      </section>
+    </main>
   );
 }
 

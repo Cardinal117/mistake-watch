@@ -14,12 +14,14 @@
     "build": "next build",
     "benchmark:queue": "node scripts/benchmark-queue-derived-state.mjs",
     "start": "next start",
+    "test": "node --test",
     "test:identity": "node --test tests/identity/*.test.mjs",
     "test:dev": "node --test tests/dev/*.test.mjs",
     "test:queue": "node --test tests/queue/*.test.mjs",
     "test:spacetime": "node --test tests/spacetime/*.test.mjs",
     "test:sync": "node --test tests/player/*.test.mjs",
     "test:youtube": "node --test tests/youtube/*.test.mjs",
+    "test:e2e": "playwright test",
     "lint": "eslint .",
     "format": "prettier --check \"app/**/*.{ts,tsx,css}\" \"lib/**/*.ts\" \"scripts/**/*.mjs\" \"*.{json,mjs,ts}\"",
     "format:batch2": "prettier --check components/room/queue-panel.tsx components/room/queue components/room/shared components/room/listen/add-media lib/media/assets.ts lib/media/contracts.ts lib/media/shared.ts lib/media/folders lib/media/library lib/media/processing lib/media/source-matches lib/media/uploads scripts/check-file-lengths.mjs tests/dev/file-length-policy.test.mjs tests/media/source-match-access.test.mjs tests/media/uploaded-catalogue-policy.test.mjs tests/media/uploaded-playback-reference.test.mjs tests/queue/add-media-ui.test.mjs tests/queue/derived.test.mjs",
@@ -38,6 +40,7 @@
     "spacetimedb": "^2.3.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4.3.0",
     "@types/node": "^25.9.1",
     "@types/react": "^19.2.15",

@@ -166,8 +166,11 @@ test("playlist selection uses row keys instead of collapsing duplicate video ids
       source,
       /function playlistItemKey\(item: PlaylistPreviewItem\)/,
     );
+    assert.match(source, /type PlaylistItemKey = `\$\{string\}:\$\{number\}`/);
     assert.match(source, /\$\{item\.videoId\}:\$\{item\.position\}/);
-    assert.match(source, /selectedIds\.has\(playlistItemKey\(item\)\)/);
+    assert.match(source, /playlistItemKeys\(payload\.items\)/);
+    assert.match(source, /playlistItemsForSelection/);
+    assert.match(source, /updatePlaylistItemSelection/);
     assert.doesNotMatch(source, /key=\{item\.videoId\}/);
   }
 });

@@ -8,13 +8,15 @@ const envPath = path.join(process.cwd(), ".env.local");
 
 await loadDotEnv(envPath);
 
-const supabaseUrl = readRequiredEnv("NEXT_PUBLIC_SUPABASE_URL").replace(/\/+$/, "");
+const supabaseUrl = readRequiredEnv("NEXT_PUBLIC_SUPABASE_URL").replace(
+  /\/+$/,
+  "",
+);
 const supabaseSecretKey = readRequiredEnv("SUPABASE_SECRET_KEY");
 const r2Config = {
   accessKeyId: readRequiredEnv("CLOUDFLARE_R2_ACCESS_KEY_ID"),
   bucket: readRequiredEnv("CLOUDFLARE_R2_BUCKET"),
   endpoint: readRequiredEnv("CLOUDFLARE_R2_ENDPOINT").replace(/\/+$/, ""),
-  publicBaseUrl: readRequiredEnv("CLOUDFLARE_R2_PUBLIC_BASE_URL").replace(/\/+$/, ""),
   secretAccessKey: readRequiredEnv("CLOUDFLARE_R2_SECRET_ACCESS_KEY"),
 };
 
@@ -30,11 +32,27 @@ console.log(`Backfilling ${assets.length} poster thumbnail(s).`);
 let completed = 0;
 
 for (const asset of assets) {
-  const tempFile = path.join(os.tmpdir(), `mistake-watch-poster-${asset.id}.jpg`);
+  const tempFile = path.join(
+    os.tmpdir(),
+    `mistake-watch-poster-${asset.id}.jpg`,
+  );
 
   try {
     console.log(`- ${asset.title}`);
-    await extractPoster(asset.public_url, tempFile);
+    const sourceObjectKey = asset.processed_object_key || asset.r2_object_key;
+
+    if (!sourceObjectKey) {
+      throw new Error("Media asset has no playable object key.");
+    }
+
+    await extractPoster(
+      signR2Url({
+        expiresSeconds: 60 * 60,
+        method: "GET",
+        objectKey: sourceObjectKey,
+      }),
+      tempFile,
+    );
 
     const objectKey = createR2PosterObjectKey({
       assetId: asset.id,
@@ -48,16 +66,16 @@ for (const asset of assets) {
 
     await uploadPoster(uploadUrl, posterBytes);
 
-    const thumbnailUrl = getR2PublicUrl(objectKey);
+    const thumbnailReference = getPrivateR2Reference(objectKey);
 
     await updateAsset(asset.id, {
       poster_status: "ready",
       thumbnail_object_key: objectKey,
-      thumbnail_url: thumbnailUrl,
+      thumbnail_url: thumbnailReference,
     });
 
     completed += 1;
-    console.log(`  ready: ${thumbnailUrl}`);
+    console.log(`  ready: ${objectKey}`);
   } catch (error) {
     await updateAsset(asset.id, {
       poster_status: "failed",
@@ -75,7 +93,7 @@ console.log(`Poster backfill complete: ${completed}/${assets.length} updated.`);
 async function fetchMissingPosterAssets() {
   const query = new URLSearchParams({
     order: "created_at.asc",
-    select: "id,title,public_url,owner_user_id",
+    select: "id,title,owner_user_id,processed_object_key,r2_object_key",
     status: "eq.ready",
     thumbnail_url: "is.null",
   });
@@ -172,8 +190,8 @@ function createR2PosterObjectKey(input) {
   return `media-posters/${input.ownerUserId}/${day}/${input.assetId}.jpg`;
 }
 
-function getR2PublicUrl(objectKey) {
-  return `${r2Config.publicBaseUrl}/${objectKey
+function getPrivateR2Reference(objectKey) {
+  return `r2-private://${encodeURIComponent(r2Config.bucket)}/${objectKey
     .split("/")
     .map((part) => encodeURIComponent(part))
     .join("/")}`;
@@ -198,7 +216,8 @@ function signR2Url(input) {
     .split("/")
     .map((part) => encodeURIComponent(part))
     .join("/")}`;
-  const signedHeaders = "content-type;host";
+  const shouldSignContentType = Boolean(input.contentType);
+  const signedHeaders = shouldSignContentType ? "content-type;host" : "host";
   const query = new URLSearchParams({
     "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
     "X-Amz-Credential": `${r2Config.accessKeyId}/${credentialScope}`,
@@ -210,7 +229,9 @@ function signR2Url(input) {
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([key, value]) => `${encodeRfc3986(key)}=${encodeRfc3986(value)}`)
     .join("&");
-  const canonicalHeaders = `content-type:${input.contentType}\nhost:${endpoint.host}\n`;
+  const canonicalHeaders = shouldSignContentType
+    ? `content-type:${input.contentType}\nhost:${endpoint.host}\n`
+    : `host:${endpoint.host}\n`;
   const canonicalRequest = [
     input.method,
     canonicalUri,
@@ -295,7 +316,8 @@ function getSignatureKey(secretAccessKey, dateStamp, regionName, serviceName) {
 }
 
 function encodeRfc3986(value) {
-  return encodeURIComponent(value).replace(/[!'()*]/g, (character) =>
-    `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
+  return encodeURIComponent(value).replace(
+    /[!'()*]/g,
+    (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
   );
 }

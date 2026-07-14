@@ -1555,6 +1555,82 @@ Safe commit point:
 
 - Listen mode has a defined AI/session-intelligence path without pulling AI scope into current discovery or card-drift work.
 
+## TASK-002.10D: First-Party Recommendation Intelligence
+
+Source task: roadmap reconciliation after provider rows and room picks existed
+without a complete first-party recommendation contract.
+
+Work:
+
+- Define observable first-party playback, skip, completion, queue, contributor,
+  and session-context events.
+- Build deterministic, explainable candidate scoring before AI presentation.
+- Include recency, repetition limits, diversity, source availability, room mode,
+  and current queue/history exclusions.
+- Record why a candidate was recommended and keep ranking inputs inspectable.
+- Measure latency and cache behavior so recommendations do not regress Add Media
+  or large-queue performance.
+- Keep recommendations advisory and permission-aware.
+
+Review checkpoint:
+
+- Recommendation rows are based on real first-party evidence, explain their
+  source, avoid obvious repeats, and remain fast enough for room use.
+
+Safe commit point:
+
+- A deterministic recommendation foundation exists for discovery and AI DJ.
+
+## TASK-002.10E: Consented YouTube Account Signals
+
+Source task: explicit provider-account follow-up that must not be hidden inside
+the basic Google identity or social task.
+
+Work:
+
+- Confirm official YouTube API support for the exact playlist and subscription
+  signals before requesting scopes.
+- Use incremental consent with feature-specific copy and revocation.
+- Keep provider access and refresh tokens server-only and auditable.
+- Import only user-approved data and preserve first-party history as the primary
+  recommendation source.
+- Do not claim access to the private YouTube home recommendation feed.
+
+Review checkpoint:
+
+- Users understand what YouTube data is requested, why it is needed, how it is
+  revoked, and which recommendations remain first-party.
+
+Safe commit point:
+
+- YouTube account signals can enrich discovery without broadening initial login.
+
+## TASK-002.10F: Add/Discover and Watch Discovery Overhaul
+
+Source task: deferred product direction for a faster Add Media workspace and a
+streaming-style Watch discovery surface.
+
+Work:
+
+- Redesign Add Media as a compact search, playlist, upload, direct-link, and
+  recommendation workspace with clear source and permission states.
+- Reuse the first-party recommendation contract and cached provider metadata.
+- Evolve Watch discovery into scannable rows/rails for relevant room and account
+  suggestions while keeping the video stage and synchronized room primary.
+- Preserve guest privacy, uploaded-catalogue authorization, keyboard/mobile
+  ergonomics, and large-list virtualization.
+- Establish performance budgets before visual expansion.
+
+Review checkpoint:
+
+- Add/Discover is faster to operate, Watch discovery feels useful rather than
+  decorative, and neither surface weakens playback or queue performance.
+
+Safe commit point:
+
+- Discovery surfaces are ready for AI DJ suggestions without embedding ranking
+  logic inside presentation components.
+
 ## TASK-002.11: Shared Browser Prototype
 
 Source task: TASK-001 later shared browser direction.

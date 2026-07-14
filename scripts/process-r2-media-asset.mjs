@@ -15,25 +15,43 @@ if (!assetId) {
   process.exit(1);
 }
 
-const supabaseUrl = readRequiredEnv("NEXT_PUBLIC_SUPABASE_URL").replace(/\/+$/, "");
+const supabaseUrl = readRequiredEnv("NEXT_PUBLIC_SUPABASE_URL").replace(
+  /\/+$/,
+  "",
+);
 const supabaseSecretKey = readRequiredEnv("SUPABASE_SECRET_KEY");
 const r2Config = {
   accessKeyId: readRequiredEnv("CLOUDFLARE_R2_ACCESS_KEY_ID"),
   bucket: readRequiredEnv("CLOUDFLARE_R2_BUCKET"),
   endpoint: readRequiredEnv("CLOUDFLARE_R2_ENDPOINT").replace(/\/+$/, ""),
-  publicBaseUrl: readRequiredEnv("CLOUDFLARE_R2_PUBLIC_BASE_URL").replace(/\/+$/, ""),
   secretAccessKey: readRequiredEnv("CLOUDFLARE_R2_SECRET_ACCESS_KEY"),
 };
 
 const asset = await fetchAsset(assetId);
-const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "mistake-watch-process-"));
+const tempDir = await fsp.mkdtemp(
+  path.join(os.tmpdir(), "mistake-watch-process-"),
+);
 const outputPath = path.join(tempDir, `${asset.id}.browser.mp4`);
 const posterPath = path.join(tempDir, `${asset.id}.jpg`);
 
 try {
   console.log(`Processing: ${asset.title}`);
-  console.log(`Source: ${asset.public_url}`);
-  await transcodeBrowserMp4(asset.public_url, outputPath);
+  const sourceObjectKey = asset.source_object_key || asset.r2_object_key;
+
+  if (!sourceObjectKey) {
+    throw new Error("Media asset has no source object key.");
+  }
+
+  console.log(`Source object: ${sourceObjectKey}`);
+  await transcodeBrowserMp4(
+    signR2Url({
+      config: r2Config,
+      expiresSeconds: 60 * 60,
+      method: "GET",
+      objectKey: sourceObjectKey,
+    }),
+    outputPath,
+  );
   const outputStat = await fsp.stat(outputPath);
   const durationSeconds = await readDurationSeconds(outputPath);
   const processedObjectKey = createProcessedObjectKey(asset);
@@ -55,32 +73,34 @@ try {
     objectKey: posterObjectKey,
   });
 
-  const processedUrl = getR2PublicUrl(processedObjectKey);
-  const posterUrl = getR2PublicUrl(posterObjectKey);
+  const processedReference = getPrivateR2Reference(processedObjectKey);
+  const posterReference = getPrivateR2Reference(posterObjectKey);
 
   await updateAsset(asset.id, {
     duration_seconds: durationSeconds,
     file_size_bytes: outputStat.size,
     mime_type: "video/mp4",
     poster_status: "ready",
-    public_url: processedUrl,
+    public_url: processedReference,
     r2_object_key: processedObjectKey,
     status: "ready",
     thumbnail_object_key: posterObjectKey,
-    thumbnail_url: posterUrl,
+    thumbnail_url: posterReference,
   });
 
-  console.log(`Processed URL: ${processedUrl}`);
-  console.log(`Poster URL: ${posterUrl}`);
+  console.log(`Processed object: ${processedObjectKey}`);
+  console.log(`Poster object: ${posterObjectKey}`);
   console.log("Asset repaired.");
 } finally {
-  await fsp.rm(tempDir, { force: true, recursive: true }).catch(() => undefined);
+  await fsp
+    .rm(tempDir, { force: true, recursive: true })
+    .catch(() => undefined);
 }
 
 async function fetchAsset(id) {
   const query = new URLSearchParams({
     id: `eq.${id}`,
-    select: "id,title,owner_user_id,public_url,r2_object_key",
+    select: "id,title,owner_user_id,r2_object_key,source_object_key",
   });
   const response = await fetch(`${supabaseUrl}/rest/v1/media_assets?${query}`, {
     headers: supabaseHeaders(),
@@ -268,7 +288,8 @@ async function uploadFileToR2(input) {
 }
 
 function createProcessedObjectKey(asset) {
-  const sourceKey = asset.r2_object_key || `media/${asset.owner_user_id}/${asset.id}.mp4`;
+  const sourceKey =
+    asset.r2_object_key || `media/${asset.owner_user_id}/${asset.id}.mp4`;
   const base = sourceKey
     .replace(/^media\//, "media-processed/")
     .replace(/\.[^/.]+$/, "");
@@ -282,8 +303,8 @@ function createPosterObjectKey(asset) {
   return `media-posters/${asset.owner_user_id}/${day}/${asset.id}.jpg`;
 }
 
-function getR2PublicUrl(objectKey) {
-  return `${r2Config.publicBaseUrl}/${objectKey
+function getPrivateR2Reference(objectKey) {
+  return `r2-private://${encodeURIComponent(r2Config.bucket)}/${objectKey
     .split("/")
     .map((part) => encodeURIComponent(part))
     .join("/")}`;
@@ -301,7 +322,8 @@ function signR2Url(input) {
     .split("/")
     .map((part) => encodeURIComponent(part))
     .join("/")}`;
-  const signedHeaders = "content-type;host";
+  const shouldSignContentType = Boolean(input.contentType);
+  const signedHeaders = shouldSignContentType ? "content-type;host" : "host";
   const query = new URLSearchParams({
     "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
     "X-Amz-Credential": `${input.config.accessKeyId}/${credentialScope}`,
@@ -323,7 +345,9 @@ function signR2Url(input) {
     })
     .map(([key, value]) => `${encodeRfc3986(key)}=${encodeRfc3986(value)}`)
     .join("&");
-  const canonicalHeaders = `content-type:${input.contentType}\nhost:${endpoint.host}\n`;
+  const canonicalHeaders = shouldSignContentType
+    ? `content-type:${input.contentType}\nhost:${endpoint.host}\n`
+    : `host:${endpoint.host}\n`;
   const canonicalRequest = [
     input.method,
     canonicalUri,
@@ -373,7 +397,10 @@ function loadDotEnv(filePath) {
     }
 
     const key = trimmed.slice(0, separator).trim();
-    const value = trimmed.slice(separator + 1).trim().replace(/^["']|["']$/g, "");
+    const value = trimmed
+      .slice(separator + 1)
+      .trim()
+      .replace(/^["']|["']$/g, "");
 
     process.env[key] ??= value;
   }

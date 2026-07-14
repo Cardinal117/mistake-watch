@@ -10,8 +10,8 @@ import { buildCloudConvertMediaJobPayload } from "./cloudconvert-payload";
 import {
   createR2CloudConvertPosterObjectKey,
   createR2ProcessedObjectKey,
+  createPrivateR2Reference,
   getR2Config,
-  getR2PublicUrl,
 } from "./r2";
 
 const cloudConvertApiBase = "https://api.cloudconvert.com/v2";
@@ -125,13 +125,16 @@ export async function createCloudConvertMediaJob(input: {
     },
     method: "POST",
   });
-  const body = (await response.json().catch(() => ({}))) as CloudConvertJobResponse & {
+  const body = (await response
+    .json()
+    .catch(() => ({}))) as CloudConvertJobResponse & {
     message?: string;
   };
 
   if (!response.ok || !body.data?.id) {
     throw new CloudConvertError(
-      readCloudConvertError(body) ?? `CloudConvert job could not be created (${response.status}).`,
+      readCloudConvertError(body) ??
+        `CloudConvert job could not be created (${response.status}).`,
       response.status >= 400 && response.status < 500 ? 400 : 502,
     );
   }
@@ -147,24 +150,28 @@ export async function createCloudConvertMediaJob(input: {
   return {
     job: body.data,
     posterObjectKey,
-    posterUrl: getR2PublicUrl(posterObjectKey, r2),
     processedObjectKey,
-    processedUrl: getR2PublicUrl(processedObjectKey, r2),
   };
 }
 
 export async function getCloudConvertJob(jobId: string) {
   const token = readCloudConvertToken();
-  const response = await fetch(`${cloudConvertApiBase}/jobs/${encodeURIComponent(jobId)}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  const body = (await response.json().catch(() => ({}))) as CloudConvertJobResponse & {
+  const response = await fetch(
+    `${cloudConvertApiBase}/jobs/${encodeURIComponent(jobId)}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+  const body = (await response
+    .json()
+    .catch(() => ({}))) as CloudConvertJobResponse & {
     message?: string;
   };
 
   if (!response.ok || !body.data) {
     throw new CloudConvertError(
-      readCloudConvertError(body) ?? `CloudConvert job could not be loaded (${response.status}).`,
+      readCloudConvertError(body) ??
+        `CloudConvert job could not be loaded (${response.status}).`,
       response.status >= 400 && response.status < 500 ? 400 : 502,
     );
   }
@@ -213,7 +220,11 @@ export async function syncCloudConvertJob(input: {
   }
 
   if (job.status === "error" || job.status === "failed") {
-    return markCloudConvertAssetFailed(input.asset, getJobFailureMessage(job), job);
+    return markCloudConvertAssetFailed(
+      input.asset,
+      getJobFailureMessage(job),
+      job,
+    );
   }
 
   const admin = createSupabaseAdminClient();
@@ -260,11 +271,17 @@ export async function markCloudConvertAssetReady(
       processing_completed_at: new Date().toISOString(),
       processing_error_message: null,
       processing_status: "ready",
-      public_url: getR2PublicUrl(processedObjectKey, r2),
+      public_url: createPrivateR2Reference({
+        bucket: r2.bucket,
+        objectKey: processedObjectKey,
+      }),
       r2_object_key: processedObjectKey,
       status: "ready",
       thumbnail_object_key: posterObjectKey,
-      thumbnail_url: getR2PublicUrl(posterObjectKey, r2),
+      thumbnail_url: createPrivateR2Reference({
+        bucket: r2.bucket,
+        objectKey: posterObjectKey,
+      }),
       waveform_status: "missing",
     })
     .eq("id", asset.id)
@@ -379,7 +396,8 @@ export async function getCloudConvertDiagnostics(): Promise<CloudConvertDiagnost
 
     if (!response.ok) {
       throw new Error(
-        readCloudConvertError(payload) ?? `CloudConvert returned ${response.status}.`,
+        readCloudConvertError(payload) ??
+          `CloudConvert returned ${response.status}.`,
       );
     }
 
@@ -493,9 +511,7 @@ function getJobFailureMessage(job: CloudConvertJob) {
     return "CloudConvert rejected the audio bitrate setting. Retry with the corrected conversion profile.";
   }
 
-  return (
-    message ?? "CloudConvert could not process this video."
-  );
+  return message ?? "CloudConvert could not process this video.";
 }
 
 function readCloudConvertToken() {

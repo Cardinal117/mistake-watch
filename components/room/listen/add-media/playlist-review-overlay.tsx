@@ -7,9 +7,12 @@ import { Badge, Button } from "@/components/ui";
 import { cx } from "@/lib/ui";
 import { getYouTubeAvailabilityLabel } from "@/lib/youtube/availability";
 import {
+  arePlaylistItemsSelected,
+  type PlaylistItemKey,
   type PlaylistPreview,
   type PlaylistPreviewItem,
   playlistItemKey,
+  updatePlaylistItemSelection,
 } from "@/components/room/shared/add-media/contracts";
 import { QueueArtwork } from "@/components/room/listen/discovery/media-cards";
 
@@ -30,9 +33,9 @@ export function ListenPlaylistReviewOverlay({
   onClose(): void;
   onImportAll(): void;
   onImportSelected(): void;
-  onSelectionChange(ids: Set<string>): void;
+  onSelectionChange(ids: Set<PlaylistItemKey>): void;
   preview: PlaylistPreview;
-  selectedIds: Set<string>;
+  selectedIds: Set<PlaylistItemKey>;
 }) {
   const [durationFilter, setDurationFilter] = useState("all");
   const [moreOptionsOpen, setMoreOptionsOpen] = useState(false);
@@ -81,27 +84,22 @@ export function ListenPlaylistReviewOverlay({
 
       return first.position - second.position;
     });
-  const allSelected =
-    playableItems.length > 0 &&
-    playableItems.every((item) => selectedIds.has(playlistItemKey(item)));
+  const allSelected = arePlaylistItemsSelected(playableItems, selectedIds);
 
-  function toggleItem(itemKey: string) {
-    const next = new Set(selectedIds);
-
-    if (next.has(itemKey)) {
-      next.delete(itemKey);
-    } else {
-      next.add(itemKey);
-    }
-
-    onSelectionChange(next);
+  function toggleItem(item: PlaylistPreviewItem) {
+    const itemKey = playlistItemKey(item);
+    onSelectionChange(
+      updatePlaylistItemSelection(
+        selectedIds,
+        [item],
+        !selectedIds.has(itemKey),
+      ),
+    );
   }
 
   function setAllSelected(selected: boolean) {
     onSelectionChange(
-      selected
-        ? new Set(playableItems.map((item) => playlistItemKey(item)))
-        : new Set(),
+      updatePlaylistItemSelection(selectedIds, playableItems, selected),
     );
   }
 
@@ -265,7 +263,7 @@ export function ListenPlaylistReviewOverlay({
                         disabled={unavailable}
                         onChange={() => {
                           if (!unavailable) {
-                            toggleItem(itemKey);
+                            toggleItem(item);
                           }
                         }}
                         type="checkbox"

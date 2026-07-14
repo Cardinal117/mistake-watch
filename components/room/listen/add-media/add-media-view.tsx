@@ -20,6 +20,7 @@ import {
 } from "@/components/room/listen/discovery/media-cards";
 import type {
   DuplicatePreference,
+  PlaylistItemKey,
   PlaylistPreview,
   PlaylistPreviewItem,
 } from "@/components/room/shared/add-media/contracts";
@@ -62,7 +63,7 @@ type ListenAddMediaViewProps = {
   playlistReviewOpen: boolean;
   previewLoading: boolean;
   roomId: string;
-  selectedPlaylistIds: Set<string>;
+  selectedPlaylistIds: Set<PlaylistItemKey>;
   setDuplicatePreference: Dispatch<SetStateAction<DuplicatePreference>>;
   setErrorMessage: Dispatch<SetStateAction<string | null>>;
   setImportSummary: Dispatch<SetStateAction<string | null>>;
@@ -76,7 +77,7 @@ type ListenAddMediaViewProps = {
   >;
   setPlaylistPreview: Dispatch<SetStateAction<PlaylistPreview | null>>;
   setPlaylistReviewOpen: Dispatch<SetStateAction<boolean>>;
-  setSelectedPlaylistIds: Dispatch<SetStateAction<Set<string>>>;
+  setSelectedPlaylistIds: Dispatch<SetStateAction<Set<PlaylistItemKey>>>;
   setSinglePreview: Dispatch<SetStateAction<QueueAddInput | null>>;
   setUrl: Dispatch<SetStateAction<string>>;
   singlePreview: QueueAddInput | null;
