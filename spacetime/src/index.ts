@@ -869,6 +869,7 @@ function commitQueueAdvance(
     >
   >,
   sourceUrl: string,
+  playbackStatus: "paused" | "playing" = "playing",
 ) {
   for (const item of roomQueueItems(ctx, session.room_id)) {
     if (item.queue_item_id === nextQueueItem.queue_item_id) {
@@ -896,7 +897,7 @@ function commitQueueAdvance(
     source_title: nextQueueItem.title ?? nextQueueItem.source_url,
     source_type: normalizeSourceType(nextQueueItem.source_type),
     source_url: sourceUrl,
-    status: "playing",
+    status: playbackStatus,
   });
 
   normalizeQueuedPositions(ctx, session.room_id);
@@ -1907,6 +1908,44 @@ export const advance_uploaded_queue_item = spacetimedb.reducer(
   },
 );
 
+export const play_uploaded_queue_item = spacetimedb.reducer(
+  {
+    actor_member_id: t.string(),
+    queue_item_id: t.string(),
+    resolved_source_url: t.string(),
+    room_id: t.string(),
+  },
+  (ctx, { actor_member_id, queue_item_id, resolved_source_url, room_id }) => {
+    const authority = getAuthorizedPlaybackActor(ctx, room_id, actor_member_id);
+    const queueItem = ctx.db.live_queue_item.queue_item_id.find(
+      queue_item_id.trim(),
+    );
+
+    if (
+      !authority ||
+      !queueItem ||
+      queueItem.room_id !== room_id ||
+      queueItem.is_unavailable ||
+      (queueItem.status !== "queued" &&
+        queueItem.status !== "playing" &&
+        queueItem.status !== "played")
+    ) {
+      return;
+    }
+
+    const sourceUrl = resolveQueuePlaybackSource(
+      queueItem.source_url,
+      resolved_source_url.trim(),
+    );
+
+    if (!sourceUrl) {
+      return;
+    }
+
+    commitQueueAdvance(ctx, authority.session, queueItem, sourceUrl);
+  },
+);
+
 export const report_media_failure = spacetimedb.reducer(
   {
     actor_member_id: t.string(),
@@ -2071,40 +2110,13 @@ export const play_queue_item = spacetimedb.reducer(
       return;
     }
 
-    for (const item of ctx.db.live_queue_item.iter()) {
-      if (item.room_id !== room_id) {
-        continue;
-      }
-
-      if (item.queue_item_id === queue_item_id) {
-        replaceQueueItem(ctx, item, {
-          is_play_next: false,
-          played_sequence: 0,
-          status: "playing",
-        });
-      } else if (item.status === "playing") {
-        replaceQueueItem(ctx, item, {
-          played_sequence: nextPlayedSequence(ctx, room_id),
-          status: "played",
-        });
-      }
-    }
-
-    ctx.db.room_session.delete(authority.session);
-    ctx.db.room_session.insert({
-      ...authority.session,
-      active_queue_item_id: queue_item_id,
-      playback_rate: 1,
-      position_seconds: 0,
-      server_updated_ms: nowMs(),
-      source_duration_seconds: queueItem.duration_seconds,
-      source_title: queueItem.title ?? queueItem.source_url,
-      source_type: normalizeSourceType(queueItem.source_type),
-      source_url: queueItem.source_url,
-      status: "paused",
-    });
-
-    normalizeQueuedPositions(ctx, room_id);
+    commitQueueAdvance(
+      ctx,
+      authority.session,
+      queueItem,
+      queueItem.source_url,
+      "paused",
+    );
   },
 );
 

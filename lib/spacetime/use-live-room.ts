@@ -14,10 +14,8 @@ import {
 } from "@/lib/rooms/actions";
 import type { QueueMode } from "@/lib/queue/model";
 import type { RoomParticipant, RoomSnapshot } from "@/lib/rooms";
-import {
-  createUploadedSessionReference,
-  parseUploadedAssetReference,
-} from "@/lib/media/uploaded-playback-reference";
+import { parseUploadedAssetReference } from "@/lib/media/uploaded-playback-reference";
+import { createUploadedPlaybackSessionReference } from "@/lib/media/uploaded-room-session-client";
 import { predictNextQueueItem } from "@/lib/player/next-item-preparation";
 import { DbConnection } from "./generated";
 import type {
@@ -132,6 +130,12 @@ type LiveReducers = {
   playQueueItem(params: {
     actorMemberId: string;
     queueItemId: string;
+    roomId: string;
+  }): Promise<void>;
+  playUploadedQueueItem(params: {
+    actorMemberId: string;
+    queueItemId: string;
+    resolvedSourceUrl: string;
     roomId: string;
   }): Promise<void>;
   removeQueueItem(params: {
@@ -848,26 +852,26 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     );
 
     if (uploadedQueueItem && uploadedAssetId) {
-      const uploadedSession = await createUploadedPlaybackSession({
-        assetId: uploadedAssetId,
-        roomId: room.id,
-      });
+      try {
+        const resolvedSourceUrl = await createUploadedPlaybackSessionReference({
+          assetId: uploadedAssetId,
+          roomId: room.id,
+        });
 
-      await reducers.loadMediaSource({
-        actorMemberId: currentMember.id,
-        roomId: room.id,
-        sourceTitle: uploadedQueueItem.title ?? "Uploaded media",
-        sourceType: "direct",
-        sourceUrl: createUploadedSessionReference(uploadedSession.id),
-      });
+        await reducers.playUploadedQueueItem({
+          actorMemberId: currentMember.id,
+          queueItemId: uploadedQueueItem.queueItemId,
+          resolvedSourceUrl,
+          roomId: room.id,
+        });
+      } catch (error) {
+        setErrorMessage(
+          error instanceof Error && error.message.trim()
+            ? error.message
+            : "Uploaded media session could not start.",
+        );
+      }
 
-      await reducers.setPlaybackState({
-        actorMemberId: currentMember.id,
-        playbackRate: 1,
-        positionSeconds: 0,
-        roomId: room.id,
-        status: "playing",
-      });
       return;
     }
 
@@ -905,16 +909,10 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     );
     if (nextQueueItem && nextUploadedAssetId) {
       try {
-        const uploadedSession = await createUploadedPlaybackSession({
+        const resolvedSourceUrl = await createUploadedPlaybackSessionReference({
           assetId: nextUploadedAssetId,
           roomId: room.id,
         });
-
-        if (uploadedSession.assetId !== nextUploadedAssetId) {
-          throw new Error(
-            "Uploaded media session did not match the queued asset.",
-          );
-        }
 
         await reducers.advanceUploadedQueueItem({
           actorMemberId: currentMember.id,
@@ -922,7 +920,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
           expectedActiveQueueItemId: session.activeQueueItemId ?? undefined,
           expectedNextQueueItemId: nextQueueItem.queueItemId,
           expectedSourceUrl: session.sourceUrl ?? undefined,
-          resolvedSourceUrl: createUploadedSessionReference(uploadedSession.id),
+          resolvedSourceUrl,
           roomId: room.id,
         });
       } catch (error) {
@@ -1174,30 +1172,6 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     updateMediaTitle,
     snapshot,
   };
-}
-
-async function createUploadedPlaybackSession(input: {
-  assetId: string;
-  roomId: string;
-}) {
-  const response = await fetch("/api/media/room-sessions", {
-    body: JSON.stringify(input),
-    headers: { "Content-Type": "application/json" },
-    method: "POST",
-  });
-  const payload = (await response.json()) as {
-    error?: string;
-    session?: {
-      assetId: string;
-      id: string;
-    };
-  };
-
-  if (!response.ok || !payload.session) {
-    throw new Error(payload.error ?? "Uploaded media session could not start.");
-  }
-
-  return payload.session;
 }
 
 function buildFallbackSnapshot(room: RoomSnapshot): LiveRoomSnapshot {

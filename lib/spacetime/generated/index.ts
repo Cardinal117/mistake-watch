@@ -47,6 +47,7 @@ import LeaveRoomReducer from "./leave_room_reducer";
 import LoadMediaSourceReducer from "./load_media_source_reducer";
 import MoveQueueItemReducer from "./move_queue_item_reducer";
 import PlayQueueItemReducer from "./play_queue_item_reducer";
+import PlayUploadedQueueItemReducer from "./play_uploaded_queue_item_reducer";
 import RemoveIdleMemberReducer from "./remove_idle_member_reducer";
 import RemoveQueueItemReducer from "./remove_queue_item_reducer";
 import ReportMediaFailureReducer from "./report_media_failure_reducer";
@@ -200,6 +201,7 @@ const reducersSchema = __reducers(
   __reducerSchema("load_media_source", LoadMediaSourceReducer),
   __reducerSchema("move_queue_item", MoveQueueItemReducer),
   __reducerSchema("play_queue_item", PlayQueueItemReducer),
+  __reducerSchema("play_uploaded_queue_item", PlayUploadedQueueItemReducer),
   __reducerSchema("remove_idle_member", RemoveIdleMemberReducer),
   __reducerSchema("remove_queue_item", RemoveQueueItemReducer),
   __reducerSchema("report_media_failure", ReportMediaFailureReducer),

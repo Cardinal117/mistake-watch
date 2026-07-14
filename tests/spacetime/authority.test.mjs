@@ -196,10 +196,19 @@ test("played queue items receive server-authoritative history sequence", () => {
     "export const play_queue_item",
     "export const move_queue_item",
   );
+  const commitHelper = sectionBetween(
+    spacetimeSource,
+    "function commitQueueAdvance",
+    "function normalizeQueuedPositions",
+  );
 
   assert.match(helper, /played_sequence/);
-  assert.match(reducer, /played_sequence:\s*nextPlayedSequence\(ctx,\s*room_id\)/);
-  assert.match(reducer, /played_sequence:\s*0/);
+  assert.match(reducer, /commitQueueAdvance/);
+  assert.match(
+    commitHelper,
+    /played_sequence:\s*nextPlayedSequence\(ctx,\s*session\.room_id\)/,
+  );
+  assert.match(commitHelper, /played_sequence:\s*0/);
 });
 
 test("autoplay queue advancement is atomic and stale-safe", () => {

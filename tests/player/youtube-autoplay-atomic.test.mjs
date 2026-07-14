@@ -20,6 +20,10 @@ const liveRoomSource = await readFile(
   path.join(root, "lib/spacetime/use-live-room.ts"),
   "utf8",
 );
+const uploadedSessionClientSource = await readFile(
+  path.join(root, "lib/media/uploaded-room-session-client.ts"),
+  "utf8",
+);
 const spacetimeModuleSource = await readFile(
   path.join(root, "spacetime/src/index.ts"),
   "utf8",
@@ -55,8 +59,8 @@ test("live room autoplay uses the atomic advance reducer", () => {
     /expectedNextQueueItemId:\s*nextQueueItem\.queueItemId/,
   );
   assert.match(advance, /expectedSourceUrl:\s*session\.sourceUrl/);
-  assert.match(advance, /resolvedSourceUrl:\s*createUploadedSessionReference/);
-  assert.match(advance, /uploadedSession\.assetId !== nextUploadedAssetId/);
+  assert.match(advance, /createUploadedPlaybackSessionReference/);
+  assert.match(advance, /resolvedSourceUrl/);
   assert.match(
     advance,
     /catch \(error\)[\s\S]*setErrorMessage\([\s\S]*return;/,
@@ -65,6 +69,41 @@ test("live room autoplay uses the atomic advance reducer", () => {
   assert.doesNotMatch(advance, /reducers\.loadMediaSource/);
   assert.doesNotMatch(advance, /reducers\.playQueueItem/);
   assert.doesNotMatch(advance, /reducers\.setPlaybackState/);
+});
+
+test("manual uploaded playback atomically promotes the selected queue item", () => {
+  const manualPlay = sectionBetween(
+    liveRoomSource,
+    "async function playQueueItemNow",
+    "async function advanceToNextQueueItem",
+  );
+  const uploadedReducer = sectionBetween(
+    spacetimeModuleSource,
+    "export const play_uploaded_queue_item",
+    "export const report_media_failure",
+  );
+
+  assert.match(manualPlay, /reducers\.playUploadedQueueItem/);
+  assert.match(manualPlay, /createUploadedPlaybackSessionReference/);
+  assert.match(manualPlay, /resolvedSourceUrl/);
+  assert.doesNotMatch(manualPlay, /reducers\.loadMediaSource/);
+  assert.match(uploadedSessionClientSource, /\/api\/media\/room-sessions/);
+  assert.match(
+    uploadedSessionClientSource,
+    /payload\.session\.assetId !== input\.assetId/,
+  );
+  assert.match(
+    uploadedSessionClientSource,
+    /createUploadedSessionReference\(payload\.session\.id\)/,
+  );
+  assert.match(uploadedReducer, /getAuthorizedPlaybackActor/);
+  assert.match(uploadedReducer, /resolveQueuePlaybackSource/);
+  assert.match(uploadedReducer, /commitQueueAdvance/);
+  assert.ok(
+    uploadedReducer.indexOf("resolveQueuePlaybackSource") <
+      uploadedReducer.indexOf("commitQueueAdvance"),
+    "uploaded session source must be validated before queue mutation",
+  );
 });
 
 test("queue advancement consumes one-shot play-next priority", () => {
@@ -87,7 +126,7 @@ test("queue advancement consumes one-shot play-next priority", () => {
   assert.match(queueCommit, /is_play_next:\s*false/);
   assert.match(queueCommit, /status:\s*"playing"/);
   assert.match(failureAdvance, /commitQueueAdvance/);
-  assert.match(manualPlay, /is_play_next:\s*false/);
+  assert.match(manualPlay, /commitQueueAdvance/);
 });
 
 test("youtube ended event advances before publishing ended when autoplay can continue", () => {

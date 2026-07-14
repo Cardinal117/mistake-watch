@@ -97,11 +97,21 @@ remains the release check.
 - [x] Build the SpacetimeDB module and run focused sync, reducer, and queue
   suites.
 - [x] Publish the behavior-only SpacetimeDB update before retesting production.
+- [x] Trace the remaining manual-only failure to uploaded `playQueueItemNow`,
+  which loaded the session source without promoting the selected queue row.
+- [x] Add an uploaded-aware manual-play reducer that validates the opaque
+  session reference and commits queue history, active item, source, and
+  playback state atomically.
+- [x] Regenerate client bindings and pass sync, authority, typecheck, lint, and
+  production-build gates.
+- [ ] Publish the additive manual-play reducer before deploying its frontend
+  caller.
 - [ ] Confirm manual and automatic uploaded advancement remove the NEXT badge
-  for the owner and a second participant.
+  for the owner and a second participant, and that Previous leaves the uploaded
+  item instead of replaying it.
 
-MW-BUG-003 status: fix committed as `867e7b0` and published without a breaking
-migration; live owner/two-client QA remains.
+MW-BUG-003 status: the natural-advance fix is published; the manual uploaded
+selection follow-up is implemented and awaiting ordered release plus live QA.
 
 ## Batch 3: Realtime and loading boundaries
 

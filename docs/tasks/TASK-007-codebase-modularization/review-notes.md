@@ -156,5 +156,13 @@ module, its responsibility, and the remaining Batch 2-3 targets.
 - Production SpacetimeDB accepted the behavior-only update with an empty
   migration plan and unchanged database identity. No client-breaking flag was
   required.
+- Follow-up QA confirmed natural uploaded advancement consumes NEXT, but manual
+  Next loaded the uploaded source without promoting its queue row. The stale
+  queued row also caused Previous to resolve back to the same uploaded item.
+- The follow-up replaces manual uploaded playback's separate source and
+  playback writes with additive `play_uploaded_queue_item`, reusing the atomic
+  queue commit helper and opaque uploaded-session validation.
+- Follow-up automated gates pass: sync/player 67/67, SpacetimeDB 17/17,
+  typecheck, lint, SpacetimeDB build/codegen, and production build.
 - Production remains a temporary QA deployment. Do not merge Batch 2 until the
   owner/two-client Play Next retest passes.

@@ -135,8 +135,8 @@ Closing evidence:
 
 ## MW-BUG-003: Play Next priority survives activation
 
-**Status:** Fix committed as `867e7b0` and published to production SpacetimeDB
-without a breaking migration; live retest pending.
+**Status:** Natural advancement is fixed in production. A manual uploaded-play
+follow-up is implemented and awaiting ordered release plus live retest.
 
 Items promoted by autoplay, manual play, or failure recovery changed to
 `playing` while retaining `is_play_next: true`. The active row was therefore
@@ -152,6 +152,13 @@ Implementation evidence:
 - The regression covers atomic autoplay, explicit play, and failure-recovery
   advancement.
 - SpacetimeDB build, sync/player, queue, and reducer tests pass.
+- Follow-up QA proved natural advancement was correct but manual Next still
+  loaded an uploaded session without promoting the selected queue row. That
+  stale row retained NEXT and caused Previous to select the same upload again.
+- Additive `play_uploaded_queue_item` now validates the selected queue row and
+  opaque uploaded-session reference before reusing the same atomic queue commit
+  as autoplay. The client no longer performs separate source and playback
+  writes for manual uploaded selection.
 
 Closing evidence required:
 
@@ -161,6 +168,8 @@ Closing evidence required:
   `c2002b3535d2c6109cd2141bff9f9b30bf491a85905c2f5803a63a65dd27d83a`.
 - Add uploaded media as Play Next, advance both manually and naturally, and
   confirm the NEXT badge disappears as soon as the item becomes active.
+- While the uploaded item is active, select Previous and confirm the prior item
+  becomes active instead of reloading the upload.
 - Confirm the second participant observes the same consumed priority state.
 
 ## MW-SEC-001: `owner_only` does not revoke permanent R2 access
