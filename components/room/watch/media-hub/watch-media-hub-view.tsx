@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { FolderPlus, Upload } from "lucide-react";
 
@@ -143,8 +144,14 @@ export function WatchMediaHubView({
   uploadFolderId,
   uploadStatus,
 }: WatchMediaHubViewProps) {
+  const scrollRootRef = useRef<HTMLDivElement | null>(null);
+
   return (
-    <div className="grid min-h-0 content-start gap-3 overflow-y-auto rounded-md border border-white/10 bg-background/8 p-3 shadow-[inset_0_0_24px_rgb(0_219_233_/_0.025)] [scrollbar-width:thin]">
+    <div
+      className="grid min-h-0 content-start gap-3 overflow-y-auto rounded-md border border-white/10 bg-background/8 p-3 shadow-[inset_0_0_24px_rgb(0_219_233_/_0.025)] [scrollbar-width:thin]"
+      data-testid="media-hub-scroll-root"
+      ref={scrollRootRef}
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="technical-label text-primary-fixed-dim">Media</p>
@@ -421,6 +428,7 @@ export function WatchMediaHubView({
           onPlayNext={onPlayNext}
           onPlayQueueItem={onPlayQueueItem}
           roomId={roomId}
+          scrollRootRef={scrollRootRef}
           onVisibilityChange={async (assetId, visibility) => {
             const asset = await updateAssetVisibility(assetId, visibility);
             setAssets((current) =>

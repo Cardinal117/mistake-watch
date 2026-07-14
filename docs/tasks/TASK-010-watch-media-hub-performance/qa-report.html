@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TASK-010 QA Report</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #131314;
+        --panel: #1c1b1c;
+        --line: #3b494b;
+        --text: #e5e2e3;
+        --muted: #b9cacb;
+        --cyan: #00dbe9;
+        --green: #77d59a;
+        --amber: #ffba20;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.55 Geist,
+          "Segoe UI",
+          sans-serif;
+      }
+      main {
+        width: min(1080px, calc(100% - 32px));
+        margin: 28px auto 56px;
+      }
+      header,
+      section {
+        margin-top: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 22px;
+      }
+      h1,
+      h2 {
+        margin: 0 0 10px;
+        letter-spacing: 0;
+      }
+      p,
+      td {
+        color: var(--muted);
+      }
+      .label {
+        color: var(--cyan);
+        font:
+          12px/1.4 "JetBrains Mono",
+          monospace;
+        text-transform: uppercase;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+      .pass {
+        color: var(--green);
+        font-weight: 700;
+      }
+      .pending {
+        color: var(--amber);
+        font-weight: 700;
+      }
+      @media (max-width: 640px) {
+        header,
+        section {
+          padding: 16px;
+        }
+        table {
+          font-size: 13px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="label">TASK-010 / QA evidence</div>
+        <h1>Release Gate</h1>
+        <p>
+          Automated implementation gates are green. Live production smoke
+          testing remains intentionally separate.
+        </p>
+      </header>
+      <section>
+        <h2>Automated Checks</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Gate</th>
+              <th>Status</th>
+              <th>Evidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Unit and policy suite</td>
+              <td class="pass">Pass</td>
+              <td>239 tests</td>
+            </tr>
+            <tr>
+              <td>Typecheck and ESLint</td>
+              <td class="pass">Pass</td>
+              <td>No errors</td>
+            </tr>
+            <tr>
+              <td>Production build</td>
+              <td class="pass">Pass</td>
+              <td>Next.js route build completed</td>
+            </tr>
+            <tr>
+              <td>File-length policy</td>
+              <td class="pass">Pass</td>
+              <td>0 violations</td>
+            </tr>
+            <tr>
+              <td>250 / 1,000 fixtures</td>
+              <td class="pass">Pass</td>
+              <td>24 grid, 12 list, stable reset</td>
+            </tr>
+            <tr>
+              <td>Poster budget</td>
+              <td class="pass">Pass</td>
+              <td>12 at 250; 12 at 1,000</td>
+            </tr>
+            <tr>
+              <td>Desktop / mobile</td>
+              <td class="pass">Pass</td>
+              <td>Desktop and 390 x 844</td>
+            </tr>
+            <tr>
+              <td>Median improvement</td>
+              <td class="pass">Pass</td>
+              <td>64.5%</td>
+            </tr>
+            <tr>
+              <td>Independent agent review</td>
+              <td class="pass">Pass</td>
+              <td>Read-only audit plus corrective re-review</td>
+            </tr>
+            <tr>
+              <td>348-item production smoke</td>
+              <td class="pending">Pending</td>
+              <td>Required after deployment</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <section>
+        <h2>Live QA Checklist</h2>
+        <p>
+          Open the Uploaded tab as owner, confirm guest denial, scroll through
+          progressive boundaries, switch grid/list, search and change folders,
+          queue/play an uploaded item, close the hub, and confirm playback plus
+          the 348-item queue remain continuous.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

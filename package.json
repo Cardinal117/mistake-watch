@@ -13,6 +13,7 @@
     "spacetime:server-token": "node scripts/create-spacetime-server-token.mjs",
     "build": "next build",
     "benchmark:queue": "node scripts/benchmark-queue-derived-state.mjs",
+    "benchmark:media-hub": "node scripts/benchmark-media-hub-catalogue.mjs",
     "start": "next start",
     "test": "node --test",
     "test:identity": "node --test tests/identity/*.test.mjs",

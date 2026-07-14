@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { RefObject } from "react";
 import { createPortal } from "react-dom";
 import {
   Check,
@@ -32,6 +33,7 @@ import {
   mediaHubItemToQueueInput,
 } from "../media-hub/media-hub-helpers";
 import { formatCreditEstimate, parseDurationSeconds } from "../presentation";
+import { LazyMediaPoster } from "./lazy-media-poster";
 
 export function WatchMediaHubCard({
   canAddQueue,
@@ -48,6 +50,8 @@ export function WatchMediaHubCard({
   onLoadSource,
   onPlayNext,
   onPlayQueueItem,
+  posterEager = false,
+  posterScrollRootRef,
   roomId,
   onVisibilityChange,
 }: {
@@ -80,6 +84,8 @@ export function WatchMediaHubCard({
   }): void;
   onPlayNext?(queueItemId: string): void;
   onPlayQueueItem?(queueItemId: string): void;
+  posterEager?: boolean;
+  posterScrollRootRef?: RefObject<HTMLDivElement | null>;
   roomId: string;
   onVisibilityChange?(
     assetId: string,
@@ -433,13 +439,15 @@ export function WatchMediaHubCard({
 
   if (layout === "list") {
     return (
-      <article className="relative grid gap-3 rounded-md border border-white/10 bg-background/12 p-2 transition hover:border-primary-fixed-dim/30 md:grid-cols-[6rem_minmax(0,1fr)_auto_auto] md:items-center">
+      <article
+        className="relative grid gap-3 rounded-md border border-white/10 bg-background/12 p-2 transition hover:border-primary-fixed-dim/30 md:grid-cols-[6rem_minmax(0,1fr)_auto_auto] md:items-center"
+        data-media-asset-id={item.id}
+      >
         <div className="aspect-video overflow-hidden rounded-sm bg-surface-container-lowest">
           {item.thumbnailUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- Queue thumbnails come from provider metadata and uploaded posters.
-            <img
-              alt=""
-              className="h-full w-full object-cover opacity-90"
+            <LazyMediaPoster
+              eager={posterEager}
+              scrollRootRef={posterScrollRootRef}
               src={item.thumbnailUrl}
             />
           ) : (
@@ -513,7 +521,10 @@ export function WatchMediaHubCard({
   }
 
   return (
-    <article className="group relative grid min-h-36 overflow-hidden rounded-sm border border-white/10 bg-background/12 text-left transition hover:border-primary-fixed-dim/35 hover:bg-primary-fixed-dim/8">
+    <article
+      className="group relative grid min-h-36 overflow-hidden rounded-sm border border-white/10 bg-background/12 text-left transition hover:border-primary-fixed-dim/35 hover:bg-primary-fixed-dim/8"
+      data-media-asset-id={item.id}
+    >
       <button
         aria-expanded={menuOpen}
         ref={menuButtonRef}
@@ -527,10 +538,10 @@ export function WatchMediaHubCard({
       {renderedActionMenu}
       <div className="aspect-video overflow-hidden bg-surface-container-lowest">
         {item.thumbnailUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- Queue thumbnails come from provider metadata and are decorative in compact hub cards.
-          <img
-            alt=""
+          <LazyMediaPoster
             className="h-full w-full object-cover opacity-90 transition group-hover:scale-[1.03]"
+            eager={posterEager}
+            scrollRootRef={posterScrollRootRef}
             src={item.thumbnailUrl}
           />
         ) : (

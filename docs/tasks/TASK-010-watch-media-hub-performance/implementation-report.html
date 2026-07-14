@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TASK-010 Implementation Report</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #131314;
+        --panel: #1c1b1c;
+        --line: #3b494b;
+        --text: #e5e2e3;
+        --muted: #b9cacb;
+        --cyan: #00dbe9;
+        --gold: #ffba20;
+        --green: #77d59a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.55 Geist,
+          "Segoe UI",
+          sans-serif;
+      }
+      main {
+        width: min(1120px, calc(100% - 32px));
+        margin: 28px auto 56px;
+      }
+      header,
+      section {
+        margin-top: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 22px;
+      }
+      h1,
+      h2 {
+        margin: 0 0 10px;
+        letter-spacing: 0;
+      }
+      p,
+      li {
+        color: var(--muted);
+      }
+      .label {
+        color: var(--cyan);
+        font:
+          12px/1.4 "JetBrains Mono",
+          monospace;
+        text-transform: uppercase;
+      }
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 10px;
+      }
+      article {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #0e0e0f;
+        padding: 14px;
+      }
+      strong {
+        color: var(--gold);
+        font-size: 22px;
+      }
+      .pass {
+        color: var(--green);
+      }
+      code {
+        font-family: "JetBrains Mono", monospace;
+        color: var(--text);
+      }
+      ul {
+        padding-left: 20px;
+      }
+      @media (max-width: 640px) {
+        header,
+        section {
+          padding: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="label">TASK-010 / implementation complete</div>
+        <h1>Watch Media Hub Performance</h1>
+        <p>
+          Progressive catalogue rendering and bounded private-poster loading,
+          with no database, API, upload-processing, queue, or authorization
+          change.
+        </p>
+      </header>
+      <section>
+        <h2>Measured Result</h2>
+        <div class="metrics">
+          <article>
+            <strong>64.5%</strong>
+            <p>Median opening improvement, 2,166 ms to 768 ms.</p>
+          </article>
+          <article>
+            <strong>24 / 12</strong>
+            <p>Initial grid cards and list rows.</p>
+          </article>
+          <article>
+            <strong>12</strong>
+            <p>Cold poster requests for 250 assets.</p>
+          </article>
+          <article>
+            <strong>95.2%</strong>
+            <p>Initial poster-request reduction.</p>
+          </article>
+        </div>
+      </section>
+      <section>
+        <h2>Implementation</h2>
+        <ul>
+          <li>
+            Pure progressive-window calculations for 0, 24, 25, 250, and 1,000
+            items.
+          </li>
+          <li>
+            Media Hub scroll-root sentinel revealing equal grid or list batches.
+          </li>
+          <li>
+            Reset identity covering search, folder, sort, result boundaries, and
+            view mode.
+          </li>
+          <li>
+            Private posters assign their application-route source only near the
+            viewport.
+          </li>
+          <li>
+            One-pass catalogue badge summaries and memoized catalogue
+            derivations.
+          </li>
+          <li>
+            Existing permission-denied UI extracted to keep the edited library
+            component below 500 lines.
+          </li>
+        </ul>
+      </section>
+      <section>
+        <h2>Security Boundary</h2>
+        <p>
+          Cards retain stable asset IDs and poster sources remain
+          <code>/api/media/assets/{id}/poster</code>. No signed R2 destination
+          is stored in React, queue, or room state. TASK-009 route authorization
+          is unchanged.
+        </p>
+      </section>
+      <section>
+        <h2>Verification</h2>
+        <p class="pass">
+          239 unit tests, typecheck, ESLint, production build, file-length
+          policy, formatting, structural benchmark, and deterministic
+          desktop/mobile Playwright coverage passed.
+        </p>
+        <p>
+          Post-deployment QA in the supplied 348-item room remains the final
+          live authentication and playback-continuity gate.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

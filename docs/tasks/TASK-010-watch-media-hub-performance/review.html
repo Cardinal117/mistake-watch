@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TASK-010 Review - Watch Media Hub Performance</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #131314;
+        --panel: #1c1b1c;
+        --line: #3b494b;
+        --text: #e5e2e3;
+        --muted: #b9cacb;
+        --blue: #00dbe9;
+        --gold: #ffba20;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          16px/1.55 Geist,
+          Segoe UI,
+          sans-serif;
+      }
+      main {
+        width: min(1080px, calc(100% - 32px));
+        margin: 32px auto 64px;
+      }
+      header,
+      section {
+        border: 1px solid color-mix(in srgb, var(--line) 75%, transparent);
+        background: var(--panel);
+        border-radius: 12px;
+        padding: 24px;
+        margin-top: 16px;
+      }
+      h1,
+      h2,
+      h3 {
+        margin: 0 0 10px;
+        letter-spacing: 0;
+      }
+      p {
+        color: var(--muted);
+      }
+      code,
+      .label {
+        font-family: "JetBrains Mono", monospace;
+      }
+      .label {
+        color: var(--blue);
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+      }
+      article {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 16px;
+        background: #0e0e0f;
+      }
+      strong {
+        color: var(--gold);
+      }
+      ul {
+        padding-left: 20px;
+        color: var(--muted);
+      }
+      a {
+        color: var(--blue);
+      }
+      @media (max-width: 640px) {
+        header,
+        section {
+          padding: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="label">Implemented / release QA active</div>
+        <h1>Watch Media Hub Performance</h1>
+        <p>
+          Bound initial catalogue rendering and private-poster requests without
+          changing the Media Hub design, API, or TASK-009 authorization
+          boundary.
+        </p>
+      </header>
+      <section>
+        <h2>Release targets</h2>
+        <div class="grid">
+          <article>
+            <strong>40%+</strong>
+            <p>Median controlled opening improvement.</p>
+          </article>
+          <article>
+            <strong>24 / 12</strong>
+            <p>Maximum initial grid cards / list rows.</p>
+          </article>
+          <article>
+            <strong>75%+</strong>
+            <p>Initial poster request reduction at 250 items.</p>
+          </article>
+          <article>
+            <strong>Zero drift</strong>
+            <p>No security, ordering, or card-action regression.</p>
+          </article>
+        </div>
+      </section>
+      <section>
+        <h2>Measured outcome</h2>
+        <div class="grid">
+          <article>
+            <strong>64.5%</strong>
+            <p>Median opening reduction: 2,166 ms to 768 ms.</p>
+          </article>
+          <article>
+            <strong>24 / 12</strong>
+            <p>Verified initial grid cards / list rows.</p>
+          </article>
+          <article>
+            <strong>12</strong>
+            <p>Cold poster requests for 250 assets, down 95.2%.</p>
+          </article>
+          <article>
+            <strong>0 violations</strong>
+            <p>Repository file-length gate.</p>
+          </article>
+        </div>
+      </section>
+      <section>
+        <h2>Implementation path</h2>
+        <ol>
+          <li>Measure deterministic and 348-item live-room baselines.</li>
+          <li>Add progressive grid/list catalogue windows.</li>
+          <li>Load signed poster routes only near the hub viewport.</li>
+          <li>Run full behavior, security, responsive, and release QA.</li>
+        </ol>
+      </section>
+      <section>
+        <h2>Files To Review</h2>
+        <p>
+          <strong>Must review:</strong> <a href="./proposal.md">proposal.md</a>,
+          <a href="./design.md">design.md</a>,
+          <a href="./acceptance-criteria.md">acceptance-criteria.md</a>.
+        </p>
+        <p>
+          <strong>Implementation tracking:</strong>
+          <a href="./tasks.md">tasks.md</a> and
+          <a href="./review-notes.md">review-notes.md</a>.
+        </p>
+        <p>
+          <strong>Evidence:</strong>
+          <a href="./implementation-report.html">implementation report</a> and
+          <a href="./qa-report.html">QA report</a>.
+        </p>
+        <p>
+          <strong>Background:</strong>
+          <a href="./brain-dump.md">brain-dump.md</a>.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

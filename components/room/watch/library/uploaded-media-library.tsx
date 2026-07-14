@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+import type { RefObject } from "react";
 import {
   Database,
   EyeOff,
@@ -14,6 +16,10 @@ import {
 } from "lucide-react";
 
 import { cx } from "@/lib/ui";
+import {
+  getCatalogueResultRevision as getResultRevision,
+  summarizeCatalogue,
+} from "@/lib/media/catalogue-window";
 import type {
   LoadSourceInput,
   MediaFolder,
@@ -29,7 +35,9 @@ import {
   sortUploadedLibraryItems,
 } from "../media-hub/media-hub-helpers";
 import { isLiveMediaHubItem } from "../presentation";
+import { UploadedMediaAccessDenied } from "./uploaded-media-access-denied";
 import { WatchMediaHubCard } from "./watch-media-hub-card";
+import { useProgressiveMediaLibrary } from "./use-progressive-media-library";
 
 export function UploadedMediaLibrary({
   access,
@@ -49,6 +57,7 @@ export function UploadedMediaLibrary({
   onPlayNext,
   onPlayQueueItem,
   roomId,
+  scrollRootRef,
   onVisibilityChange,
   searchQuery,
   selectedFolderId,
@@ -93,6 +102,7 @@ export function UploadedMediaLibrary({
   onPlayNext?(queueItemId: string): void;
   onPlayQueueItem?(queueItemId: string): void;
   roomId: string;
+  scrollRootRef: RefObject<HTMLDivElement | null>;
   onVisibilityChange(
     assetId: string,
     visibility: "owner_only" | "public",
@@ -104,43 +114,42 @@ export function UploadedMediaLibrary({
   setViewMode(viewMode: UploadedLibraryViewMode): void;
   viewMode: UploadedLibraryViewMode;
 }) {
-  if (access && !access.canAccessUploadedCatalogue) {
-    return (
-      <section className="grid gap-3">
-        <div>
-          <p className="technical-label text-primary-fixed-dim">
-            Uploaded media
-          </p>
-          <p className="mt-1 text-label-sm text-on-surface-variant">
-            Uploaded catalogue content is hidden for this account.
-          </p>
-        </div>
-        <div className="rounded-md border border-dashed border-white/10 bg-background/10 px-3 py-8 text-center">
-          <p className="text-label-sm font-semibold text-on-surface">
-            No permission to access uploaded content
-          </p>
-          <p className="mx-auto mt-2 max-w-xl text-label-sm text-on-surface-variant">
-            {access.message}
-          </p>
-        </div>
-      </section>
-    );
-  }
-
   const selectedFolder = folders.find(
     (folder) => folder.id === selectedFolderId,
   );
+  const resultRevision = useMemo(() => getResultRevision(assets), [assets]);
+  const progressiveResetKey = [
+    searchQuery,
+    selectedFolderId,
+    selectedFolder?.defaultSortDirection ?? "",
+    selectedFolder?.defaultSortKey ?? "",
+    resultRevision,
+    viewMode,
+  ].join(":");
+  const { hasMore, sentinelRef, visibleCount } = useProgressiveMediaLibrary({
+    itemCount: assets.length,
+    resetKey: progressiveResetKey,
+    scrollRootRef,
+    viewMode,
+  });
+  const renderedAssets = assets.slice(0, visibleCount);
+  const eagerPosterCount = viewMode === "grid" ? 4 : 1;
+  const catalogueSummary = useMemo(
+    () => summarizeCatalogue(allAssets, isLiveMediaHubItem),
+    [allAssets],
+  );
+
+  if (access && !access.canAccessUploadedCatalogue) {
+    return <UploadedMediaAccessDenied access={access} />;
+  }
   const folderActionItems = selectedFolder
     ? sortUploadedLibraryItems(
         allAssets.filter((item) => item.folderId === selectedFolder.id),
         selectedFolder,
       )
     : [];
-  const hiddenCount = allAssets.filter(
-    (item) => item.visibility === "owner_only",
-  ).length;
-  const liveCount = allAssets.filter(isLiveMediaHubItem).length;
-  const unsortedCount = allAssets.filter((item) => !item.folderId).length;
+  const { folderCounts, hiddenCount, liveCount, unsortedCount } =
+    catalogueSummary;
 
   function addMediaItem(item: WatchMediaHubItem, isPlayNext = false) {
     const input = mediaHubItemToQueueInput(item, { isPlayNext });
@@ -320,8 +329,7 @@ export function UploadedMediaLibrary({
                 <span className="truncate font-semibold">{folder.name}</span>
               </span>
               <span className="text-[11px] text-on-surface-variant">
-                {allAssets.filter((item) => item.folderId === folder.id).length}{" "}
-                items
+                {folderCounts.get(folder.id) ?? 0} items
               </span>
             </button>
           ))}
@@ -345,7 +353,7 @@ export function UploadedMediaLibrary({
                     : "Unsorted")}
             </p>
             <p className="mt-1 text-label-sm text-on-surface-variant">
-              {assets.length} visible result{assets.length === 1 ? "" : "s"}
+              {visibleCount} of {assets.length} shown
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -402,8 +410,13 @@ export function UploadedMediaLibrary({
 
       {assets.length > 0 ? (
         viewMode === "grid" ? (
-          <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
-            {assets.map((item) => (
+          <div
+            className="grid grid-cols-2 gap-2 xl:grid-cols-4"
+            data-mounted-count={visibleCount}
+            data-testid="uploaded-media-results"
+            data-total-count={assets.length}
+          >
+            {renderedAssets.map((item, index) => (
               <WatchMediaHubCard
                 canAddQueue={canAddQueue}
                 canLoadSource={canLoadSource}
@@ -420,14 +433,29 @@ export function UploadedMediaLibrary({
                 onLoadSource={onLoadSource}
                 onPlayNext={onPlayNext}
                 onPlayQueueItem={onPlayQueueItem}
+                posterEager={index < eagerPosterCount}
+                posterScrollRootRef={scrollRootRef}
                 roomId={roomId}
                 onVisibilityChange={onVisibilityChange}
               />
             ))}
+            {hasMore ? (
+              <div
+                aria-hidden="true"
+                className="h-px xl:col-span-4"
+                data-testid="uploaded-media-sentinel"
+                ref={sentinelRef}
+              />
+            ) : null}
           </div>
         ) : (
-          <div className="grid gap-2">
-            {assets.map((item) => (
+          <div
+            className="grid gap-2"
+            data-mounted-count={visibleCount}
+            data-testid="uploaded-media-results"
+            data-total-count={assets.length}
+          >
+            {renderedAssets.map((item, index) => (
               <WatchMediaHubCard
                 canAddQueue={canAddQueue}
                 canLoadSource={canLoadSource}
@@ -444,10 +472,20 @@ export function UploadedMediaLibrary({
                 onLoadSource={onLoadSource}
                 onPlayNext={onPlayNext}
                 onPlayQueueItem={onPlayQueueItem}
+                posterEager={index < eagerPosterCount}
+                posterScrollRootRef={scrollRootRef}
                 roomId={roomId}
                 onVisibilityChange={onVisibilityChange}
               />
             ))}
+            {hasMore ? (
+              <div
+                aria-hidden="true"
+                className="h-px"
+                data-testid="uploaded-media-sentinel"
+                ref={sentinelRef}
+              />
+            ) : null}
           </div>
         )
       ) : (

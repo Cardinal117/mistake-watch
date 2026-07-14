@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   resolveMediaAssetDisplayState,
@@ -123,17 +123,23 @@ export function WatchMediaHubDiscovery({
     setAssets,
     uploadFolderId,
   });
-  const activeItems = items.filter((item) => item.status !== "played");
-  const liveItems = activeItems.filter(isLiveMediaHubItem);
-  const nonLiveActiveItems = activeItems.filter(
-    (item) => !isLiveMediaHubItem(item),
-  );
-  const queuedItems = items.filter((item) => item.status === "queued");
-  const historyItems = items
-    .filter((item) => item.status === "played")
-    .slice()
-    .reverse();
-  const libraryItems = assets.map(mediaAssetToHubItem);
+  const { historyItems, liveItems, nonLiveActiveItems, queuedItems } =
+    useMemo(() => {
+      const activeItems = items.filter((item) => item.status !== "played");
+
+      return {
+        historyItems: items
+          .filter((item) => item.status === "played")
+          .slice()
+          .reverse(),
+        liveItems: activeItems.filter(isLiveMediaHubItem),
+        nonLiveActiveItems: activeItems.filter(
+          (item) => !isLiveMediaHubItem(item),
+        ),
+        queuedItems: items.filter((item) => item.status === "queued"),
+      };
+    }, [items]);
+  const libraryItems = useMemo(() => assets.map(mediaAssetToHubItem), [assets]);
 
   async function createFolder() {
     const name = newFolderName.trim();
@@ -184,32 +190,45 @@ export function WatchMediaHubDiscovery({
       });
     }
   }
-  const discoverySections = getWatchDiscoverySections({
-    historyItems,
-    liveItems,
-    nonLiveActiveItems,
-    queuedItems,
-  });
-  const visibleLibraryItems =
-    selectedFolderId === "all"
-      ? libraryItems
-      : selectedFolderId === "unsorted"
-        ? libraryItems.filter((item) => !item.folderId)
-        : selectedFolderId === "live"
-          ? libraryItems.filter(isLiveMediaHubItem)
-          : libraryItems.filter((item) => item.folderId === selectedFolderId);
-  const searchedLibraryItems = filterUploadedLibraryItems({
-    folders,
-    items: visibleLibraryItems,
-    query: uploadedSearchQuery,
-  });
+  const discoverySections = useMemo(
+    () =>
+      getWatchDiscoverySections({
+        historyItems,
+        liveItems,
+        nonLiveActiveItems,
+        queuedItems,
+      }),
+    [historyItems, liveItems, nonLiveActiveItems, queuedItems],
+  );
   const selectedFolder = folders.find(
     (folder) => folder.id === selectedFolderId,
   );
-  const sortedLibraryItems = sortUploadedLibraryItems(
-    searchedLibraryItems,
-    selectedFolder ?? null,
-  );
+  const sortedLibraryItems = useMemo(() => {
+    const visibleLibraryItems =
+      selectedFolderId === "all"
+        ? libraryItems
+        : selectedFolderId === "unsorted"
+          ? libraryItems.filter((item) => !item.folderId)
+          : selectedFolderId === "live"
+            ? libraryItems.filter(isLiveMediaHubItem)
+            : libraryItems.filter((item) => item.folderId === selectedFolderId);
+    const searchedLibraryItems = filterUploadedLibraryItems({
+      folders,
+      items: visibleLibraryItems,
+      query: uploadedSearchQuery,
+    });
+
+    return sortUploadedLibraryItems(
+      searchedLibraryItems,
+      selectedFolder ?? null,
+    );
+  }, [
+    folders,
+    libraryItems,
+    selectedFolder,
+    selectedFolderId,
+    uploadedSearchQuery,
+  ]);
 
   return (
     <WatchMediaHubView
