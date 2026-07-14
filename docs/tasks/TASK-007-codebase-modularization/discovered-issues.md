@@ -6,18 +6,18 @@ not change these behaviors unless explicitly noted.
 
 ## Tracking and validation status
 
-| ID | Priority | Validation state | Finding | Required closing evidence |
-| --- | --- | --- | --- | --- |
-| MW-BUG-001 | P1 | Closed after production two-client QA | Uploaded-media autoplay used separate canonical writes | Completed |
-| MW-BUG-002 | P1 | Closed after authenticated live QA | Passive direct-player events published canonical room state and reset mode-switch position | Completed |
-| MW-BUG-003 | P1 | Fix implemented; live QA pending | Play Next priority remained set after an item became active | Manual and automatic advancement consume the badge and state |
-| MW-SEC-001 | P1 | Code/storage condition confirmed; owner-only end-to-end reproduction pending | `owner_only` appears not to revoke permanent R2 URL access | Anonymous URL denial for owner-only object plus response-redaction tests |
-| MW-QA-001 | P2 | Confirmed release gap | Owner-authenticated watch/upload QA is live-only | Preview owner/member/guest checklist passes |
-| MW-PERF-001 | P2 | Confirmed performance fact, not a bug | Both room modes remain statically imported | Before/after bundle and interaction measurement |
-| MW-ARCH-001 | P2 | Confirmed maintainability debt, not a bug | Four major monoliths remain above 1,500 lines | Batch 2-3 file-ceiling and regression gates pass |
-| MW-TEST-001 | P3 | Confirmed test fragility | Several regression tests remain source-regex based | Behavioral replacements pass without weaker security coverage |
-| MW-UX-001 | P3 | Observation only | Live-room hydration can briefly expose empty fallback state | Reproduced visible flicker or layout-shift measurement |
-| MW-PROC-001 | Process | Confirmed workflow limitation | Parallel agents shared one working tree view | Future parallel run uses isolated worktrees |
+| ID          | Priority | Validation state                                                             | Finding                                                                                    | Required closing evidence                                                |
+| ----------- | -------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| MW-BUG-001  | P1       | Closed after production two-client QA                                        | Uploaded-media autoplay used separate canonical writes                                     | Completed                                                                |
+| MW-BUG-002  | P1       | Closed after authenticated live QA                                           | Passive direct-player events published canonical room state and reset mode-switch position | Completed                                                                |
+| MW-BUG-003  | P1       | Fix implemented; live QA pending                                             | Play Next priority remained set after an item became active                                | Manual and automatic advancement consume the badge and state             |
+| MW-SEC-001  | P1       | Code/storage condition confirmed; owner-only end-to-end reproduction pending | `owner_only` appears not to revoke permanent R2 URL access                                 | Anonymous URL denial for owner-only object plus response-redaction tests |
+| MW-QA-001   | P2       | Confirmed release gap                                                        | Owner-authenticated watch/upload QA is live-only                                           | Preview owner/member/guest checklist passes                              |
+| MW-PERF-001 | P2       | Confirmed performance fact, not a bug                                        | Both room modes remain statically imported                                                 | Before/after bundle and interaction measurement                          |
+| MW-ARCH-001 | P2       | Confirmed maintainability debt, not a bug                                    | Four major monoliths remain above 1,500 lines                                              | Batch 2-3 file-ceiling and regression gates pass                         |
+| MW-TEST-001 | P3       | Confirmed test fragility                                                     | Several regression tests remain source-regex based                                         | Behavioral replacements pass without weaker security coverage            |
+| MW-UX-001   | P3       | Observation only                                                             | Live-room hydration can briefly expose empty fallback state                                | Reproduced visible flicker or layout-shift measurement                   |
+| MW-PROC-001 | Process  | Confirmed workflow limitation                                                | Parallel agents shared one working tree view                                               | Future parallel run uses isolated worktrees                              |
 
 This file is the canonical discovery register for TASK-007. A finding does not
 move to implementation until it receives its own approved task/chunk. Test and
@@ -245,33 +245,39 @@ CloudConvert end-to-end idempotency also remains unverified after the API token
 was revoked during the earlier incident. Keep this as a separate controlled
 test with spend limits and provider monitoring before normal conversion resumes.
 
-## P2: Static room-mode loading remains
+## P2: Fresh local room connection readiness failure
 
-`components/room/room-experience.tsx` statically imports both
-`ListenModeLayout` and `WatchModeLayout`, so Batch 1 improves maintainability but
-does not reduce initial room code. The measured room bundle increased from
-150.4 KB to 151.7 KB gzip due to module-boundary overhead.
+Creating a new local Watch room succeeds in the durable room action, then the
+first room render fails before the Watch layout mounts. The local Spacetime
+connection reports inactive and the connection object reaches Next.js's server
+error boundary. Reload reproduces the same failure. Existing seeded Listen rooms
+still initialize and support queue and TV interactions.
 
-Recommended action for Batch 3:
+Recommended action:
 
-- Dynamically load the inactive room mode.
-- Lazy-load hidden media hub, upload, playlist review, and account workflows.
-- Preserve loading dimensions and mode-switch state.
-- Require a measured payload and interaction comparison before acceptance.
+- Reproduce against the intended local Spacetime module or a preview deployment.
+- Convert connection startup failures into a typed, user-safe readiness state;
+  never throw or serialize the connection object.
+- Add create-then-connect coverage before treating this as a production defect.
+
+## P2 resolved: Static room-mode loading
+
+Batch 3 now dynamically loads the active Watch or Listen layout and defers the
+Watch queue/media surface, collapsed audience panels, and Listen TV mode until
+opened. Stable loading geometry avoids drawer or stage collapse.
+
+Measured result: `/rooms/[roomId]` initial JavaScript fell from 1,065,471 to
+838,180 bytes, a 21.3% reduction. CSS remained 161,547 bytes.
 
 ## P2: Remaining major monoliths
 
-Current handwritten files still requiring planned decomposition:
+The former queue and media monoliths are now compatibility entries. Batch 3
+reduced `use-live-room.ts` from 1,541 to 918 lines and extracted pure helpers
+from the 2,327-line Spacetime entry, leaving it at 2,205 lines. Further server
+decomposition should be a separately approved reducer-domain task because the
+schema and reducer registration surface has higher blast radius.
 
-- `components/room/queue-panel.tsx`: 2,205 lines.
-- `spacetime/src/index.ts`: 2,193 lines.
-- `lib/media/assets.ts`: 1,939 lines.
-- `lib/spacetime/use-live-room.ts`: 1,559 lines.
-
-`queue-panel.tsx` and `assets.ts` are Batch 2 priorities. Realtime files belong
-to Batch 3 because reducer/schema boundaries and sync behavior have higher blast
-radius. Generated `lib/supabase/database.types.ts` is 1,062 lines and should not
-be manually split.
+Generated `lib/supabase/database.types.ts` should not be manually split.
 
 ## P3: Extracted modules near the ceiling
 

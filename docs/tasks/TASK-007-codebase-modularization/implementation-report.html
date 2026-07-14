@@ -1,139 +1,513 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TASK-007 Batch 2 Implementation Report</title>
-  <style>
-    :root { color-scheme: dark; --bg:#0e0e0f; --surface:#1c1b1c; --raised:#242325; --line:#3b494b; --text:#e5e2e3; --muted:#b9cacb; --blue:#00dbe9; --gold:#ffba20; --good:#6ee7a8; --warn:#ffd27a; }
-    * { box-sizing:border-box; }
-    body { margin:0; background:var(--bg); color:var(--text); font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
-    main { width:min(1180px,calc(100% - 32px)); margin:0 auto; padding:32px 0 56px; }
-    header { border-top:3px solid var(--blue); padding:24px 0 20px; }
-    h1,h2,h3,p { margin-top:0; }
-    h1 { margin-bottom:8px; font-size:clamp(28px,5vw,42px); letter-spacing:0; }
-    h2 { margin:0 0 14px; font-size:21px; }
-    h3 { margin-bottom:6px; font-size:16px; }
-    .eyebrow,.mono { font-family:"JetBrains Mono",Consolas,monospace; }
-    .eyebrow { color:var(--blue); font-size:12px; text-transform:uppercase; letter-spacing:.08em; }
-    .lede,.muted { color:var(--muted); }
-    .lede { max-width:820px; font-size:17px; }
-    .status { display:inline-flex; align-items:center; gap:8px; border:1px solid #2f7552; background:#163827; color:var(--good); padding:6px 10px; border-radius:6px; font-weight:700; }
-    .grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:14px; margin:18px 0; }
-    .card { grid-column:span 4; background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:18px; }
-    .wide { grid-column:span 8; }
-    .full { grid-column:1/-1; }
-    .metric { font-size:29px; font-weight:750; line-height:1.1; }
-    .metric small { display:block; margin-top:7px; color:var(--muted); font-size:12px; font-weight:500; }
-    .good { color:var(--good); }
-    .warn { color:var(--warn); }
-    table { width:100%; border-collapse:collapse; }
-    th,td { padding:11px 10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
-    th { color:var(--muted); font-size:12px; text-transform:uppercase; }
-    code { color:#dbfcff; }
-    ul { margin:8px 0 0; padding-left:20px; }
-    li + li { margin-top:6px; }
-    .callout { border-left:3px solid var(--gold); background:#2b2416; padding:14px 16px; }
-    .bar { height:7px; margin-top:10px; background:#353436; border-radius:4px; overflow:hidden; }
-    .bar span { display:block; height:100%; background:var(--blue); }
-    a { color:var(--blue); }
-    @media (max-width:780px) { .card,.wide { grid-column:1/-1; } main { width:min(100% - 24px,1180px); padding-top:16px; } table { font-size:13px; } }
-  </style>
-</head>
-<body>
-<main>
-  <header>
-    <div class="eyebrow">TASK-007 / Batch 2</div>
-    <h1>Shared workflow and media boundaries</h1>
-    <p class="lede">The queue panel and media asset service are now thin compatibility entries over bounded modules. Listen and Watch share deterministic Add Media behavior, while public contracts, permissions, and runtime behavior remain stable.</p>
-    <span class="status">Production QA passed; approved for merge</span>
-  </header>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TASK-007 Batch 3 Implementation Report</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0e0e0f;
+        --surface: #1c1b1c;
+        --raised: #242325;
+        --line: #3b494b;
+        --text: #e5e2e3;
+        --muted: #b9cacb;
+        --blue: #00dbe9;
+        --gold: #ffba20;
+        --good: #6ee7a8;
+        --warn: #ffd27a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.55 system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+      }
+      main {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 32px 0 56px;
+      }
+      header {
+        border-top: 3px solid var(--blue);
+        padding: 24px 0 20px;
+      }
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+      h1 {
+        margin-bottom: 8px;
+        font-size: clamp(28px, 5vw, 42px);
+        letter-spacing: 0;
+      }
+      h2 {
+        margin: 0 0 14px;
+        font-size: 21px;
+      }
+      h3 {
+        margin-bottom: 6px;
+        font-size: 16px;
+      }
+      .eyebrow,
+      .mono {
+        font-family: "JetBrains Mono", Consolas, monospace;
+      }
+      .eyebrow {
+        color: var(--blue);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .lede,
+      .muted {
+        color: var(--muted);
+      }
+      .lede {
+        max-width: 820px;
+        font-size: 17px;
+      }
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid #2f7552;
+        background: #163827;
+        color: var(--good);
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-weight: 700;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 14px;
+        margin: 18px 0;
+      }
+      .card {
+        grid-column: span 4;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 18px;
+      }
+      .wide {
+        grid-column: span 8;
+      }
+      .full {
+        grid-column: 1/-1;
+      }
+      .metric {
+        font-size: 29px;
+        font-weight: 750;
+        line-height: 1.1;
+      }
+      .metric small {
+        display: block;
+        margin-top: 7px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 500;
+      }
+      .good {
+        color: var(--good);
+      }
+      .warn {
+        color: var(--warn);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 11px 10px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        color: var(--muted);
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+      code {
+        color: #dbfcff;
+      }
+      ul {
+        margin: 8px 0 0;
+        padding-left: 20px;
+      }
+      li + li {
+        margin-top: 6px;
+      }
+      .callout {
+        border-left: 3px solid var(--gold);
+        background: #2b2416;
+        padding: 14px 16px;
+      }
+      .bar {
+        height: 7px;
+        margin-top: 10px;
+        background: #353436;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .bar span {
+        display: block;
+        height: 100%;
+        background: var(--blue);
+      }
+      a {
+        color: var(--blue);
+      }
+      @media (max-width: 780px) {
+        .card,
+        .wide {
+          grid-column: 1/-1;
+        }
+        main {
+          width: min(100% - 24px, 1180px);
+          padding-top: 16px;
+        }
+        table {
+          font-size: 13px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="eyebrow">TASK-007 / Batch 3</div>
+        <h1>Realtime and loading boundaries</h1>
+        <p class="lede">
+          Live-room snapshot and contract responsibilities now have focused
+          modules, pure Spacetime helpers are isolated without reducer contract
+          changes, and inactive room workflows no longer inflate the initial
+          room payload.
+        </p>
+        <span class="status">Live QA passed; release approved</span>
+      </header>
 
-  <section class="grid" aria-label="Implementation summary">
-    <article class="card"><div class="metric">2,205 to 195<small>Queue compatibility entry lines</small></div></article>
-    <article class="card"><div class="metric">1,939 to 49<small>Media compatibility entry lines</small></div></article>
-    <article class="card"><div class="metric">26<small>Queue/Add Media and media domain files</small></div></article>
-    <article class="card"><div class="metric good">525<small>Largest Batch 2 module; ceiling is 700</small></div></article>
-    <article class="card"><div class="metric good">201/201<small>Complete regression tests passed</small></div></article>
-    <article class="card"><div class="metric good">0<small>Import cycles and file-ceiling violations</small></div></article>
-  </section>
+      <section class="grid" aria-label="Implementation summary">
+        <article class="card">
+          <div class="metric">
+            1,541 to 918<small>Live-room hook entry lines</small>
+          </div>
+        </article>
+        <article class="card">
+          <div class="metric">
+            2,327 to 2,205<small>Spacetime server entry lines</small>
+          </div>
+        </article>
+        <article class="card">
+          <div class="metric good">
+            21.3%<small>Initial room JavaScript reduction</small>
+          </div>
+        </article>
+        <article class="card">
+          <div class="metric good">
+            227,291<small>Initial JavaScript bytes removed</small>
+          </div>
+        </article>
+        <article class="card">
+          <div class="metric good">
+            211/211<small>Complete regression tests passed</small>
+          </div>
+        </article>
+        <article class="card">
+          <div class="metric good">
+            0<small>CSS growth and file-ceiling violations</small>
+          </div>
+        </article>
+      </section>
 
-  <section class="grid">
-    <article class="card full">
-      <h2>Discovered Issues</h2>
-      <table>
-        <thead><tr><th>Priority</th><th>Finding</th><th>Disposition</th></tr></thead>
-        <tbody>
-          <tr><td class="good">P1 closed</td><td>Uploaded autoplay performed separate source-load and playback-state writes.</td><td>Additive atomic reducer released as <code>02210bf</code>; production two-client and stale-next QA passed.</td></tr>
-          <tr><td class="good">P1 closed</td><td>Passive direct-player events reset canonical position to <code>0:00</code> during a modularized mode-switch remount.</td><td>Released continuity guard passed authenticated YouTube and uploaded-media QA.</td></tr>
-          <tr><td class="good">P1 closed</td><td>Manual uploaded playback left its queue row queued, retaining NEXT and causing Previous to replay it.</td><td>Atomic manual reducer commit <code>f286cb9</code> passed ordered production release and owner QA.</td></tr>
-          <tr><td class="warn">MW-SEC-001</td><td><code>owner_only</code> changes catalogue metadata but does not revoke permanent R2 URL access.</td><td>No current private rows exist; confirm with a dedicated owner-only test asset before approving a storage fix.</td></tr>
-          <tr><td class="good">P2 release passed</td><td>Owner Watch/upload interaction cannot be authenticated locally.</td><td>Production owner and participant smoke QA passed before merge.</td></tr>
-          <tr><td>P2 performance</td><td>Both room modes remain statically imported.</td><td>Dynamic boundaries and a fresh bundle comparison remain Batch 3 scope.</td></tr>
-          <tr><td class="good">P2 architecture improved</td><td>Queue panel and media assets exceeded 1,900 lines.</td><td>Compatibility entries are now 195 and 49 lines; realtime monoliths remain Batch 3.</td></tr>
-          <tr><td class="warn">Dependency baseline</td><td><code>npm audit</code> reports three moderate advisories.</td><td>Track separately; this structural batch makes no dependency changes.</td></tr>
-        </tbody>
-      </table>
-      <p class="muted">The full evidence, lower-priority observations, and recommended order are recorded in <code>discovered-issues.md</code>.</p>
-    </article>
-  </section>
+      <section class="grid">
+        <article class="card full">
+          <h2>Discovered Issues</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Priority</th>
+                <th>Finding</th>
+                <th>Disposition</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="good">P2 resolved</td>
+                <td>
+                  Both room modes and hidden workflows were part of initial room
+                  loading.
+                </td>
+                <td>
+                  Dynamic mode, Watch queue/media, audience, and Listen TV
+                  boundaries cut initial room JavaScript by 21.3%.
+                </td>
+              </tr>
+              <tr>
+                <td class="good">P2 improved</td>
+                <td>
+                  Live-room client state mapping was embedded in a 1,541-line
+                  hook.
+                </td>
+                <td>
+                  Public contracts and snapshot derivation are focused modules;
+                  the hook entry is 918 lines.
+                </td>
+              </tr>
+              <tr>
+                <td class="good">P2 improved</td>
+                <td>
+                  Pure queue, media-reference, and normalization logic was
+                  embedded in the Spacetime entry.
+                </td>
+                <td>
+                  Three pure modules were extracted without schema, reducer, or
+                  generated-binding changes.
+                </td>
+              </tr>
+              <tr>
+                <td class="warn">P2 local readiness</td>
+                <td>
+                  Fresh local room creation reaches an inactive Spacetime
+                  connection and exposes its object through the server error
+                  boundary.
+                </td>
+                <td>
+                  Track separately; existing Listen rooms pass. Reproduce with
+                  the intended local module or preview before assigning
+                  production impact.
+                </td>
+              </tr>
+              <tr>
+                <td class="warn">P2 release gate</td>
+                <td>
+                  Owner Watch/upload interaction cannot be authenticated
+                  locally.
+                </td>
+                <td>
+                  Preview owner/member/guest QA remains mandatory before merge
+                  or release.
+                </td>
+              </tr>
+              <tr>
+                <td class="warn">MW-SEC-001</td>
+                <td>
+                  <code>owner_only</code> changes catalogue metadata but does
+                  not revoke permanent R2 URL access.
+                </td>
+                <td>
+                  Keep the dedicated private-asset verification separate from
+                  this structural batch.
+                </td>
+              </tr>
+              <tr>
+                <td class="warn">Dependency baseline</td>
+                <td>
+                  <code>npm audit</code> reports three moderate advisories.
+                </td>
+                <td>
+                  Track separately; this structural batch makes no dependency
+                  changes.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="muted">
+            The full evidence, lower-priority observations, and recommended
+            order are recorded in <code>discovered-issues.md</code>.
+          </p>
+        </article>
+      </section>
 
-  <section class="grid">
-    <article class="card wide">
-      <h2>Files To Review</h2>
-      <table>
-        <thead><tr><th>Area</th><th>Review focus</th><th>Commit</th></tr></thead>
-        <tbody>
-          <tr><td><code>components/room/queue/**</code></td><td>Queue contracts, controls, content, rows, notifications, and pure helpers.</td><td><code>4e82018</code></td></tr>
-          <tr><td><code>components/room/shared/add-media/**</code></td><td>Shared dialog, previews, controller, and deterministic Listen/Watch behavior.</td><td><code>4e82018</code>, <code>5f6b312</code></td></tr>
-          <tr><td><code>lib/media/**</code></td><td>Compatibility exports and folder, library, processing, source-match, and upload domains.</td><td><code>c33f644</code></td></tr>
-          <tr><td><code>lib/spacetime/**</code>, <code>spacetime/src/index.ts</code></td><td>Atomic uploaded autoplay and manual queue activation with opaque session references.</td><td><code>02210bf</code>, <code>f286cb9</code></td></tr>
-          <tr><td><code>scripts/check-file-lengths.mjs</code></td><td>Warning and failure ratchet with explicit legacy ceilings.</td><td>Integration patch</td></tr>
-          <tr><td><code>split-inventory.md</code></td><td>Exact physical line counts, responsibilities, and remaining Batch 3 targets.</td><td>Integration patch</td></tr>
-        </tbody>
-      </table>
-    </article>
-    <aside class="card">
-      <h2>Scope Guard</h2>
-      <ul>
-        <li>No database schema or data migration changes.</li>
-        <li>Additive reducer contracts preserve older clients.</li>
-        <li>No permission or storage-key changes.</li>
-        <li>No dependency additions.</li>
-        <li>No visual redesign.</li>
-        <li>Reducer-first production release completed.</li>
-      </ul>
-    </aside>
-  </section>
+      <section class="grid">
+        <article class="card wide">
+          <h2>Files To Review</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Area</th>
+                <th>Review focus</th>
+                <th>Commit</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>lib/spacetime/use-live-room.ts</code></td>
+                <td>
+                  Connection lifecycle and reducer commands remain compatible
+                  after snapshot/type extraction.
+                </td>
+                <td>Batch 3 patch</td>
+              </tr>
+              <tr>
+                <td><code>lib/spacetime/live-room/**</code></td>
+                <td>
+                  Stable public contracts and canonical row-to-state snapshot
+                  derivation.
+                </td>
+                <td>Batch 3 patch</td>
+              </tr>
+              <tr>
+                <td><code>spacetime/src/*.ts</code></td>
+                <td>
+                  Pure normalization, media-reference, and queue calculations;
+                  no reducer/schema movement.
+                </td>
+                <td>Batch 3 patch</td>
+              </tr>
+              <tr>
+                <td><code>components/room/room-experience.tsx</code></td>
+                <td>Active mode loading boundary and stable stage fallback.</td>
+                <td>Batch 3 patch</td>
+              </tr>
+              <tr>
+                <td>
+                  <code>components/room/watch/**</code>, <code>listen/**</code>
+                </td>
+                <td>
+                  Deferred Watch queue/media, audience panels, and Listen TV
+                  mode.
+                </td>
+                <td>Batch 3 patch</td>
+              </tr>
+              <tr>
+                <td><code>tests/**</code></td>
+                <td>
+                  Architecture boundaries, preserved authority checks, and
+                  loading contracts.
+                </td>
+                <td>Batch 3 patch</td>
+              </tr>
+              <tr>
+                <td><code>scripts/check-file-lengths.mjs</code></td>
+                <td>
+                  Reduced realtime entries become the new enforced legacy
+                  ceilings.
+                </td>
+                <td>Batch 3 integration</td>
+              </tr>
+            </tbody>
+          </table>
+        </article>
+        <aside class="card">
+          <h2>Scope Guard</h2>
+          <ul>
+            <li>No database schema or data migration changes.</li>
+            <li>
+              No reducer names, payloads, schema, or generated binding changes.
+            </li>
+            <li>No permission or storage-key changes.</li>
+            <li>No dependency additions.</li>
+            <li>No visual redesign.</li>
+            <li>Loading fallbacks preserve stage and drawer geometry.</li>
+          </ul>
+        </aside>
+      </section>
 
-  <section class="grid">
-    <article class="card full">
-      <h2>Verification Evidence</h2>
-      <table>
-        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
-        <tbody>
-          <tr><td>Compile and quality</td><td class="good">Passed</td><td>Typecheck, full lint, diff check, Next.js production build, and import graph audit with 0 cycles.</td></tr>
-          <tr><td>Complete automated suites</td><td class="good">Passed</td><td>201/201 across sync, queue, media/security, SpacetimeDB, identity, dev, YouTube, and recommendations.</td></tr>
-          <tr><td>File and graph policy</td><td class="good">Passed</td><td>Zero file-ceiling violations; 14 warnings; 144 files processed with zero circular dependencies.</td></tr>
-          <tr><td>Local browser</td><td class="warn">Environment blocked</td><td>Stale-room recovery and dashboard passed. Fresh room fails before queue rendering when the local SpacetimeDB connection is inactive.</td></tr>
-          <tr><td>Release smoke QA</td><td class="good">Passed</td><td>Owner/member/guest queue, Add Media, uploaded playback, manual Next/Previous, natural advancement, and catalogue permissions passed live.</td></tr>
-        </tbody>
-      </table>
-    </article>
-  </section>
+      <section class="grid">
+        <article class="card full">
+          <h2>Verification Evidence</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Gate</th>
+                <th>Result</th>
+                <th>Evidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Compile and quality</td>
+                <td class="good">Passed</td>
+                <td>
+                  Typecheck, full lint, formatting, diff check, SpacetimeDB
+                  build/codegen, and Next.js production build.
+                </td>
+              </tr>
+              <tr>
+                <td>Complete automated suites</td>
+                <td class="good">Passed</td>
+                <td>
+                  211/211; focused sync 70/70, queue 53/53, and SpacetimeDB
+                  23/23.
+                </td>
+              </tr>
+              <tr>
+                <td>File policy</td>
+                <td class="good">Passed</td>
+                <td>Zero file-ceiling violations and 14 warnings.</td>
+              </tr>
+              <tr>
+                <td>Bundle comparison</td>
+                <td class="good">Passed</td>
+                <td>
+                  1,065,471 to 838,180 initial room JavaScript bytes; CSS
+                  unchanged at 161,547 bytes.
+                </td>
+              </tr>
+              <tr>
+                <td>Local guest browser</td>
+                <td class="good">Partial pass</td>
+                <td>
+                  Existing Listen room, deferred TV open/exit, and queue drawer
+                  passed without captured console errors.
+                </td>
+              </tr>
+              <tr>
+                <td>Temporary-production live QA</td>
+                <td class="good">Passed</td>
+                <td>
+                  The owner confirmed Watch/Listen switching, deferred panels,
+                  playback continuity, queue behavior, uploaded-media access,
+                  desktop, and mobile behavior.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </article>
+      </section>
 
-  <section class="grid">
-    <article class="card wide">
-      <h2>Boundary Checkpoint</h2>
-      <p><strong>Queue:</strong> 2,205-line monolith to a 195-line entry plus 12 bounded modules. <strong>Media:</strong> 1,939-line monolith to a 49-line entry plus 12 domain modules.</p>
-      <div class="bar" aria-label="Batch 2 implementation complete"><span style="width:100%"></span></div>
-      <p class="muted">The change establishes testable ownership boundaries. Dynamic loading and a measurable room payload comparison remain Batch 3 scope.</p>
-    </article>
-    <aside class="card callout">
-      <h2>Release Decision</h2>
-      <p>Batch 2 passed reducer-first production release, health checks, and owner QA. Merge to <code>main</code> is approved; Batch 3 remains intentionally unstarted.</p>
-    </aside>
-  </section>
-</main>
-</body>
+      <section class="grid">
+        <article class="card wide">
+          <h2>Boundary Checkpoint</h2>
+          <p>
+            <strong>Client realtime:</strong> 1,541-line hook to a 918-line
+            entry plus 645 lines of focused contracts and snapshot logic.
+            <strong>Server realtime:</strong> 2,327-line entry to 2,205 lines
+            plus 170 lines of pure helpers.
+          </p>
+          <div class="bar" aria-label="Batch 3 implementation complete">
+            <span style="width: 100%"></span>
+          </div>
+          <p class="muted">
+            The structural goal is complete. Further Spacetime reducer-domain
+            decomposition needs a separate approved task because it would move a
+            higher-risk contract surface.
+          </p>
+        </article>
+        <aside class="card callout">
+          <h2>Release Decision</h2>
+          <p>
+            Batch 3 passed automated, local guest, and temporary-production
+            owner QA. Atomic commit, task-branch push, fast-forward to
+            <code>main</code>, and clean committed production deployment are
+            approved.
+          </p>
+        </aside>
+      </section>
+    </main>
+  </body>
 </html>

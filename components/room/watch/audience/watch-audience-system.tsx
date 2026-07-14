@@ -1,14 +1,22 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { PanelRightClose, PanelRightOpen } from "lucide-react";
 
 import { Avatar } from "@/components/ui";
 import type { RoomSnapshot } from "@/lib/rooms";
 import type { LiveRoomState } from "@/lib/spacetime";
-import { MembersPanel } from "../../members-panel";
-import { RoomChatPanel } from "../../room-chat-panel";
 import { getMemberAccentColor } from "../presentation";
 import { WatchSurfaceHeader } from "../watch-surface-header";
+
+const MembersPanel = dynamic(
+  () => import("../../members-panel").then((module) => module.MembersPanel),
+  { loading: AudiencePanelLoadingBoundary },
+);
+const RoomChatPanel = dynamic(
+  () => import("../../room-chat-panel").then((module) => module.RoomChatPanel),
+  { loading: AudiencePanelLoadingBoundary },
+);
 
 export function WatchAudienceSystem({
   expanded,
@@ -96,5 +104,16 @@ export function WatchAudienceSystem({
         />
       </div>
     </aside>
+  );
+}
+
+function AudiencePanelLoadingBoundary() {
+  return (
+    <div
+      aria-busy="true"
+      aria-label="Loading audience panel"
+      className="animate-pulse border border-white/10 bg-background/20"
+      style={{ minHeight: "16rem" }}
+    />
   );
 }

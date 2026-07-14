@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { ShieldX } from "lucide-react";
 
@@ -10,8 +11,21 @@ import type { AccountSummary } from "@/lib/account/types";
 import type { RoomSnapshot } from "@/lib/rooms";
 import { PLAYER_FULLSCREEN_EVENT } from "@/lib/player/local-controls";
 import { useLiveRoom } from "@/lib/spacetime";
-import { ListenModeLayout } from "./listen-mode-layout";
-import { WatchModeLayout } from "./watch-mode-layout";
+
+const ListenModeLayout = dynamic(
+  () =>
+    import("./listen/listen-mode-layout").then(
+      (module) => module.ListenModeLayout,
+    ),
+  { loading: RoomModeLoadingBoundary },
+);
+const WatchModeLayout = dynamic(
+  () =>
+    import("./watch/watch-mode-layout").then(
+      (module) => module.WatchModeLayout,
+    ),
+  { loading: RoomModeLoadingBoundary },
+);
 
 type RoomExperienceProps = {
   account: AccountSummary;
@@ -139,6 +153,20 @@ function RoomRemovedNotice({ message }: { message: string }) {
           Back to dashboard
         </Button>
       </section>
+    </main>
+  );
+}
+
+function RoomModeLoadingBoundary() {
+  return (
+    <main
+      aria-busy="true"
+      aria-label="Loading room"
+      className="grid h-dvh min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden bg-background px-margin-mobile py-3 text-on-surface md:px-margin-desktop"
+    >
+      <div className="h-12 animate-pulse border-b border-white/10 bg-surface-container-lowest/70" />
+      <div className="min-h-0 animate-pulse rounded-xl border border-white/10 bg-black/60 shadow-screen-glow" />
+      <div className="h-20 animate-pulse border-t border-white/10 bg-surface-container-lowest/70" />
     </main>
   );
 }

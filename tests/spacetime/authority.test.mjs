@@ -4,12 +4,25 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const root = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../..",
+);
 const sourcePath = path.join(root, "spacetime/src/index.ts");
 const serverHelperPath = path.join(root, "lib/rooms/live-authority.ts");
+const mediaReferencesPath = path.join(
+  root,
+  "spacetime/src/media-references.ts",
+);
+const queueCalculationsPath = path.join(
+  root,
+  "spacetime/src/queue-calculations.ts",
+);
 
 const spacetimeSource = await readFile(sourcePath, "utf8");
 const serverHelperSource = await readFile(serverHelperPath, "utf8");
+const mediaReferencesSource = await readFile(mediaReferencesPath, "utf8");
+const queueCalculationsSource = await readFile(queueCalculationsPath, "utf8");
 
 function sectionBetween(source, start, end) {
   const startIndex = source.indexOf(start);
@@ -80,8 +93,13 @@ test("seed room session requires and consumes a private grant", () => {
     "export const update_room_name",
   );
   const validationIndex = reducer.indexOf("getValidRoomSeedGrant");
-  const deleteIndex = reducer.indexOf("ctx.db.room_seed_grant.delete(seedGrant)");
-  const insertIndex = reducer.indexOf("ctx.db.room_session.insert", deleteIndex);
+  const deleteIndex = reducer.indexOf(
+    "ctx.db.room_seed_grant.delete(seedGrant)",
+  );
+  const insertIndex = reducer.indexOf(
+    "ctx.db.room_session.insert",
+    deleteIndex,
+  );
 
   assert.notEqual(validationIndex, -1);
   assert.notEqual(deleteIndex, -1);
@@ -101,7 +119,10 @@ test("seed grant validation rejects expired and mismatched grants", () => {
   assert.match(helper, /ctx\.db\.room_seed_grant\.delete\(grant\)/);
   assert.match(helper, /grant\.room_id\s*!==\s*roomId/);
   assert.match(helper, /grant\.host_member_id\s*!==\s*hostMemberId/);
-  assert.match(helper, /constantTimeStringEqual\(grant\.seed_token,\s*seedToken\.trim\(\)\)/);
+  assert.match(
+    helper,
+    /constantTimeStringEqual\(grant\.seed_token,\s*seedToken\.trim\(\)\)/,
+  );
 });
 
 test("server helper issues random one-time seed grants with server auth token", () => {
@@ -122,8 +143,14 @@ test("play queue item reducer uses playback authority", () => {
     "export const move_queue_item",
   );
 
-  assert.match(reducer, /getAuthorizedPlaybackActor\(ctx,\s*room_id,\s*actor_member_id\)/);
-  assert.doesNotMatch(reducer, /getAuthorizedHost\(ctx,\s*room_id,\s*actor_member_id\)/);
+  assert.match(
+    reducer,
+    /getAuthorizedPlaybackActor\(ctx,\s*room_id,\s*actor_member_id\)/,
+  );
+  assert.doesNotMatch(
+    reducer,
+    /getAuthorizedHost\(ctx,\s*room_id,\s*actor_member_id\)/,
+  );
 });
 
 test("queue management reducers use queue-management authority", () => {
@@ -170,7 +197,10 @@ test("add queue item prevents duplicate active sources", () => {
     "export const remove_queue_item",
   );
 
-  assert.match(reducer, /findDuplicateActiveQueueItem\(ctx,\s*room_id,\s*source_type,\s*trimmedUrl\)/);
+  assert.match(
+    reducer,
+    /findDuplicateActiveQueueItem\(ctx,\s*room_id,\s*source_type,\s*trimmedUrl\)/,
+  );
   assert.match(reducer, /queue_duplicate_ignored/);
 });
 
@@ -202,7 +232,8 @@ test("played queue items receive server-authoritative history sequence", () => {
     "function normalizeQueuedPositions",
   );
 
-  assert.match(helper, /played_sequence/);
+  assert.match(helper, /calculateNextPlayedSequence\(items\)/);
+  assert.match(queueCalculationsSource, /played_sequence/);
   assert.match(reducer, /commitQueueAdvance/);
   assert.match(
     commitHelper,
@@ -237,8 +268,14 @@ test("autoplay queue advancement is atomic and stale-safe", () => {
   assert.match(helper, /status === "queued"/);
   assert.match(helper, /normalizeQueueMode\(queueMode\) !== "loop"/);
   assert.match(helper, /status === "played"/);
-  assert.match(normalReducer, /expected_active_queue_item_id:\s*t\.option\(t\.string\(\)\)/);
-  assert.match(normalReducer, /expected_source_url:\s*t\.option\(t\.string\(\)\)/);
+  assert.match(
+    normalReducer,
+    /expected_active_queue_item_id:\s*t\.option\(t\.string\(\)\)/,
+  );
+  assert.match(
+    normalReducer,
+    /expected_source_url:\s*t\.option\(t\.string\(\)\)/,
+  );
   assert.doesNotMatch(normalReducer, /expected_next_queue_item_id/);
   assert.doesNotMatch(normalReducer, /resolved_source_url/);
   assert.match(uploadedReducer, /expected_next_queue_item_id:\s*t\.string\(\)/);
@@ -248,16 +285,26 @@ test("autoplay queue advancement is atomic and stale-safe", () => {
     uploadedReducer,
     /nextPlaybackQueueItem\([\s\S]*ctx,[\s\S]*room_id,[\s\S]*authority\.session\.queue_mode/,
   );
-  assert.match(uploadedReducer, /nextQueueItem\.queue_item_id !== expectedNextQueueItemId/);
+  assert.match(
+    uploadedReducer,
+    /nextQueueItem\.queue_item_id !== expectedNextQueueItemId/,
+  );
   assert.match(uploadedReducer, /resolveQueuePlaybackSource/);
   assert.match(uploadedReducer, /commitQueueAdvance/);
-  assert.match(commitHelper, /active_queue_item_id:\s*nextQueueItem\.queue_item_id/);
+  assert.match(
+    commitHelper,
+    /active_queue_item_id:\s*nextQueueItem\.queue_item_id/,
+  );
   assert.match(commitHelper, /source_url:\s*sourceUrl/);
   assert.match(commitHelper, /status:\s*"playing"/);
-  assert.match(commitHelper, /played_sequence:\s*nextPlayedSequence\(ctx,\s*session\.room_id\)/);
+  assert.match(
+    commitHelper,
+    /played_sequence:\s*nextPlayedSequence\(ctx,\s*session\.room_id\)/,
+  );
   assert.ok(
-    uploadedReducer.indexOf("nextQueueItem.queue_item_id !== expectedNextQueueItemId") <
-      uploadedReducer.indexOf("commitQueueAdvance"),
+    uploadedReducer.indexOf(
+      "nextQueueItem.queue_item_id !== expectedNextQueueItemId",
+    ) < uploadedReducer.indexOf("commitQueueAdvance"),
     "stale next-item rejection must happen before queue mutation",
   );
   assert.ok(
@@ -268,16 +315,20 @@ test("autoplay queue advancement is atomic and stale-safe", () => {
 });
 
 test("uploaded autoplay source replacement is opaque and type constrained", () => {
-  const helper = sectionBetween(
-    spacetimeSource,
-    "const uploadedAssetReferencePrefix",
-    "function normalizeRoomMode",
+  assert.match(spacetimeSource, /from "\.\/media-references"/);
+  assert.match(mediaReferencesSource, /mw-uploaded-asset:/);
+  assert.match(mediaReferencesSource, /mw-uploaded-session:/);
+  assert.match(mediaReferencesSource, /normalized\.length <= 512/);
+  assert.match(
+    mediaReferencesSource,
+    /isUploadedAssetReference\(normalizedQueueSourceUrl\)/,
   );
-
-  assert.match(helper, /mw-uploaded-asset:/);
-  assert.match(helper, /mw-uploaded-session:/);
-  assert.match(helper, /normalized\.length <= 512/);
-  assert.match(helper, /isUploadedAssetReference\(normalizedQueueSourceUrl\)/);
-  assert.match(helper, /isUploadedSessionReference\(normalizedResolvedSourceUrl\)/);
-  assert.match(helper, /return normalizedResolvedSourceUrl \? null : normalizedQueueSourceUrl/);
+  assert.match(
+    mediaReferencesSource,
+    /isUploadedSessionReference\(normalizedResolvedSourceUrl\)/,
+  );
+  assert.match(
+    mediaReferencesSource,
+    /return normalizedResolvedSourceUrl \? null : normalizedQueueSourceUrl/,
+  );
 });

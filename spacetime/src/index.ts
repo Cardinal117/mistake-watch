@@ -5,6 +5,30 @@ import {
   mediaProviderId,
   normalizeMediaFailure,
 } from "./media-failure";
+import {
+  isUploadedAssetReference,
+  resolveQueuePlaybackSource,
+} from "./media-references";
+import {
+  clampPositionSeconds,
+  normalizeAvatarKey,
+  normalizeChatText,
+  normalizeDurationSeconds,
+  normalizePlaybackStatus,
+  normalizeQueueMode,
+  normalizeRoomMode,
+  normalizeRoomName,
+  normalizeSourceType,
+  normalizeSourceUrl,
+} from "./normalization";
+import {
+  calculateNextPlayedSequence,
+  calculateNextQueuePosition,
+  calculatePlayNextQueuePosition,
+  selectActiveQueueItems,
+  selectQueuedQueueItems,
+  sortQueueItems,
+} from "./queue-calculations";
 
 const KICK_REJOIN_BLOCK_MS = 8_000;
 
@@ -545,141 +569,6 @@ function getAuthorizedQueueManager(
   return { actor, session };
 }
 
-function clampPositionSeconds(positionSeconds: number) {
-  if (!Number.isFinite(positionSeconds) || positionSeconds < 0) {
-    return 0;
-  }
-
-  return positionSeconds;
-}
-
-function normalizePlaybackStatus(status: string) {
-  return status === "playing" ||
-    status === "buffering" ||
-    status === "ended" ||
-    status === "error"
-    ? status
-    : "paused";
-}
-
-function normalizeSourceType(sourceType: string) {
-  if (sourceType === "hls" || sourceType === "youtube") {
-    return sourceType;
-  }
-
-  return "direct";
-}
-
-function normalizeSourceUrl(sourceUrl: string) {
-  return sourceUrl.trim();
-}
-
-const uploadedAssetReferencePrefix = "mw-uploaded-asset:";
-const uploadedSessionReferencePrefix = "mw-uploaded-session:";
-
-function isUploadedAssetReference(sourceUrl: string) {
-  return hasUploadedReference(sourceUrl, uploadedAssetReferencePrefix);
-}
-
-function isUploadedSessionReference(sourceUrl: string) {
-  return hasUploadedReference(sourceUrl, uploadedSessionReferencePrefix);
-}
-
-function hasUploadedReference(sourceUrl: string, prefix: string) {
-  const normalized = normalizeSourceUrl(sourceUrl);
-
-  return (
-    normalized.length <= 512 &&
-    normalized.startsWith(prefix) &&
-    Boolean(normalized.slice(prefix.length).trim())
-  );
-}
-
-function resolveQueuePlaybackSource(
-  queueSourceUrl: string,
-  resolvedSourceUrl: string | undefined,
-) {
-  const normalizedQueueSourceUrl = normalizeSourceUrl(queueSourceUrl);
-  const normalizedResolvedSourceUrl = resolvedSourceUrl
-    ? normalizeSourceUrl(resolvedSourceUrl)
-    : undefined;
-
-  if (isUploadedAssetReference(normalizedQueueSourceUrl)) {
-    return normalizedResolvedSourceUrl &&
-      isUploadedSessionReference(normalizedResolvedSourceUrl)
-      ? normalizedResolvedSourceUrl
-      : null;
-  }
-
-  return normalizedResolvedSourceUrl ? null : normalizedQueueSourceUrl;
-}
-
-function normalizeRoomMode(mode: string) {
-  return mode === "listen" ? "listen" : "watch";
-}
-
-function normalizeQueueMode(mode: string) {
-  if (
-    mode === "shuffle" ||
-    mode === "smartShuffle" ||
-    mode === "loop" ||
-    mode === "autoplayRelated"
-  ) {
-    return mode;
-  }
-
-  return "normal";
-}
-
-function normalizeDurationSeconds(durationSeconds: number | undefined) {
-  if (
-    typeof durationSeconds !== "number" ||
-    !Number.isFinite(durationSeconds) ||
-    durationSeconds <= 0
-  ) {
-    return undefined;
-  }
-
-  return Math.max(0, Math.trunc(durationSeconds));
-}
-
-function normalizeRoomName(roomName: string) {
-  const normalized = roomName.trim().replace(/\s+/g, " ");
-
-  if (!normalized || normalized.length > 120) {
-    return "Untitled room";
-  }
-
-  return normalized;
-}
-
-function normalizeAvatarKey(avatarKey: string | undefined) {
-  if (
-    avatarKey === "audio" ||
-    avatarKey === "controller" ||
-    avatarKey === "cooling" ||
-    avatarKey === "memory" ||
-    avatarKey === "network" ||
-    avatarKey === "power" ||
-    avatarKey === "processor" ||
-    avatarKey === "storage"
-  ) {
-    return avatarKey;
-  }
-
-  return undefined;
-}
-
-function normalizeChatText(text: string) {
-  const normalized = text.trim().replace(/\s+/g, " ");
-
-  if (normalized.length > 500) {
-    return normalized.slice(0, 500).trim();
-  }
-
-  return normalized;
-}
-
 function chatMessageId(roomId: string, clientMessageId: string) {
   return `${roomId}:${clientMessageId}`;
 }
@@ -702,18 +591,18 @@ function activeQueueItems(
   ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
   roomId: string,
 ) {
-  return roomQueueItems(ctx, roomId)
-    .filter((item) => item.status === "queued" || item.status === "playing")
-    .sort((a, b) => a.position - b.position);
+  return selectActiveQueueItems(roomQueueItems(ctx, roomId));
 }
 
 function roomQueueItems(
   ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
   roomId: string,
 ) {
-  return [...ctx.db.live_queue_item.iter()]
-    .filter((item) => item.room_id === roomId && item.status !== "removed")
-    .sort((a, b) => a.position - b.position);
+  return sortQueueItems(
+    [...ctx.db.live_queue_item.iter()].filter(
+      (item) => item.room_id === roomId && item.status !== "removed",
+    ),
+  );
 }
 
 function findDuplicateActiveQueueItem(
@@ -755,9 +644,7 @@ function queuedQueueItems(
   ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
   roomId: string,
 ) {
-  return activeQueueItems(ctx, roomId).filter(
-    (item) => item.status === "queued",
-  );
+  return selectQueuedQueueItems(activeQueueItems(ctx, roomId));
 }
 
 function nextQueuePosition(
@@ -765,21 +652,17 @@ function nextQueuePosition(
   roomId: string,
 ) {
   const items = activeQueueItems(ctx, roomId);
-
-  return items.length > 0
-    ? Math.max(...items.map((item) => item.position)) + 1
-    : 0;
+  return calculateNextQueuePosition(items);
 }
 
 function nextPlayedSequence(
   ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
   roomId: string,
 ) {
-  const playedSequences = [...ctx.db.live_queue_item.iter()]
-    .filter((item) => item.room_id === roomId)
-    .map((item) => item.played_sequence ?? 0);
-
-  return playedSequences.length > 0 ? Math.max(...playedSequences) + 1 : 1;
+  const items = [...ctx.db.live_queue_item.iter()].filter(
+    (item) => item.room_id === roomId,
+  );
+  return calculateNextPlayedSequence(items);
 }
 
 function nextPlaybackQueueItem(
@@ -804,15 +687,10 @@ function playNextQueuePosition(
   roomId: string,
   excludeQueueItemId?: string,
 ) {
-  const lockedPositions = queuedQueueItems(ctx, roomId)
-    .filter(
-      (item) =>
-        item.queue_item_id !== excludeQueueItemId &&
-        (item.is_pinned || item.is_play_next),
-    )
-    .map((item) => item.position);
-
-  return lockedPositions.length > 0 ? Math.max(...lockedPositions) + 1 : 0;
+  return calculatePlayNextQueuePosition(
+    queuedQueueItems(ctx, roomId),
+    excludeQueueItemId,
+  );
 }
 
 function shiftQueuedItemsAtOrAfter(

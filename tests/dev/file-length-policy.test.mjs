@@ -37,3 +37,8 @@ test("legacy exceptions cannot grow past their recorded ceilings", () => {
   assert.equal(result.violations.length, 1);
   assert.match(result.violations[0].reason, /legacy ceiling/);
 });
+
+test("Batch 3 realtime entries cannot regrow past their reduced sizes", () => {
+  assert.equal(legacyFileCeilings.get("lib/spacetime/use-live-room.ts"), 918);
+  assert.equal(legacyFileCeilings.get("spacetime/src/index.ts"), 2_205);
+});

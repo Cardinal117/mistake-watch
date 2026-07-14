@@ -171,3 +171,52 @@ module, its responsibility, and the remaining Batch 2-3 targets.
 - Owner QA passed manual Next, natural uploaded advancement, NEXT badge/state
   consumption, and Previous leaving the uploaded item. Batch 2 is approved for
   merge to `main`.
+
+## Batch 3 implementation result
+
+- Three disjoint agent scopes handled client realtime extraction, server pure
+  helpers, and dynamic loading; the main integration branch reviewed and
+  verified the combined diff.
+- `lib/spacetime/use-live-room.ts` fell from 1,541 to 918 lines. Snapshot
+  derivation and public client contracts now live in two focused modules while
+  `LiveRoomState` and hook behavior remain compatible.
+- `spacetime/src/index.ts` fell from 2,327 to 2,205 lines. Normalization, media
+  reference, and queue calculation helpers moved to three pure modules without
+  schema, reducer name, payload, or generated-binding changes.
+- Watch and Listen layouts now load by active mode. Watch queue/media, audience
+  panels, and Listen TV mode load only when opened.
+- Initial `/rooms/[roomId]` JavaScript fell from 1,065,471 to 838,180 raw bytes:
+  227,291 bytes or 21.3%. Global CSS remained exactly 161,547 bytes.
+- No dependencies, database migrations, permission rules, storage references,
+  reducer contracts, or intentional visual behavior changed.
+- The file-length ratchet now uses the reduced 918-line and 2,205-line totals,
+  so either realtime entry regrowing by one line fails policy checks.
+
+## Batch 3 verification
+
+- Typecheck, full lint, production build, SpacetimeDB build/codegen, formatting,
+  diff check, and the file-length ratchet passed.
+- Complete automated suite: 211/211. Focused suites include sync 70/70, queue
+  53/53, and SpacetimeDB 23/23.
+- File-length ratchet: zero violations and 14 warnings.
+- Local guest QA passed existing Listen-room initialization, deferred TV mode
+  open/exit, and queue drawer open with no captured console warnings or errors.
+- A newly created local Watch room fails before the Watch layout mounts because
+  the local Spacetime connection is inactive and its connection object reaches
+  the server error boundary. Reload reproduces it. This matches the tracked
+  environment/readiness issue and is not attributed to the loading split.
+- Preview QA remains required for owner-authenticated Watch/Listen switching,
+  deferred Watch queue/media and audience panels, upload permissions, and
+  desktop/mobile layout stability.
+
+## Batch 3 live QA and release approval
+
+- Temporary production deployment `dpl_JD7pLdewZqbsWpB8mtC1Fi4YibRT` was built
+  from the isolated Batch 3 worktree and labeled for temporary production QA.
+- Both production aliases and `/api/health` returned HTTP 200 after deployment.
+- The user confirmed the application works correctly across the requested live
+  QA surface, including the deferred room-mode and hidden-workflow paths.
+- TASK-007 Batch 3 is approved for an atomic commit, task-branch push,
+  fast-forward of `main`, and a clean committed production deployment.
+- Rollback remains `dpl_CXo1Ed9BPqvJFD5hWfAQmuA3Pusy` until the committed
+  deployment passes final health checks.

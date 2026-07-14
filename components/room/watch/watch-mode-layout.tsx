@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 
 import { getYouTubeThumbnailUrl } from "@/lib/player/source";
 import { MediaStage } from "../media-stage";
@@ -10,7 +11,14 @@ import { WatchAudienceSystem } from "./audience/watch-audience-system";
 import type { WatchModeLayoutProps, WatchSurfaceId } from "./contracts";
 import { WatchSignalBand } from "./header/watch-signal-band";
 import { WatchAmbientGlow } from "./presentation";
-import { WatchQueueSurface } from "./queue/watch-queue-surface";
+
+const WatchQueueSurface = dynamic(
+  () =>
+    import("./queue/watch-queue-surface").then(
+      (module) => module.WatchQueueSurface,
+    ),
+  { loading: WatchQueueSurfaceLoadingBoundary },
+);
 
 export function WatchModeLayout({
   account,
@@ -88,13 +96,15 @@ export function WatchModeLayout({
         </main>
       </div>
 
-      <WatchQueueSurface
-        account={account}
-        activeSurface={activeSurface}
-        liveRoom={liveRoom}
-        onClose={closeSurface}
-        room={room}
-      />
+      {activeSurface === "queue" ? (
+        <WatchQueueSurface
+          account={account}
+          activeSurface={activeSurface}
+          liveRoom={liveRoom}
+          onClose={closeSurface}
+          room={room}
+        />
+      ) : null}
 
       <WatchAudienceSystem
         expanded={activeSurface === "audience"}
@@ -108,6 +118,21 @@ export function WatchModeLayout({
         liveRoom={liveRoom}
         presentation="cinematic"
         room={room}
+      />
+    </div>
+  );
+}
+
+function WatchQueueSurfaceLoadingBoundary() {
+  return (
+    <div
+      aria-busy="true"
+      aria-label="Loading queue and media"
+      className="fixed inset-0 z-[70] bg-background/45 backdrop-blur-[2px]"
+    >
+      <div
+        className="absolute inset-x-2 bottom-2 animate-pulse rounded-lg border border-white/10 bg-background md:inset-x-6 md:bottom-auto md:top-2 md:mx-auto md:max-w-[92rem]"
+        style={{ height: "min(94dvh, 56rem)" }}
       />
     </div>
   );

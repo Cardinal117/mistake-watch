@@ -39,32 +39,32 @@ on localhost.
 ### Batch 1.1: Mode-switch continuity release blocker
 
 - [x] Confirm the temporary modularized deployment resets direct/uploaded
-  playback to `0:00` while the production baseline preserves position.
+      playback to `0:00` while the production baseline preserves position.
 - [x] Prevent passive direct-player pause, play, and seek events from writing
-  canonical room state during player remount and synchronization.
+      canonical room state during player remount and synchronization.
 - [x] Add regression coverage for passive event authority and mode-reducer
-  preservation of playback position and duration metadata.
+      preservation of playback position and duration metadata.
 - [x] Run player, queue, media/security, SpacetimeDB, typecheck, lint, and build
-  gates.
+      gates.
 - [x] Repeat owner-authenticated Listen/Watch switching for paused and playing
-  YouTube, direct, and uploaded sources on a temporary deployment.
+      YouTube, direct, and uploaded sources on a temporary deployment.
 
 Batch 1.1 status: released to production after automated and live owner QA.
 
 ### Incident hardening: MW-BUG-001 atomic uploaded autoplay
 
 - [x] Replace uploaded autoplay's separate source-load and playback writes with
-  one `advanceUploadedQueueItem` canonical mutation.
+      one `advanceUploadedQueueItem` canonical mutation.
 - [x] Add a backward-compatible uploaded reducer with required
-  expected-next-item and uploaded-session-reference validation.
+      expected-next-item and uploaded-session-reference validation.
 - [x] Regenerate the TypeScript reducer contract.
 - [x] Make the existing atomicity regression pass and extend stale/source
-  validation coverage.
+      validation coverage.
 - [x] Run the complete automated release gate.
 - [x] Publish the additive reducer to production SpacetimeDB before deploying
-  the frontend client; the existing reducer contract remains unchanged.
+      the frontend client; the existing reducer contract remains unchanged.
 - [x] Verify uploaded autoplay with an owner and second participant, including
-  duplicate-ended and stale/reordered-next scenarios.
+      duplicate-ended and stale/reordered-next scenarios.
 
 MW-BUG-001 status: closed after ordered production release and user-confirmed
 two-client QA.
@@ -72,11 +72,11 @@ two-client QA.
 ## Batch 2: Shared workflow and server boundaries
 
 - [x] Split `queue-panel.tsx` into queue rendering, controls, history,
-  notifications, and Add Media modules.
+      notifications, and Add Media modules.
 - [x] Extract shared queue/Add Media contracts and controller behavior used by
-  listen and watch.
+      listen and watch.
 - [x] Split `lib/media/assets.ts` into domain services behind compatibility
-  exports.
+      exports.
 - [x] Remove verified dead mocks and stale room status text.
 - [x] Expand formatting coverage and introduce warning/ratchet reporting.
 
@@ -89,40 +89,48 @@ remains the release check.
 ### Batch 2 production-QA blocker: MW-BUG-003 Play Next consumption
 
 - [x] Confirm the active item retains `is_play_next` after manual and automatic
-  queue advancement.
+      queue advancement.
 - [x] Consume one-shot Play Next priority in every reducer path that promotes a
-  queue item to `playing`.
+      queue item to `playing`.
 - [x] Add regression coverage for autoplay, explicit play, and failure-recovery
-  advancement.
+      advancement.
 - [x] Build the SpacetimeDB module and run focused sync, reducer, and queue
-  suites.
+      suites.
 - [x] Publish the behavior-only SpacetimeDB update before retesting production.
 - [x] Trace the remaining manual-only failure to uploaded `playQueueItemNow`,
-  which loaded the session source without promoting the selected queue row.
+      which loaded the session source without promoting the selected queue row.
 - [x] Add an uploaded-aware manual-play reducer that validates the opaque
-  session reference and commits queue history, active item, source, and
-  playback state atomically.
+      session reference and commits queue history, active item, source, and
+      playback state atomically.
 - [x] Regenerate client bindings and pass sync, authority, typecheck, lint, and
-  production-build gates.
+      production-build gates.
 - [x] Publish the additive manual-play reducer before deploying its frontend
-  caller.
+      caller.
 - [x] Confirm manual and automatic uploaded advancement remove the NEXT badge
-  for the owner and a second participant, and that Previous leaves the uploaded
-  item instead of replaying it.
+      for the owner and a second participant, and that Previous leaves the uploaded
+      item instead of replaying it.
 
 MW-BUG-003 status: closed after reducer-first release and owner-confirmed live
 QA of manual Next, natural advancement, NEXT consumption, and Previous.
 
 ## Batch 3: Realtime and loading boundaries
 
-- Decompose `use-live-room.ts` while preserving `LiveRoomState`.
-- Extract pure helpers from `spacetime/src/index.ts` without schema/reducer changes.
-- Add dynamic room-mode loading and lazy hidden workflow boundaries.
-- Re-run and compare route bundle baselines.
+- [x] Decompose `use-live-room.ts` while preserving `LiveRoomState`.
+- [x] Extract pure helpers from `spacetime/src/index.ts` without schema/reducer changes.
+- [x] Add dynamic room-mode loading and lazy hidden workflow boundaries.
+- [x] Re-run and compare route bundle baselines.
+
+Batch 3 status: implementation, automated QA, and temporary-production live QA
+complete. Initial room JavaScript fell 21.3% with unchanged CSS. Local guest
+Listen, TV-mode, and queue-drawer QA passed. The owner confirmed authenticated
+Watch/Listen switching, deferred workflows, playback continuity, queue behavior,
+and uploaded-media access behavior on the temporary production deployment.
+Fresh local room creation still reproduces the separately tracked Spacetime
+connection readiness failure before the Watch layout mounts.
 
 ## Final gate
 
-- Complete automated suite and production build.
-- Desktop/mobile watch and listen QA.
-- Owner, member, guest, queue, playback, upload, permissions, Media Session, and failure-resilience checks.
-- Commit report and explicit approval before main/push/deploy.
+- [x] Complete automated suite and production build.
+- [x] Desktop/mobile watch and listen QA.
+- [x] Owner, member, guest, queue, playback, upload, permissions, Media Session, and failure-resilience checks.
+- [x] Commit report and explicit approval before main/push/deploy.

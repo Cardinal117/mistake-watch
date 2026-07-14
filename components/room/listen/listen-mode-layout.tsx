@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import dynamic from "next/dynamic";
 import { dispatchPlayerVolume } from "@/lib/player/local-controls";
 import { getYouTubeThumbnailUrl } from "@/lib/player/source";
 import { expectedPositionAt } from "@/lib/player";
@@ -13,7 +14,6 @@ import {
   DEFAULT_LISTEN_VOLUME,
 } from "@/components/room/listen/shared";
 import { ListenNowPlayingPanel } from "@/components/room/listen/now-playing/now-playing-panel";
-import { ListenTvModeLayout } from "@/components/room/listen/tv/tv-mode-layout";
 import { ListenTechnicalRoomHeader } from "@/components/room/listen/header/technical-room-header";
 import { ListenMobileRoomTools } from "@/components/room/listen/mobile/mobile-room-tools";
 import { ListenDiscoveryPanel } from "@/components/room/listen/discovery/discovery-panel";
@@ -33,6 +33,14 @@ import {
   usePersistentListenTvSettings,
   readStoredVolume,
 } from "@/components/room/listen/hooks/listen-hooks";
+
+const ListenTvModeLayout = dynamic(
+  () =>
+    import("@/components/room/listen/tv/tv-mode-layout").then(
+      (module) => module.ListenTvModeLayout,
+    ),
+  { loading: ListenTvModeLoadingBoundary },
+);
 
 export function ListenModeLayout({
   account,
@@ -396,5 +404,15 @@ export function ListenModeLayout({
         desktopShell={desktopShell}
       />
     </main>
+  );
+}
+
+function ListenTvModeLoadingBoundary() {
+  return (
+    <main
+      aria-busy="true"
+      aria-label="Loading TV mode"
+      className="grid h-dvh min-h-0 animate-pulse bg-black"
+    />
   );
 }

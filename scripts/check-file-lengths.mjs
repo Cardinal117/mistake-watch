@@ -9,8 +9,8 @@ export const legacyFileCeilings = new Map([
   ["components/account/account-command-panel.tsx", 806],
   ["components/room/transport-controls.tsx", 899],
   ["components/room/youtube-media-player.tsx", 891],
-  ["lib/spacetime/use-live-room.ts", 1_567],
-  ["spacetime/src/index.ts", 2_335],
+  ["lib/spacetime/use-live-room.ts", 918],
+  ["spacetime/src/index.ts", 2_205],
 ]);
 
 const scannedRoots = [
