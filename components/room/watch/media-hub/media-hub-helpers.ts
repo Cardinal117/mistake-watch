@@ -270,22 +270,21 @@ export async function captureAndUploadPoster(
   onComplete: (asset: MediaLibraryAsset) => void,
 ) {
   try {
-    const blob = await captureVideoPoster(asset.publicUrl);
+    if (!asset.contentUrl) {
+      return;
+    }
+
+    const blob = await captureVideoPoster(asset.contentUrl);
     const createResponse = await fetch(
       `/api/media/assets/${asset.id}/poster-upload`,
       { method: "POST" },
     );
     const createPayload = (await createResponse.json()) as {
       error?: string;
-      objectKey?: string;
       uploadUrl?: string;
     };
 
-    if (
-      !createResponse.ok ||
-      !createPayload.objectKey ||
-      !createPayload.uploadUrl
-    ) {
+    if (!createResponse.ok || !createPayload.uploadUrl) {
       throw new Error(createPayload.error ?? "Poster upload could not start.");
     }
 
@@ -293,11 +292,7 @@ export async function captureAndUploadPoster(
 
     const completeResponse = await fetch(
       `/api/media/assets/${asset.id}/poster`,
-      {
-        body: JSON.stringify({ objectKey: createPayload.objectKey }),
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-      },
+      { method: "POST" },
     );
     const completePayload = (await completeResponse.json()) as {
       asset?: MediaLibraryAsset;

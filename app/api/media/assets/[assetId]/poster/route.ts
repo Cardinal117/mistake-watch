@@ -1,6 +1,11 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
-import { completeMediaPoster, MediaAssetError } from "@/lib/media/assets";
+import {
+  completeMediaPoster,
+  getCatalogueAssetDelivery,
+  MediaAssetError,
+} from "@/lib/media/assets";
+import { createPresignedR2GetUrl } from "@/lib/media/r2";
 
 type RouteContext = {
   params: Promise<{
@@ -8,37 +13,51 @@ type RouteContext = {
   }>;
 };
 
-export async function POST(request: NextRequest, context: RouteContext) {
+export async function GET(_request: Request, context: RouteContext) {
   const { assetId } = await context.params;
 
   try {
-    const body = (await request.json()) as {
-      objectKey?: unknown;
-    };
-
-    if (typeof body.objectKey !== "string") {
-      return NextResponse.json(
-        { error: "Poster object key is required." },
-        { status: 400 },
-      );
-    }
-
-    const asset = await completeMediaPoster({
+    const delivery = await getCatalogueAssetDelivery({
       assetId,
-      objectKey: body.objectKey,
+      kind: "poster",
     });
+
+    return new NextResponse(null, {
+      headers: {
+        "Cache-Control": "private, no-store",
+        Location: createPresignedR2GetUrl({
+          expiresSeconds: 5 * 60,
+          objectKey: delivery.objectKey,
+        }),
+        "Referrer-Policy": "no-referrer",
+      },
+      status: 307,
+    });
+  } catch (error) {
+    return handleMediaAssetError(error, "Poster could not be loaded.");
+  }
+}
+
+export async function POST(_request: Request, context: RouteContext) {
+  const { assetId } = await context.params;
+
+  try {
+    const asset = await completeMediaPoster({ assetId });
 
     return NextResponse.json({ asset });
   } catch (error) {
-    if (error instanceof MediaAssetError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
-    }
+    return handleMediaAssetError(error, "Poster could not be saved.");
+  }
+}
 
-    console.error("[media-assets:poster-complete]", error);
-
+function handleMediaAssetError(error: unknown, fallback: string) {
+  if (error instanceof MediaAssetError) {
     return NextResponse.json(
-      { error: "Poster could not be saved." },
-      { status: 500 },
+      { error: error.message },
+      { status: error.status },
     );
   }
+
+  console.error("[media-assets:poster]", error);
+  return NextResponse.json({ error: fallback }, { status: 500 });
 }

@@ -15,9 +15,9 @@ import { startCloudConvertProcessing } from "../processing/service";
 import {
   assertR2ObjectExists,
   completeR2MultipartUpload,
+  createPrivateR2Reference,
   deriveMediaTitle,
   getR2Config,
-  getR2PublicUrl,
 } from "../r2";
 import {
   getOwnerMediaAssetById,
@@ -131,7 +131,10 @@ export async function completeMediaUpload(input: {
   const config = getR2Config();
   const title =
     normalizeTitle(input.title) ?? deriveMediaTitle(session.original_filename);
-  const publicUrl = getR2PublicUrl(session.object_key, config);
+  const privateReference = createPrivateR2Reference({
+    bucket: config.bucket,
+    objectKey: session.object_key,
+  });
   const durationSeconds = normalizeDuration(input.durationSeconds);
   const processingDecision = decideMediaProcessing({
     clientInspection: input.clientInspection as ClientMediaInspection | null,
@@ -175,7 +178,7 @@ export async function completeMediaUpload(input: {
             ? "approval_required"
             : "queued",
       processing_strategy: processingDecision.strategy,
-      public_url: publicUrl,
+      public_url: privateReference,
       r2_bucket: config.bucket,
       r2_object_key: session.object_key,
       source_file_size_bytes: session.file_size_bytes,

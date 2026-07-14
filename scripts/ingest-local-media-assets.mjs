@@ -19,13 +19,15 @@ if (!ownerUserId || sourcePaths.length === 0) {
   process.exit(1);
 }
 
-const supabaseUrl = readRequiredEnv("NEXT_PUBLIC_SUPABASE_URL").replace(/\/+$/, "");
+const supabaseUrl = readRequiredEnv("NEXT_PUBLIC_SUPABASE_URL").replace(
+  /\/+$/,
+  "",
+);
 const supabaseSecretKey = readRequiredEnv("SUPABASE_SECRET_KEY");
 const r2Config = {
   accessKeyId: readRequiredEnv("CLOUDFLARE_R2_ACCESS_KEY_ID"),
   bucket: readRequiredEnv("CLOUDFLARE_R2_BUCKET"),
   endpoint: readRequiredEnv("CLOUDFLARE_R2_ENDPOINT").replace(/\/+$/, ""),
-  publicBaseUrl: readRequiredEnv("CLOUDFLARE_R2_PUBLIC_BASE_URL").replace(/\/+$/, ""),
   secretAccessKey: readRequiredEnv("CLOUDFLARE_R2_SECRET_ACCESS_KEY"),
 };
 
@@ -42,7 +44,9 @@ async function ingestFile(sourcePath) {
 
   const assetId = crypto.randomUUID();
   const title = deriveMediaTitle(path.basename(sourcePath));
-  const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "mistake-watch-ingest-"));
+  const tempDir = await fsp.mkdtemp(
+    path.join(os.tmpdir(), "mistake-watch-ingest-"),
+  );
   const outputPath = path.join(tempDir, `${assetId}.browser.mp4`);
   const posterPath = path.join(tempDir, `${assetId}.jpg`);
 
@@ -75,8 +79,8 @@ async function ingestFile(sourcePath) {
       objectKey: posterObjectKey,
     });
 
-    const processedUrl = getR2PublicUrl(processedObjectKey);
-    const posterUrl = getR2PublicUrl(posterObjectKey);
+    const processedReference = getPrivateR2Reference(processedObjectKey);
+    const posterReference = getPrivateR2Reference(posterObjectKey);
 
     await insertAsset({
       id: assetId,
@@ -88,13 +92,13 @@ async function ingestFile(sourcePath) {
       mime_type: "video/mp4",
       owner_user_id: ownerUserId,
       poster_status: "ready",
-      public_url: processedUrl,
+      public_url: processedReference,
       r2_bucket: r2Config.bucket,
       r2_object_key: processedObjectKey,
       source_type: "r2_object",
       status: "ready",
       thumbnail_object_key: posterObjectKey,
-      thumbnail_url: posterUrl,
+      thumbnail_url: posterReference,
       title,
       visibility: "public",
     });
@@ -104,7 +108,9 @@ async function ingestFile(sourcePath) {
     console.log(`Poster URL: ${posterUrl}`);
     console.log("Asset ingested.");
   } finally {
-    await fsp.rm(tempDir, { force: true, recursive: true }).catch(() => undefined);
+    await fsp
+      .rm(tempDir, { force: true, recursive: true })
+      .catch(() => undefined);
   }
 }
 
@@ -311,8 +317,8 @@ function createPosterObjectKey(input) {
   return `media-posters/${input.ownerUserId}/${day}/${input.assetId}.jpg`;
 }
 
-function getR2PublicUrl(objectKey) {
-  return `${r2Config.publicBaseUrl}/${objectKey
+function getPrivateR2Reference(objectKey) {
+  return `r2-private://${encodeURIComponent(r2Config.bucket)}/${objectKey
     .split("/")
     .map((part) => encodeURIComponent(part))
     .join("/")}`;
@@ -402,7 +408,10 @@ function loadDotEnv(filePath) {
     }
 
     const key = trimmed.slice(0, separator).trim();
-    const value = trimmed.slice(separator + 1).trim().replace(/^["']|["']$/g, "");
+    const value = trimmed
+      .slice(separator + 1)
+      .trim()
+      .replace(/^["']|["']$/g, "");
 
     process.env[key] ??= value;
   }

@@ -5,7 +5,6 @@ import type { PlaylistPreviewItem } from "./contracts";
 type MediaLibraryAsset = {
   durationSeconds: number | null;
   id: string;
-  publicUrl: string;
   sourceMatches: Array<{
     sourceId: string;
     sourceType: string;

@@ -22,13 +22,10 @@ export type R2Config = {
   accountId: string;
   bucket: string;
   endpoint: string;
-  publicBaseUrl: string;
   secretAccessKey: string;
 };
 
-export type R2UploadValidation =
-  | { ok: true }
-  | { message: string; ok: false };
+export type R2UploadValidation = { ok: true } | { message: string; ok: false };
 
 export function getR2Config(): R2Config {
   const config = {
@@ -36,14 +33,12 @@ export function getR2Config(): R2Config {
     accountId: readRequiredEnv("CLOUDFLARE_ACCOUNT_ID"),
     bucket: readRequiredEnv("CLOUDFLARE_R2_BUCKET"),
     endpoint: readRequiredEnv("CLOUDFLARE_R2_ENDPOINT"),
-    publicBaseUrl: readRequiredEnv("CLOUDFLARE_R2_PUBLIC_BASE_URL"),
     secretAccessKey: readRequiredEnv("CLOUDFLARE_R2_SECRET_ACCESS_KEY"),
   };
 
   return {
     ...config,
     endpoint: config.endpoint.replace(/\/+$/, ""),
-    publicBaseUrl: config.publicBaseUrl.replace(/\/+$/, ""),
   };
 }
 
@@ -141,8 +136,11 @@ export function createR2CloudConvertPosterObjectKey(input: {
   return `media-posters/${input.ownerUserId}/${day}/${input.assetId}-cloudconvert.jpg`;
 }
 
-export function getR2PublicUrl(objectKey: string, config = getR2Config()) {
-  return `${config.publicBaseUrl}/${objectKey
+export function createPrivateR2Reference(input: {
+  bucket: string;
+  objectKey: string;
+}) {
+  return `r2-private://${encodeURIComponent(input.bucket)}/${input.objectKey
     .split("/")
     .map((part) => encodeURIComponent(part))
     .join("/")}`;
@@ -191,7 +189,9 @@ export async function createR2MultipartUpload(input: {
   const uploadId = readXmlValue(body, "UploadId");
 
   if (!uploadId) {
-    throw new Error("R2 multipart upload response did not include an upload id.");
+    throw new Error(
+      "R2 multipart upload response did not include an upload id.",
+    );
   }
 
   return uploadId;
@@ -267,7 +267,9 @@ export async function completeR2MultipartUpload(input: {
   });
 
   if (!response.ok) {
-    throw new Error(`R2 multipart upload could not complete: ${response.status}`);
+    throw new Error(
+      `R2 multipart upload could not complete: ${response.status}`,
+    );
   }
 }
 
@@ -286,7 +288,9 @@ export async function abortR2MultipartUpload(input: {
   const response = await fetch(url, { method: "DELETE" });
 
   if (!response.ok && response.status !== 404) {
-    throw new Error(`R2 multipart upload could not be aborted: ${response.status}`);
+    throw new Error(
+      `R2 multipart upload could not be aborted: ${response.status}`,
+    );
   }
 }
 
@@ -323,7 +327,9 @@ export async function listR2MultipartUploadParts(input: {
     const body = await response.text();
 
     if (!response.ok) {
-      throw new Error(`R2 multipart parts could not be listed: ${response.status}`);
+      throw new Error(
+        `R2 multipart parts could not be listed: ${response.status}`,
+      );
     }
 
     parts.push(...readXmlParts(body));
@@ -380,7 +386,9 @@ export async function assertR2ObjectExists(input: {
     const length = Number(response.headers.get("content-length"));
 
     if (Number.isFinite(length) && length !== input.contentLength) {
-      throw new Error("Uploaded R2 object size does not match the upload session.");
+      throw new Error(
+        "Uploaded R2 object size does not match the upload session.",
+      );
     }
   }
 }
@@ -440,10 +448,7 @@ function signR2Url(input: {
 
       return 0;
     })
-    .map(
-      ([key, value]) =>
-        `${encodeRfc3986(key)}=${encodeRfc3986(value)}`,
-    )
+    .map(([key, value]) => `${encodeRfc3986(key)}=${encodeRfc3986(value)}`)
     .join("&");
   const canonicalHeaders = shouldSignContentType
     ? `content-type:${input.contentType}\nhost:${endpoint.host}\n`
@@ -514,8 +519,9 @@ function getSignatureKey(
 }
 
 function encodeRfc3986(value: string) {
-  return encodeURIComponent(value).replace(/[!'()*]/g, (character) =>
-    `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
+  return encodeURIComponent(value).replace(
+    /[!'()*]/g,
+    (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
   );
 }
 

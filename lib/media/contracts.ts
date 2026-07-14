@@ -1,6 +1,7 @@
 import type { UploadedCatalogueAccess } from "./uploaded-catalogue-access";
 
 export type MediaLibraryAsset = {
+  contentUrl: string | null;
   createdAt: string;
   durationSeconds: number | null;
   fileSizeBytes: number;
@@ -17,10 +18,8 @@ export type MediaLibraryAsset = {
   processingRequiresApproval: boolean;
   processingStatus: string;
   processingStrategy: string;
-  publicUrl: string;
   sourceMatches: MediaSourceMatch[];
   status: string;
-  thumbnailObjectKey: string | null;
   thumbnailUrl: string | null;
   title: string;
   visibility: string;
