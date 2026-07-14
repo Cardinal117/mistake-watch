@@ -1,38 +1,42 @@
 # Supabase Workspace
 
-This folder contains the Supabase migration history for Mistake Watch.
-
-Task 9 applied the MVP durable data schema for guest-first rooms, room
-membership, settings, permissions, queue items, and playback session records.
-Supabase remains the durable database; SpacetimeDB remains the live room-state
-and sync authority.
+Supabase is Mistake Watch's durable store for accounts, room metadata, uploaded
+media, and server-managed authorization records. SpacetimeDB remains the live
+room-state and synchronization authority.
 
 ## Project
 
-- Name: `watch-mistakestudios`
-- Project ref: `qzmivwhzotuleivzphhm`
+- Project: `watch-mistakestudios`
+- Ref: `qzmivwhzotuleivzphhm`
 - Region: `eu-central-1`
-- API URL: `https://qzmivwhzotuleivzphhm.supabase.co`
 
 ## Migration Rules
 
 - Create migration files with the Supabase CLI.
-- Do not invent migration timestamps manually.
-- Enable RLS on every app table in exposed schemas.
-- Pair RLS policies with explicit `GRANT` / `REVOKE` decisions for `anon` and
+- Review SQL and recovery steps before applying a cloud migration.
+- Never replay a local migration solely because its timestamp differs remotely.
+- Enable RLS for app tables in exposed schemas and make grants explicit.
+- Keep service-role-only tables deny-by-default for `anon` and
   `authenticated`.
-- Keep `security definer` helper functions out of exposed schemas.
-- Run security and performance advisors after schema changes.
-- Generate TypeScript database types after migrations settle.
+- Run security and performance advisors after every cloud schema change.
+- Regenerate `lib/supabase/database.types.ts` when the schema changes shape.
 
-## Applied Migrations
+## Current Integrity State
 
-- `20260528094023_mvp_schema_guest_identity.sql`
-- `20260528094907_task9_advisor_fixes.sql`
+The local and remote migration timestamps differ because earlier migrations
+were applied through provider tooling that assigned new remote versions.
+[MIGRATION_HISTORY.md](./MIGRATION_HISTORY.md) is the reconciliation record.
 
-## Advisor State
+The CloudConvert idempotency index exists in production, but its local migration
+is absent from Supabase's migration-history table. Do not re-run that DDL
+blindly; its exact live index definition has already been verified.
 
-Security advisors pass with no lints after Task 9. Performance advisors only
-report unused indexes on the fresh empty schema, which is expected until real
-queries run. The earlier `public.rls_auto_enable()` warning was remediated by
-revoking execution from public client roles.
+`room_media_sessions` and `uploaded_catalogue_authorizations` intentionally
+use RLS with no client policies or grants. They are server-managed tables.
+
+## Pending Cloud Work
+
+`20260714142309_task009_database_integrity_indexes.sql` adds covering indexes
+for three foreign keys reported by the performance advisor. It has not been
+applied. Apply it only after TASK-009 local QA and explicit approval, then rerun
+both advisor groups and update the reconciliation record.
