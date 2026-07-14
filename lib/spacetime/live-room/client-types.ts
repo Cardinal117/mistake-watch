@@ -11,6 +11,7 @@ import type {
   RoomSession as GeneratedRoomSession,
 } from "../generated/types";
 import type { LiveRoomSnapshot } from "../types";
+import type { RoomConnectionReadiness } from "./connection-readiness";
 
 type TableRowCallback<Row> = (ctx: unknown, row: Row) => void;
 type TableDeleteCallback<Row> = (ctx: unknown, row: Row) => void;
@@ -227,6 +228,7 @@ export type LiveRoomState = {
   clearQueue(): void;
   advanceToNextQueueItem(input?: { autoplay?: boolean }): void;
   connectionStatus: SpacetimeConnectionStatus;
+  connectionReadiness: RoomConnectionReadiness;
   errorMessage: string | null;
   grantControl(memberId: string): void;
   kickMember(memberId: string): void;
@@ -240,6 +242,7 @@ export type LiveRoomState = {
   playQueueItemNow(queueItemId: string): void;
   playQueueItem(queueItemId: string): void;
   removalNotice: string | null;
+  retryConnection(): void;
   removeIdleMember(memberId: string): void;
   removeQueueItem(queueItemId: string): void;
   reportMediaFailure(input: {
