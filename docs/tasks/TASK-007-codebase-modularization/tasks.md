@@ -96,11 +96,12 @@ remains the release check.
   advancement.
 - [x] Build the SpacetimeDB module and run focused sync, reducer, and queue
   suites.
-- [ ] Publish the behavior-only SpacetimeDB update before retesting production.
+- [x] Publish the behavior-only SpacetimeDB update before retesting production.
 - [ ] Confirm manual and automatic uploaded advancement remove the NEXT badge
   for the owner and a second participant.
 
-MW-BUG-003 status: fix implemented; ordered publish and live QA pending.
+MW-BUG-003 status: fix committed as `867e7b0` and published without a breaking
+migration; live owner/two-client QA remains.
 
 ## Batch 3: Realtime and loading boundaries
 

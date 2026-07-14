@@ -152,5 +152,9 @@ module, its responsibility, and the remaining Batch 2-3 targets.
 - The narrow fix consumes Play Next in atomic autoplay, explicit play, and
   failure-recovery advancement without changing reducer schemas or payloads.
 - Updated focused counts: sync/player 66/66; SpacetimeDB 17/17; queue 53/53.
+- Fix commit `867e7b0` was pushed to `task-007-batch2`.
+- Production SpacetimeDB accepted the behavior-only update with an empty
+  migration plan and unchanged database identity. No client-breaking flag was
+  required.
 - Production remains a temporary QA deployment. Do not merge Batch 2 until the
-  SpacetimeDB update is published first and owner/two-client QA passes.
+  owner/two-client Play Next retest passes.

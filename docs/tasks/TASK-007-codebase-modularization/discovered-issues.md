@@ -135,8 +135,8 @@ Closing evidence:
 
 ## MW-BUG-003: Play Next priority survives activation
 
-**Status:** Fix implemented after temporary-production Batch 2 QA; live
-retest pending.
+**Status:** Fix committed as `867e7b0` and published to production SpacetimeDB
+without a breaking migration; live retest pending.
 
 Items promoted by autoplay, manual play, or failure recovery changed to
 `playing` while retaining `is_play_next: true`. The active row was therefore
@@ -155,7 +155,10 @@ Implementation evidence:
 
 Closing evidence required:
 
-- Publish the behavior-only SpacetimeDB module update before frontend QA.
+- The behavior-only module update was accepted by `mistake-watch-rooms`; the
+  migration plan contained no schema operations.
+- Database identity remained
+  `c2002b3535d2c6109cd2141bff9f9b30bf491a85905c2f5803a63a65dd27d83a`.
 - Add uploaded media as Play Next, advance both manually and naturally, and
   confirm the NEXT badge disappears as soon as the item becomes active.
 - Confirm the second participant observes the same consumed priority state.
