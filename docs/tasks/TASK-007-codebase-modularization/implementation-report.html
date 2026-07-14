@@ -46,7 +46,7 @@
     <div class="eyebrow">TASK-007 / Batch 2</div>
     <h1>Shared workflow and media boundaries</h1>
     <p class="lede">The queue panel and media asset service are now thin compatibility entries over bounded modules. Listen and Watch share deterministic Add Media behavior, while public contracts, permissions, and runtime behavior remain stable.</p>
-    <span class="status">Implementation and automated QA complete</span>
+    <span class="status">Production QA passed; approved for merge</span>
   </header>
 
   <section class="grid" aria-label="Implementation summary">
@@ -54,7 +54,7 @@
     <article class="card"><div class="metric">1,939 to 49<small>Media compatibility entry lines</small></div></article>
     <article class="card"><div class="metric">26<small>Queue/Add Media and media domain files</small></div></article>
     <article class="card"><div class="metric good">525<small>Largest Batch 2 module; ceiling is 700</small></div></article>
-    <article class="card"><div class="metric good">199/199<small>Focused regression tests passed</small></div></article>
+    <article class="card"><div class="metric good">201/201<small>Complete regression tests passed</small></div></article>
     <article class="card"><div class="metric good">0<small>Import cycles and file-ceiling violations</small></div></article>
   </section>
 
@@ -66,9 +66,9 @@
         <tbody>
           <tr><td class="good">P1 closed</td><td>Uploaded autoplay performed separate source-load and playback-state writes.</td><td>Additive atomic reducer released as <code>02210bf</code>; production two-client and stale-next QA passed.</td></tr>
           <tr><td class="good">P1 closed</td><td>Passive direct-player events reset canonical position to <code>0:00</code> during a modularized mode-switch remount.</td><td>Released continuity guard passed authenticated YouTube and uploaded-media QA.</td></tr>
-          <tr><td class="warn">P1 fix published</td><td>Activated Play Next items retained their NEXT badge and one-shot priority state.</td><td>Commit <code>867e7b0</code> is live in SpacetimeDB without a breaking migration; two-client QA remains.</td></tr>
+          <tr><td class="good">P1 closed</td><td>Manual uploaded playback left its queue row queued, retaining NEXT and causing Previous to replay it.</td><td>Atomic manual reducer commit <code>f286cb9</code> passed ordered production release and owner QA.</td></tr>
           <tr><td class="warn">MW-SEC-001</td><td><code>owner_only</code> changes catalogue metadata but does not revoke permanent R2 URL access.</td><td>No current private rows exist; confirm with a dedicated owner-only test asset before approving a storage fix.</td></tr>
-          <tr><td>P2 release</td><td>Owner Watch/upload interaction cannot be authenticated locally.</td><td>Required preview smoke gate before merge.</td></tr>
+          <tr><td class="good">P2 release passed</td><td>Owner Watch/upload interaction cannot be authenticated locally.</td><td>Production owner and participant smoke QA passed before merge.</td></tr>
           <tr><td>P2 performance</td><td>Both room modes remain statically imported.</td><td>Dynamic boundaries and a fresh bundle comparison remain Batch 3 scope.</td></tr>
           <tr><td class="good">P2 architecture improved</td><td>Queue panel and media assets exceeded 1,900 lines.</td><td>Compatibility entries are now 195 and 49 lines; realtime monoliths remain Batch 3.</td></tr>
           <tr><td class="warn">Dependency baseline</td><td><code>npm audit</code> reports three moderate advisories.</td><td>Track separately; this structural batch makes no dependency changes.</td></tr>
@@ -87,6 +87,7 @@
           <tr><td><code>components/room/queue/**</code></td><td>Queue contracts, controls, content, rows, notifications, and pure helpers.</td><td><code>4e82018</code></td></tr>
           <tr><td><code>components/room/shared/add-media/**</code></td><td>Shared dialog, previews, controller, and deterministic Listen/Watch behavior.</td><td><code>4e82018</code>, <code>5f6b312</code></td></tr>
           <tr><td><code>lib/media/**</code></td><td>Compatibility exports and folder, library, processing, source-match, and upload domains.</td><td><code>c33f644</code></td></tr>
+          <tr><td><code>lib/spacetime/**</code>, <code>spacetime/src/index.ts</code></td><td>Atomic uploaded autoplay and manual queue activation with opaque session references.</td><td><code>02210bf</code>, <code>f286cb9</code></td></tr>
           <tr><td><code>scripts/check-file-lengths.mjs</code></td><td>Warning and failure ratchet with explicit legacy ceilings.</td><td>Integration patch</td></tr>
           <tr><td><code>split-inventory.md</code></td><td>Exact physical line counts, responsibilities, and remaining Batch 3 targets.</td><td>Integration patch</td></tr>
         </tbody>
@@ -95,12 +96,12 @@
     <aside class="card">
       <h2>Scope Guard</h2>
       <ul>
-        <li>No schema or migration changes.</li>
-        <li>No API or reducer payload changes.</li>
+        <li>No database schema or data migration changes.</li>
+        <li>Additive reducer contracts preserve older clients.</li>
         <li>No permission or storage-key changes.</li>
         <li>No dependency additions.</li>
         <li>No visual redesign.</li>
-        <li>No push or deployment.</li>
+        <li>Reducer-first production release completed.</li>
       </ul>
     </aside>
   </section>
@@ -112,10 +113,10 @@
         <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
         <tbody>
           <tr><td>Compile and quality</td><td class="good">Passed</td><td>Typecheck, full lint, diff check, Next.js production build, and import graph audit with 0 cycles.</td></tr>
-          <tr><td>Focused automated suites</td><td class="good">Passed</td><td>200/200 across sync, queue, media/security, SpacetimeDB, identity, dev, YouTube, and recommendations.</td></tr>
+          <tr><td>Complete automated suites</td><td class="good">Passed</td><td>201/201 across sync, queue, media/security, SpacetimeDB, identity, dev, YouTube, and recommendations.</td></tr>
           <tr><td>File and graph policy</td><td class="good">Passed</td><td>Zero file-ceiling violations; 14 warnings; 144 files processed with zero circular dependencies.</td></tr>
           <tr><td>Local browser</td><td class="warn">Environment blocked</td><td>Stale-room recovery and dashboard passed. Fresh room fails before queue rendering when the local SpacetimeDB connection is inactive.</td></tr>
-          <tr><td>Release smoke QA</td><td class="warn">Preview required</td><td>Owner/member/guest queue, Add Media, upload catalogue, playback, and responsive checks remain.</td></tr>
+          <tr><td>Release smoke QA</td><td class="good">Passed</td><td>Owner/member/guest queue, Add Media, uploaded playback, manual Next/Previous, natural advancement, and catalogue permissions passed live.</td></tr>
         </tbody>
       </table>
     </article>
@@ -130,7 +131,7 @@
     </article>
     <aside class="card callout">
       <h2>Release Decision</h2>
-      <p>Batch 2 is temporarily deployed for production QA and the Play Next consumption fix is live in SpacetimeDB. Repeat manual and automatic uploaded advancement with two participants before merge approval.</p>
+      <p>Batch 2 passed reducer-first production release, health checks, and owner QA. Merge to <code>main</code> is approved; Batch 3 remains intentionally unstarted.</p>
     </aside>
   </section>
 </main>

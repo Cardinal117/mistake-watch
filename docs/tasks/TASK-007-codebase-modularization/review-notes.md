@@ -164,5 +164,10 @@ module, its responsibility, and the remaining Batch 2-3 targets.
   queue commit helper and opaque uploaded-session validation.
 - Follow-up automated gates pass: sync/player 67/67, SpacetimeDB 17/17,
   typecheck, lint, SpacetimeDB build/codegen, and production build.
-- Production remains a temporary QA deployment. Do not merge Batch 2 until the
-  owner/two-client Play Next retest passes.
+- Follow-up commit `f286cb9` was pushed, then additive
+  `play_uploaded_queue_item` was published with an empty migration plan before
+  frontend deployment `dpl_CXo1Ed9BPqvJFD5hWfAQmuA3Pusy`.
+- Both production aliases and `/api/health` returned HTTP 200 after deployment.
+- Owner QA passed manual Next, natural uploaded advancement, NEXT badge/state
+  consumption, and Previous leaving the uploaded item. Batch 2 is approved for
+  merge to `main`.

@@ -135,8 +135,8 @@ Closing evidence:
 
 ## MW-BUG-003: Play Next priority survives activation
 
-**Status:** Natural advancement is fixed in production. A manual uploaded-play
-follow-up is implemented and awaiting ordered release plus live retest.
+**Status:** Closed after ordered production release and owner-confirmed live QA
+of manual Next, natural advancement, NEXT consumption, and Previous.
 
 Items promoted by autoplay, manual play, or failure recovery changed to
 `playing` while retaining `is_play_next: true`. The active row was therefore
@@ -160,17 +160,23 @@ Implementation evidence:
   as autoplay. The client no longer performs separate source and playback
   writes for manual uploaded selection.
 
-Closing evidence required:
+Closing evidence:
 
 - The behavior-only module update was accepted by `mistake-watch-rooms`; the
   migration plan contained no schema operations.
 - Database identity remained
   `c2002b3535d2c6109cd2141bff9f9b30bf491a85905c2f5803a63a65dd27d83a`.
-- Add uploaded media as Play Next, advance both manually and naturally, and
-  confirm the NEXT badge disappears as soon as the item becomes active.
-- While the uploaded item is active, select Previous and confirm the prior item
-  becomes active instead of reloading the upload.
-- Confirm the second participant observes the same consumed priority state.
+- Uploaded Play Next advanced manually and naturally with the NEXT badge/state
+  consumed as soon as the item became active.
+- Previous returned to the prior item instead of reloading the upload.
+- The release QA included synchronized participant state and retained uploaded
+  catalogue permission boundaries.
+- Additive reducer publication completed with an empty migration plan and
+  unchanged database identity.
+- Frontend deployment `dpl_CXo1Ed9BPqvJFD5hWfAQmuA3Pusy` became ready on both
+  production aliases; both health endpoints returned HTTP 200.
+- The user confirmed the manual queue transition now works as intended and the
+  QA gate passed.
 
 ## MW-SEC-001: `owner_only` does not revoke permanent R2 access
 

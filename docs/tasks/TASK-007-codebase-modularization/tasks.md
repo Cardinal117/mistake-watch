@@ -104,14 +104,14 @@ remains the release check.
   playback state atomically.
 - [x] Regenerate client bindings and pass sync, authority, typecheck, lint, and
   production-build gates.
-- [ ] Publish the additive manual-play reducer before deploying its frontend
+- [x] Publish the additive manual-play reducer before deploying its frontend
   caller.
-- [ ] Confirm manual and automatic uploaded advancement remove the NEXT badge
+- [x] Confirm manual and automatic uploaded advancement remove the NEXT badge
   for the owner and a second participant, and that Previous leaves the uploaded
   item instead of replaying it.
 
-MW-BUG-003 status: the natural-advance fix is published; the manual uploaded
-selection follow-up is implemented and awaiting ordered release plus live QA.
+MW-BUG-003 status: closed after reducer-first release and owner-confirmed live
+QA of manual Next, natural advancement, NEXT consumption, and Previous.
 
 ## Batch 3: Realtime and loading boundaries
 
