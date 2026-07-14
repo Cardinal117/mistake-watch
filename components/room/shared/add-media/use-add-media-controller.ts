@@ -24,10 +24,15 @@ import type {
 } from "../../queue/contracts";
 import type {
   PendingDuplicateAdd,
+  PlaylistItemKey,
   PlaylistPreview,
   PlaylistPreviewItem,
 } from "./contracts";
-import { playlistItemKey } from "./contracts";
+import {
+  playlistItemKey,
+  playlistItemKeys,
+  playlistItemsForSelection,
+} from "./contracts";
 import {
   isDuplicateQueueSource as isDuplicateSource,
   rememberDuplicatePreference,
@@ -83,9 +88,9 @@ export function useAddMediaController({
   );
   const [previewLoading, setPreviewLoading] = useState(false);
   const [queueUrl, setQueueUrl] = useState("");
-  const [selectedPlaylistIds, setSelectedPlaylistIds] = useState<Set<string>>(
-    () => new Set(),
-  );
+  const [selectedPlaylistIds, setSelectedPlaylistIds] = useState<
+    Set<PlaylistItemKey>
+  >(() => new Set());
   const { duplicateSourceUrls, duplicateVideoIds } =
     useQueueSourceDuplicates(items);
 
@@ -116,13 +121,7 @@ export function useAddMediaController({
     try {
       const payload = await fetchPlaylistPreview(input, roomId);
       setPlaylistPreview(payload);
-      setSelectedPlaylistIds(
-        new Set(
-          payload.items
-            .filter((item) => !item.isUnavailable)
-            .map((item) => item.videoId),
-        ),
-      );
+      setSelectedPlaylistIds(playlistItemKeys(payload.items));
       if (payload.status !== "available") {
         setErrorMessage(
           payload.reason ??
@@ -307,11 +306,10 @@ export function useAddMediaController({
     strategy: "all" | "selected" | "shuffle" | "smart",
   ) {
     if (!playlistPreview || addDisabled) return;
-    let importItems = playlistPreview.items.filter((item) =>
+    let importItems =
       strategy === "selected"
-        ? selectedPlaylistIds.has(playlistItemKey(item))
-        : true,
-    );
+        ? playlistItemsForSelection(playlistPreview.items, selectedPlaylistIds)
+        : playlistPreview.items;
     const skippedUnavailable = importItems.filter(
       (item) => item.isUnavailable,
     ).length;
