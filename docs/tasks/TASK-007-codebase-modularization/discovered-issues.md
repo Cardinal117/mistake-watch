@@ -8,8 +8,8 @@ not change these behaviors unless explicitly noted.
 
 | ID | Priority | Validation state | Finding | Required closing evidence |
 | --- | --- | --- | --- | --- |
-| MW-BUG-001 | P1 | Confirmed code-contract defect; runtime incident not reproduced | Uploaded-media autoplay is not atomic | Atomic reducer tests plus two-client uploaded autoplay QA |
-| MW-BUG-002 | P1 | Fix implemented; authenticated live QA pending | Passive direct-player events published canonical room state and reset mode-switch position | Event-intent tests plus owner Listen/Watch continuity QA |
+| MW-BUG-001 | P1 | Fix implemented; Spacetime publish and live QA pending | Uploaded-media autoplay used separate canonical writes | Atomic reducer tests plus two-client uploaded autoplay QA |
+| MW-BUG-002 | P1 | Closed after authenticated live QA | Passive direct-player events published canonical room state and reset mode-switch position | Completed |
 | MW-SEC-001 | P1 | Code/storage condition confirmed; owner-only end-to-end reproduction pending | `owner_only` appears not to revoke permanent R2 URL access | Anonymous URL denial for owner-only object plus response-redaction tests |
 | MW-QA-001 | P2 | Confirmed release gap | Owner-authenticated watch/upload QA is live-only | Preview owner/member/guest checklist passes |
 | MW-PERF-001 | P2 | Confirmed performance fact, not a bug | Both room modes remain statically imported | Before/after bundle and interaction measurement |
@@ -24,9 +24,9 @@ QA evidence must be added here before an item is marked closed.
 
 ## MW-BUG-001: Uploaded-media autoplay is not atomic
 
-**Status:** Confirmed code-contract defect. The non-atomic implementation and
-failing regression test are real; a user-visible race has not yet been
-reproduced in a two-client runtime test.
+**Status:** Fix implemented on `fix/uploaded-autoplay-atomicity`. The additive
+SpacetimeDB reducer publish, matching frontend deployment, and two-client live
+QA remain release gates.
 
 `lib/spacetime/use-live-room.ts` handles a queued uploaded asset by calling
 `loadMediaSource`, then separately calling `setPlaybackState`, while ordinary
@@ -36,7 +36,7 @@ leave source and playback state partially advanced.
 
 Evidence:
 
-- `tests/player/youtube-autoplay-atomic.test.mjs` fails
+- Before the fix, `tests/player/youtube-autoplay-atomic.test.mjs` failed
   `live room autoplay uses the atomic advance reducer`.
 - The uploaded branch is in `advanceToNextQueueItem` near
   `lib/spacetime/use-live-room.ts:879`.
@@ -50,10 +50,32 @@ Recommended action:
 - Test duplicate ended events, disconnect between operations, stale sessions,
   and a failed uploaded-session creation.
 
+Implementation evidence:
+
+- Uploaded-session creation remains behind the existing Supabase account,
+  catalogue, ready-asset, and durable room-authority checks.
+- The client verifies that the returned session belongs to the queued asset,
+  then calls only `advanceUploadedQueueItem` for canonical room mutation.
+- Session creation or asset-binding failures stop before the reducer call and
+  surface through the existing live-room error state.
+- The released `advance_queue_item` payload remains backward-compatible and
+  refuses uploaded-asset references without changing canonical state.
+- The additive `advance_uploaded_queue_item` reducer checks the expected current
+  item, expected current source, and required expected next queue item before
+  changing queue or playback state.
+- A resolved source override is accepted only when the selected queue item is
+  an opaque uploaded-asset reference and the override is an opaque
+  uploaded-session reference. Normal queue sources reject overrides.
+- Queue history, active item, source, duration, position, and playing status are
+  committed by a shared helper in the same SpacetimeDB reducer transaction.
+- Publishing the additive reducer before the frontend keeps existing clients
+  valid and permits frontend rollback without reverting the SpacetimeDB module.
+- The formerly failing atomic-autoplay regression now passes.
+
 ## MW-BUG-002: Passive direct-player events can overwrite canonical state
 
-**Status:** Fix implemented on the modularization branch; authenticated live QA
-is still required. Temporary-production QA reproduced the visible symptom:
+**Status:** Closed after authenticated live QA on the production release.
+Temporary-production QA originally reproduced the visible symptom:
 switching from Listen to Watch reset playback to `0:00`, while the restored
 production baseline preserved the position.
 
@@ -90,6 +112,11 @@ Implementation evidence:
   player cannot publish an initial `0:00` observation.
 - Close this issue only after owner-authenticated Listen/Watch switching passes
   for paused and playing YouTube, direct, and uploaded media.
+
+Closing evidence:
+
+- The user confirmed live YouTube and uploaded playback preserve elapsed
+  position in both Listen and Watch modes after deployment.
 
 ## MW-SEC-001: `owner_only` does not revoke permanent R2 access
 

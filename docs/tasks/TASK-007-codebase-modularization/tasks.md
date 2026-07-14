@@ -46,11 +46,28 @@ on localhost.
   preservation of playback position and duration metadata.
 - [x] Run player, queue, media/security, SpacetimeDB, typecheck, lint, and build
   gates.
-- [ ] Repeat owner-authenticated Listen/Watch switching for paused and playing
+- [x] Repeat owner-authenticated Listen/Watch switching for paused and playing
   YouTube, direct, and uploaded sources on a temporary deployment.
 
-Batch 1.1 status: implementation and automated QA complete. Live owner QA is
-the remaining release gate; the branch must not merge before it passes.
+Batch 1.1 status: released to production after automated and live owner QA.
+
+### Incident hardening: MW-BUG-001 atomic uploaded autoplay
+
+- [x] Replace uploaded autoplay's separate source-load and playback writes with
+  one `advanceUploadedQueueItem` canonical mutation.
+- [x] Add a backward-compatible uploaded reducer with required
+  expected-next-item and uploaded-session-reference validation.
+- [x] Regenerate the TypeScript reducer contract.
+- [x] Make the existing atomicity regression pass and extend stale/source
+  validation coverage.
+- [x] Run the complete automated release gate.
+- [ ] Publish the additive reducer to production SpacetimeDB before deploying
+  the frontend client; the existing reducer contract remains unchanged.
+- [ ] Verify uploaded autoplay with an owner and second participant, including
+  duplicate-ended and stale/reordered-next scenarios.
+
+MW-BUG-001 status: implementation complete; full QA and ordered additive
+SpacetimeDB/frontend release remain pending.
 
 ## Batch 2: Shared workflow and server boundaries
 

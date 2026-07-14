@@ -46,7 +46,7 @@
     <div class="eyebrow">TASK-007 / Batch 1</div>
     <h1>Room layout modularization</h1>
     <p class="lede">The listen and watch monoliths are now compatibility entrypoints over bounded feature modules. Authenticated QA exposed a direct-player remount race; the branch now prevents passive media events from resetting canonical playback during mode switches.</p>
-    <span class="status">Continuity fix implemented; live QA required</span>
+    <span class="status">Continuity released; atomic autoplay in QA</span>
   </header>
 
   <section class="grid" aria-label="Implementation summary">
@@ -55,7 +55,7 @@
     <article class="card"><div class="metric">38<small>New bounded feature modules</small></div></article>
     <article class="card"><div class="metric good">678<small>Largest new module; ceiling is 700</small></div></article>
     <article class="card"><div class="metric good">125/125<small>Identity, dev, queue, SpacetimeDB, YouTube, media tests</small></div></article>
-    <article class="card"><div class="metric warn">64/65<small>Sync suite; continuity fixed, one separate defect remains</small></div></article>
+    <article class="card"><div class="metric good">65/65<small>Sync suite after atomic uploaded-autoplay hardening</small></div></article>
   </section>
 
   <section class="grid">
@@ -64,7 +64,7 @@
       <table>
         <thead><tr><th>Priority</th><th>Finding</th><th>Disposition</th></tr></thead>
         <tbody>
-          <tr><td class="warn">P1 confirmed</td><td>Uploaded autoplay performs separate source-load and playback-state writes.</td><td>Focused sync/realtime fix before broad realtime decomposition.</td></tr>
+          <tr><td class="warn">P1 fixed; release pending</td><td>Uploaded autoplay performed separate source-load and playback-state writes.</td><td>Additive atomic reducer passes locally; ordered SpacetimeDB publish, frontend deploy, and two-client QA remain.</td></tr>
           <tr><td class="good">P1 fixed; QA pending</td><td>Passive direct-player events reset canonical position to <code>0:00</code> during a modularized mode-switch remount.</td><td>Passive pause/play/seek observations no longer write room state; repeat authenticated continuity QA before merge.</td></tr>
           <tr><td class="warn">MW-SEC-001</td><td><code>owner_only</code> changes catalogue metadata but does not revoke permanent R2 URL access.</td><td>No current private rows exist; confirm with a dedicated owner-only test asset before approving a storage fix.</td></tr>
           <tr><td>P2 release</td><td>Owner Watch/upload interaction cannot be authenticated locally.</td><td>Required preview smoke gate before merge.</td></tr>
@@ -110,8 +110,8 @@
         <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
         <tbody>
           <tr><td>Compile and quality</td><td class="good">Passed</td><td>Typecheck, full lint, diff check, Next.js production build, and import graph audit with 0 cycles.</td></tr>
-          <tr><td>Core automated suites</td><td class="good">Passed</td><td>Identity 2/2; dev 8/8; queue 52/52; SpacetimeDB 16/16; YouTube 3/3; media/security 44/44.</td></tr>
-          <tr><td>Sync/player</td><td class="warn">Improved</td><td>64/65. Passive-event and mode-switch continuity assertions pass. Only atomic uploaded autoplay remains as a separate known failure.</td></tr>
+          <tr><td>Core automated suites</td><td class="good">Passed</td><td>Identity 2/2; dev 8/8; queue 52/52; SpacetimeDB 17/17; YouTube 3/3; media/security 44/44.</td></tr>
+          <tr><td>Sync/player</td><td class="good">Passed</td><td>65/65. Passive-event, mode-switch continuity, and atomic uploaded-autoplay assertions pass.</td></tr>
           <tr><td>Local browser</td><td class="good">Passed where available</td><td>331-item listen room, open queue virtual slice, Add Media, desktop and 390px mobile. No captured console errors or horizontal overflow.</td></tr>
           <tr><td>Owner watch QA</td><td class="warn">Preview required</td><td>Local guest cannot switch room mode; Google owner authentication is live-only.</td></tr>
         </tbody>
@@ -128,7 +128,7 @@
     </article>
     <aside class="card callout">
       <h2>Release Decision</h2>
-      <p>Do not merge yet. Temporarily deploy the continuity patch and repeat owner Watch/Listen switching while paused and playing for YouTube, direct, and uploaded sources. After that gate, Batch 2 starts with <code>queue-panel.tsx</code>, followed by <code>lib/media/assets.ts</code>.</p>
+      <p>Continuity is released. Complete the atomic-autoplay release in dependency order: publish the additive SpacetimeDB reducer, deploy the matching frontend, then run two-client uploaded autoplay QA. The existing reducer contract remains available for old clients and frontend rollback. After that gate, Batch 2 starts with <code>queue-panel.tsx</code>.</p>
     </aside>
   </section>
 </main>

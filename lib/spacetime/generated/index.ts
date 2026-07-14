@@ -36,6 +36,7 @@ import {
 // Import all reducer arg schemas
 import AddQueueItemReducer from "./add_queue_item_reducer";
 import AdvanceQueueItemReducer from "./advance_queue_item_reducer";
+import AdvanceUploadedQueueItemReducer from "./advance_uploaded_queue_item_reducer";
 import ClearQueueReducer from "./clear_queue_reducer";
 import GrantRoomControlReducer from "./grant_room_control_reducer";
 import HeartbeatReducer from "./heartbeat_reducer";
@@ -188,6 +189,7 @@ const tablesSchema = __schema({
 const reducersSchema = __reducers(
   __reducerSchema("add_queue_item", AddQueueItemReducer),
   __reducerSchema("advance_queue_item", AdvanceQueueItemReducer),
+  __reducerSchema("advance_uploaded_queue_item", AdvanceUploadedQueueItemReducer),
   __reducerSchema("clear_queue", ClearQueueReducer),
   __reducerSchema("grant_room_control", GrantRoomControlReducer),
   __reducerSchema("heartbeat", HeartbeatReducer),

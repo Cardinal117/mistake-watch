@@ -208,24 +208,67 @@ test("autoplay queue advancement is atomic and stale-safe", () => {
     "function nextPlaybackQueueItem",
     "function playNextQueuePosition",
   );
-  const reducer = sectionBetween(
+  const normalReducer = sectionBetween(
     spacetimeSource,
     "export const advance_queue_item",
-    "export const play_queue_item",
+    "export const advance_uploaded_queue_item",
+  );
+  const uploadedReducer = sectionBetween(
+    spacetimeSource,
+    "export const advance_uploaded_queue_item",
+    "export const report_media_failure",
+  );
+  const commitHelper = sectionBetween(
+    spacetimeSource,
+    "function commitQueueAdvance",
+    "function normalizeQueuedPositions",
   );
 
   assert.match(helper, /queueMode/);
   assert.match(helper, /status === "queued"/);
   assert.match(helper, /normalizeQueueMode\(queueMode\) !== "loop"/);
   assert.match(helper, /status === "played"/);
-  assert.match(reducer, /expected_active_queue_item_id:\s*t\.option\(t\.string\(\)\)/);
-  assert.match(reducer, /expected_source_url:\s*t\.option\(t\.string\(\)\)/);
-  assert.match(reducer, /authority\.session\.queue_autoplay_enabled/);
+  assert.match(normalReducer, /expected_active_queue_item_id:\s*t\.option\(t\.string\(\)\)/);
+  assert.match(normalReducer, /expected_source_url:\s*t\.option\(t\.string\(\)\)/);
+  assert.doesNotMatch(normalReducer, /expected_next_queue_item_id/);
+  assert.doesNotMatch(normalReducer, /resolved_source_url/);
+  assert.match(uploadedReducer, /expected_next_queue_item_id:\s*t\.string\(\)/);
+  assert.match(uploadedReducer, /resolved_source_url:\s*t\.string\(\)/);
+  assert.match(uploadedReducer, /authority\.session\.queue_autoplay_enabled/);
   assert.match(
-    reducer,
+    uploadedReducer,
     /nextPlaybackQueueItem\([\s\S]*ctx,[\s\S]*room_id,[\s\S]*authority\.session\.queue_mode/,
   );
-  assert.match(reducer, /active_queue_item_id:\s*nextQueueItem\.queue_item_id/);
-  assert.match(reducer, /status:\s*"playing"/);
-  assert.match(reducer, /played_sequence:\s*nextPlayedSequence\(ctx,\s*room_id\)/);
+  assert.match(uploadedReducer, /nextQueueItem\.queue_item_id !== expectedNextQueueItemId/);
+  assert.match(uploadedReducer, /resolveQueuePlaybackSource/);
+  assert.match(uploadedReducer, /commitQueueAdvance/);
+  assert.match(commitHelper, /active_queue_item_id:\s*nextQueueItem\.queue_item_id/);
+  assert.match(commitHelper, /source_url:\s*sourceUrl/);
+  assert.match(commitHelper, /status:\s*"playing"/);
+  assert.match(commitHelper, /played_sequence:\s*nextPlayedSequence\(ctx,\s*session\.room_id\)/);
+  assert.ok(
+    uploadedReducer.indexOf("nextQueueItem.queue_item_id !== expectedNextQueueItemId") <
+      uploadedReducer.indexOf("commitQueueAdvance"),
+    "stale next-item rejection must happen before queue mutation",
+  );
+  assert.ok(
+    uploadedReducer.indexOf("if (!nextSourceUrl)") <
+      uploadedReducer.indexOf("commitQueueAdvance"),
+    "source validation must happen before queue mutation",
+  );
+});
+
+test("uploaded autoplay source replacement is opaque and type constrained", () => {
+  const helper = sectionBetween(
+    spacetimeSource,
+    "const uploadedAssetReferencePrefix",
+    "function normalizeRoomMode",
+  );
+
+  assert.match(helper, /mw-uploaded-asset:/);
+  assert.match(helper, /mw-uploaded-session:/);
+  assert.match(helper, /normalized\.length <= 512/);
+  assert.match(helper, /isUploadedAssetReference\(normalizedQueueSourceUrl\)/);
+  assert.match(helper, /isUploadedSessionReference\(normalizedResolvedSourceUrl\)/);
+  assert.match(helper, /return normalizedResolvedSourceUrl \? null : normalizedQueueSourceUrl/);
 });

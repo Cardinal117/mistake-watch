@@ -85,6 +85,16 @@ Proceed with Gate 0, then parallel Batch 1 listen/watch move-only decomposition.
   directions before merging to `main`.
 - Do not push or deploy until explicit approval.
 
+## Production release result
+
+- Batch 1 plus the direct-player continuity fix was merged as `4ed5597` and
+  deployed as `dpl_66VjmChNK5DshiR6mPbXG7ji18ki`.
+- The user confirmed live YouTube and uploaded media retain elapsed playback
+  position across Listen and Watch modes.
+- `MW-BUG-002` is closed. `MW-BUG-001` is implemented separately with an
+  additive reducer: publish SpacetimeDB first, then deploy the frontend. The
+  existing reducer contract remains valid for old clients and frontend rollback.
+
 ## Discovered issue register
 
 See `discovered-issues.md` for the confirmed sync defects, permanent R2 URL

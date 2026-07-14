@@ -18,6 +18,7 @@ import {
   createUploadedSessionReference,
   parseUploadedAssetReference,
 } from "@/lib/media/uploaded-playback-reference";
+import { predictNextQueueItem } from "@/lib/player/next-item-preparation";
 import { DbConnection } from "./generated";
 import type {
   RoomError as GeneratedRoomError,
@@ -84,6 +85,15 @@ type LiveReducers = {
     autoplay?: boolean;
     expectedActiveQueueItemId?: string;
     expectedSourceUrl?: string;
+    roomId: string;
+  }): Promise<void>;
+  advanceUploadedQueueItem(params: {
+    actorMemberId: string;
+    autoplay?: boolean;
+    expectedActiveQueueItemId?: string;
+    expectedNextQueueItemId: string;
+    expectedSourceUrl?: string;
+    resolvedSourceUrl: string;
     roomId: string;
   }): Promise<void>;
   clearQueue(params: { actorMemberId: string; roomId: string }): Promise<void>;
@@ -889,44 +899,41 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       return;
     }
 
-    const nextQueueItem = snapshot.queue
-      .filter((item) => item.status === "queued")
-      .sort((left, right) => left.position - right.position)
-      .at(0);
-    const nextUploadedQueueItem = parseUploadedAssetReference(
+    const nextQueueItem = predictNextQueueItem(snapshot);
+    const nextUploadedAssetId = parseUploadedAssetReference(
       nextQueueItem?.sourceUrl,
-    )
-      ? nextQueueItem
-      : null;
-
-    if (nextUploadedQueueItem) {
-      const uploadedAssetId = parseUploadedAssetReference(
-        nextUploadedQueueItem.sourceUrl,
-      );
-
-      if (uploadedAssetId) {
+    );
+    if (nextQueueItem && nextUploadedAssetId) {
+      try {
         const uploadedSession = await createUploadedPlaybackSession({
-          assetId: uploadedAssetId,
+          assetId: nextUploadedAssetId,
           roomId: room.id,
         });
 
-        await reducers.loadMediaSource({
-          actorMemberId: currentMember.id,
-          roomId: room.id,
-          sourceTitle: nextUploadedQueueItem.title ?? "Uploaded media",
-          sourceType: "direct",
-          sourceUrl: createUploadedSessionReference(uploadedSession.id),
-        });
+        if (uploadedSession.assetId !== nextUploadedAssetId) {
+          throw new Error(
+            "Uploaded media session did not match the queued asset.",
+          );
+        }
 
-        await reducers.setPlaybackState({
+        await reducers.advanceUploadedQueueItem({
           actorMemberId: currentMember.id,
-          playbackRate: 1,
-          positionSeconds: 0,
+          autoplay: input?.autoplay ?? false,
+          expectedActiveQueueItemId: session.activeQueueItemId ?? undefined,
+          expectedNextQueueItemId: nextQueueItem.queueItemId,
+          expectedSourceUrl: session.sourceUrl ?? undefined,
+          resolvedSourceUrl: createUploadedSessionReference(uploadedSession.id),
           roomId: room.id,
-          status: "playing",
         });
-        return;
+      } catch (error) {
+        setErrorMessage(
+          error instanceof Error && error.message.trim()
+            ? error.message
+            : "Uploaded media session could not start.",
+        );
       }
+
+      return;
     }
 
     await reducers.advanceQueueItem({
@@ -1181,6 +1188,7 @@ async function createUploadedPlaybackSession(input: {
   const payload = (await response.json()) as {
     error?: string;
     session?: {
+      assetId: string;
       id: string;
     };
   };

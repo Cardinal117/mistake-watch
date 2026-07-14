@@ -6,6 +6,7 @@ import type {
   LoadMediaSourcePayload,
   AddQueueItemPayload,
   AdvanceQueueItemPayload,
+  AdvanceUploadedQueueItemPayload,
   IssueRoomSeedGrantPayload,
   MoveQueueItemPayload,
   QueueItemReducerPayload,
@@ -29,6 +30,7 @@ export type GeneratedConnection = {
   reducers: {
     addQueueItem(payload: AddQueueItemPayload): void;
     advanceQueueItem(payload: AdvanceQueueItemPayload): void;
+    advanceUploadedQueueItem(payload: AdvanceUploadedQueueItemPayload): void;
     clearQueue(payload: { actorMemberId: string; roomId: string }): void;
     grantRoomControl(payload: GrantRoomControlPayload): void;
     heartbeat(payload: { memberId: string; roomId: string }): void;

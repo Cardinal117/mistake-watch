@@ -40,10 +40,17 @@ test("live room autoplay uses the atomic advance reducer", () => {
   );
 
   assert.match(advance, /reducers\.advanceQueueItem/);
+  assert.match(advance, /reducers\.advanceUploadedQueueItem/);
   assert.match(advance, /const session = snapshot\.session/);
+  assert.match(advance, /predictNextQueueItem\(snapshot\)/);
   assert.match(advance, /expectedActiveQueueItemId:\s*session\.activeQueueItemId/);
+  assert.match(advance, /expectedNextQueueItemId:\s*nextQueueItem\.queueItemId/);
   assert.match(advance, /expectedSourceUrl:\s*session\.sourceUrl/);
+  assert.match(advance, /resolvedSourceUrl:\s*createUploadedSessionReference/);
+  assert.match(advance, /uploadedSession\.assetId !== nextUploadedAssetId/);
+  assert.match(advance, /catch \(error\)[\s\S]*setErrorMessage\([\s\S]*return;/);
   assert.doesNotMatch(advance, /getNextQueueItemIdForMode/);
+  assert.doesNotMatch(advance, /reducers\.loadMediaSource/);
   assert.doesNotMatch(advance, /reducers\.playQueueItem/);
   assert.doesNotMatch(advance, /reducers\.setPlaybackState/);
 });

@@ -231,6 +231,11 @@ export type AdvanceQueueItemPayload = {
   roomId: string;
 };
 
+export type AdvanceUploadedQueueItemPayload = AdvanceQueueItemPayload & {
+  expectedNextQueueItemId: string;
+  resolvedSourceUrl: string;
+};
+
 export type ReportMediaFailurePayload = {
   actorMemberId: string;
   allowAutoplayAdvance?: boolean;

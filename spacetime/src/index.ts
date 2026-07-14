@@ -574,6 +574,46 @@ function normalizeSourceUrl(sourceUrl: string) {
   return sourceUrl.trim();
 }
 
+const uploadedAssetReferencePrefix = "mw-uploaded-asset:";
+const uploadedSessionReferencePrefix = "mw-uploaded-session:";
+
+function isUploadedAssetReference(sourceUrl: string) {
+  return hasUploadedReference(sourceUrl, uploadedAssetReferencePrefix);
+}
+
+function isUploadedSessionReference(sourceUrl: string) {
+  return hasUploadedReference(sourceUrl, uploadedSessionReferencePrefix);
+}
+
+function hasUploadedReference(sourceUrl: string, prefix: string) {
+  const normalized = normalizeSourceUrl(sourceUrl);
+
+  return (
+    normalized.length <= 512 &&
+    normalized.startsWith(prefix) &&
+    Boolean(normalized.slice(prefix.length).trim())
+  );
+}
+
+function resolveQueuePlaybackSource(
+  queueSourceUrl: string,
+  resolvedSourceUrl: string | undefined,
+) {
+  const normalizedQueueSourceUrl = normalizeSourceUrl(queueSourceUrl);
+  const normalizedResolvedSourceUrl = resolvedSourceUrl
+    ? normalizeSourceUrl(resolvedSourceUrl)
+    : undefined;
+
+  if (isUploadedAssetReference(normalizedQueueSourceUrl)) {
+    return normalizedResolvedSourceUrl &&
+      isUploadedSessionReference(normalizedResolvedSourceUrl)
+      ? normalizedResolvedSourceUrl
+      : null;
+  }
+
+  return normalizedResolvedSourceUrl ? null : normalizedQueueSourceUrl;
+}
+
 function normalizeRoomMode(mode: string) {
   return mode === "listen" ? "listen" : "watch";
 }
@@ -810,6 +850,55 @@ function replaceQueueItem(
     ...item,
     ...patch,
   });
+}
+
+function commitQueueAdvance(
+  ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
+  session: NonNullable<
+    ReturnType<
+      Parameters<
+        Parameters<typeof spacetimedb.reducer>[1]
+      >[0]["db"]["room_session"]["room_id"]["find"]
+    >
+  >,
+  nextQueueItem: NonNullable<
+    ReturnType<
+      Parameters<
+        Parameters<typeof spacetimedb.reducer>[1]
+      >[0]["db"]["live_queue_item"]["queue_item_id"]["find"]
+    >
+  >,
+  sourceUrl: string,
+) {
+  for (const item of roomQueueItems(ctx, session.room_id)) {
+    if (item.queue_item_id === nextQueueItem.queue_item_id) {
+      replaceQueueItem(ctx, item, {
+        played_sequence: 0,
+        status: "playing",
+      });
+    } else if (item.status === "playing") {
+      replaceQueueItem(ctx, item, {
+        played_sequence: nextPlayedSequence(ctx, session.room_id),
+        status: "played",
+      });
+    }
+  }
+
+  ctx.db.room_session.delete(session);
+  ctx.db.room_session.insert({
+    ...session,
+    active_queue_item_id: nextQueueItem.queue_item_id,
+    playback_rate: 1,
+    position_seconds: 0,
+    server_updated_ms: nowMs(),
+    source_duration_seconds: nextQueueItem.duration_seconds,
+    source_title: nextQueueItem.title ?? nextQueueItem.source_url,
+    source_type: normalizeSourceType(nextQueueItem.source_type),
+    source_url: sourceUrl,
+    status: "playing",
+  });
+
+  normalizeQueuedPositions(ctx, session.room_id);
 }
 
 function normalizeQueuedPositions(
@@ -1732,35 +1821,88 @@ export const advance_queue_item = spacetimedb.reducer(
       return;
     }
 
-    for (const item of roomQueueItems(ctx, room_id)) {
-      if (item.queue_item_id === nextQueueItem.queue_item_id) {
-        replaceQueueItem(ctx, item, {
-          played_sequence: 0,
-          status: "playing",
-        });
-      } else if (item.status === "playing") {
-        replaceQueueItem(ctx, item, {
-          played_sequence: nextPlayedSequence(ctx, room_id),
-          status: "played",
-        });
-      }
+    const nextSourceUrl = resolveQueuePlaybackSource(
+      nextQueueItem.source_url,
+      undefined,
+    );
+
+    if (!nextSourceUrl) {
+      return;
     }
 
-    ctx.db.room_session.delete(authority.session);
-    ctx.db.room_session.insert({
-      ...authority.session,
-      active_queue_item_id: nextQueueItem.queue_item_id,
-      playback_rate: 1,
-      position_seconds: 0,
-      server_updated_ms: nowMs(),
-      source_duration_seconds: nextQueueItem.duration_seconds,
-      source_title: nextQueueItem.title ?? nextQueueItem.source_url,
-      source_type: normalizeSourceType(nextQueueItem.source_type),
-      source_url: nextQueueItem.source_url,
-      status: "playing",
-    });
+    commitQueueAdvance(ctx, authority.session, nextQueueItem, nextSourceUrl);
+  },
+);
 
-    normalizeQueuedPositions(ctx, room_id);
+export const advance_uploaded_queue_item = spacetimedb.reducer(
+  {
+    actor_member_id: t.string(),
+    autoplay: t.bool().default(true),
+    expected_active_queue_item_id: t.option(t.string()),
+    expected_next_queue_item_id: t.string(),
+    expected_source_url: t.option(t.string()),
+    resolved_source_url: t.string(),
+    room_id: t.string(),
+  },
+  (
+    ctx,
+    {
+      actor_member_id,
+      autoplay,
+      expected_active_queue_item_id,
+      expected_next_queue_item_id,
+      expected_source_url,
+      resolved_source_url,
+      room_id,
+    },
+  ) => {
+    const authority = getAuthorizedPlaybackActor(ctx, room_id, actor_member_id);
+
+    if (!authority || (autoplay && !authority.session.queue_autoplay_enabled)) {
+      return;
+    }
+
+    const expectedActiveQueueItemId =
+      expected_active_queue_item_id?.trim() || undefined;
+    const expectedNextQueueItemId = expected_next_queue_item_id.trim();
+    const expectedSourceUrl = expected_source_url?.trim() || undefined;
+    const resolvedSourceUrl = resolved_source_url.trim();
+
+    if (
+      !expectedNextQueueItemId ||
+      (expectedActiveQueueItemId &&
+        authority.session.active_queue_item_id !== expectedActiveQueueItemId) ||
+      (expectedSourceUrl &&
+        normalizeSourceUrl(authority.session.source_url ?? "") !==
+          normalizeSourceUrl(expectedSourceUrl))
+    ) {
+      return;
+    }
+
+    const nextQueueItem = nextPlaybackQueueItem(
+      ctx,
+      room_id,
+      authority.session.queue_mode,
+    );
+
+    if (
+      !nextQueueItem ||
+      nextQueueItem.queue_item_id === authority.session.active_queue_item_id ||
+      nextQueueItem.queue_item_id !== expectedNextQueueItemId
+    ) {
+      return;
+    }
+
+    const nextSourceUrl = resolveQueuePlaybackSource(
+      nextQueueItem.source_url,
+      resolvedSourceUrl,
+    );
+
+    if (!nextSourceUrl) {
+      return;
+    }
+
+    commitQueueAdvance(ctx, authority.session, nextQueueItem, nextSourceUrl);
   },
 );
 
