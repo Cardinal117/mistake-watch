@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { GET as getHealth } from "../../app/api/health/route.ts";
 import {
+  checkSupabaseAvailability,
   createOperationalReadinessResponse,
   runOperationalReadiness,
 } from "../../lib/readiness/operational.ts";
@@ -88,4 +89,36 @@ test("missing core configuration is distinct from an unavailable dependency", as
   assert.deepEqual(readiness.checks.spacetime, {
     status: "not_configured",
   });
+});
+
+test("Supabase readiness uses the provider health route without table access", async () => {
+  let request;
+  const controller = new AbortController();
+
+  await checkSupabaseAvailability(
+    controller.signal,
+    "https://project.supabase.co",
+    "publishable-key",
+    async (input, init) => {
+      request = { input: input.toString(), init };
+      return new Response(null, { status: 200 });
+    },
+  );
+
+  assert.equal(request.input, "https://project.supabase.co/auth/v1/health");
+  assert.deepEqual(request.init.headers, { apikey: "publishable-key" });
+  assert.equal(request.init.method, "GET");
+  assert.equal(request.init.signal, controller.signal);
+});
+
+test("Supabase readiness rejects an unhealthy provider response", async () => {
+  await assert.rejects(
+    checkSupabaseAvailability(
+      new AbortController().signal,
+      "https://project.supabase.co",
+      "publishable-key",
+      async () => new Response(null, { status: 503 }),
+    ),
+    /unavailable/i,
+  );
 });

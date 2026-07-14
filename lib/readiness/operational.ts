@@ -58,6 +58,24 @@ export function createOperationalReadinessResponse(
   });
 }
 
+export async function checkSupabaseAvailability(
+  signal: AbortSignal,
+  url: string,
+  publishableKey: string,
+  fetcher: typeof fetch = fetch,
+) {
+  const endpoint = new URL("/auth/v1/health", url);
+  const response = await fetcher(endpoint, {
+    headers: { apikey: publishableKey },
+    method: "GET",
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error("Supabase is unavailable.");
+  }
+}
+
 async function runCoreCheck(
   dependency: CoreDependencyCheck,
   timeoutMs: number,

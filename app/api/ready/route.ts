@@ -1,4 +1,5 @@
 import {
+  checkSupabaseAvailability,
   createOperationalReadinessResponse,
   runOperationalReadiness,
 } from "@/lib/readiness/operational";
@@ -21,32 +22,16 @@ export async function GET() {
     },
     supabase: {
       check: (signal) =>
-        checkSupabase(signal, supabaseUrl ?? "", supabaseKey ?? ""),
+        checkSupabaseAvailability(
+          signal,
+          supabaseUrl ?? "",
+          supabaseKey ?? "",
+        ),
       configured: Boolean(supabaseUrl && supabaseKey),
     },
   });
 
   return createOperationalReadinessResponse(readiness);
-}
-
-async function checkSupabase(
-  signal: AbortSignal,
-  url: string,
-  publishableKey: string,
-) {
-  const endpoint = new URL("/rest/v1/rooms?select=id&limit=0", url);
-  const response = await fetch(endpoint, {
-    headers: {
-      apikey: publishableKey,
-      Authorization: `Bearer ${publishableKey}`,
-    },
-    method: "GET",
-    signal,
-  });
-
-  if (!response.ok) {
-    throw new Error("Supabase is unavailable.");
-  }
 }
 
 function checkSpacetime(
