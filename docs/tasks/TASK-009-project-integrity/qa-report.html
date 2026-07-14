@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>TASK-009 QA Report</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #131314;
+        --panel: #201f20;
+        --line: #3b494b;
+        --text: #e5e2e3;
+        --muted: #b9cacb;
+        --blue: #00dbe9;
+        --gold: #ffba20;
+        --ok: #88d8a0;
+        --warn: #ffdb9d;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          16px/1.5 Geist,
+          Segoe UI,
+          sans-serif;
+        letter-spacing: 0;
+      }
+      main {
+        width: min(1040px, calc(100% - 32px));
+        margin: 32px auto 64px;
+      }
+      header {
+        border-top: 3px solid var(--gold);
+        padding: 24px 0;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 32px;
+      }
+      h2 {
+        margin: 30px 0 10px;
+        font-size: 21px;
+      }
+      p {
+        color: var(--muted);
+      }
+      .label {
+        display: inline-block;
+        border: 1px solid var(--warn);
+        border-radius: 4px;
+        color: var(--warn);
+        padding: 4px 8px;
+        font:
+          600 12px/1.4 Consolas,
+          monospace;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid var(--line);
+        background: var(--panel);
+      }
+      th,
+      td {
+        padding: 12px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        color: var(--blue);
+        font:
+          600 12px/1.4 Consolas,
+          monospace;
+      }
+      .pass {
+        color: var(--ok);
+        font-weight: 700;
+      }
+      .manual {
+        color: var(--warn);
+        font-weight: 700;
+      }
+      code,
+      a {
+        color: var(--blue);
+      }
+      .notice {
+        border-left: 3px solid var(--gold);
+        background: var(--panel);
+        padding: 14px 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <span class="label">RELEASE: MANUAL GATES REMAIN</span>
+        <h1>TASK-009 QA Report</h1>
+        <p>
+          Automated local QA is green. Cloud migration, provider configuration,
+          OAuth, and multi-participant checks remain intentionally outside local
+          proof.
+        </p>
+      </header>
+      <section>
+        <h2>Acceptance Matrix</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Area</th>
+              <th>Status</th>
+              <th>Evidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Permanent URL removal</td>
+              <td class="pass">Passed locally</td>
+              <td>Policy tests plus client-contract and route inspection.</td>
+            </tr>
+            <tr>
+              <td>Playlist correctness</td>
+              <td class="pass">Passed</td>
+              <td>
+                Default, duplicate, filtered, clear, and import behavior tests.
+              </td>
+            </tr>
+            <tr>
+              <td>Fresh-room readiness</td>
+              <td class="pass">Passed locally</td>
+              <td>Typed lifecycle tests and dashboard browser smoke.</td>
+            </tr>
+            <tr>
+              <td>Health/readiness</td>
+              <td class="pass">Passed</td>
+              <td>Bounded unit tests and Playwright API smoke.</td>
+            </tr>
+            <tr>
+              <td>Migration reconciliation</td>
+              <td class="pass">Documented</td>
+              <td>
+                Remote history, live uniqueness index, RLS/grants, and pending
+                index SQL reviewed read-only.
+              </td>
+            </tr>
+            <tr>
+              <td>Cloud migration/advisors</td>
+              <td class="manual">Pending approval</td>
+              <td>No DDL applied; rerun advisors after migration.</td>
+            </tr>
+            <tr>
+              <td>Private R2 enforcement</td>
+              <td class="manual">Production QA</td>
+              <td>Disable public domain after signed-route validation.</td>
+            </tr>
+            <tr>
+              <td>OAuth and shared playback</td>
+              <td class="manual">Production QA</td>
+              <td>Requires live Google callback and two participants.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <section>
+        <h2>Automated Results</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Command</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>npm test</code></td>
+              <td class="pass">227 passed</td>
+            </tr>
+            <tr>
+              <td><code>npm run test:e2e</code></td>
+              <td class="pass">2 passed against local app environment</td>
+            </tr>
+            <tr>
+              <td><code>npm run typecheck</code></td>
+              <td class="pass">Passed</td>
+            </tr>
+            <tr>
+              <td><code>npm run lint</code></td>
+              <td class="pass">Passed</td>
+            </tr>
+            <tr>
+              <td><code>npm run build</code></td>
+              <td class="pass">Passed</td>
+            </tr>
+            <tr>
+              <td><code>npm run check:file-lengths</code></td>
+              <td class="pass">0 violations; 14 tracked warnings</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <section class="notice">
+        <h2>Commit Readiness</h2>
+        <p>
+          Ready for review and atomic commit preparation after final diff
+          validation. Not ready for production release until the migration and
+          provider/manual gates above are completed.
+        </p>
+      </section>
+      <section>
+        <h2>Files To Review</h2>
+        <p>
+          Start with
+          <a href="./implementation-report.html">implementation-report.html</a>,
+          then compare <code>acceptance-criteria.md</code>,
+          <code>review-notes.md</code>, and
+          <code>supabase/MIGRATION_HISTORY.md</code>.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>
