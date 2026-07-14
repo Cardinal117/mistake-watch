@@ -86,6 +86,22 @@ room recovery, but fresh-room interaction is blocked before queue rendering by
 the local SpacetimeDB connection environment. Preview owner/member/guest QA
 remains the release check.
 
+### Batch 2 production-QA blocker: MW-BUG-003 Play Next consumption
+
+- [x] Confirm the active item retains `is_play_next` after manual and automatic
+  queue advancement.
+- [x] Consume one-shot Play Next priority in every reducer path that promotes a
+  queue item to `playing`.
+- [x] Add regression coverage for autoplay, explicit play, and failure-recovery
+  advancement.
+- [x] Build the SpacetimeDB module and run focused sync, reducer, and queue
+  suites.
+- [ ] Publish the behavior-only SpacetimeDB update before retesting production.
+- [ ] Confirm manual and automatic uploaded advancement remove the NEXT badge
+  for the owner and a second participant.
+
+MW-BUG-003 status: fix implemented; ordered publish and live QA pending.
+
 ## Batch 3: Realtime and loading boundaries
 
 - Decompose `use-live-room.ts` while preserving `LiveRoomState`.

@@ -66,6 +66,7 @@
         <tbody>
           <tr><td class="good">P1 closed</td><td>Uploaded autoplay performed separate source-load and playback-state writes.</td><td>Additive atomic reducer released as <code>02210bf</code>; production two-client and stale-next QA passed.</td></tr>
           <tr><td class="good">P1 closed</td><td>Passive direct-player events reset canonical position to <code>0:00</code> during a modularized mode-switch remount.</td><td>Released continuity guard passed authenticated YouTube and uploaded-media QA.</td></tr>
+          <tr><td class="warn">P1 fix in QA</td><td>Activated Play Next items retained their NEXT badge and one-shot priority state.</td><td>All reducer paths now consume <code>is_play_next</code> when promoting an item to playing; publish and two-client QA remain.</td></tr>
           <tr><td class="warn">MW-SEC-001</td><td><code>owner_only</code> changes catalogue metadata but does not revoke permanent R2 URL access.</td><td>No current private rows exist; confirm with a dedicated owner-only test asset before approving a storage fix.</td></tr>
           <tr><td>P2 release</td><td>Owner Watch/upload interaction cannot be authenticated locally.</td><td>Required preview smoke gate before merge.</td></tr>
           <tr><td>P2 performance</td><td>Both room modes remain statically imported.</td><td>Dynamic boundaries and a fresh bundle comparison remain Batch 3 scope.</td></tr>
@@ -111,7 +112,7 @@
         <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
         <tbody>
           <tr><td>Compile and quality</td><td class="good">Passed</td><td>Typecheck, full lint, diff check, Next.js production build, and import graph audit with 0 cycles.</td></tr>
-          <tr><td>Focused automated suites</td><td class="good">Passed</td><td>199/199 across sync, queue, media/security, SpacetimeDB, identity, dev, YouTube, and recommendations.</td></tr>
+          <tr><td>Focused automated suites</td><td class="good">Passed</td><td>200/200 across sync, queue, media/security, SpacetimeDB, identity, dev, YouTube, and recommendations.</td></tr>
           <tr><td>File and graph policy</td><td class="good">Passed</td><td>Zero file-ceiling violations; 14 warnings; 144 files processed with zero circular dependencies.</td></tr>
           <tr><td>Local browser</td><td class="warn">Environment blocked</td><td>Stale-room recovery and dashboard passed. Fresh room fails before queue rendering when the local SpacetimeDB connection is inactive.</td></tr>
           <tr><td>Release smoke QA</td><td class="warn">Preview required</td><td>Owner/member/guest queue, Add Media, upload catalogue, playback, and responsive checks remain.</td></tr>
@@ -129,7 +130,7 @@
     </article>
     <aside class="card callout">
       <h2>Release Decision</h2>
-      <p>Batch 2 is ready for a QA release gate and commit review. Automated evidence is complete; use a Vercel preview for owner/member/guest smoke QA because the local SpacetimeDB environment blocks fresh-room rendering.</p>
+      <p>Batch 2 is temporarily deployed for production QA. Publish the behavior-only Play Next consumption fix to SpacetimeDB first, then repeat manual and automatic uploaded advancement with two participants before merge approval.</p>
     </aside>
   </section>
 </main>

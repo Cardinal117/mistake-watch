@@ -4,7 +4,10 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const root = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../..",
+);
 const youtubePlayerSource = await readFile(
   path.join(root, "components/room/youtube-media-player.tsx"),
   "utf8",
@@ -43,16 +46,48 @@ test("live room autoplay uses the atomic advance reducer", () => {
   assert.match(advance, /reducers\.advanceUploadedQueueItem/);
   assert.match(advance, /const session = snapshot\.session/);
   assert.match(advance, /predictNextQueueItem\(snapshot\)/);
-  assert.match(advance, /expectedActiveQueueItemId:\s*session\.activeQueueItemId/);
-  assert.match(advance, /expectedNextQueueItemId:\s*nextQueueItem\.queueItemId/);
+  assert.match(
+    advance,
+    /expectedActiveQueueItemId:\s*session\.activeQueueItemId/,
+  );
+  assert.match(
+    advance,
+    /expectedNextQueueItemId:\s*nextQueueItem\.queueItemId/,
+  );
   assert.match(advance, /expectedSourceUrl:\s*session\.sourceUrl/);
   assert.match(advance, /resolvedSourceUrl:\s*createUploadedSessionReference/);
   assert.match(advance, /uploadedSession\.assetId !== nextUploadedAssetId/);
-  assert.match(advance, /catch \(error\)[\s\S]*setErrorMessage\([\s\S]*return;/);
+  assert.match(
+    advance,
+    /catch \(error\)[\s\S]*setErrorMessage\([\s\S]*return;/,
+  );
   assert.doesNotMatch(advance, /getNextQueueItemIdForMode/);
   assert.doesNotMatch(advance, /reducers\.loadMediaSource/);
   assert.doesNotMatch(advance, /reducers\.playQueueItem/);
   assert.doesNotMatch(advance, /reducers\.setPlaybackState/);
+});
+
+test("queue advancement consumes one-shot play-next priority", () => {
+  const queueCommit = sectionBetween(
+    spacetimeModuleSource,
+    "function commitQueueAdvance",
+    "function normalizeQueuedPositions",
+  );
+  const failureAdvance = sectionBetween(
+    spacetimeModuleSource,
+    "export const report_media_failure",
+    "export const play_queue_item",
+  );
+  const manualPlay = sectionBetween(
+    spacetimeModuleSource,
+    "export const play_queue_item",
+    "export const move_queue_item",
+  );
+
+  assert.match(queueCommit, /is_play_next:\s*false/);
+  assert.match(queueCommit, /status:\s*"playing"/);
+  assert.match(failureAdvance, /commitQueueAdvance/);
+  assert.match(manualPlay, /is_play_next:\s*false/);
 });
 
 test("youtube ended event advances before publishing ended when autoplay can continue", () => {
@@ -93,8 +128,14 @@ test("autoplay in-flight guard expires so stale no-op advances can retry", () =>
   for (const source of [youtubePlayerSource, directPlayerSource]) {
     assert.match(source, /AUTOPLAY_ADVANCE_IN_FLIGHT_TIMEOUT_MS = 6_000/);
     assert.match(source, /const inFlightExpired =/);
-    assert.match(source, /Date\.now\(\) - autoplayAdvanceInFlightAtMsRef\.current/);
-    assert.match(source, /autoplayAdvanceInFlightAtMsRef\.current = Date\.now\(\)/);
+    assert.match(
+      source,
+      /Date\.now\(\) - autoplayAdvanceInFlightAtMsRef\.current/,
+    );
+    assert.match(
+      source,
+      /autoplayAdvanceInFlightAtMsRef\.current = Date\.now\(\)/,
+    );
   }
 });
 

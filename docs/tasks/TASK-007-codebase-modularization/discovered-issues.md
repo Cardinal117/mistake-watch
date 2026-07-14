@@ -10,6 +10,7 @@ not change these behaviors unless explicitly noted.
 | --- | --- | --- | --- | --- |
 | MW-BUG-001 | P1 | Closed after production two-client QA | Uploaded-media autoplay used separate canonical writes | Completed |
 | MW-BUG-002 | P1 | Closed after authenticated live QA | Passive direct-player events published canonical room state and reset mode-switch position | Completed |
+| MW-BUG-003 | P1 | Fix implemented; live QA pending | Play Next priority remained set after an item became active | Manual and automatic advancement consume the badge and state |
 | MW-SEC-001 | P1 | Code/storage condition confirmed; owner-only end-to-end reproduction pending | `owner_only` appears not to revoke permanent R2 URL access | Anonymous URL denial for owner-only object plus response-redaction tests |
 | MW-QA-001 | P2 | Confirmed release gap | Owner-authenticated watch/upload QA is live-only | Preview owner/member/guest checklist passes |
 | MW-PERF-001 | P2 | Confirmed performance fact, not a bug | Both room modes remain statically imported | Before/after bundle and interaction measurement |
@@ -131,6 +132,33 @@ Closing evidence:
 
 - The user confirmed live YouTube and uploaded playback preserve elapsed
   position in both Listen and Watch modes after deployment.
+
+## MW-BUG-003: Play Next priority survives activation
+
+**Status:** Fix implemented after temporary-production Batch 2 QA; live
+retest pending.
+
+Items promoted by autoplay, manual play, or failure recovery changed to
+`playing` while retaining `is_play_next: true`. The active row was therefore
+still labelled NEXT and continued to carry one-shot priority state until it was
+removed or another item became active.
+
+Implementation evidence:
+
+- Every SpacetimeDB transition that promotes a queue item to `playing` now
+  writes `is_play_next: false` in the same reducer transaction.
+- Queue order, pin state, source references, permissions, and reducer payloads
+  are unchanged.
+- The regression covers atomic autoplay, explicit play, and failure-recovery
+  advancement.
+- SpacetimeDB build, sync/player, queue, and reducer tests pass.
+
+Closing evidence required:
+
+- Publish the behavior-only SpacetimeDB module update before frontend QA.
+- Add uploaded media as Play Next, advance both manually and naturally, and
+  confirm the NEXT badge disappears as soon as the item becomes active.
+- Confirm the second participant observes the same consumed priority state.
 
 ## MW-SEC-001: `owner_only` does not revoke permanent R2 access
 

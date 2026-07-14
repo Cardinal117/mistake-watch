@@ -140,3 +140,17 @@ module, its responsibility, and the remaining Batch 2-3 targets.
   smoke QA remains required before release.
 - `npm audit` reports three moderate dependency advisories. No dependency
   changes are included in this structural batch.
+
+## Batch 2 temporary-production QA
+
+- Deployment `dpl_23SFSjYuWJQ4XdEfRtCENcz6Gxy3` passed root, health, guest-room,
+  queue drawer, Add Media, desktop/mobile overflow, and 5xx-log smoke checks.
+- Owner QA found `MW-BUG-003`: an activated uploaded Play Next item retained
+  its NEXT badge and one-shot priority state.
+- Root cause is reducer state transition, not the Batch 2 presentation split:
+  item promotion wrote `status: "playing"` without clearing `is_play_next`.
+- The narrow fix consumes Play Next in atomic autoplay, explicit play, and
+  failure-recovery advancement without changing reducer schemas or payloads.
+- Updated focused counts: sync/player 66/66; SpacetimeDB 17/17; queue 53/53.
+- Production remains a temporary QA deployment. Do not merge Batch 2 until the
+  SpacetimeDB update is published first and owner/two-client QA passes.

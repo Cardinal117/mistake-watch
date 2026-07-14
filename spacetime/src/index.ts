@@ -873,6 +873,7 @@ function commitQueueAdvance(
   for (const item of roomQueueItems(ctx, session.room_id)) {
     if (item.queue_item_id === nextQueueItem.queue_item_id) {
       replaceQueueItem(ctx, item, {
+        is_play_next: false,
         played_sequence: 0,
         status: "playing",
       });
@@ -2030,34 +2031,12 @@ export const report_media_failure = spacetimedb.reducer(
     );
 
     if (canAdvance && nextQueueItem) {
-      for (const item of roomQueueItems(ctx, room_id)) {
-        if (item.queue_item_id === nextQueueItem.queue_item_id) {
-          replaceQueueItem(ctx, item, {
-            played_sequence: 0,
-            status: "playing",
-          });
-        } else if (item.status === "playing") {
-          replaceQueueItem(ctx, item, {
-            played_sequence: nextPlayedSequence(ctx, room_id),
-            status: "played",
-          });
-        }
-      }
-
-      ctx.db.room_session.delete(authority.session);
-      ctx.db.room_session.insert({
-        ...authority.session,
-        active_queue_item_id: nextQueueItem.queue_item_id,
-        playback_rate: 1,
-        position_seconds: 0,
-        server_updated_ms: nowMs(),
-        source_duration_seconds: nextQueueItem.duration_seconds,
-        source_title: nextQueueItem.title ?? nextQueueItem.source_url,
-        source_type: normalizeSourceType(nextQueueItem.source_type),
-        source_url: nextQueueItem.source_url,
-        status: "playing",
-      });
-      normalizeQueuedPositions(ctx, room_id);
+      commitQueueAdvance(
+        ctx,
+        authority.session,
+        nextQueueItem,
+        nextQueueItem.source_url,
+      );
       return;
     }
 
@@ -2099,6 +2078,7 @@ export const play_queue_item = spacetimedb.reducer(
 
       if (item.queue_item_id === queue_item_id) {
         replaceQueueItem(ctx, item, {
+          is_play_next: false,
           played_sequence: 0,
           status: "playing",
         });
