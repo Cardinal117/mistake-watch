@@ -1,4 +1,4 @@
-# TASK-007 Batch 1 Split Inventory
+# TASK-007 Split Inventory
 
 Counts below are physical source lines, including blank lines and comments. They
 describe maintainability, not shipped JavaScript size.
@@ -89,13 +89,80 @@ New modules:
 
 Watch module total: 5,078 lines. Largest module: 678 lines.
 
-## What remains unsplit
+## Batch 2 totals
 
-Planned Batch 2 targets:
+| Area | Before | Compatibility entry | New modules | After | Net source lines |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Queue and Add Media | 2,205 | 195 | 12 files / 2,305 lines | 2,500 | +295 |
+| Media asset services | 1,939 | 49 | 12 files / 2,087 lines | 2,136 | +197 |
+| Confirmed dead mocks | 328 | 0 | 0 | 0 | -328 |
+
+The queue increase comes from explicit contracts and a shared controller seam
+that removes duplicated Listen/Watch behavior. The media increase comes from
+domain imports, exports, and contracts. Runtime behavior and public compatibility
+exports remain unchanged.
+
+## Queue and Add Media split
+
+Original:
 
 - `components/room/queue-panel.tsx`: 2,205 lines.
+
+Result:
+
+| Lines | File | Responsibility |
+| ---: | --- | --- |
+| 195 | `queue-panel.tsx` | Compatibility composition and top-level queue state |
+| 53 | `queue/contracts.ts` | Queue presentation and callback contracts |
+| 269 | `queue/queue-content.tsx` | Up-next/history rendering and virtualized content |
+| 149 | `queue/queue-controls.tsx` | Queue mode, shuffle, smart, and clear controls |
+| 90 | `queue/queue-notifications.tsx` | Queue and media notification presentation |
+| 299 | `queue/queue-row.tsx` | Individual queue item rendering and actions |
+| 29 | `queue/queue-utils.ts` | Queue-specific pure helpers |
+| 254 | `shared/add-media/add-media-dialog.tsx` | Shared Add Media dialog composition |
+| 22 | `shared/add-media/contracts.ts` | Shared Add Media contracts |
+| 106 | `shared/add-media/controller-shared.ts` | Duplicate, preference, normalization, and notification behavior |
+| 94 | `shared/add-media/media-matches.ts` | Search and direct-media match rendering |
+| 415 | `shared/add-media/preview-cards.tsx` | YouTube, playlist, direct, and HLS previews |
+| 525 | `shared/add-media/use-add-media-controller.ts` | Add Media workflow state and commands |
+
+Queue and Add Media total: 2,500 lines. Largest module: 525 lines.
+
+## Media asset service split
+
+Original:
+
 - `lib/media/assets.ts`: 1,939 lines.
-- Shared queue/Add Media contracts and duplicated controller behavior.
+
+Result:
+
+| Lines | File | Responsibility |
+| ---: | --- | --- |
+| 49 | `assets.ts` | Compatibility exports |
+| 95 | `contracts.ts` | Media service contracts |
+| 108 | `shared.ts` | Shared mapping and validation helpers |
+| 234 | `folders/service.ts` | Folder creation, membership, and deletion |
+| 104 | `library/catalogue.ts` | Owner-authorized catalogue reads |
+| 188 | `library/management.ts` | Asset rename, delete, and visibility management |
+| 263 | `processing/service.ts` | Processing state and provider orchestration |
+| 116 | `source-matches/service.ts` | Authorized source-match resolution |
+| 321 | `uploads/complete.ts` | Idempotent upload completion |
+| 119 | `uploads/create.ts` | Upload-session creation |
+| 91 | `uploads/multipart.ts` | Multipart upload coordination |
+| 217 | `uploads/resumable.ts` | Resumable upload state |
+| 231 | `uploads/session.ts` | Upload-session reads and transitions |
+
+Media asset service total: 2,136 lines. Largest module: 321 lines.
+
+## Batch 2 cleanup and policy
+
+- Removed 328 physical lines from three runtime-unreferenced mock modules.
+- Replaced stale fallback room copy with current SpacetimeDB terminology.
+- Added a file-length ratchet: new handwritten files fail above 700 lines and
+  warn above 500; five recorded legacy exceptions retain explicit ceilings.
+- Added scoped Batch 2 formatting and source-inspection regression coverage.
+
+## What remains unsplit
 
 Planned Batch 3 targets:
 

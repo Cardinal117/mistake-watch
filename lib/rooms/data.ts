@@ -255,7 +255,8 @@ async function mapRoomSnapshot({
     ? members.find((member) => member.id === currentMemberId)
     : undefined;
   const isCurrentHost =
-    Boolean(currentMember && hostMember) && currentMember?.id === hostMember?.id;
+    Boolean(currentMember && hostMember) &&
+    currentMember?.id === hostMember?.id;
   const mappedQueue = queueItems.map(mapQueueItem);
   const nowPlaying = mappedQueue.find((item) => item.status === "now");
   const mode = room.mode === "listen" ? "listen" : "watch";
@@ -289,13 +290,12 @@ async function mapRoomSnapshot({
       artist: nowPlaying?.artist,
       duration: nowPlaying?.duration ?? "Idle",
       elapsed: "00:00",
-      latency: "SpacetimeDB pending",
+      latency: "Live room sync",
       mood: mode === "listen" ? "Guest-first listening" : undefined,
-      resolution:
-        mode === "listen" ? "Direct audio pending" : "Direct media pending",
+      resolution: mode === "listen" ? "Audio room" : "Watch room",
       source: nowPlaying ? "Persisted queue item" : "No source loaded yet",
-      sync: "Live room engine arrives in Task 11",
-      title: nowPlaying?.title ?? "Ready for a direct media URL",
+      sync: "SpacetimeDB room authority",
+      title: nowPlaying?.title ?? "No media playing",
     },
     participants: members.filter((member) =>
       isRecentlySeen(member.last_seen_at),

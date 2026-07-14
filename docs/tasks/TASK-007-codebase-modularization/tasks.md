@@ -61,21 +61,30 @@ Batch 1.1 status: released to production after automated and live owner QA.
 - [x] Make the existing atomicity regression pass and extend stale/source
   validation coverage.
 - [x] Run the complete automated release gate.
-- [ ] Publish the additive reducer to production SpacetimeDB before deploying
+- [x] Publish the additive reducer to production SpacetimeDB before deploying
   the frontend client; the existing reducer contract remains unchanged.
-- [ ] Verify uploaded autoplay with an owner and second participant, including
+- [x] Verify uploaded autoplay with an owner and second participant, including
   duplicate-ended and stale/reordered-next scenarios.
 
-MW-BUG-001 status: implementation complete; full QA and ordered additive
-SpacetimeDB/frontend release remain pending.
+MW-BUG-001 status: closed after ordered production release and user-confirmed
+two-client QA.
 
 ## Batch 2: Shared workflow and server boundaries
 
-- Split `queue-panel.tsx` into queue rendering, controls, history, notifications, and Add Media modules.
-- Extract shared queue/add-media contracts and controller behavior used by listen and watch.
-- Split `lib/media/assets.ts` into domain services behind compatibility exports.
-- Remove verified dead mocks and stale room status text.
-- Expand formatting coverage and introduce warning/ratchet reporting.
+- [x] Split `queue-panel.tsx` into queue rendering, controls, history,
+  notifications, and Add Media modules.
+- [x] Extract shared queue/Add Media contracts and controller behavior used by
+  listen and watch.
+- [x] Split `lib/media/assets.ts` into domain services behind compatibility
+  exports.
+- [x] Remove verified dead mocks and stale room status text.
+- [x] Expand formatting coverage and introduce warning/ratchet reporting.
+
+Batch 2 status: implementation and automated QA complete on the isolated
+integration branch. Local browser navigation reached the dashboard and stale
+room recovery, but fresh-room interaction is blocked before queue rendering by
+the local SpacetimeDB connection environment. Preview owner/member/guest QA
+remains the release check.
 
 ## Batch 3: Realtime and loading boundaries
 

@@ -8,7 +8,7 @@ not change these behaviors unless explicitly noted.
 
 | ID | Priority | Validation state | Finding | Required closing evidence |
 | --- | --- | --- | --- | --- |
-| MW-BUG-001 | P1 | Fix implemented; Spacetime publish and live QA pending | Uploaded-media autoplay used separate canonical writes | Atomic reducer tests plus two-client uploaded autoplay QA |
+| MW-BUG-001 | P1 | Closed after production two-client QA | Uploaded-media autoplay used separate canonical writes | Completed |
 | MW-BUG-002 | P1 | Closed after authenticated live QA | Passive direct-player events published canonical room state and reset mode-switch position | Completed |
 | MW-SEC-001 | P1 | Code/storage condition confirmed; owner-only end-to-end reproduction pending | `owner_only` appears not to revoke permanent R2 URL access | Anonymous URL denial for owner-only object plus response-redaction tests |
 | MW-QA-001 | P2 | Confirmed release gap | Owner-authenticated watch/upload QA is live-only | Preview owner/member/guest checklist passes |
@@ -24,9 +24,8 @@ QA evidence must be added here before an item is marked closed.
 
 ## MW-BUG-001: Uploaded-media autoplay is not atomic
 
-**Status:** Fix implemented on `fix/uploaded-autoplay-atomicity`. The additive
-SpacetimeDB reducer publish, matching frontend deployment, and two-client live
-QA remain release gates.
+**Status:** Closed after the additive SpacetimeDB reducer and matching frontend
+were released, followed by production owner/guest QA.
 
 `lib/spacetime/use-live-room.ts` handles a queued uploaded asset by calling
 `loadMediaSource`, then separately calling `setPlaybackState`, while ordinary
@@ -71,6 +70,21 @@ Implementation evidence:
 - Publishing the additive reducer before the frontend keeps existing clients
   valid and permits frontend rollback without reverting the SpacetimeDB module.
 - The formerly failing atomic-autoplay regression now passes.
+
+Closing evidence:
+
+- Release commit `02210bf` was pushed to `main`.
+- The production SpacetimeDB module accepted the additive reducer without a
+  breaking migration plan.
+- Vercel deployment `dpl_5cQfwRQC5hJXHkAwqx9xHpdSmeNg` became ready on both
+  production aliases and passed health checks.
+- The user confirmed an uploaded item advanced naturally exactly once, retained
+  playback for a second participant, and remained hidden from the guest
+  catalogue.
+- Network QA confirmed session creation and session-scoped playback endpoints,
+  with no permanent R2 URL exposed in room state or responses.
+- Reordering or removing the predicted next item caused the stale transition to
+  do nothing, as required.
 
 ## MW-BUG-002: Passive direct-player events can overwrite canonical state
 

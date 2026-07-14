@@ -149,7 +149,10 @@ test("uploaded catalogue migration keeps allowlist app-owned and RLS enabled", a
 
   assert.match(migrationSource, /uploaded_catalogue_authorizations/);
   assert.match(migrationSource, /enable row level security/);
-  assert.match(migrationSource, /revoke all on public\.uploaded_catalogue_authorizations/);
+  assert.match(
+    migrationSource,
+    /revoke all on public\.uploaded_catalogue_authorizations/,
+  );
   assert.match(migrationSource, /to service_role/);
   assert.doesNotMatch(migrationSource, /to authenticated/);
   assert.doesNotMatch(migrationSource, /to anon/);

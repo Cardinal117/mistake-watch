@@ -10,8 +10,13 @@ import ts from "typescript";
 import { readSourceTree } from "../helpers/read-source-tree.mjs";
 import { createQueueFixture, queueFixtureSizes } from "./fixtures.mjs";
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const tempDir = await mkdtemp(path.join(tmpdir(), "mistake-watch-derived-queue-"));
+const rootDir = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../..",
+);
+const tempDir = await mkdtemp(
+  path.join(tmpdir(), "mistake-watch-derived-queue-"),
+);
 const sourcePath = path.join(rootDir, "lib/queue/derived.ts");
 const source = await readFile(sourcePath, "utf8");
 const [listenLayoutSource, queuePanelSource] = await Promise.all([
@@ -54,7 +59,10 @@ for (const size of queueFixtureSizes) {
       derived.upcomingItems.length + derived.playedItems.length,
       items.length,
     );
-    assert.equal(derived.currentItem?.id ?? null, size > 0 ? "queue-0000" : null);
+    assert.equal(
+      derived.currentItem?.id ?? null,
+      size > 0 ? "queue-0000" : null,
+    );
     assert.deepEqual(
       derived.queuedItems.map((item) => item.id),
       items.filter((item) => item.status === "queued").map((item) => item.id),
@@ -80,7 +88,10 @@ test("deriveQueueState sorts played items without mutating input order", () => {
     derived.playedItems.map((item) => item.id),
     ["played-later", "played-first"],
   );
-  assert.deepEqual(items.map((item) => item.id), originalIds);
+  assert.deepEqual(
+    items.map((item) => item.id),
+    originalIds,
+  );
 });
 
 test("deriveQueueState creates direct queued indexes once per queue revision", () => {

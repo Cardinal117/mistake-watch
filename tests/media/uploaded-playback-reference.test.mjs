@@ -70,8 +70,14 @@ test("uploaded playback references are opaque and parseable", () => {
 
 test("uploaded playback references reject empty or mismatched values", () => {
   assert.equal(parseUploadedAssetReference("mw-uploaded-asset:"), null);
-  assert.equal(parseUploadedAssetReference("mw-uploaded-session:session-1"), null);
-  assert.equal(parseUploadedSessionReference("mw-uploaded-asset:asset-1"), null);
+  assert.equal(
+    parseUploadedAssetReference("mw-uploaded-session:session-1"),
+    null,
+  );
+  assert.equal(
+    parseUploadedSessionReference("mw-uploaded-asset:asset-1"),
+    null,
+  );
   assert.equal(parseUploadedSessionReference(null), null);
 });
 
@@ -81,9 +87,11 @@ test("uploaded media queue and play paths do not persist public asset URLs", asy
     "components/room/watch-mode-layout.tsx",
     "components/room/watch",
   );
-  const queueSource = await readFile(
-    path.join(rootDir, "components/room/queue-panel.tsx"),
-    "utf8",
+  const queueSource = await readSourceTree(
+    rootDir,
+    "components/room/queue-panel.tsx",
+    "components/room/queue",
+    "components/room/shared/add-media",
   );
   const directPlayerSource = await readFile(
     path.join(rootDir, "components/room/direct-media-player.tsx"),
@@ -119,5 +127,8 @@ test("uploaded media start accepts current guest room authority for signed-in ca
 
   assert.match(roomMediaSessionsSource, /reclaimGuestMembership/);
   assert.match(roomMediaSessionsSource, /getRoomAuthorityForGuestMember/);
-  assert.match(roomMediaSessionsSource, /\.eq\("guest_identity_id", guestIdentityId\)/);
+  assert.match(
+    roomMediaSessionsSource,
+    /\.eq\("guest_identity_id", guestIdentityId\)/,
+  );
 });

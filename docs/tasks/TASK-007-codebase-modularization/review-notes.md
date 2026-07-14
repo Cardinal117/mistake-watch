@@ -91,9 +91,12 @@ Proceed with Gate 0, then parallel Batch 1 listen/watch move-only decomposition.
   deployed as `dpl_66VjmChNK5DshiR6mPbXG7ji18ki`.
 - The user confirmed live YouTube and uploaded media retain elapsed playback
   position across Listen and Watch modes.
-- `MW-BUG-002` is closed. `MW-BUG-001` is implemented separately with an
-  additive reducer: publish SpacetimeDB first, then deploy the frontend. The
-  existing reducer contract remains valid for old clients and frontend rollback.
+- `MW-BUG-002` is closed.
+- `MW-BUG-001` was released as commit `02210bf`, published additively to
+  SpacetimeDB, and deployed as `dpl_5cQfwRQC5hJXHkAwqx9xHpdSmeNg`.
+- Production owner/guest QA confirmed single-step uploaded autoplay,
+  second-participant playback, hidden guest catalogue access, session-scoped
+  playback URLs, no permanent R2 URL exposure, and stale-next rejection.
 
 ## Discovered issue register
 
@@ -103,3 +106,37 @@ source-test brittleness, hydration observation, and multi-agent isolation note.
 
 See `split-inventory.md` for the exact before/after line totals, every extracted
 module, its responsibility, and the remaining Batch 2-3 targets.
+
+## Batch 2 implementation result
+
+- Queue extraction commit: `4e82018`; shared controller follow-up: `5f6b312`.
+- Media service extraction commit: `c33f644`.
+- `queue-panel.tsx` fell from 2,205 to 195 lines. Queue and shared Add Media are
+  now 13 bounded files totaling 2,500 lines; the largest is 525 lines.
+- `lib/media/assets.ts` fell from 1,939 to 49 lines. Media asset behavior is now
+  13 domain files totaling 2,136 lines; the largest is 321 lines.
+- Shared duplicate handling, preference storage, YouTube normalization,
+  playlist mapping, and notification behavior now serve Listen and Watch.
+- Three confirmed runtime-unreferenced mock modules were removed (328 lines),
+  and stale room fallback copy now describes current SpacetimeDB authority.
+- A file-length ratchet fails new handwritten files above 700 lines, warns above
+  500, and records explicit ceilings for five existing legacy exceptions.
+- No schema, reducer, API payload, permission, storage-key, dependency, or
+  visual-design changes were introduced.
+
+## Batch 2 verification
+
+- Typecheck, full lint, production build, scoped format, diff check: passed.
+- Import graph: 144 files processed with zero circular dependencies.
+- Automated suites: sync 65/65; queue 53/53; media/security 44/44;
+  SpacetimeDB 17/17; identity 2/2; dev 10/10; YouTube 3/3;
+  recommendations 5/5 (199 tests total).
+- File-length ratchet: zero violations and 14 warnings, all below the failure
+  ceiling or covered by recorded legacy ceilings.
+- Local browser reached stale-room recovery and the dashboard. Fresh-room QA is
+  blocked before queue rendering by the local SpacetimeDB connection
+  environment, which surfaces the inactive connection object as a server error.
+- Preview owner/member/guest queue, Add Media, uploaded catalogue, and playback
+  smoke QA remains required before release.
+- `npm audit` reports three moderate dependency advisories. No dependency
+  changes are included in this structural batch.

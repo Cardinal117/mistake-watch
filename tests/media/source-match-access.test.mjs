@@ -69,7 +69,10 @@ const readyOwnerOnlyAsset = {
 };
 
 test("guests can source-match ready public assets", () => {
-  assert.equal(canExposeSourceMatchedAsset(readyPublicAsset, guestAccount), true);
+  assert.equal(
+    canExposeSourceMatchedAsset(readyPublicAsset, guestAccount),
+    true,
+  );
 });
 
 test("guests cannot source-match owner-only uploaded assets", () => {

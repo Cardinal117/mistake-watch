@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TASK-007 Batch 1 Implementation Report</title>
+  <title>TASK-007 Batch 2 Implementation Report</title>
   <style>
     :root { color-scheme: dark; --bg:#0e0e0f; --surface:#1c1b1c; --raised:#242325; --line:#3b494b; --text:#e5e2e3; --muted:#b9cacb; --blue:#00dbe9; --gold:#ffba20; --good:#6ee7a8; --warn:#ffd27a; }
     * { box-sizing:border-box; }
@@ -43,19 +43,19 @@
 <body>
 <main>
   <header>
-    <div class="eyebrow">TASK-007 / Batch 1</div>
-    <h1>Room layout modularization</h1>
-    <p class="lede">The listen and watch monoliths are now compatibility entrypoints over bounded feature modules. Authenticated QA exposed a direct-player remount race; the branch now prevents passive media events from resetting canonical playback during mode switches.</p>
-    <span class="status">Continuity released; atomic autoplay in QA</span>
+    <div class="eyebrow">TASK-007 / Batch 2</div>
+    <h1>Shared workflow and media boundaries</h1>
+    <p class="lede">The queue panel and media asset service are now thin compatibility entries over bounded modules. Listen and Watch share deterministic Add Media behavior, while public contracts, permissions, and runtime behavior remain stable.</p>
+    <span class="status">Implementation and automated QA complete</span>
   </header>
 
   <section class="grid" aria-label="Implementation summary">
-    <article class="card"><div class="metric">6,046 → 1<small>Listen compatibility entrypoint lines</small></div></article>
-    <article class="card"><div class="metric">4,418 → 1<small>Watch compatibility entrypoint lines</small></div></article>
-    <article class="card"><div class="metric">38<small>New bounded feature modules</small></div></article>
-    <article class="card"><div class="metric good">678<small>Largest new module; ceiling is 700</small></div></article>
-    <article class="card"><div class="metric good">125/125<small>Identity, dev, queue, SpacetimeDB, YouTube, media tests</small></div></article>
-    <article class="card"><div class="metric good">65/65<small>Sync suite after atomic uploaded-autoplay hardening</small></div></article>
+    <article class="card"><div class="metric">2,205 to 195<small>Queue compatibility entry lines</small></div></article>
+    <article class="card"><div class="metric">1,939 to 49<small>Media compatibility entry lines</small></div></article>
+    <article class="card"><div class="metric">26<small>Queue/Add Media and media domain files</small></div></article>
+    <article class="card"><div class="metric good">525<small>Largest Batch 2 module; ceiling is 700</small></div></article>
+    <article class="card"><div class="metric good">199/199<small>Focused regression tests passed</small></div></article>
+    <article class="card"><div class="metric good">0<small>Import cycles and file-ceiling violations</small></div></article>
   </section>
 
   <section class="grid">
@@ -64,12 +64,13 @@
       <table>
         <thead><tr><th>Priority</th><th>Finding</th><th>Disposition</th></tr></thead>
         <tbody>
-          <tr><td class="warn">P1 fixed; release pending</td><td>Uploaded autoplay performed separate source-load and playback-state writes.</td><td>Additive atomic reducer passes locally; ordered SpacetimeDB publish, frontend deploy, and two-client QA remain.</td></tr>
-          <tr><td class="good">P1 fixed; QA pending</td><td>Passive direct-player events reset canonical position to <code>0:00</code> during a modularized mode-switch remount.</td><td>Passive pause/play/seek observations no longer write room state; repeat authenticated continuity QA before merge.</td></tr>
+          <tr><td class="good">P1 closed</td><td>Uploaded autoplay performed separate source-load and playback-state writes.</td><td>Additive atomic reducer released as <code>02210bf</code>; production two-client and stale-next QA passed.</td></tr>
+          <tr><td class="good">P1 closed</td><td>Passive direct-player events reset canonical position to <code>0:00</code> during a modularized mode-switch remount.</td><td>Released continuity guard passed authenticated YouTube and uploaded-media QA.</td></tr>
           <tr><td class="warn">MW-SEC-001</td><td><code>owner_only</code> changes catalogue metadata but does not revoke permanent R2 URL access.</td><td>No current private rows exist; confirm with a dedicated owner-only test asset before approving a storage fix.</td></tr>
           <tr><td>P2 release</td><td>Owner Watch/upload interaction cannot be authenticated locally.</td><td>Required preview smoke gate before merge.</td></tr>
-          <tr><td>P2 performance</td><td>Both room modes remain statically imported; gzip grew by 1.3 KB.</td><td>Dynamic boundaries remain Batch 3 scope.</td></tr>
-          <tr><td>P2 architecture</td><td>Queue panel, media assets, live-room hook, and Spacetime module remain above 1,500 lines.</td><td>Decompose in Batches 2-3, ordered by blast radius.</td></tr>
+          <tr><td>P2 performance</td><td>Both room modes remain statically imported.</td><td>Dynamic boundaries and a fresh bundle comparison remain Batch 3 scope.</td></tr>
+          <tr><td class="good">P2 architecture improved</td><td>Queue panel and media assets exceeded 1,900 lines.</td><td>Compatibility entries are now 195 and 49 lines; realtime monoliths remain Batch 3.</td></tr>
+          <tr><td class="warn">Dependency baseline</td><td><code>npm audit</code> reports three moderate advisories.</td><td>Track separately; this structural batch makes no dependency changes.</td></tr>
         </tbody>
       </table>
       <p class="muted">The full evidence, lower-priority observations, and recommended order are recorded in <code>discovered-issues.md</code>.</p>
@@ -82,11 +83,11 @@
       <table>
         <thead><tr><th>Area</th><th>Review focus</th><th>Commit</th></tr></thead>
         <tbody>
-          <tr><td><code>components/room/listen/**</code></td><td>Composition, queue virtualization, Add Media, TV, discovery, headers, theme.</td><td><code>1b3dfda</code></td></tr>
-          <tr><td><code>components/room/watch/**</code></td><td>Owner upload state, media hub, catalogue access, playback references, audience and queue.</td><td><code>77ff3b3</code></td></tr>
-          <tr><td><code>tests/helpers</code> and source-inspection tests</td><td>Assertions now inspect responsible module trees; no security assertion was removed.</td><td>Integration patch</td></tr>
-          <tr><td><code>direct-media-player.tsx</code> and player regression tests</td><td>Explicit controls remain authoritative; passive remount events cannot overwrite canonical playback state.</td><td>Continuity patch</td></tr>
-          <tr><td><code>review-notes.md</code></td><td>Evidence, caveats, bundle checkpoint, and preview QA requirement.</td><td>Integration patch</td></tr>
+          <tr><td><code>components/room/queue/**</code></td><td>Queue contracts, controls, content, rows, notifications, and pure helpers.</td><td><code>4e82018</code></td></tr>
+          <tr><td><code>components/room/shared/add-media/**</code></td><td>Shared dialog, previews, controller, and deterministic Listen/Watch behavior.</td><td><code>4e82018</code>, <code>5f6b312</code></td></tr>
+          <tr><td><code>lib/media/**</code></td><td>Compatibility exports and folder, library, processing, source-match, and upload domains.</td><td><code>c33f644</code></td></tr>
+          <tr><td><code>scripts/check-file-lengths.mjs</code></td><td>Warning and failure ratchet with explicit legacy ceilings.</td><td>Integration patch</td></tr>
+          <tr><td><code>split-inventory.md</code></td><td>Exact physical line counts, responsibilities, and remaining Batch 3 targets.</td><td>Integration patch</td></tr>
         </tbody>
       </table>
     </article>
@@ -110,10 +111,10 @@
         <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
         <tbody>
           <tr><td>Compile and quality</td><td class="good">Passed</td><td>Typecheck, full lint, diff check, Next.js production build, and import graph audit with 0 cycles.</td></tr>
-          <tr><td>Core automated suites</td><td class="good">Passed</td><td>Identity 2/2; dev 8/8; queue 52/52; SpacetimeDB 17/17; YouTube 3/3; media/security 44/44.</td></tr>
-          <tr><td>Sync/player</td><td class="good">Passed</td><td>65/65. Passive-event, mode-switch continuity, and atomic uploaded-autoplay assertions pass.</td></tr>
-          <tr><td>Local browser</td><td class="good">Passed where available</td><td>331-item listen room, open queue virtual slice, Add Media, desktop and 390px mobile. No captured console errors or horizontal overflow.</td></tr>
-          <tr><td>Owner watch QA</td><td class="warn">Preview required</td><td>Local guest cannot switch room mode; Google owner authentication is live-only.</td></tr>
+          <tr><td>Focused automated suites</td><td class="good">Passed</td><td>199/199 across sync, queue, media/security, SpacetimeDB, identity, dev, YouTube, and recommendations.</td></tr>
+          <tr><td>File and graph policy</td><td class="good">Passed</td><td>Zero file-ceiling violations; 14 warnings; 144 files processed with zero circular dependencies.</td></tr>
+          <tr><td>Local browser</td><td class="warn">Environment blocked</td><td>Stale-room recovery and dashboard passed. Fresh room fails before queue rendering when the local SpacetimeDB connection is inactive.</td></tr>
+          <tr><td>Release smoke QA</td><td class="warn">Preview required</td><td>Owner/member/guest queue, Add Media, upload catalogue, playback, and responsive checks remain.</td></tr>
         </tbody>
       </table>
     </article>
@@ -121,14 +122,14 @@
 
   <section class="grid">
     <article class="card wide">
-      <h2>Bundle Checkpoint</h2>
-      <p><strong>Room JavaScript:</strong> 592.8 KB raw / 151.7 KB gzip, versus 588.4 / 150.4 KB baseline.</p>
-      <div class="bar" aria-label="Room JavaScript is less than one percent above baseline"><span style="width:99.2%"></span></div>
-      <p class="muted">The approximately 0.7–0.9% increase is recorded module-boundary overhead. CSS is unchanged at 157.8 KB raw / 22.3 KB gzip. Dynamic loading and measurable payload reduction remain Batch 3 scope.</p>
+      <h2>Boundary Checkpoint</h2>
+      <p><strong>Queue:</strong> 2,205-line monolith to a 195-line entry plus 12 bounded modules. <strong>Media:</strong> 1,939-line monolith to a 49-line entry plus 12 domain modules.</p>
+      <div class="bar" aria-label="Batch 2 implementation complete"><span style="width:100%"></span></div>
+      <p class="muted">The change establishes testable ownership boundaries. Dynamic loading and a measurable room payload comparison remain Batch 3 scope.</p>
     </article>
     <aside class="card callout">
       <h2>Release Decision</h2>
-      <p>Continuity is released. Complete the atomic-autoplay release in dependency order: publish the additive SpacetimeDB reducer, deploy the matching frontend, then run two-client uploaded autoplay QA. The existing reducer contract remains available for old clients and frontend rollback. After that gate, Batch 2 starts with <code>queue-panel.tsx</code>.</p>
+      <p>Batch 2 is ready for a QA release gate and commit review. Automated evidence is complete; use a Vercel preview for owner/member/guest smoke QA because the local SpacetimeDB environment blocks fresh-room rendering.</p>
     </aside>
   </section>
 </main>

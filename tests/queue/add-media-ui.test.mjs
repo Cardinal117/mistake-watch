@@ -6,7 +6,10 @@ import { fileURLToPath } from "node:url";
 
 import { readSourceTree } from "../helpers/read-source-tree.mjs";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const root = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../..",
+);
 const queuePanelSource = await readSourceTree(
   root,
   "components/room/queue-panel.tsx",
@@ -79,7 +82,10 @@ test("listen and queue Add Media controllers reuse shared contracts and behavior
 test("add media flow is url-driven instead of manual mode-card driven", () => {
   for (const source of [queuePanelSource, listenLayoutSource]) {
     assert.match(source, /setTimeout\(\(\)\s*=>/);
-    assert.match(source, /detectUrlType\(trimmedUrl\)\s*===\s*"youtube-playlist"/);
+    assert.match(
+      source,
+      /detectUrlType\(trimmedUrl\)\s*===\s*"youtube-playlist"/,
+    );
     assert.match(source, /setSinglePreview/);
   }
 
@@ -99,14 +105,18 @@ test("playlist review exposes search sort select import and duration controls", 
     "Under 10 min",
   ]) {
     assert.ok(
-      queuePanelSource.includes(expected) || listenLayoutSource.includes(expected),
+      queuePanelSource.includes(expected) ||
+        listenLayoutSource.includes(expected),
       `${expected} should be present in playlist review UI`,
     );
   }
 });
 
 test("playlist duration filters are reserved above the scrollable rows", () => {
-  assert.match(queuePanelSource, /grid-rows-\[auto_auto_auto_auto_minmax\(0,1fr\)_auto\]/);
+  assert.match(
+    queuePanelSource,
+    /grid-rows-\[auto_auto_auto_auto_minmax\(0,1fr\)_auto\]/,
+  );
   assert.match(queuePanelSource, /Duration filter/);
   assert.match(queuePanelSource, /min-h-0 gap-1\.5 overflow-y-auto/);
   assert.match(listenLayoutSource, /Duration filter/);
@@ -123,7 +133,10 @@ test("playlist duplicates warn and can be imported without duplicates or anyway"
 test("queue outcome notifications are rendered as fixed room-level toasts", () => {
   for (const source of [queuePanelSource, listenLayoutSource]) {
     assert.match(source, /fixed bottom-4 right-4 z-\[130\]/);
-    assert.match(source, /role=\{notification\.tone === "error" \? "alert" : "status"\}/);
+    assert.match(
+      source,
+      /role=\{notification\.tone === "error" \? "alert" : "status"\}/,
+    );
   }
 });
 
@@ -131,7 +144,10 @@ test("server room errors are surfaced as queue notifications", () => {
   for (const source of [queuePanelSource, listenLayoutSource]) {
     assert.match(source, /roomErrors/);
     assert.match(source, /notifiedRoomErrorIds/);
-    assert.match(source, /notify\(error\.message, roomErrorToneBySeverity\[error\.severity\]\)/);
+    assert.match(
+      source,
+      /notify\(error\.message, roomErrorToneBySeverity\[error\.severity\]\)/,
+    );
   }
 });
 
@@ -146,7 +162,10 @@ test("media failures remain visible in history and on affected queue rows", () =
 
 test("playlist selection uses row keys instead of collapsing duplicate video ids", () => {
   for (const source of [queuePanelSource, listenLayoutSource]) {
-    assert.match(source, /function playlistItemKey\(item: PlaylistPreviewItem\)/);
+    assert.match(
+      source,
+      /function playlistItemKey\(item: PlaylistPreviewItem\)/,
+    );
     assert.match(source, /\$\{item\.videoId\}:\$\{item\.position\}/);
     assert.match(source, /selectedIds\.has\(playlistItemKey\(item\)\)/);
     assert.doesNotMatch(source, /key=\{item\.videoId\}/);
@@ -154,5 +173,8 @@ test("playlist selection uses row keys instead of collapsing duplicate video ids
 });
 
 test("queue add reducer payload always sends an explicit duplicate boolean", () => {
-  assert.match(liveRoomSource, /allowDuplicate:\s*input\.allowDuplicate \?\? false/);
+  assert.match(
+    liveRoomSource,
+    /allowDuplicate:\s*input\.allowDuplicate \?\? false/,
+  );
 });
