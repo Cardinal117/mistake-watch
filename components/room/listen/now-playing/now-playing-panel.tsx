@@ -23,6 +23,8 @@ import { DirectMediaPlayer } from "@/components/room/direct-media-player";
 import { useNextItemPreparation } from "@/components/room/use-next-item-preparation";
 import { YoutubeMediaPlayer } from "@/components/room/youtube-media-player";
 import { YouTubeMetadataLine } from "@/components/room/youtube-metadata-line";
+import { PreferenceHeartButton } from "@/components/room/listen/preference-heart-button";
+import type { MediaPreferenceController } from "@/lib/recommendations/use-media-preferences";
 import {
   ListenPreparingNextStrip,
   ListenRailQueueSummary,
@@ -36,6 +38,7 @@ export function ListenNowPlayingPanel({
   desktopShell,
   durationSeconds,
   liveRoom,
+  mediaPreferences,
   mobileTools,
   nextPreparation,
   onNext,
@@ -56,6 +59,7 @@ export function ListenNowPlayingPanel({
   desktopShell: boolean;
   durationSeconds: number;
   liveRoom: LiveRoomState;
+  mediaPreferences: MediaPreferenceController;
   mobileTools?: ReactNode;
   nextPreparation: ReturnType<typeof useNextItemPreparation>;
   onNext(): void;
@@ -196,9 +200,20 @@ export function ListenNowPlayingPanel({
           ) : null}
 
           <div className="grid gap-2.5 pt-1">
-            <h1 className="text-headline-md font-semibold leading-tight text-on-surface [overflow-wrap:anywhere]">
-              {title}
-            </h1>
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+              <h1 className="text-headline-md font-semibold leading-tight text-on-surface [overflow-wrap:anywhere]">
+                {title}
+              </h1>
+              {currentItem ? (
+                <PreferenceHeartButton
+                  item={currentItem}
+                  onToggle={() =>
+                    void mediaPreferences.togglePreference(currentItem)
+                  }
+                  preference={mediaPreferences.getPreference(currentItem)}
+                />
+              ) : null}
+            </div>
             <p className="truncate text-body-md text-on-surface-variant">
               {artist}
             </p>

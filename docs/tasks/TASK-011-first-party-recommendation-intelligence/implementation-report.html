@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TASK-011 Batches A-C Implementation Report</title>
+    <title>TASK-011 Batches A-F Implementation Report</title>
     <style>
       :root {
         color-scheme: dark;
@@ -178,18 +178,18 @@
   <body>
     <main>
       <header>
-        <div class="eyebrow">TASK-011 / Batches A-D / Local only</div>
-        <h1>Recommendation authority, durability, and ranking</h1>
+        <div class="eyebrow">TASK-011 / Batches A-F / Local only</div>
+        <h1>First-party recommendations and private Likes</h1>
         <p class="summary">
           Event semantics, a private SpacetimeDB outbox, occurrence-safe
-          playback transitions, room-scoped guest Likes, and a service-only
-          durable Supabase store, and deterministic explainable ranker are
-          implemented and verified locally. The new migration is unapplied and
-          no production recommendation service has changed.
+          playback transitions, durable and room-scoped Likes, an authorized
+          recommendation service, deterministic ranking, and the existing Listen
+          Room Picks integration are verified locally. The migration, Maincloud
+          publish, drain schedule, and deployment remain deferred.
         </p>
         <div class="grid" aria-label="Implementation summary">
           <div class="metric">
-            <span>Release readiness</span><strong>70%</strong>
+            <span>Release readiness</span><strong>92%</strong>
           </div>
           <div class="metric">
             <span>Outbox batch</span><strong>100</strong>
@@ -201,7 +201,7 @@
             <span>Account retention</span><strong>180d</strong>
           </div>
           <div class="metric">
-            <span>500-candidate p95</span><strong>6.75ms</strong>
+            <span>Full test suite</span><strong>310</strong>
           </div>
         </div>
       </header>
@@ -266,6 +266,21 @@
             Uploaded candidates fail closed without explicit catalogue
             authorization. Like remains the strongest individual positive
             signal; neutral and missing Like state never become negative.
+          </li>
+          <li>
+            Private recommendation and preference routes now enforce bounded,
+            URL-free contracts, active participant state, catalogue scope,
+            streamed byte limits, and capacity-bounded cache behavior.
+          </li>
+          <li>
+            Existing Listen Room Picks adopt first-party ordering only when it
+            is authoritative. Provider failures retain the original order and
+            authoritative empty results do not restore excluded candidates.
+          </li>
+          <li>
+            A shared accessible Heart supports Like and Remove Like on
+            now-playing and recommendation cards with optimistic rollback,
+            stale-room protection, and announced errors.
           </li>
         </ul>
       </section>
@@ -353,11 +368,23 @@
               </td>
             </tr>
             <tr>
+              <td>Batches E/F tests</td>
+              <td>Pass</td>
+              <td>
+                310 total tests and 44 focused service/UI/security tests cover
+                active-room enforcement, cross-room preference filtering,
+                uploaded authorization, cache invalidation, durable Like
+                removal, bounded bodies, safe fallback, empty ranking, and
+                accessible error state.
+              </td>
+            </tr>
+            <tr>
               <td>Ranking performance</td>
               <td>Pass</td>
               <td>
-                Focused 500-candidate p95 measured 6.75 ms against the approved
-                50 ms budget; result output remains capped at 100.
+                The latest full-suite 500-candidate p95 measured 29.41 ms
+                against the approved 50 ms budget; result output remains capped
+                at 100.
               </td>
             </tr>
             <tr>
@@ -375,12 +402,10 @@
               <td>Independent review</td>
               <td>Pass</td>
               <td>
-                Batch C has no unresolved Blocker or Important findings after
-                collision, attribution, retention, and account-deletion retry
-                corrections. Batch D review findings covering authorization
-                redaction, positive recency, room penalties, and factual labels
-                were corrected with focused regressions. Re-review found no
-                unresolved Blocker or Important finding.
+                Batch E/F review findings covering stale membership, preference
+                leakage, ranking invalidation, authoritative empty results, and
+                silent errors were corrected. Its final ref-lint finding was
+                fixed and the complete lint gate rerun.
               </td>
             </tr>
           </tbody>
@@ -453,17 +478,37 @@
               >
             </p>
           </section>
+          <section>
+            <h3>Authorized service</h3>
+            <p>
+              <code>lib/recommendations/room-service.ts</code><br /><code
+                >lib/recommendations/room-authorization.ts</code
+              ><br /><code>lib/recommendations/preference-service.ts</code
+              ><br /><code>app/api/recommendations/room/route.ts</code
+              ><br /><code>app/api/recommendations/preferences/route.ts</code>
+            </p>
+          </section>
+          <section>
+            <h3>Room Picks and Like UI</h3>
+            <p>
+              <code>components/room/listen/discovery/discovery-panel.tsx</code
+              ><br /><code
+                >components/room/listen/preference-heart-button.tsx</code
+              ><br /><code>lib/recommendations/use-media-preferences.ts</code
+              ><br /><code>tests/recommendations/</code>
+            </p>
+          </section>
         </div>
       </section>
 
       <section class="panel next">
-        <h2 class="gold">Stop point before migration or Batch E</h2>
+        <h2 class="gold">Stop point before Batch G release work</h2>
         <p>
-          Batch D is local and review-ready. Applying the Supabase migration,
-          activating a production drain schedule, recommendation APIs, Heart UI,
-          Maincloud publish, and deployment remain deferred. Batch E may consume
-          this pure contract only after a separate checkpoint; explicit cloud
-          approval is still required before any production database change.
+          Batches E and F are local and review-ready. Applying the Supabase
+          migration, publishing the SpacetimeDB procedures, activating a drain
+          schedule, committing these batches, deploying Vercel, and two-client
+          production QA remain Batch G actions requiring explicit approval and
+          the documented safe release order.
         </p>
       </section>
     </main>

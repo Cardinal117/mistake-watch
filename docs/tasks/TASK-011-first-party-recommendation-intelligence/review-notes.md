@@ -2,17 +2,50 @@
 
 ## Status
 
-Batches A through D are implemented and verified locally. Release readiness is
-70%. The Batch C Supabase migration exists only in the repository and has not
-been applied. No Maincloud publish, Vercel deployment, provider scope, drain
-schedule, recommendation API, or production recommendation configuration has
-changed.
+Batches A through F are implemented and verified locally. Release readiness is
+92%. The Batch C Supabase migration exists only in the repository and has not
+been applied. No Maincloud publish, Vercel deployment, provider scope, or drain
+schedule has changed.
 
 The Batch A/B checkpoint is pushed as `bfc234b`. Pre-Batch C infrastructure
 reconciliation is complete.
 
 The migration-history reconciliation checkpoint is pushed as `bc31399`. Batch
-C is committed and pushed as `3a79b82`. Batch D remains uncommitted and local.
+C is committed and pushed as `3a79b82`. Batch D is committed and pushed as
+`3eab0e2`. Batches E and F are local and uncommitted.
+
+## Batch E And F Outcome
+
+- Added private, no-store recommendation and preference routes with streamed
+  byte limits, bounded URL-free request contracts, server-resolved account or
+  guest identity, active SpacetimeDB participant revalidation, and a bounded
+  TTL/LRU cache with shorter failure expiry.
+- Recommendation reads merge durable account signals with current room
+  preference state. Current room state overrides durable state and participates
+  in the cache key, so a successful Like refreshes ranking without allowing a
+  stale cache hit after a participant leaves or is kicked.
+- Preference reads exclude durable direct/HLS identities from other rooms and
+  expose uploaded preferences only when the current catalogue scope still
+  authorizes a ready public or owner asset.
+- Added a trusted SpacetimeDB preference reducer/procedure. Browser requests
+  cannot supply participant IDs, storage URLs, or provider credentials;
+  uploaded and direct/HLS media identities are verified against live room
+  state before mutation.
+- Reconciled durable Like revisions with room-scoped optimistic concurrency.
+  Removing an existing durable Like now emits a trusted neutral transition
+  instead of conflicting with or bypassing SpacetimeDB authority.
+- Integrated first-party ordering only into the existing Listen Room Picks
+  boundary. Service failure preserves the original provider order, while an
+  authoritative empty result remains empty so hard exclusions are not undone.
+- Added a shared Lucide Heart to now-playing and recommendation cards with
+  stable dimensions, `aria-pressed`, Like/Remove Like labels, optimistic
+  rollback, stale-room protection, disabled uploaded state for guests, and an
+  announced error status.
+- Independent review found five Important issues: stale participant reads,
+  cross-room/private preference leakage, stale ranking after Like, restoration
+  of hard-excluded candidates, and silent mutation failures. All five were
+  corrected. Its final lint finding was also corrected by moving the room ref
+  update into an effect; the complete lint gate passes.
 
 ## Batch D Outcome
 
@@ -248,7 +281,7 @@ The percentages below measure release readiness, not development effort:
 - Batch D: 70% - deterministic ranking, Like weighting, explanations, and the
   500-candidate performance gate pass locally.
 - Batch E: 82% - authorized, bounded service contracts pass.
-- Batch F: 92% - Like UI and existing Room Picks integration pass browser QA.
+- Batch F: 92% - Like UI and existing Room Picks integration pass local gates.
 - Batch G: 100% - migration, publish, deploy, and production QA are complete.
 
 ## Recommended Product Order After TASK-011
@@ -273,11 +306,18 @@ The percentages below measure release readiness, not development effort:
   determinism, 1,000-candidate coverage, redacted authorization exclusions,
   negative-only recency protection, and a measured focused 500-candidate p95
   of `6.75 ms` against the `50 ms` gate.
+- Passed after Batches E/F: full `npm test` (310 tests), TypeScript, ESLint,
+  file-length policy, changed-file Prettier, production build, SpacetimeDB
+  build/generate, 44 focused service/UI/security tests, and route smoke checks
+  for private no-store `400`/`403` responses.
+- Passed: local browser room load and console smoke produced no browser errors.
+  The supplied high-load room could not be exercised against the local code
+  because local SpacetimeDB state had no matching queue and the new trusted
+  procedures are intentionally unpublished.
 - Passed: disposable local Supabase reset/apply plus behavioral SQL proof for
   RLS, grants, duplicates, rollback, retention, preference ordering, cleanup,
   account deletion, and post-deletion retry deduplication.
-- Passed: independent final security, idempotency, runtime-proof, formatting,
-  and scope review found no unresolved Blocker or Important findings.
+- Passed: independent security/accessibility review findings were corrected;
+  its final ref-lint blocker was fixed and the complete lint gate rerun.
 - Intentionally deferred: applying the Supabase migration, activating a drain
-  schedule, recommendation read/preference APIs, Heart UI, Maincloud publish,
-  and deployment.
+  schedule, Maincloud publish, Vercel deployment, and two-client production QA.

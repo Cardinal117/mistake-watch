@@ -91,6 +91,22 @@ test("guest preferences verify identity, revision, and action id", () => {
   assert.match(eventsSource, /if \(!actionId\) \{\s*return false;/);
 });
 
+test("trusted account preference can neutralize a durable Like baseline", () => {
+  const reducer = sectionBetween(
+    authoritySource,
+    "export const set_verified_room_media_preference",
+    "export const read_my_guest_media_preferences",
+  );
+
+  assert.match(reducer, /!isTrustedRecommendationAuthority\(ctx\)/);
+  assert.match(reducer, /record_neutral_without_current: t\.bool\(\)/);
+  assert.match(
+    reducer,
+    /recordNeutralWithoutCurrent: record_neutral_without_current/,
+  );
+  assert.match(eventsSource, /!input\.recordNeutralWithoutCurrent/);
+});
+
 test("playback retries are occurrence-bound and completion is classified", () => {
   for (const reducerName of [
     "advance_queue_item",

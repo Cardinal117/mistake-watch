@@ -61,6 +61,7 @@ import SetPlaybackStateReducer from "./set_playback_state_reducer";
 import SetQueueAutoplayReducer from "./set_queue_autoplay_reducer";
 import SetQueueItemPriorityReducer from "./set_queue_item_priority_reducer";
 import SetQueueModeReducer from "./set_queue_mode_reducer";
+import SetVerifiedRoomMediaPreferenceReducer from "./set_verified_room_media_preference_reducer";
 import UpdateMediaTitleReducer from "./update_media_title_reducer";
 import UpdateRoomModeReducer from "./update_room_mode_reducer";
 import UpdateRoomNameReducer from "./update_room_name_reducer";
@@ -68,6 +69,7 @@ import UpdateRoomNameReducer from "./update_room_name_reducer";
 // Import all procedure arg schemas
 import * as ReadMyGuestMediaPreferencesProcedure from "./read_my_guest_media_preferences_procedure";
 import * as ReadRecommendationEventOutboxProcedure from "./read_recommendation_event_outbox_procedure";
+import * as ReadVerifiedRoomMediaPreferencesProcedure from "./read_verified_room_media_preferences_procedure";
 
 // Import all table schema definitions
 import LiveQueueItemRow from "./live_queue_item_table";
@@ -219,6 +221,7 @@ const reducersSchema = __reducers(
   __reducerSchema("set_queue_autoplay", SetQueueAutoplayReducer),
   __reducerSchema("set_queue_item_priority", SetQueueItemPriorityReducer),
   __reducerSchema("set_queue_mode", SetQueueModeReducer),
+  __reducerSchema("set_verified_room_media_preference", SetVerifiedRoomMediaPreferenceReducer),
   __reducerSchema("update_media_title", UpdateMediaTitleReducer),
   __reducerSchema("update_room_mode", UpdateRoomModeReducer),
   __reducerSchema("update_room_name", UpdateRoomNameReducer),
@@ -228,6 +231,7 @@ const reducersSchema = __reducers(
 const proceduresSchema = __procedures(
   __procedureSchema("read_my_guest_media_preferences", ReadMyGuestMediaPreferencesProcedure.params, ReadMyGuestMediaPreferencesProcedure.returnType),
   __procedureSchema("read_recommendation_event_outbox", ReadRecommendationEventOutboxProcedure.params, ReadRecommendationEventOutboxProcedure.returnType),
+  __procedureSchema("read_verified_room_media_preferences", ReadVerifiedRoomMediaPreferencesProcedure.params, ReadVerifiedRoomMediaPreferencesProcedure.returnType),
 );
 
 /** The remote SpacetimeDB module schema, both runtime and type information. */

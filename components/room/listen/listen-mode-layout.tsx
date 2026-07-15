@@ -8,6 +8,7 @@ import { expectedPositionAt } from "@/lib/player";
 import { shuffleUpcomingQueue, smartShuffleQueue } from "@/lib/queue/model";
 import { deriveQueueState } from "@/lib/queue/derived";
 import { cx } from "@/lib/ui";
+import { useMediaPreferences } from "@/lib/recommendations/use-media-preferences";
 import { useNextItemPreparation } from "@/components/room/use-next-item-preparation";
 import {
   type ListenModeLayoutProps,
@@ -56,6 +57,10 @@ export function ListenModeLayout({
   const [tvSettings, setTvSettings] = usePersistentListenTvSettings();
   const [volume, setVolume] = useState(DEFAULT_LISTEN_VOLUME);
   const [queueDrawerOpen, setQueueDrawerOpen] = useState(false);
+  const mediaPreferences = useMediaPreferences({
+    allowUploaded: account.status === "signed-in",
+    roomId: room.id,
+  });
   const liveQueueItems = useListenQueueItems(liveRoom, room);
   const queueState = useMemo(
     () => deriveQueueState(liveQueueItems),
@@ -295,6 +300,7 @@ export function ListenModeLayout({
           desktopShell={desktopShell}
           durationSeconds={durationSeconds}
           liveRoom={liveRoom}
+          mediaPreferences={mediaPreferences}
           mobileTools={
             <ListenMobileRoomTools
               activeTab={mobileToolsTab}
@@ -375,6 +381,7 @@ export function ListenModeLayout({
               canPlay={canControl && isConnected}
               currentItem={currentItem}
               items={liveQueueItems}
+              mediaPreferences={mediaPreferences}
               onAddQueueItem={liveRoom.addQueueItem}
               onLoadSource={liveRoom.loadMediaSource}
               onPlayQueueItem={liveRoom.playQueueItemNow}

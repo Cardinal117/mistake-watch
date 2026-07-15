@@ -67,7 +67,7 @@ export const recommendationPlaybackOccurrence = table(
     duration_seconds: t.option(t.u32()),
     media_id: t.string(),
     playback_occurrence_id: t.string(),
-    queue_item_id: t.string(),
+    queue_item_id: t.option(t.string()),
     room_id: t.string().primaryKey(),
     room_session_id: t.string(),
     source_type: t.string(),
@@ -210,7 +210,7 @@ type GuestPreferenceRow = {
   liked: boolean;
   media_id: string;
   preference_key: string;
-  queue_item_id: string;
+  queue_item_id?: string;
   revision: number;
   room_id: string;
   room_session_id: string;

@@ -57,9 +57,10 @@ export {
   init,
   read_my_guest_media_preferences,
   read_recommendation_event_outbox,
+  read_verified_room_media_preferences,
   set_guest_media_preference,
+  set_verified_room_media_preference,
 } from "./recommendation-authority";
-
 const KICK_REJOIN_BLOCK_MS = 8_000;
 
 export default spacetimedb;

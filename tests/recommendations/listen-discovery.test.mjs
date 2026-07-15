@@ -15,7 +15,10 @@ const rootDir = path.resolve(
 const tempDir = await mkdtemp(
   path.join(tmpdir(), "mistake-watch-listen-discovery-"),
 );
-const sourcePath = path.join(rootDir, "lib/recommendations/listen-discovery.ts");
+const sourcePath = path.join(
+  rootDir,
+  "lib/recommendations/listen-discovery.ts",
+);
 const source = (await readFile(sourcePath, "utf8")).replace(
   'import type { RoomQueueItem } from "@/lib/rooms";',
   "",
@@ -101,6 +104,21 @@ test("provider recommendations win only when provider rows exist", () => {
   assert.equal(result.source, "provider");
   assert.equal(result.sourceLabel, "YouTube search");
   assert.deepEqual(result.items, [providerItem]);
+});
+
+test("an authoritative empty ranking does not restore excluded room items", () => {
+  const result = buildListenDiscoveryResult({
+    activeTab: "recommended",
+    currentItem: queueItems[0],
+    items: queueItems,
+    providerItems: [],
+    providerRankedEmpty: true,
+  });
+
+  assert.equal(result.source, "provider");
+  assert.equal(result.sourceLabel, "Mistake Watch ranking");
+  assert.deepEqual(result.items, []);
+  assert.match(result.emptyMessage, /No new recommendations/);
 });
 
 test("most listened is room-history based instead of provider trending", () => {

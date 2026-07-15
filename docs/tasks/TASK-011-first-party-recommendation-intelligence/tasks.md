@@ -206,6 +206,11 @@ Safe commit point:
 
 ## Batch E: Authorized Recommendation Service
 
+Status: Completed locally on 2026-07-15. Authorization, bounded request and
+cache contracts, active-participant revalidation, private preference reads, and
+focused security/performance tests pass. No cloud migration, Maincloud publish,
+drain schedule, or application deployment was performed.
+
 Suggested files:
 
 - `lib/recommendations/room-service.ts`
@@ -254,6 +259,12 @@ Safe commit point:
 - Authorized service contract passes without changing room presentation.
 
 ## Batch F: Existing Room Picks Integration
+
+Status: Completed locally on 2026-07-15. Existing Listen Room Picks now use the
+first-party order when available, retain the provider fallback on service
+failure, preserve authoritative empty results, and expose a shared accessible
+Like control. Production browser QA remains part of Batch G because the new
+SpacetimeDB procedures are not published.
 
 Suggested files:
 

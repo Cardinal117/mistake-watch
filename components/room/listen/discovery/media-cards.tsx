@@ -8,6 +8,8 @@ import { cx } from "@/lib/ui";
 import type { YouTubeVideoMetadata } from "@/lib/youtube/metadata";
 import { getYouTubeAvailabilityLabel } from "@/lib/youtube/availability";
 import { useYouTubeMetadata } from "@/lib/youtube/use-youtube-metadata";
+import type { MediaPreferenceController } from "@/lib/recommendations/use-media-preferences";
+import { PreferenceHeartButton } from "@/components/room/listen/preference-heart-button";
 import {
   type SourceLoadInput,
   type QueueAddInput,
@@ -81,9 +83,11 @@ export function RecommendationCard({
   current,
   inQueue,
   item,
+  mediaPreferences,
   onAddQueue,
   onLoadNow,
   onPlayNext,
+  reason,
 }: {
   canAddQueue: boolean;
   canLoadSource: boolean;
@@ -91,9 +95,11 @@ export function RecommendationCard({
   current: boolean;
   inQueue: boolean;
   item: RoomQueueItem;
+  mediaPreferences: MediaPreferenceController;
   onAddQueue(): void;
   onLoadNow(): void;
   onPlayNext(): void;
+  reason?: string;
 }) {
   const metadata = useYouTubeMetadata(
     item.sourceType === "youtube" ? item.sourceUrl : null,
@@ -169,6 +175,11 @@ export function RecommendationCard({
         {duration ? (
           <p className="text-label-sm text-on-surface-variant">{duration}</p>
         ) : null}
+        {reason ? (
+          <p className="line-clamp-2 text-label-sm text-on-surface-variant">
+            {reason}
+          </p>
+        ) : null}
         {isBlocked ? (
           <Badge tone="amber">
             {getYouTubeAvailabilityLabel(metadata.metadata?.availability)}
@@ -196,6 +207,14 @@ export function RecommendationCard({
             onClick={onPlayNext}
             rail
           />
+          <div className="grid h-8 place-items-center border-l border-white/10">
+            <PreferenceHeartButton
+              className="border-0"
+              item={item}
+              onToggle={() => void mediaPreferences.togglePreference(item)}
+              preference={mediaPreferences.getPreference(item)}
+            />
+          </div>
         </CardActionRail>
       </div>
     </article>
@@ -227,7 +246,7 @@ export function SmallMediaCard({
 }
 export function CardActionRail({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-2 grid grid-cols-3 overflow-hidden rounded-sm border border-white/10 bg-background/52">
+    <div className="mt-2 grid grid-flow-col auto-cols-fr overflow-hidden rounded-sm border border-white/10 bg-background/52">
       {children}
     </div>
   );

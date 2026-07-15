@@ -128,6 +128,78 @@ export const set_guest_media_preference = spacetimedb.reducer(
   },
 );
 
+export const set_verified_room_media_preference = spacetimedb.reducer(
+  {
+    actor_member_id: t.string(),
+    client_action_id: t.string(),
+    expected_revision: t.u32(),
+    liked: t.bool(),
+    media_id: t.string(),
+    record_neutral_without_current: t.bool(),
+    room_id: t.string(),
+    source_type: t.string(),
+  },
+  (
+    ctx,
+    {
+      actor_member_id,
+      client_action_id,
+      expected_revision,
+      liked,
+      media_id,
+      record_neutral_without_current,
+      room_id,
+      source_type,
+    },
+  ) => {
+    if (!isTrustedRecommendationAuthority(ctx)) {
+      return;
+    }
+
+    const actor = ctx.db.room_participant.participant_key.find(
+      `${room_id}:${actor_member_id}`,
+    );
+    const media = verifiedPreferenceMedia(ctx, {
+      mediaId: media_id,
+      roomId: room_id,
+      sourceType: source_type,
+    });
+
+    if (
+      !actor ||
+      actor.room_id !== room_id ||
+      !media ||
+      !claimRecommendationAction(
+        asRecommendationContext(ctx),
+        {
+          actionId: client_action_id,
+          actionType: "verified_room_preference",
+          actorMemberId: actor_member_id,
+          roomId: room_id,
+        },
+        BigInt(Date.now()),
+      )
+    ) {
+      return;
+    }
+
+    setGuestMediaPreference(
+      asRecommendationContext(ctx),
+      {
+        actorMemberId: actor_member_id,
+        expectedRevision: expected_revision,
+        liked,
+        mediaId: media.mediaId,
+        queueItemId: media.queueItemId,
+        recordNeutralWithoutCurrent: record_neutral_without_current,
+        roomId: room_id,
+        sourceType: media.sourceType,
+      },
+      BigInt(Date.now()),
+    );
+  },
+);
+
 export const read_my_guest_media_preferences = spacetimedb.procedure(
   { actor_member_id: t.string(), room_id: t.string() },
   t.array(guestMediaPreference.rowType),
@@ -149,6 +221,31 @@ export const read_my_guest_media_preferences = spacetimedb.procedure(
     }),
 );
 
+export const read_verified_room_media_preferences = spacetimedb.procedure(
+  { actor_member_id: t.string(), room_id: t.string() },
+  t.array(guestMediaPreference.rowType),
+  (ctx, { actor_member_id, room_id }) =>
+    ctx.withTx((tx) => {
+      if (!isTrustedRecommendationAuthority(tx)) {
+        throw new SenderError("Trusted preference access required.");
+      }
+
+      const actor = tx.db.room_participant.participant_key.find(
+        `${room_id}:${actor_member_id}`,
+      );
+
+      if (!actor || actor.room_id !== room_id) {
+        throw new SenderError("Active room preference access required.");
+      }
+
+      return [...tx.db.guest_media_preference.iter()].filter(
+        (preference) =>
+          preference.room_id === room_id &&
+          preference.actor_member_id === actor_member_id,
+      );
+    }),
+);
+
 export function isTrustedRecommendationAuthority(
   ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
 ) {
@@ -160,4 +257,52 @@ export function isTrustedRecommendationAuthority(
 function senderIdentityHex(ctx: { sender: unknown }) {
   const sender = ctx.sender as { toHexString?: () => string };
   return sender.toHexString?.() ?? String(ctx.sender);
+}
+
+function verifiedPreferenceMedia(
+  ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
+  input: { mediaId: string; roomId: string; sourceType: string },
+) {
+  const sourceType = input.sourceType.trim().toLowerCase();
+  const mediaId = input.mediaId.trim();
+
+  if (sourceType === "youtube" && /^[A-Za-z0-9_-]{6,64}$/.test(mediaId)) {
+    return { mediaId, sourceType };
+  }
+
+  if (sourceType === "uploaded") {
+    const queueItem = [...ctx.db.live_queue_item.iter()].find(
+      (item) =>
+        item.room_id === input.roomId &&
+        item.source_url === `mw-uploaded-asset:${mediaId}`,
+    );
+
+    return queueItem
+      ? { mediaId, queueItemId: queueItem.queue_item_id, sourceType }
+      : null;
+  }
+
+  if (
+    (sourceType === "direct" || sourceType === "hls") &&
+    mediaId.startsWith("queue:")
+  ) {
+    const queueItemId = mediaId.slice("queue:".length);
+    const queueItem = ctx.db.live_queue_item.queue_item_id.find(queueItemId);
+
+    if (!queueItem || queueItem.room_id !== input.roomId) {
+      return null;
+    }
+
+    const identity = recommendationMediaIdentity({
+      queueItemId: queueItem.queue_item_id,
+      sourceType: queueItem.source_type,
+      sourceUrl: queueItem.source_url,
+    });
+
+    return identity?.mediaId === mediaId && identity.sourceType === sourceType
+      ? { ...identity, queueItemId }
+      : null;
+  }
+
+  return null;
 }

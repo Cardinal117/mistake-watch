@@ -30,20 +30,28 @@ export function buildListenDiscoveryResult({
   currentItem,
   items,
   providerItems = [],
+  providerRankedEmpty = false,
   providerUnavailable = false,
 }: {
   activeTab: ListenDiscoveryTab;
   currentItem: RoomQueueItem | null;
   items: RoomQueueItem[];
   providerItems?: RoomQueueItem[];
+  providerRankedEmpty?: boolean;
   providerUnavailable?: boolean;
 }): ListenDiscoveryResult {
   const playableProviderItems = uniqueByPlayableSource(providerItems);
 
-  if (
-    activeTab === "recommended" &&
-    playableProviderItems.length > 0
-  ) {
+  if (activeTab === "recommended" && providerRankedEmpty) {
+    return {
+      emptyMessage: "No new recommendations match this room yet.",
+      items: [],
+      source: "provider",
+      sourceLabel: "Mistake Watch ranking",
+    };
+  }
+
+  if (activeTab === "recommended" && playableProviderItems.length > 0) {
     return {
       emptyMessage: "Provider suggestions are unavailable right now.",
       items: playableProviderItems.slice(0, 8),

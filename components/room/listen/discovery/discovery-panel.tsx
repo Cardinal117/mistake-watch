@@ -11,6 +11,12 @@ import { cx } from "@/lib/ui";
 import { fetchYouTubeRecommendations } from "@/lib/youtube/recommendations-client";
 import type { YouTubeRecommendationResponse } from "@/lib/youtube/recommendations";
 import {
+  buildRoomRecommendationRequest,
+  fetchRoomRecommendations,
+} from "@/lib/recommendations/room-client";
+import type { RoomRecommendationResponse } from "@/lib/recommendations/room-contracts";
+import type { MediaPreferenceController } from "@/lib/recommendations/use-media-preferences";
+import {
   type SourceLoadInput,
   type QueueAddInput,
 } from "@/components/room/listen/shared";
@@ -29,6 +35,7 @@ export function ListenDiscoveryPanel({
   canPlay,
   currentItem,
   items,
+  mediaPreferences,
   onAddQueueItem,
   onLoadSource,
   onPlayQueueItem,
@@ -39,6 +46,7 @@ export function ListenDiscoveryPanel({
   canPlay: boolean;
   currentItem: RoomQueueItem | null;
   items: RoomQueueItem[];
+  mediaPreferences: MediaPreferenceController;
   onAddQueueItem(input: QueueAddInput): void;
   onLoadSource(input: SourceLoadInput): void;
   onPlayQueueItem(queueItemId: string): void;
@@ -49,6 +57,10 @@ export function ListenDiscoveryPanel({
   const [providerRecommendations, setProviderRecommendations] = useState<{
     key: string;
     response: YouTubeRecommendationResponse;
+  } | null>(null);
+  const [firstPartyRecommendations, setFirstPartyRecommendations] = useState<{
+    key: string;
+    response: RoomRecommendationResponse;
   } | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -70,13 +82,85 @@ export function ListenDiscoveryPanel({
         : [],
     [providerRecommendations, providerRequestKey, room.currentMember?.name],
   );
+  const firstPartyRequest = useMemo(
+    () =>
+      activeFilter === "recommended" && providerItems.length > 0
+        ? buildRoomRecommendationRequest({
+            candidates: providerItems,
+            currentItem,
+            items,
+            preferenceRevision: mediaPreferences.revision,
+            roomId: room.id,
+          })
+        : null,
+    [
+      activeFilter,
+      currentItem,
+      items,
+      mediaPreferences.revision,
+      providerItems,
+      room.id,
+    ],
+  );
+  const firstPartyRequestKey = firstPartyRequest
+    ? `${providerRequestKey}:${firstPartyRequest.revision}`
+    : providerRequestKey;
+  const rankedProviderItems = useMemo(() => {
+    const ranked = firstPartyRecommendations;
+
+    if (
+      !firstPartyRequest ||
+      ranked?.key !== firstPartyRequestKey ||
+      ranked.response.status !== "available"
+    ) {
+      return providerItems;
+    }
+
+    const itemById = new Map(providerItems.map((item) => [item.id, item]));
+    const rankedItems = ranked.response.items.flatMap((item) => {
+      const providerItem = itemById.get(item.candidateId);
+
+      if (!providerItem) {
+        return [];
+      }
+
+      itemById.delete(item.candidateId);
+      return [providerItem];
+    });
+
+    return rankedItems;
+  }, [
+    firstPartyRecommendations,
+    firstPartyRequest,
+    firstPartyRequestKey,
+    providerItems,
+  ]);
+  const recommendationReasons = useMemo(() => {
+    if (
+      firstPartyRecommendations?.key !== firstPartyRequestKey ||
+      firstPartyRecommendations.response.status !== "available"
+    ) {
+      return new Map<string, string>();
+    }
+
+    return new Map(
+      firstPartyRecommendations.response.items.flatMap((item) => {
+        const label = item.reasons[0]?.label;
+        return label ? [[item.candidateId, label] as const] : [];
+      }),
+    );
+  }, [firstPartyRecommendations, firstPartyRequestKey]);
   const discovery = useMemo(
     () =>
       buildListenDiscoveryResult({
         activeTab: activeFilter,
         currentItem,
         items,
-        providerItems,
+        providerItems: rankedProviderItems,
+        providerRankedEmpty:
+          firstPartyRecommendations?.key === firstPartyRequestKey &&
+          firstPartyRecommendations.response.status === "available" &&
+          rankedProviderItems.length === 0,
         providerUnavailable:
           providerRecommendations?.key === providerRequestKey &&
           (providerRecommendations.response.status === "not-configured" ||
@@ -85,8 +169,10 @@ export function ListenDiscoveryPanel({
     [
       activeFilter,
       currentItem,
+      firstPartyRecommendations,
+      firstPartyRequestKey,
       items,
-      providerItems,
+      rankedProviderItems,
       providerRecommendations,
       providerRequestKey,
     ],
@@ -134,6 +220,27 @@ export function ListenDiscoveryPanel({
   }, [activeFilter, providerQuery, providerRequestKey, room.id]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    if (!firstPartyRequest) {
+      return;
+    }
+
+    void fetchRoomRecommendations(firstPartyRequest).then((response) => {
+      if (!cancelled) {
+        setFirstPartyRecommendations({
+          key: firstPartyRequestKey,
+          response,
+        });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [firstPartyRequest, firstPartyRequestKey]);
+
+  useEffect(() => {
     updatePicksScrollState();
   }, [discovery.items.length, activeFilter]);
 
@@ -175,7 +282,13 @@ export function ListenDiscoveryPanel({
               {showProviderState &&
               providerRecommendations?.key !== providerRequestKey
                 ? "Checking provider"
-                : discovery.sourceLabel}
+                : firstPartyRequest &&
+                    firstPartyRecommendations?.key !== firstPartyRequestKey
+                  ? "Ranking room picks"
+                  : firstPartyRecommendations?.key === firstPartyRequestKey &&
+                      firstPartyRecommendations.response.status === "available"
+                    ? "Mistake Watch ranking"
+                    : discovery.sourceLabel}
             </span>
           </div>
           <div className="max-w-full overflow-x-auto">
@@ -220,9 +333,11 @@ export function ListenDiscoveryPanel({
                   inQueue={!item.id.startsWith("provider:")}
                   item={item}
                   key={item.id}
+                  mediaPreferences={mediaPreferences}
                   onAddQueue={() => handleAddRecommendation(item)}
                   onLoadNow={() => handleLoadRecommendation(item)}
                   onPlayNext={() => handleAddRecommendation(item, true)}
+                  reason={recommendationReasons.get(item.id)}
                 />
               ))}
             </div>

@@ -254,13 +254,14 @@
   <body>
     <main>
       <header>
-        <div class="eyebrow">TASK-011 / Batches A-D verified locally</div>
+        <div class="eyebrow">TASK-011 / Batches A-F verified locally</div>
         <h1>First-Party Recommendation Intelligence</h1>
         <p>
           Build trusted room events and deterministic ranking before richer
-          discovery or AI presentation. Authority, durable-store, and pure
-          deterministic ranking foundations are now local; the new migration
-          remains unapplied and publishing and deployment have not begun.
+          discovery or AI presentation. Authority, durable storage,
+          deterministic ranking, authorized room reads, private Likes, and the
+          existing Room Picks integration are local; migration, publishing,
+          deployment, and production QA have not begun.
         </p>
         <div class="summary">
           <article>
@@ -296,11 +297,11 @@
       <section aria-labelledby="recommendation">
         <h2 id="recommendation">Executive Recommendation</h2>
         <p>
-          Batches A through D are complete at the approved no-publish stop
-          point. Review the
+          Batches A through F are complete at the approved no-publish stop point
+          and measure 92% release readiness. Review the
           <a href="implementation-report.html">implementation report</a>
-          and the unapplied migration before a separate checkpoint. Batch E is
-          the next implementation slice.
+          before Batch G applies the migration, publishes SpacetimeDB, deploys
+          the exact revision, and performs two-client production QA.
         </p>
         <span class="badge">Spec-first / security and data sensitive</span>
       </section>
@@ -394,6 +395,7 @@
               <li>YouTube account scopes</li>
               <li>Social graph and achievements</li>
               <li>Public dislike counts or YouTube Like mutation</li>
+              <li>Migration, Maincloud publish, schedule, and deployment</li>
             </ul>
           </article>
           <article class="callout">
@@ -614,13 +616,14 @@
       </section>
 
       <section class="next" aria-labelledby="next">
-        <h2 id="next">Batch D Review Checkpoint</h2>
+        <h2 id="next">Batch G Release Checkpoint</h2>
         <p>
-          Review hard exclusions, component weights, Like priority, factual
-          reasons, stable tie-breaking, fail-closed uploaded candidates, and
-          bounded diversity. The 500-candidate p95 measured 6.75 ms against the
-          50 ms gate and 1,000-candidate determinism passes. Explicit approval
-          is still required before Batch E or any cloud migration.
+          Batches E and F now pass 310 total tests, 44 focused
+          service/UI/security tests, TypeScript, ESLint, file-length policy,
+          changed-file Prettier, production build, and local route/browser smoke
+          checks. Explicit approval remains required before the Supabase
+          migration, Maincloud publish, drain schedule, commit, deployment, or
+          production QA.
         </p>
       </section>
     </main>

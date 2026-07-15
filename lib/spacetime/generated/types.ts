@@ -95,7 +95,7 @@ export const RecommendationPlaybackOccurrence = __t.object("RecommendationPlayba
   durationSeconds: __t.option(__t.u32()),
   mediaId: __t.string(),
   playbackOccurrenceId: __t.string(),
-  queueItemId: __t.string(),
+  queueItemId: __t.option(__t.string()),
   roomId: __t.string(),
   roomSessionId: __t.string(),
   sourceType: __t.string(),

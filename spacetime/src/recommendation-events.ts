@@ -369,7 +369,8 @@ export function setGuestMediaPreference(
     expectedRevision: number;
     liked: boolean;
     mediaId: string;
-    queueItemId: string;
+    queueItemId?: string;
+    recordNeutralWithoutCurrent?: boolean;
     roomId: string;
     sourceType: string;
   },
@@ -388,7 +389,10 @@ export function setGuestMediaPreference(
     return current ?? null;
   }
 
-  if (current?.liked === input.liked || (!current && !input.liked)) {
+  if (
+    current?.liked === input.liked ||
+    (!current && !input.liked && !input.recordNeutralWithoutCurrent)
+  ) {
     return current ?? null;
   }
 

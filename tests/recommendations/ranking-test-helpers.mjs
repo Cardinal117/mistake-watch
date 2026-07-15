@@ -119,6 +119,11 @@ export async function loadRanker() {
   return rankerPromise;
 }
 
+export async function loadRecommendationModule(relativePath) {
+  const outputPath = await transpileRecommendationModule(relativePath);
+  return import(pathToFileURL(outputPath));
+}
+
 async function transpileRecommendationModule(
   relativePath,
   visited = new Set(),
