@@ -19,6 +19,7 @@ export default {
   isPlayNext: __t.bool(),
   isUnavailable: __t.bool(),
   allowDuplicate: __t.bool(),
+  clientActionId: __t.string(),
   playlistId: __t.option(__t.string()),
   playlistTitle: __t.option(__t.string()),
   roomId: __t.string(),

@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TASK-011 Recommendation Intelligence Review</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #131314;
+        --low: #1c1b1c;
+        --panel: #201f20;
+        --high: #2a2a2b;
+        --line: #3b494b;
+        --text: #e5e2e3;
+        --muted: #b9cacb;
+        --cyan: #00dbe9;
+        --gold: #ffba20;
+        --green: #77d59a;
+        --warning: #ffdb9d;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.55 Geist,
+          "Segoe UI",
+          sans-serif;
+      }
+      a {
+        color: var(--cyan);
+      }
+      a:focus-visible {
+        outline: 2px solid var(--cyan);
+        outline-offset: 3px;
+      }
+      main {
+        width: min(1180px, calc(100% - 32px));
+        margin: 28px auto 64px;
+      }
+      header,
+      section {
+        margin-top: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--low);
+        padding: 22px;
+      }
+      header {
+        border-top: 3px solid var(--cyan);
+      }
+      h1,
+      h2,
+      h3 {
+        margin: 0 0 10px;
+        letter-spacing: 0;
+      }
+      h1 {
+        font-size: clamp(28px, 4vw, 42px);
+        line-height: 1.15;
+      }
+      h2 {
+        font-size: 22px;
+      }
+      h3 {
+        font-size: 16px;
+      }
+      p,
+      li,
+      td {
+        color: var(--muted);
+      }
+      code {
+        color: var(--text);
+        font-family: "JetBrains Mono", monospace;
+      }
+      .eyebrow,
+      .badge {
+        font:
+          12px/1.4 "JetBrains Mono",
+          monospace;
+        text-transform: uppercase;
+      }
+      .eyebrow {
+        color: var(--cyan);
+      }
+      .badge {
+        display: inline-block;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 4px 7px;
+        color: var(--warning);
+      }
+      .summary,
+      .grid,
+      .flow,
+      .files {
+        display: grid;
+        gap: 12px;
+      }
+      .summary {
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        margin-top: 18px;
+      }
+      .grid {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+      .files {
+        grid-template-columns: 1.2fr 1fr 1fr;
+      }
+      article,
+      .step {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #0e0e0f;
+        padding: 15px;
+      }
+      article strong {
+        display: block;
+        color: var(--gold);
+        font-size: 20px;
+      }
+      article p {
+        margin-bottom: 0;
+      }
+      .flow {
+        grid-template-columns: repeat(5, 1fr);
+        align-items: stretch;
+      }
+      .step {
+        position: relative;
+        min-height: 116px;
+      }
+      .step:not(:last-child)::after {
+        content: "→";
+        position: absolute;
+        right: -12px;
+        top: 42px;
+        z-index: 2;
+        color: var(--cyan);
+        font-size: 20px;
+      }
+      .step b {
+        color: var(--text);
+      }
+      .status-pass {
+        color: var(--green);
+      }
+      .status-review {
+        color: var(--warning);
+      }
+      .callout {
+        border-left: 3px solid var(--gold);
+        background: var(--panel);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 10px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        color: var(--text);
+      }
+      ol,
+      ul {
+        padding-left: 20px;
+      }
+      .next {
+        border-color: var(--cyan);
+      }
+      @media (max-width: 840px) {
+        .flow,
+        .files {
+          grid-template-columns: 1fr;
+        }
+        .step {
+          min-height: 0;
+        }
+        .step:not(:last-child)::after {
+          content: "↓";
+          right: 16px;
+          top: auto;
+          bottom: -18px;
+        }
+      }
+      @media (max-width: 560px) {
+        main {
+          width: min(100% - 20px, 1180px);
+          margin-top: 10px;
+        }
+        header,
+        section {
+          padding: 16px;
+        }
+        table {
+          font-size: 13px;
+        }
+        .agent-plan thead {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip: rect(0 0 0 0);
+        }
+        .agent-plan table,
+        .agent-plan tbody,
+        .agent-plan tr,
+        .agent-plan td {
+          display: block;
+          width: 100%;
+        }
+        .agent-plan tr {
+          border-bottom: 1px solid var(--line);
+          padding: 10px 0;
+        }
+        .agent-plan td {
+          border: 0;
+          padding: 4px 0;
+          overflow-wrap: anywhere;
+        }
+        .agent-plan td::before {
+          display: block;
+          color: var(--text);
+          font-weight: 700;
+        }
+        .agent-plan td:nth-child(1)::before {
+          content: "Batch";
+        }
+        .agent-plan td:nth-child(2)::before {
+          content: "Primary agent";
+        }
+        .agent-plan td:nth-child(3)::before {
+          content: "Supporting agent";
+        }
+        .agent-plan td:nth-child(4)::before {
+          content: "Expected cumulative outcome";
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="eyebrow">TASK-011 / Batches A-B verified locally</div>
+        <h1>First-Party Recommendation Intelligence</h1>
+        <p>
+          Build trusted room events and deterministic ranking before richer
+          discovery or AI presentation. The authority foundation is now local;
+          migrations, publishing, and deployment have not begun.
+        </p>
+        <div class="summary">
+          <article>
+            <strong>Authority first</strong>
+            <p>
+              Events originate with validated SpacetimeDB reducer transitions.
+            </p>
+          </article>
+          <article>
+            <strong>0 ticks</strong>
+            <p>No playback progress or sync-correction event stream.</p>
+          </article>
+          <article>
+            <strong>Explainable</strong>
+            <p>
+              Every candidate returns stable score components and reason codes.
+            </p>
+          </article>
+          <article>
+            <strong>Advisory</strong>
+            <p>Recommendations cannot bypass queue or playback authority.</p>
+          </article>
+          <article>
+            <strong>Explicit Like</strong>
+            <p>
+              Private Mistake Watch Likes provide the strongest capped positive
+              signal.
+            </p>
+          </article>
+        </div>
+      </header>
+
+      <section aria-labelledby="recommendation">
+        <h2 id="recommendation">Executive Recommendation</h2>
+        <p>
+          Batches A and B are complete at the approved no-publish stop point.
+          Review the
+          <a href="implementation-report.html">implementation report</a>
+          and approve retention, attribution, identity, DDL, and RLS decisions
+          before Batch C begins.
+        </p>
+        <span class="badge">Spec-first / security and data sensitive</span>
+      </section>
+
+      <section aria-labelledby="likes">
+        <h2 id="likes">Mistake Watch Like Signal</h2>
+        <div class="grid">
+          <article>
+            <h3>Signed-in accounts</h3>
+            <p>
+              Like state persists across devices against an opaque media
+              identity and remains private to the account.
+            </p>
+          </article>
+          <article>
+            <h3>Guests</h3>
+            <p>
+              Like state is limited to the current room/session and expires with
+              the approved guest retention policy.
+            </p>
+          </article>
+          <article>
+            <h3>Ranking effect</h3>
+            <p>
+              Like is stronger than replay or completion but capped by diversity
+              and repetition controls. Remove Like restores neutral.
+            </p>
+          </article>
+          <article>
+            <h3>UI contract</h3>
+            <p>
+              A compact Lucide Heart uses <code>aria-pressed</code>, Like/Remove
+              Like labels, tooltip, stable sizing, focus, and failure rollback.
+            </p>
+          </article>
+        </div>
+        <p>
+          This is an app-native preference and never calls YouTube's Like API or
+          exposes who liked an item. It enables explanations such as
+          <code>Because you liked Julien Journet</code> without revealing
+          another participant's private history.
+        </p>
+      </section>
+
+      <section aria-labelledby="flow">
+        <h2 id="flow">Proposed Data Flow</h2>
+        <div class="flow">
+          <div class="step">
+            <b>1. Room action</b>
+            <p>Queue or playback intent enters the existing authority path.</p>
+          </div>
+          <div class="step">
+            <b>2. Reducer</b>
+            <p>SpacetimeDB validates permission and mutates live state.</p>
+          </div>
+          <div class="step">
+            <b>3. Outbox</b>
+            <p>The same reducer records one versioned, idempotent event.</p>
+          </div>
+          <div class="step">
+            <b>4. Durable sink</b>
+            <p>A trusted bounded drain writes service-only Supabase rows.</p>
+          </div>
+          <div class="step">
+            <b>5. Ranker</b>
+            <p>Pure scoring returns candidates, reasons, and exclusions.</p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="scope">
+        <h2 id="scope">Scope Boundary</h2>
+        <div class="grid">
+          <article>
+            <h3 class="status-pass">Included</h3>
+            <ul>
+              <li>Queue and playback transition events</li>
+              <li>Private Like and Remove Like state</li>
+              <li>Idempotent durability bridge</li>
+              <li>Deterministic scoring and diversity</li>
+              <li>Authorized room recommendation endpoint</li>
+              <li>Existing Room Picks data integration</li>
+            </ul>
+          </article>
+          <article>
+            <h3 class="status-review">Explicitly deferred</h3>
+            <ul>
+              <li>AI DJ, chat, voice, or mood generation</li>
+              <li>Add Media or Watch discovery redesign</li>
+              <li>Voting and autonomous queue mutation</li>
+              <li>YouTube account scopes</li>
+              <li>Social graph and achievements</li>
+              <li>Public dislike counts or YouTube Like mutation</li>
+            </ul>
+          </article>
+          <article class="callout">
+            <h3>Private media rule</h3>
+            <p>
+              Uploaded playback may inform room-session analysis, but it cannot
+              expose an uploaded catalogue candidate to a guest or unauthorized
+              account. Events use opaque IDs, never R2 destinations.
+            </p>
+          </article>
+          <article>
+            <h3>Identity correction</h3>
+            <p>
+              A queue row is not a playback occurrence. Session, occurrence,
+              action actor, and original contributor require separate stable
+              identities before replay history is trustworthy.
+            </p>
+          </article>
+          <article>
+            <h3>Existing data warning</h3>
+            <p>
+              Current Supabase queue and playback tables are not mirrored on
+              every live reducer transition. They cannot be reused as complete
+              behavioral history.
+            </p>
+          </article>
+          <article>
+            <h3>Service hardening</h3>
+            <p>
+              Provider caching needs TTL, capacity, and failure expiry. Room
+              recommendation reads must support signed-in membership as well as
+              verified room-scoped guests.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="order">
+        <h2 id="order">Implementation Order</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Batch</th>
+              <th>Purpose</th>
+              <th>Release boundary</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>A</td>
+              <td>Contract, baseline, trusted bridge proof</td>
+              <td>No migration or publish</td>
+            </tr>
+            <tr>
+              <td>B</td>
+              <td>Atomic SpacetimeDB event capture</td>
+              <td>Local build/generate only</td>
+            </tr>
+            <tr>
+              <td>C</td>
+              <td>Service-only Supabase events and aggregates</td>
+              <td>Migration approval required</td>
+            </tr>
+            <tr>
+              <td>D</td>
+              <td>Pure deterministic ranking engine</td>
+              <td>No UI integration</td>
+            </tr>
+            <tr>
+              <td>E</td>
+              <td>Authorized cached recommendation service</td>
+              <td>Route and privacy gate</td>
+            </tr>
+            <tr>
+              <td>F</td>
+              <td>Existing Room Picks integration</td>
+              <td>No redesign</td>
+            </tr>
+            <tr>
+              <td>G</td>
+              <td>QA, migration, publish, and exact-revision deploy</td>
+              <td>Approval at every release step</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section aria-labelledby="targets">
+        <h2 id="targets">Expected Improvement</h2>
+        <div class="grid">
+          <article>
+            <strong>Explicit preference</strong>
+            <p>
+              Likes provide a clearer signal and support factual "Because you
+              liked" explanations.
+            </p>
+          </article>
+          <article>
+            <strong>Better relevance</strong>
+            <p>
+              Completions and replays strengthen affinity; skips and removes
+              reduce it.
+            </p>
+          </article>
+          <article>
+            <strong>Less repetition</strong>
+            <p>
+              Hard exclusions and diversity operate across the current queue and
+              bounded history.
+            </p>
+          </article>
+          <article>
+            <strong>Auditable output</strong>
+            <p>Reason codes show why a candidate was returned or excluded.</p>
+          </article>
+          <article>
+            <strong>Protected latency</strong>
+            <p>
+              50 ms p95 pure ranking and 250 ms p95 warm read targets, with
+              non-blocking fallback.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="agent-plan" aria-labelledby="agents">
+        <h2 id="agents">Step-By-Step Agent Use</h2>
+        <p>
+          The primary agent owns all product semantics and integration. Agent 1
+          works only in disjoint analysis/test scopes. Agent 2 appears once for
+          independent final review.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Batch</th>
+              <th>Primary agent</th>
+              <th>Supporting agent</th>
+              <th>Expected cumulative outcome</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>A</td>
+              <td>Contracts and bridge proof</td>
+              <td>Agent 1 challenges risks and baselines</td>
+              <td>15%: semantics and feasibility proven</td>
+            </tr>
+            <tr>
+              <td>B</td>
+              <td>Reducer events and guest Like authority</td>
+              <td>Agent 1 writes reducer/event tests only</td>
+              <td>30%: authority capture works locally</td>
+            </tr>
+            <tr>
+              <td>C</td>
+              <td>DDL, RLS, persistence, retention</td>
+              <td>Agent 1 writes database/security tests</td>
+              <td>50%: durable layer migration-ready</td>
+            </tr>
+            <tr>
+              <td>D</td>
+              <td>Weights, caps, reasons, diversity</td>
+              <td>Agent 1 owns fixtures/performance harness</td>
+              <td>70%: pure ranker meets 50 ms p95</td>
+            </tr>
+            <tr>
+              <td>E</td>
+              <td>Authorization, preferences, cached service</td>
+              <td>Agent 1 owns route/privacy/latency tests</td>
+              <td>82%: bounded service contract passes</td>
+            </tr>
+            <tr>
+              <td>F</td>
+              <td>Heart UI and Room Picks integration</td>
+              <td>Agent 1 owns browser/accessibility tests</td>
+              <td>92%: user workflow passes without redesign</td>
+            </tr>
+            <tr>
+              <td>G</td>
+              <td>Integration, fixes, and release order</td>
+              <td>Agent 1 runs matrix; Agent 2 audits read-only</td>
+              <td>100% only after production QA</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section aria-labelledby="files">
+        <h2 id="files">Files To Review</h2>
+        <div class="files">
+          <article>
+            <h3>Must review</h3>
+            <ul>
+              <li><a href="proposal.md">proposal.md</a></li>
+              <li><a href="design.md">design.md</a></li>
+              <li><a href="tasks.md">tasks.md</a></li>
+              <li>
+                <a href="acceptance-criteria.md">acceptance-criteria.md</a>
+              </li>
+            </ul>
+          </article>
+          <article>
+            <h3>Decisions and context</h3>
+            <ul>
+              <li><a href="review-notes.md">review-notes.md</a></li>
+              <li><a href="brain-dump.md">brain-dump.md</a></li>
+            </ul>
+          </article>
+          <article>
+            <h3>Supporting</h3>
+            <p>
+              This review page summarizes the Markdown sources and is not a
+              separate source of truth.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="next" aria-labelledby="next">
+        <h2 id="next">Batch C Checkpoint</h2>
+        <p>
+          Confirm the 5,000-event outbox bound, room/session-first privacy
+          posture, guest retention, direct/HLS identity, account attribution,
+          and proposed service-only durable model before migration work starts.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

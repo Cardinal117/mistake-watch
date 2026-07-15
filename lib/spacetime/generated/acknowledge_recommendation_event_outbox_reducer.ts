@@ -11,12 +11,5 @@ import {
 } from "spacetimedb";
 
 export default {
-  actorMemberId: __t.string(),
-  autoplay: __t.bool(),
-  expectedActiveQueueItemId: __t.option(__t.string()),
-  expectedNextQueueItemId: __t.string(),
-  expectedPlaybackOccurrenceId: __t.option(__t.string()),
-  expectedSourceUrl: __t.option(__t.string()),
-  resolvedSourceUrl: __t.string(),
-  roomId: __t.string(),
+  eventIds: __t.array(__t.string()),
 };

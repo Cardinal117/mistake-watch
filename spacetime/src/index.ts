@@ -1,4 +1,4 @@
-import { schema, table, t } from "spacetimedb/server";
+import { t } from "spacetimedb/server";
 import {
   createMediaFailureEvent,
   isPermanentMediaFailureCode,
@@ -29,302 +29,40 @@ import {
   selectQueuedQueueItems,
   sortQueueItems,
 } from "./queue-calculations";
+import {
+  asRecommendationContext as recommendationContext,
+  beginPlaybackOccurrence,
+  beginPlaybackOccurrenceIfMissing,
+  claimRecommendationAction,
+  classifyPlaybackAdvance,
+  completionRatioBps,
+  finishPlaybackOccurrence,
+  recommendationMediaIdentity,
+  recordQueueRecommendationEvent,
+  recordSourceFailureEvent,
+} from "./recommendation-events";
+import { isTrustedRecommendationAuthority } from "./recommendation-authority";
+import { spacetimedb } from "./module-schema";
+import { recordRoomError } from "./room-errors";
+import {
+  constantTimeStringEqual,
+  nowMs,
+  participantKey,
+  permissionKey,
+  roomSeedGrantKey,
+} from "./room-keys";
+
+export {
+  acknowledge_recommendation_event_outbox,
+  init,
+  read_my_guest_media_preferences,
+  read_recommendation_event_outbox,
+  set_guest_media_preference,
+} from "./recommendation-authority";
 
 const KICK_REJOIN_BLOCK_MS = 8_000;
 
-const roomSession = table(
-  {
-    name: "room_session",
-    public: true,
-  },
-  {
-    active_queue_item_id: t.option(t.string()),
-    controller_identity: t.option(t.identity()),
-    host_member_id: t.string(),
-    mode: t.string(),
-    playback_rate: t.f64(),
-    position_seconds: t.f64(),
-    room_id: t.string().primaryKey(),
-    server_updated_ms: t.i64(),
-    status: t.string(),
-    supabase_room_id: t.string(),
-    source_title: t.option(t.string()).default(undefined),
-    source_type: t.option(t.string()).default(undefined),
-    source_url: t.option(t.string()).default(undefined),
-    source_duration_seconds: t.option(t.u32()).default(undefined),
-    room_name: t.string().default("Untitled room"),
-    queue_autoplay_enabled: t.bool().default(true),
-    queue_mode: t.string().default("normal"),
-  },
-);
-
-const roomParticipant = table(
-  {
-    indexes: [
-      {
-        accessor: "by_room_id",
-        algorithm: "btree",
-        columns: ["room_id"],
-      },
-      {
-        accessor: "by_identity",
-        algorithm: "btree",
-        columns: ["identity"],
-      },
-    ],
-    name: "room_participant",
-    public: true,
-  },
-  {
-    connection_id: t.option(t.connectionId()),
-    display_name: t.string(),
-    identity: t.identity(),
-    last_seen_ms: t.i64(),
-    member_id: t.string(),
-    participant_key: t.string().primaryKey(),
-    role: t.string(),
-    room_id: t.string(),
-    status: t.string(),
-    avatar_key: t.option(t.string()).default(undefined),
-  },
-);
-
-const roomPermission = table(
-  {
-    indexes: [
-      {
-        accessor: "by_room_id",
-        algorithm: "btree",
-        columns: ["room_id"],
-      },
-      {
-        accessor: "by_member_id",
-        algorithm: "btree",
-        columns: ["member_id"],
-      },
-    ],
-    name: "room_permission",
-    public: true,
-  },
-  {
-    can_add_queue: t.bool(),
-    can_control_browser: t.bool(),
-    can_control_playback: t.bool(),
-    member_id: t.string(),
-    permission_key: t.string().primaryKey(),
-    room_id: t.string(),
-    updated_by_member_id: t.string(),
-    updated_ms: t.i64(),
-    can_manage_queue: t.bool().default(false),
-  },
-);
-
-const liveQueueItem = table(
-  {
-    indexes: [
-      {
-        accessor: "by_room_position",
-        algorithm: "btree",
-        columns: ["room_id", "position"],
-      },
-    ],
-    name: "live_queue_item",
-    public: true,
-  },
-  {
-    added_by_member_id: t.string(),
-    artist: t.option(t.string()),
-    duration_seconds: t.option(t.u32()),
-    position: t.u32(),
-    queue_item_id: t.string().primaryKey(),
-    room_id: t.string(),
-    source_type: t.string(),
-    source_url: t.string(),
-    status: t.string(),
-    title: t.option(t.string()),
-    channel_name: t.option(t.string()).default(undefined),
-    is_pinned: t.bool().default(false),
-    is_play_next: t.bool().default(false),
-    is_unavailable: t.bool().default(false),
-    playlist_id: t.option(t.string()).default(undefined),
-    playlist_title: t.option(t.string()).default(undefined),
-    thumbnail_url: t.option(t.string()).default(undefined),
-    played_sequence: t.u32().default(0),
-    failure_code: t.option(t.string()).default(undefined),
-    failure_reason: t.option(t.string()).default(undefined),
-    failure_created_ms: t.option(t.i64()).default(undefined),
-    failure_count: t.u32().default(0),
-  },
-);
-
-const roomError = table(
-  {
-    indexes: [
-      {
-        accessor: "by_room_id",
-        algorithm: "btree",
-        columns: ["room_id"],
-      },
-    ],
-    name: "room_error",
-    public: true,
-  },
-  {
-    code: t.string(),
-    created_ms: t.i64(),
-    error_id: t.string().primaryKey(),
-    message: t.string(),
-    room_id: t.string(),
-    severity: t.string(),
-    actor_member_id: t.option(t.string()).default(undefined),
-    actor_source: t.option(t.string()).default(undefined),
-    event_type: t.option(t.string()).default(undefined),
-    permanent: t.bool().default(false),
-    provider_id: t.option(t.string()).default(undefined),
-    queue_item_id: t.option(t.string()).default(undefined),
-    source_type: t.option(t.string()).default(undefined),
-    title: t.option(t.string()).default(undefined),
-  },
-);
-
-const roomKick = table(
-  {
-    indexes: [
-      {
-        accessor: "by_room_id",
-        algorithm: "btree",
-        columns: ["room_id"],
-      },
-      {
-        accessor: "by_member_id",
-        algorithm: "btree",
-        columns: ["member_id"],
-      },
-    ],
-    name: "room_kick",
-    public: true,
-  },
-  {
-    actor_member_id: t.string(),
-    created_ms: t.i64(),
-    kick_key: t.string().primaryKey(),
-    member_id: t.string(),
-    room_id: t.string(),
-  },
-);
-
-const roomChatMessage = table(
-  {
-    indexes: [
-      {
-        accessor: "by_room_created",
-        algorithm: "btree",
-        columns: ["room_id", "created_ms"],
-      },
-    ],
-    name: "room_chat_message",
-    public: true,
-  },
-  {
-    avatar_key: t.option(t.string()).default(undefined),
-    client_message_id: t.string(),
-    created_ms: t.i64(),
-    display_name: t.string(),
-    is_host: t.bool(),
-    member_id: t.string(),
-    message_id: t.string().primaryKey(),
-    room_id: t.string(),
-    text: t.string(),
-  },
-);
-
-const roomSeedGrant = table(
-  {
-    name: "room_seed_grant",
-  },
-  {
-    created_by_identity: t.identity(),
-    created_ms: t.i64(),
-    expires_ms: t.i64(),
-    grant_key: t.string().primaryKey(),
-    host_member_id: t.string(),
-    room_id: t.string(),
-    seed_token: t.string(),
-  },
-);
-
-const trustedSeedIssuer = table(
-  {
-    name: "trusted_seed_issuer",
-  },
-  {
-    created_ms: t.i64(),
-    identity_hex: t.string().primaryKey(),
-    label: t.string(),
-  },
-);
-
-const spacetimedb = schema({
-  live_queue_item: liveQueueItem,
-  room_chat_message: roomChatMessage,
-  room_error: roomError,
-  room_kick: roomKick,
-  room_permission: roomPermission,
-  room_participant: roomParticipant,
-  room_seed_grant: roomSeedGrant,
-  room_session: roomSession,
-  trusted_seed_issuer: trustedSeedIssuer,
-});
-
 export default spacetimedb;
-
-function nowMs() {
-  return BigInt(Date.now());
-}
-
-function participantKey(roomId: string, memberId: string) {
-  return `${roomId}:${memberId}`;
-}
-
-function permissionKey(roomId: string, memberId: string) {
-  return `${roomId}:${memberId}`;
-}
-
-function roomSeedGrantKey(roomId: string, hostMemberId: string) {
-  return `${roomId}:${hostMemberId}`;
-}
-
-function constantTimeStringEqual(a: string, b: string) {
-  if (a.length !== b.length) {
-    return false;
-  }
-
-  let diff = 0;
-
-  for (let index = 0; index < a.length; index += 1) {
-    diff |= a.charCodeAt(index) ^ b.charCodeAt(index);
-  }
-
-  return diff === 0;
-}
-
-function isTrustedSeedIssuer(
-  ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
-) {
-  return Boolean(
-    ctx.db.trusted_seed_issuer.identity_hex.find(senderIdentityHex(ctx)),
-  );
-}
-
-function senderIdentityHex(
-  ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
-) {
-  const sender = ctx.sender as unknown as {
-    toHexString?: () => string;
-  };
-
-  return sender.toHexString?.() ?? String(ctx.sender);
-}
 
 function getValidRoomSeedGrant(
   ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
@@ -358,62 +96,6 @@ function getValidRoomSeedGrant(
 
 function kickKey(roomId: string, memberId: string) {
   return `${roomId}:${memberId}`;
-}
-
-function recordRoomError(
-  ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
-  {
-    actorMemberId,
-    actorSource,
-    code,
-    eventType,
-    message,
-    permanent = false,
-    providerId,
-    queueItemId,
-    roomId,
-    severity = "warning",
-    sourceType,
-    title,
-  }: {
-    actorMemberId?: string;
-    actorSource?: "actor" | "system";
-    code: string;
-    eventType?: string;
-    message: string;
-    permanent?: boolean;
-    providerId?: string;
-    queueItemId?: string;
-    roomId: string;
-    severity?: "info" | "warning" | "error";
-    sourceType?: string;
-    title?: string;
-  },
-) {
-  ctx.db.room_error.insert({
-    actor_member_id: actorMemberId,
-    actor_source: actorSource,
-    code,
-    created_ms: nowMs(),
-    error_id: ctx.newUuidV7().toString(),
-    event_type: eventType,
-    message,
-    permanent,
-    provider_id: providerId,
-    queue_item_id: queueItemId,
-    room_id: roomId,
-    severity,
-    source_type: sourceType,
-    title,
-  });
-
-  const roomErrors = [...ctx.db.room_error.iter()]
-    .filter((error) => error.room_id === roomId)
-    .sort((left, right) => Number(right.created_ms - left.created_ms));
-
-  roomErrors.slice(100).forEach((error) => {
-    ctx.db.room_error.delete(error);
-  });
 }
 
 function getParticipant(
@@ -748,7 +430,29 @@ function commitQueueAdvance(
   >,
   sourceUrl: string,
   playbackStatus: "paused" | "playing" = "playing",
+  transition?: {
+    actorMemberId: string;
+    outcome: "completed" | "failed" | "skipped";
+    reason: string;
+  },
 ) {
+  if (transition) {
+    finishPlaybackOccurrence(
+      recommendationContext(ctx),
+      {
+        actorMemberId: transition.actorMemberId,
+        completionRatioBps: completionRatioBps(
+          session.position_seconds,
+          session.source_duration_seconds,
+        ),
+        outcome: transition.outcome,
+        reason: transition.reason,
+        roomId: session.room_id,
+      },
+      nowMs(),
+    );
+  }
+
   for (const item of roomQueueItems(ctx, session.room_id)) {
     if (item.queue_item_id === nextQueueItem.queue_item_id) {
       replaceQueueItem(ctx, item, {
@@ -764,11 +468,34 @@ function commitQueueAdvance(
     }
   }
 
+  const media = recommendationMediaIdentity({
+    queueItemId: nextQueueItem.queue_item_id,
+    sourceType: nextQueueItem.source_type,
+    sourceUrl: nextQueueItem.source_url,
+  });
+  const occurrence =
+    transition && media && playbackStatus === "playing"
+      ? beginPlaybackOccurrence(
+          recommendationContext(ctx),
+          {
+            actorMemberId: transition.actorMemberId,
+            contributorMemberId: nextQueueItem.added_by_member_id,
+            durationSeconds: nextQueueItem.duration_seconds,
+            mediaId: media.mediaId,
+            queueItemId: nextQueueItem.queue_item_id,
+            roomId: session.room_id,
+            sourceType: media.sourceType,
+          },
+          nowMs(),
+        )
+      : null;
+
   ctx.db.room_session.delete(session);
   ctx.db.room_session.insert({
     ...session,
     active_queue_item_id: nextQueueItem.queue_item_id,
     playback_rate: 1,
+    playback_occurrence_id: occurrence?.playback_occurrence_id,
     position_seconds: 0,
     server_updated_ms: nowMs(),
     source_duration_seconds: nextQueueItem.duration_seconds,
@@ -889,6 +616,16 @@ export const join_room = spacetimedb.reducer(
     }
 
     if (existing) {
+      if (!existing.identity.isEqual(ctx.sender)) {
+        recordRoomError(ctx, {
+          code: "member_identity_conflict",
+          message:
+            "Join ignored because this member identity is already in use.",
+          roomId: room_id,
+        });
+        return;
+      }
+
       ctx.db.room_participant.delete(existing);
     }
 
@@ -1073,7 +810,7 @@ export const issue_room_seed_grant = spacetimedb.reducer(
     seed_token: t.string(),
   },
   (ctx, { expires_ms, host_member_id, room_id, seed_token }) => {
-    if (!isTrustedSeedIssuer(ctx)) {
+    if (!isTrustedRecommendationAuthority(ctx)) {
       recordRoomError(ctx, {
         code: "seed_issuer_denied",
         message:
@@ -1179,6 +916,7 @@ export const seed_room_session = spacetimedb.reducer(
       host_member_id,
       mode,
       playback_rate: 1,
+      playback_occurrence_id: undefined,
       position_seconds: 0,
       queue_autoplay_enabled: true,
       queue_mode: "normal",
@@ -1357,14 +1095,56 @@ export const set_playback_state = spacetimedb.reducer(
       return;
     }
 
+    const nextStatus = normalizePlaybackStatus(status);
+
     ctx.db.room_session.delete(authority.session);
-    ctx.db.room_session.insert({
+    const updatedSession = ctx.db.room_session.insert({
       ...authority.session,
       playback_rate: 1,
       position_seconds: clampPositionSeconds(position_seconds),
       server_updated_ms: nowMs(),
-      status: normalizePlaybackStatus(status),
+      status: nextStatus,
     });
+
+    const activeQueueItem = authority.session.active_queue_item_id
+      ? ctx.db.live_queue_item.queue_item_id.find(
+          authority.session.active_queue_item_id,
+        )
+      : undefined;
+    const media = activeQueueItem
+      ? recommendationMediaIdentity({
+          queueItemId: activeQueueItem.queue_item_id,
+          sourceType: activeQueueItem.source_type,
+          sourceUrl: activeQueueItem.source_url,
+        })
+      : null;
+
+    if (nextStatus === "playing" && activeQueueItem && media) {
+      const occurrence = beginPlaybackOccurrenceIfMissing(
+        recommendationContext(ctx),
+        {
+          actorMemberId: actor_member_id,
+          contributorMemberId: activeQueueItem.added_by_member_id,
+          durationSeconds: activeQueueItem.duration_seconds,
+          mediaId: media.mediaId,
+          queueItemId: activeQueueItem.queue_item_id,
+          roomId: room_id,
+          sourceType: media.sourceType,
+        },
+        nowMs(),
+      );
+
+      if (
+        updatedSession.playback_occurrence_id !==
+        occurrence.playback_occurrence_id
+      ) {
+        ctx.db.room_session.delete(updatedSession);
+        ctx.db.room_session.insert({
+          ...updatedSession,
+          playback_occurrence_id: occurrence.playback_occurrence_id,
+        });
+      }
+    }
   },
 );
 
@@ -1433,6 +1213,7 @@ export const add_queue_item = spacetimedb.reducer(
     is_play_next: t.bool(),
     is_unavailable: t.bool(),
     allow_duplicate: t.bool().default(false),
+    client_action_id: t.string().default(""),
     playlist_id: t.option(t.string()),
     playlist_title: t.option(t.string()),
     room_id: t.string(),
@@ -1452,6 +1233,7 @@ export const add_queue_item = spacetimedb.reducer(
       is_play_next,
       is_unavailable,
       allow_duplicate,
+      client_action_id,
       playlist_id,
       playlist_title,
       room_id,
@@ -1499,6 +1281,21 @@ export const add_queue_item = spacetimedb.reducer(
       trimmedUrl,
     );
 
+    if (
+      !claimRecommendationAction(
+        recommendationContext(ctx),
+        {
+          actionId: client_action_id,
+          actionType: "queue_add",
+          actorMemberId: actor_member_id,
+          roomId: room_id,
+        },
+        nowMs(),
+      )
+    ) {
+      return;
+    }
+
     const position = is_play_next
       ? playNextQueuePosition(ctx, room_id)
       : nextQueuePosition(ctx, room_id);
@@ -1507,7 +1304,7 @@ export const add_queue_item = spacetimedb.reducer(
       shiftQueuedItemsAtOrAfter(ctx, room_id, position);
     }
 
-    ctx.db.live_queue_item.insert({
+    const queueItem = ctx.db.live_queue_item.insert({
       added_by_member_id: actor_member_id,
       artist: artist?.trim() || undefined,
       channel_name: channel_name?.trim() || undefined,
@@ -1530,6 +1327,12 @@ export const add_queue_item = spacetimedb.reducer(
       status: "queued",
       thumbnail_url: thumbnail_url?.trim() || undefined,
       title: source_title.trim() || trimmedUrl,
+    });
+
+    recordQueueRecommendationEvent(ctx, queueItem, {
+      actorMemberId: actor_member_id,
+      eventType: is_play_next ? "queue_play_next" : "queue_added",
+      reason: is_play_next ? "add_as_next" : "manual_add",
     });
   },
 );
@@ -1602,6 +1405,7 @@ export const send_room_chat_message = spacetimedb.reducer(
 export const set_queue_item_priority = spacetimedb.reducer(
   {
     actor_member_id: t.string(),
+    client_action_id: t.string(),
     is_pinned: t.bool(),
     is_play_next: t.bool(),
     queue_item_id: t.string(),
@@ -1609,7 +1413,14 @@ export const set_queue_item_priority = spacetimedb.reducer(
   },
   (
     ctx,
-    { actor_member_id, is_pinned, is_play_next, queue_item_id, room_id },
+    {
+      actor_member_id,
+      client_action_id,
+      is_pinned,
+      is_play_next,
+      queue_item_id,
+      room_id,
+    },
   ) => {
     const authority = getAuthorizedQueueManager(ctx, room_id, actor_member_id);
     const queueItem = ctx.db.live_queue_item.queue_item_id.find(queue_item_id);
@@ -1618,7 +1429,8 @@ export const set_queue_item_priority = spacetimedb.reducer(
       !authority ||
       !queueItem ||
       queueItem.room_id !== room_id ||
-      queueItem.status !== "queued"
+      queueItem.status !== "queued" ||
+      !client_action_id.trim()
     ) {
       return;
     }
@@ -1637,6 +1449,23 @@ export const set_queue_item_priority = spacetimedb.reducer(
       position,
     });
 
+    if (
+      queueItem.is_pinned !== is_pinned ||
+      queueItem.is_play_next !== is_play_next ||
+      queueItem.position !== position
+    ) {
+      recordQueueRecommendationEvent(
+        ctx,
+        { ...queueItem, position },
+        {
+          actionId: client_action_id,
+          actorMemberId: actor_member_id,
+          eventType: is_play_next ? "queue_play_next" : "queue_reordered",
+          reason: is_play_next ? "priority_play_next" : "priority_changed",
+        },
+      );
+    }
+
     normalizeQueuedPositions(ctx, room_id);
   },
 );
@@ -1646,6 +1475,7 @@ export const advance_queue_item = spacetimedb.reducer(
     actor_member_id: t.string(),
     autoplay: t.bool().default(true),
     expected_active_queue_item_id: t.option(t.string()),
+    expected_playback_occurrence_id: t.option(t.string()),
     expected_source_url: t.option(t.string()),
     room_id: t.string(),
   },
@@ -1655,6 +1485,7 @@ export const advance_queue_item = spacetimedb.reducer(
       actor_member_id,
       autoplay,
       expected_active_queue_item_id,
+      expected_playback_occurrence_id,
       expected_source_url,
       room_id,
     },
@@ -1671,11 +1502,20 @@ export const advance_queue_item = spacetimedb.reducer(
 
     const expectedActiveQueueItemId =
       expected_active_queue_item_id?.trim() || undefined;
+    const expectedPlaybackOccurrenceId =
+      expected_playback_occurrence_id?.trim() || undefined;
     const expectedSourceUrl = expected_source_url?.trim() || undefined;
 
     if (
       expectedActiveQueueItemId &&
       authority.session.active_queue_item_id !== expectedActiveQueueItemId
+    ) {
+      return;
+    }
+
+    if (
+      expectedPlaybackOccurrenceId &&
+      authority.session.playback_occurrence_id !== expectedPlaybackOccurrenceId
     ) {
       return;
     }
@@ -1710,7 +1550,24 @@ export const advance_queue_item = spacetimedb.reducer(
       return;
     }
 
-    commitQueueAdvance(ctx, authority.session, nextQueueItem, nextSourceUrl);
+    commitQueueAdvance(
+      ctx,
+      authority.session,
+      nextQueueItem,
+      nextSourceUrl,
+      "playing",
+      {
+        actorMemberId: actor_member_id,
+        ...classifyPlaybackAdvance({
+          autoplay,
+          completionRatioBps: completionRatioBps(
+            authority.session.position_seconds,
+            authority.session.source_duration_seconds,
+          ),
+          playbackStatus: authority.session.status,
+        }),
+      },
+    );
   },
 );
 
@@ -1720,6 +1577,7 @@ export const advance_uploaded_queue_item = spacetimedb.reducer(
     autoplay: t.bool().default(true),
     expected_active_queue_item_id: t.option(t.string()),
     expected_next_queue_item_id: t.string(),
+    expected_playback_occurrence_id: t.option(t.string()),
     expected_source_url: t.option(t.string()),
     resolved_source_url: t.string(),
     room_id: t.string(),
@@ -1731,6 +1589,7 @@ export const advance_uploaded_queue_item = spacetimedb.reducer(
       autoplay,
       expected_active_queue_item_id,
       expected_next_queue_item_id,
+      expected_playback_occurrence_id,
       expected_source_url,
       resolved_source_url,
       room_id,
@@ -1745,6 +1604,8 @@ export const advance_uploaded_queue_item = spacetimedb.reducer(
     const expectedActiveQueueItemId =
       expected_active_queue_item_id?.trim() || undefined;
     const expectedNextQueueItemId = expected_next_queue_item_id.trim();
+    const expectedPlaybackOccurrenceId =
+      expected_playback_occurrence_id?.trim() || undefined;
     const expectedSourceUrl = expected_source_url?.trim() || undefined;
     const resolvedSourceUrl = resolved_source_url.trim();
 
@@ -1752,6 +1613,9 @@ export const advance_uploaded_queue_item = spacetimedb.reducer(
       !expectedNextQueueItemId ||
       (expectedActiveQueueItemId &&
         authority.session.active_queue_item_id !== expectedActiveQueueItemId) ||
+      (expectedPlaybackOccurrenceId &&
+        authority.session.playback_occurrence_id !==
+          expectedPlaybackOccurrenceId) ||
       (expectedSourceUrl &&
         normalizeSourceUrl(authority.session.source_url ?? "") !==
           normalizeSourceUrl(expectedSourceUrl))
@@ -1782,18 +1646,45 @@ export const advance_uploaded_queue_item = spacetimedb.reducer(
       return;
     }
 
-    commitQueueAdvance(ctx, authority.session, nextQueueItem, nextSourceUrl);
+    commitQueueAdvance(
+      ctx,
+      authority.session,
+      nextQueueItem,
+      nextSourceUrl,
+      "playing",
+      {
+        actorMemberId: actor_member_id,
+        ...classifyPlaybackAdvance({
+          autoplay,
+          completionRatioBps: completionRatioBps(
+            authority.session.position_seconds,
+            authority.session.source_duration_seconds,
+          ),
+          playbackStatus: authority.session.status,
+        }),
+      },
+    );
   },
 );
 
 export const play_uploaded_queue_item = spacetimedb.reducer(
   {
     actor_member_id: t.string(),
+    client_action_id: t.string().default(""),
     queue_item_id: t.string(),
     resolved_source_url: t.string(),
     room_id: t.string(),
   },
-  (ctx, { actor_member_id, queue_item_id, resolved_source_url, room_id }) => {
+  (
+    ctx,
+    {
+      actor_member_id,
+      client_action_id,
+      queue_item_id,
+      resolved_source_url,
+      room_id,
+    },
+  ) => {
     const authority = getAuthorizedPlaybackActor(ctx, room_id, actor_member_id);
     const queueItem = ctx.db.live_queue_item.queue_item_id.find(
       queue_item_id.trim(),
@@ -1820,7 +1711,33 @@ export const play_uploaded_queue_item = spacetimedb.reducer(
       return;
     }
 
-    commitQueueAdvance(ctx, authority.session, queueItem, sourceUrl);
+    if (
+      !claimRecommendationAction(
+        recommendationContext(ctx),
+        {
+          actionId: client_action_id,
+          actionType: "play_uploaded_queue_item",
+          actorMemberId: actor_member_id,
+          roomId: room_id,
+        },
+        nowMs(),
+      )
+    ) {
+      return;
+    }
+
+    commitQueueAdvance(
+      ctx,
+      authority.session,
+      queueItem,
+      sourceUrl,
+      "playing",
+      {
+        actorMemberId: actor_member_id,
+        outcome: "skipped",
+        reason: "manual_play",
+      },
+    );
   },
 );
 
@@ -1829,6 +1746,7 @@ export const report_media_failure = spacetimedb.reducer(
     actor_member_id: t.string(),
     allow_autoplay_advance: t.bool().default(false),
     expected_active_queue_item_id: t.option(t.string()),
+    expected_playback_occurrence_id: t.option(t.string()),
     expected_source_url: t.string(),
     failure_code: t.string(),
     room_id: t.string(),
@@ -1839,6 +1757,7 @@ export const report_media_failure = spacetimedb.reducer(
       actor_member_id,
       allow_autoplay_advance,
       expected_active_queue_item_id,
+      expected_playback_occurrence_id,
       expected_source_url,
       failure_code,
       room_id,
@@ -1852,6 +1771,8 @@ export const report_media_failure = spacetimedb.reducer(
 
     const expectedActiveQueueItemId =
       expected_active_queue_item_id?.trim() || undefined;
+    const expectedPlaybackOccurrenceId =
+      expected_playback_occurrence_id?.trim() || undefined;
     const expectedSourceUrl = normalizeSourceUrl(expected_source_url);
     const activeSourceUrl = normalizeSourceUrl(
       authority.session.source_url ?? "",
@@ -1860,6 +1781,9 @@ export const report_media_failure = spacetimedb.reducer(
     if (
       !expectedSourceUrl ||
       expectedSourceUrl !== activeSourceUrl ||
+      (authority.session.playback_occurrence_id &&
+        authority.session.playback_occurrence_id !==
+          expectedPlaybackOccurrenceId) ||
       (expectedActiveQueueItemId &&
         authority.session.active_queue_item_id !== expectedActiveQueueItemId)
     ) {
@@ -1947,12 +1871,28 @@ export const report_media_failure = spacetimedb.reducer(
       }),
     );
 
+    if (activeQueueItem) {
+      recordSourceFailureEvent(
+        recommendationContext(ctx),
+        activeQueueItem,
+        actor_member_id,
+        failure.code,
+        nowMs(),
+      );
+    }
+
     if (canAdvance && nextQueueItem) {
       commitQueueAdvance(
         ctx,
         authority.session,
         nextQueueItem,
         nextQueueItem.source_url,
+        "playing",
+        {
+          actorMemberId: actor_member_id,
+          outcome: "failed",
+          reason: "source_failure_advance",
+        },
       );
       return;
     }
@@ -1969,10 +1909,11 @@ export const report_media_failure = spacetimedb.reducer(
 export const play_queue_item = spacetimedb.reducer(
   {
     actor_member_id: t.string(),
+    client_action_id: t.string().default(""),
     queue_item_id: t.string(),
     room_id: t.string(),
   },
-  (ctx, { actor_member_id, queue_item_id, room_id }) => {
+  (ctx, { actor_member_id, client_action_id, queue_item_id, room_id }) => {
     const authority = getAuthorizedPlaybackActor(ctx, room_id, actor_member_id);
     const queueItem = ctx.db.live_queue_item.queue_item_id.find(queue_item_id);
 
@@ -1988,12 +1929,32 @@ export const play_queue_item = spacetimedb.reducer(
       return;
     }
 
+    if (
+      !claimRecommendationAction(
+        recommendationContext(ctx),
+        {
+          actionId: client_action_id,
+          actionType: "play_queue_item",
+          actorMemberId: actor_member_id,
+          roomId: room_id,
+        },
+        nowMs(),
+      )
+    ) {
+      return;
+    }
+
     commitQueueAdvance(
       ctx,
       authority.session,
       queueItem,
       queueItem.source_url,
       "paused",
+      {
+        actorMemberId: actor_member_id,
+        outcome: "skipped",
+        reason: "manual_play",
+      },
     );
   },
 );
@@ -2001,11 +1962,15 @@ export const play_queue_item = spacetimedb.reducer(
 export const move_queue_item = spacetimedb.reducer(
   {
     actor_member_id: t.string(),
+    client_action_id: t.string(),
     position: t.u32(),
     queue_item_id: t.string(),
     room_id: t.string(),
   },
-  (ctx, { actor_member_id, position, queue_item_id, room_id }) => {
+  (
+    ctx,
+    { actor_member_id, client_action_id, position, queue_item_id, room_id },
+  ) => {
     const authority = getAuthorizedQueueManager(ctx, room_id, actor_member_id);
     const queueItem = ctx.db.live_queue_item.queue_item_id.find(queue_item_id);
 
@@ -2013,7 +1978,8 @@ export const move_queue_item = spacetimedb.reducer(
       !authority ||
       !queueItem ||
       queueItem.room_id !== room_id ||
-      queueItem.status !== "queued"
+      queueItem.status !== "queued" ||
+      !client_action_id.trim()
     ) {
       return;
     }
@@ -2023,7 +1989,9 @@ export const move_queue_item = spacetimedb.reducer(
       (item) => item.queue_item_id === queue_item_id,
     );
 
-    if (movingIndex < 0) {
+    const targetPosition = Math.min(position, Math.max(0, items.length - 1));
+
+    if (movingIndex < 0 || movingIndex === targetPosition) {
       return;
     }
 
@@ -2035,6 +2003,17 @@ export const move_queue_item = spacetimedb.reducer(
         position: index,
       });
     });
+
+    recordQueueRecommendationEvent(
+      ctx,
+      { ...queueItem, position: targetPosition },
+      {
+        actionId: client_action_id,
+        actorMemberId: actor_member_id,
+        eventType: "queue_reordered",
+        reason: "manual_reorder",
+      },
+    );
   },
 );
 
@@ -2052,14 +2031,34 @@ export const remove_queue_item = spacetimedb.reducer(
       return;
     }
 
+    recordQueueRecommendationEvent(ctx, queueItem, {
+      actorMemberId: actor_member_id,
+      eventType: "queue_removed",
+      reason: "manual_remove",
+    });
     ctx.db.live_queue_item.delete(queueItem);
 
     if (authority.session.active_queue_item_id === queue_item_id) {
+      finishPlaybackOccurrence(
+        recommendationContext(ctx),
+        {
+          actorMemberId: actor_member_id,
+          completionRatioBps: completionRatioBps(
+            authority.session.position_seconds,
+            authority.session.source_duration_seconds,
+          ),
+          outcome: "skipped",
+          reason: "active_item_removed",
+          roomId: room_id,
+        },
+        nowMs(),
+      );
       ctx.db.room_session.delete(authority.session);
       ctx.db.room_session.insert({
         ...authority.session,
         active_queue_item_id: undefined,
         playback_rate: 1,
+        playback_occurrence_id: undefined,
         position_seconds: 0,
         server_updated_ms: nowMs(),
         source_duration_seconds: undefined,

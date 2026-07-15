@@ -32,7 +32,11 @@ export type QueuePanelProps = {
   onAddQueueItem?(input: QueueAddInput): void;
   onClearQueue?(): void;
   onLoadSource?(input: SourceLoadInput): void;
-  onMoveQueueItem?(queueItemId: string, position: number): void;
+  onMoveQueueItem?(
+    queueItemId: string,
+    position: number,
+    clientActionId?: string,
+  ): void;
   onPlayQueueItem?(queueItemId: string): void;
   onQueueItemPriorityChange?(
     queueItemId: string,

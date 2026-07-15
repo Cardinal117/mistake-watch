@@ -51,6 +51,7 @@ export type LiveReducers = {
     isPlayNext: boolean;
     isUnavailable: boolean;
     allowDuplicate?: boolean;
+    clientActionId: string;
     playlistId?: string;
     playlistTitle?: string;
     roomId: string;
@@ -63,6 +64,7 @@ export type LiveReducers = {
     actorMemberId: string;
     autoplay?: boolean;
     expectedActiveQueueItemId?: string;
+    expectedPlaybackOccurrenceId?: string;
     expectedSourceUrl?: string;
     roomId: string;
   }): Promise<void>;
@@ -71,6 +73,7 @@ export type LiveReducers = {
     autoplay?: boolean;
     expectedActiveQueueItemId?: string;
     expectedNextQueueItemId: string;
+    expectedPlaybackOccurrenceId?: string;
     expectedSourceUrl?: string;
     resolvedSourceUrl: string;
     roomId: string;
@@ -104,17 +107,20 @@ export type LiveReducers = {
   }): Promise<void>;
   moveQueueItem(params: {
     actorMemberId: string;
+    clientActionId: string;
     position: number;
     queueItemId: string;
     roomId: string;
   }): Promise<void>;
   playQueueItem(params: {
     actorMemberId: string;
+    clientActionId: string;
     queueItemId: string;
     roomId: string;
   }): Promise<void>;
   playUploadedQueueItem(params: {
     actorMemberId: string;
+    clientActionId: string;
     queueItemId: string;
     resolvedSourceUrl: string;
     roomId: string;
@@ -150,6 +156,7 @@ export type LiveReducers = {
     actorMemberId: string;
     allowAutoplayAdvance?: boolean;
     expectedActiveQueueItemId?: string;
+    expectedPlaybackOccurrenceId?: string;
     expectedSourceUrl: string;
     failureCode: string;
     roomId: string;
@@ -177,6 +184,7 @@ export type LiveReducers = {
   }): Promise<void>;
   setQueueItemPriority(params: {
     actorMemberId: string;
+    clientActionId: string;
     isPinned: boolean;
     isPlayNext: boolean;
     queueItemId: string;
@@ -237,7 +245,11 @@ export type LiveRoomState = {
     sourceType: "direct" | "hls" | "youtube";
     sourceUrl: string;
   }): void;
-  moveQueueItem(queueItemId: string, position: number): void;
+  moveQueueItem(
+    queueItemId: string,
+    position: number,
+    clientActionId?: string,
+  ): void;
   participants: RoomParticipant[];
   playQueueItemNow(queueItemId: string): void;
   playQueueItem(queueItemId: string): void;

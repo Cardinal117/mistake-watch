@@ -34,6 +34,7 @@ import {
 } from "spacetimedb";
 
 // Import all reducer arg schemas
+import AcknowledgeRecommendationEventOutboxReducer from "./acknowledge_recommendation_event_outbox_reducer";
 import AddQueueItemReducer from "./add_queue_item_reducer";
 import AdvanceQueueItemReducer from "./advance_queue_item_reducer";
 import AdvanceUploadedQueueItemReducer from "./advance_uploaded_queue_item_reducer";
@@ -54,6 +55,7 @@ import ReportMediaFailureReducer from "./report_media_failure_reducer";
 import RevokeRoomControlReducer from "./revoke_room_control_reducer";
 import SeedRoomSessionReducer from "./seed_room_session_reducer";
 import SendRoomChatMessageReducer from "./send_room_chat_message_reducer";
+import SetGuestMediaPreferenceReducer from "./set_guest_media_preference_reducer";
 import SetMemberPermissionsReducer from "./set_member_permissions_reducer";
 import SetPlaybackStateReducer from "./set_playback_state_reducer";
 import SetQueueAutoplayReducer from "./set_queue_autoplay_reducer";
@@ -64,6 +66,8 @@ import UpdateRoomModeReducer from "./update_room_mode_reducer";
 import UpdateRoomNameReducer from "./update_room_name_reducer";
 
 // Import all procedure arg schemas
+import * as ReadMyGuestMediaPreferencesProcedure from "./read_my_guest_media_preferences_procedure";
+import * as ReadRecommendationEventOutboxProcedure from "./read_recommendation_event_outbox_procedure";
 
 // Import all table schema definitions
 import LiveQueueItemRow from "./live_queue_item_table";
@@ -188,6 +192,7 @@ const tablesSchema = __schema({
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
+  __reducerSchema("acknowledge_recommendation_event_outbox", AcknowledgeRecommendationEventOutboxReducer),
   __reducerSchema("add_queue_item", AddQueueItemReducer),
   __reducerSchema("advance_queue_item", AdvanceQueueItemReducer),
   __reducerSchema("advance_uploaded_queue_item", AdvanceUploadedQueueItemReducer),
@@ -208,6 +213,7 @@ const reducersSchema = __reducers(
   __reducerSchema("revoke_room_control", RevokeRoomControlReducer),
   __reducerSchema("seed_room_session", SeedRoomSessionReducer),
   __reducerSchema("send_room_chat_message", SendRoomChatMessageReducer),
+  __reducerSchema("set_guest_media_preference", SetGuestMediaPreferenceReducer),
   __reducerSchema("set_member_permissions", SetMemberPermissionsReducer),
   __reducerSchema("set_playback_state", SetPlaybackStateReducer),
   __reducerSchema("set_queue_autoplay", SetQueueAutoplayReducer),
@@ -220,6 +226,8 @@ const reducersSchema = __reducers(
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */
 const proceduresSchema = __procedures(
+  __procedureSchema("read_my_guest_media_preferences", ReadMyGuestMediaPreferencesProcedure.params, ReadMyGuestMediaPreferencesProcedure.returnType),
+  __procedureSchema("read_recommendation_event_outbox", ReadRecommendationEventOutboxProcedure.params, ReadRecommendationEventOutboxProcedure.returnType),
 );
 
 /** The remote SpacetimeDB module schema, both runtime and type information. */

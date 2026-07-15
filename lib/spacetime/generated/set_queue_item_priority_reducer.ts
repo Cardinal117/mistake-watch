@@ -12,6 +12,7 @@ import {
 
 export default {
   actorMemberId: __t.string(),
+  clientActionId: __t.string(),
   isPinned: __t.bool(),
   isPlayNext: __t.bool(),
   queueItemId: __t.string(),

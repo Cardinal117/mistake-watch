@@ -75,9 +75,10 @@ export function QueuePanel({
             ),
           )
         : shuffleUpcomingQueue(queuedItems.map(toSmartShuffleItem));
+    const clientActionId = crypto.randomUUID();
 
     nextOrder.forEach((item, index) => {
-      onMoveQueueItem?.(item.queueItemId, index);
+      onMoveQueueItem?.(item.queueItemId, index, clientActionId);
     });
 
     onQueueModeChange?.(strategy === "smart" ? "smartShuffle" : "shuffle");

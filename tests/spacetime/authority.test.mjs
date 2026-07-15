@@ -9,6 +9,7 @@ const root = path.resolve(
   "../..",
 );
 const sourcePath = path.join(root, "spacetime/src/index.ts");
+const roomTablesPath = path.join(root, "spacetime/src/room-tables.ts");
 const serverHelperPath = path.join(root, "lib/rooms/live-authority.ts");
 const mediaReferencesPath = path.join(
   root,
@@ -20,6 +21,7 @@ const queueCalculationsPath = path.join(
 );
 
 const spacetimeSource = await readFile(sourcePath, "utf8");
+const roomTablesSource = await readFile(roomTablesPath, "utf8");
 const serverHelperSource = await readFile(serverHelperPath, "utf8");
 const mediaReferencesSource = await readFile(mediaReferencesPath, "utf8");
 const queueCalculationsSource = await readFile(queueCalculationsPath, "utf8");
@@ -36,14 +38,12 @@ function sectionBetween(source, start, end) {
 
 test("room seed grant authority tables are private", () => {
   const grantTable = sectionBetween(
-    spacetimeSource,
-    "const roomSeedGrant = table(",
-    "const trustedSeedIssuer = table(",
+    roomTablesSource,
+    "export const roomSeedGrant = table(",
+    "export const trustedSeedIssuer = table(",
   );
-  const trustedIssuerTable = sectionBetween(
-    spacetimeSource,
-    "const trustedSeedIssuer = table(",
-    "const spacetimedb = schema(",
+  const trustedIssuerTable = roomTablesSource.slice(
+    roomTablesSource.indexOf("export const trustedSeedIssuer = table("),
   );
 
   assert.match(grantTable, /name:\s*"room_seed_grant"/);
@@ -75,7 +75,9 @@ test("seed grant issuer requires trusted server identity before insert", () => {
     "export const issue_room_seed_grant",
     "export const seed_room_session",
   );
-  const trustCheckIndex = reducer.indexOf("!isTrustedSeedIssuer(ctx)");
+  const trustCheckIndex = reducer.indexOf(
+    "!isTrustedRecommendationAuthority(ctx)",
+  );
   const insertIndex = reducer.indexOf("ctx.db.room_seed_grant.insert");
 
   assert.notEqual(trustCheckIndex, -1);
@@ -172,9 +174,9 @@ test("queue management reducers use queue-management authority", () => {
 
 test("member queue permission grants add and manage authority together", () => {
   const permissionTable = sectionBetween(
-    spacetimeSource,
-    "const roomPermission = table(",
-    "const liveQueueItem = table(",
+    roomTablesSource,
+    "export const roomPermission = table(",
+    "export const liveQueueItem = table(",
   );
   const reducer = sectionBetween(
     spacetimeSource,

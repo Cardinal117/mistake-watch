@@ -13,6 +13,7 @@ export type LiveRoomSession = {
   status: LivePlaybackStatus;
   positionSeconds: number;
   playbackRate: number;
+  playbackOccurrenceId: string | null;
   queueAutoplayEnabled: boolean;
   queueMode: "autoplayRelated" | "loop" | "normal" | "shuffle" | "smartShuffle";
   serverUpdatedMs: number;
@@ -215,6 +216,7 @@ export type AddQueueItemPayload = {
   isPlayNext: boolean;
   isUnavailable: boolean;
   allowDuplicate?: boolean;
+  clientActionId: string;
   playlistId?: string;
   playlistTitle?: string;
   roomId: string;
@@ -227,6 +229,7 @@ export type AdvanceQueueItemPayload = {
   actorMemberId: string;
   autoplay?: boolean;
   expectedActiveQueueItemId?: string;
+  expectedPlaybackOccurrenceId?: string;
   expectedSourceUrl?: string;
   roomId: string;
 };
@@ -240,6 +243,7 @@ export type ReportMediaFailurePayload = {
   actorMemberId: string;
   allowAutoplayAdvance?: boolean;
   expectedActiveQueueItemId?: string;
+  expectedPlaybackOccurrenceId?: string;
   expectedSourceUrl: string;
   failureCode: string;
   roomId: string;
@@ -252,5 +256,6 @@ export type QueueItemReducerPayload = {
 };
 
 export type MoveQueueItemPayload = QueueItemReducerPayload & {
+  clientActionId: string;
   position: number;
 };

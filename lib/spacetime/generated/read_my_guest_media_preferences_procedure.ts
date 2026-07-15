@@ -10,13 +10,12 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default {
+import {
+  GuestMediaPreference,
+} from "./types";
+
+export const params = {
   actorMemberId: __t.string(),
-  autoplay: __t.bool(),
-  expectedActiveQueueItemId: __t.option(__t.string()),
-  expectedNextQueueItemId: __t.string(),
-  expectedPlaybackOccurrenceId: __t.option(__t.string()),
-  expectedSourceUrl: __t.option(__t.string()),
-  resolvedSourceUrl: __t.string(),
   roomId: __t.string(),
 };
+export const returnType = __t.array(GuestMediaPreference)

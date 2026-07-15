@@ -192,9 +192,11 @@ export function ListenModeLayout({
             })
           : shuffleUpcomingQueue(queued);
 
+    const clientActionId = crypto.randomUUID();
+
     nextOrder.forEach((item, index) => {
       if (originalPositions.get(item.queueItemId) !== index) {
-        liveRoom.moveQueueItem(item.queueItemId, index);
+        liveRoom.moveQueueItem(item.queueItemId, index, clientActionId);
       }
     });
   }

@@ -297,6 +297,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       channelName: input.channelName,
       durationSeconds: input.durationSeconds,
       allowDuplicate: input.allowDuplicate ?? false,
+      clientActionId: crypto.randomUUID(),
       isPinned: input.isPinned ?? false,
       isPlayNext: input.isPlayNext ?? false,
       isUnavailable: input.isUnavailable ?? false,
@@ -317,6 +318,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
 
     void reducers.playQueueItem({
       actorMemberId: currentMember.id,
+      clientActionId: crypto.randomUUID(),
       queueItemId,
       roomId: room.id,
     });
@@ -327,6 +329,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       return;
     }
 
+    const clientActionId = crypto.randomUUID();
     const uploadedQueueItem = snapshot.queue.find(
       (item) => item.queueItemId === queueItemId,
     );
@@ -343,6 +346,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
 
         await reducers.playUploadedQueueItem({
           actorMemberId: currentMember.id,
+          clientActionId,
           queueItemId: uploadedQueueItem.queueItemId,
           resolvedSourceUrl,
           roomId: room.id,
@@ -360,6 +364,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
 
     await reducers.playQueueItem({
       actorMemberId: currentMember.id,
+      clientActionId,
       queueItemId,
       roomId: room.id,
     });
@@ -402,6 +407,8 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
           autoplay: input?.autoplay ?? false,
           expectedActiveQueueItemId: session.activeQueueItemId ?? undefined,
           expectedNextQueueItemId: nextQueueItem.queueItemId,
+          expectedPlaybackOccurrenceId:
+            session.playbackOccurrenceId ?? undefined,
           expectedSourceUrl: session.sourceUrl ?? undefined,
           resolvedSourceUrl,
           roomId: room.id,
@@ -421,6 +428,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       actorMemberId: currentMember.id,
       autoplay: input?.autoplay ?? false,
       expectedActiveQueueItemId: session.activeQueueItemId ?? undefined,
+      expectedPlaybackOccurrenceId: session.playbackOccurrenceId ?? undefined,
       expectedSourceUrl: session.sourceUrl ?? undefined,
       roomId: room.id,
     });
@@ -445,19 +453,25 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       actorMemberId: currentMember.id,
       allowAutoplayAdvance: input.allowAutoplayAdvance,
       expectedActiveQueueItemId: session.activeQueueItemId ?? undefined,
+      expectedPlaybackOccurrenceId: session.playbackOccurrenceId ?? undefined,
       expectedSourceUrl: session.sourceUrl,
       failureCode: input.failureCode,
       roomId: room.id,
     });
   }
 
-  function moveQueueItem(queueItemId: string, position: number) {
+  function moveQueueItem(
+    queueItemId: string,
+    position: number,
+    clientActionId = crypto.randomUUID(),
+  ) {
     if (!currentMember || !canManageQueue || !reducers) {
       return;
     }
 
     void reducers.moveQueueItem({
       actorMemberId: currentMember.id,
+      clientActionId,
       position,
       queueItemId,
       roomId: room.id,
@@ -615,6 +629,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
 
     void reducers.setQueueItemPriority({
       actorMemberId: currentMember.id,
+      clientActionId: crypto.randomUUID(),
       isPinned: input.isPinned ?? queueItem.isPinned,
       isPlayNext: input.isPlayNext ?? queueItem.isPlayNext,
       queueItemId,

@@ -14,6 +14,7 @@ export default {
   actorMemberId: __t.string(),
   autoplay: __t.bool(),
   expectedActiveQueueItemId: __t.option(__t.string()),
+  expectedPlaybackOccurrenceId: __t.option(__t.string()),
   expectedSourceUrl: __t.option(__t.string()),
   roomId: __t.string(),
 };

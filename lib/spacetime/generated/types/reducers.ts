@@ -6,6 +6,7 @@
 import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
+import AcknowledgeRecommendationEventOutboxReducer from "../acknowledge_recommendation_event_outbox_reducer";
 import AddQueueItemReducer from "../add_queue_item_reducer";
 import AdvanceQueueItemReducer from "../advance_queue_item_reducer";
 import AdvanceUploadedQueueItemReducer from "../advance_uploaded_queue_item_reducer";
@@ -26,6 +27,7 @@ import ReportMediaFailureReducer from "../report_media_failure_reducer";
 import RevokeRoomControlReducer from "../revoke_room_control_reducer";
 import SeedRoomSessionReducer from "../seed_room_session_reducer";
 import SendRoomChatMessageReducer from "../send_room_chat_message_reducer";
+import SetGuestMediaPreferenceReducer from "../set_guest_media_preference_reducer";
 import SetMemberPermissionsReducer from "../set_member_permissions_reducer";
 import SetPlaybackStateReducer from "../set_playback_state_reducer";
 import SetQueueAutoplayReducer from "../set_queue_autoplay_reducer";
@@ -35,6 +37,7 @@ import UpdateMediaTitleReducer from "../update_media_title_reducer";
 import UpdateRoomModeReducer from "../update_room_mode_reducer";
 import UpdateRoomNameReducer from "../update_room_name_reducer";
 
+export type AcknowledgeRecommendationEventOutboxParams = __Infer<typeof AcknowledgeRecommendationEventOutboxReducer>;
 export type AddQueueItemParams = __Infer<typeof AddQueueItemReducer>;
 export type AdvanceQueueItemParams = __Infer<typeof AdvanceQueueItemReducer>;
 export type AdvanceUploadedQueueItemParams = __Infer<typeof AdvanceUploadedQueueItemReducer>;
@@ -55,6 +58,7 @@ export type ReportMediaFailureParams = __Infer<typeof ReportMediaFailureReducer>
 export type RevokeRoomControlParams = __Infer<typeof RevokeRoomControlReducer>;
 export type SeedRoomSessionParams = __Infer<typeof SeedRoomSessionReducer>;
 export type SendRoomChatMessageParams = __Infer<typeof SendRoomChatMessageReducer>;
+export type SetGuestMediaPreferenceParams = __Infer<typeof SetGuestMediaPreferenceReducer>;
 export type SetMemberPermissionsParams = __Infer<typeof SetMemberPermissionsReducer>;
 export type SetPlaybackStateParams = __Infer<typeof SetPlaybackStateReducer>;
 export type SetQueueAutoplayParams = __Infer<typeof SetQueueAutoplayReducer>;

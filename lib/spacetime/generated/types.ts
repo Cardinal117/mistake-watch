@@ -10,6 +10,20 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
+export const GuestMediaPreference = __t.object("GuestMediaPreference", {
+  actorMemberId: __t.string(),
+  liked: __t.bool(),
+  mediaId: __t.string(),
+  preferenceKey: __t.string(),
+  queueItemId: __t.string(),
+  revision: __t.u32(),
+  roomId: __t.string(),
+  roomSessionId: __t.string(),
+  sourceType: __t.string(),
+  updatedMs: __t.i64(),
+});
+export type GuestMediaPreference = __Infer<typeof GuestMediaPreference>;
+
 export const LiveQueueItem = __t.object("LiveQueueItem", {
   addedByMemberId: __t.string(),
   artist: __t.option(__t.string()),
@@ -35,6 +49,73 @@ export const LiveQueueItem = __t.object("LiveQueueItem", {
   failureCount: __t.u32(),
 });
 export type LiveQueueItem = __Infer<typeof LiveQueueItem>;
+
+export const RecommendationEventOutbox = __t.object("RecommendationEventOutbox", {
+  actorMemberId: __t.option(__t.string()),
+  completionRatioBps: __t.option(__t.u32()),
+  contributorMemberId: __t.option(__t.string()),
+  createdMs: __t.i64(),
+  durationSeconds: __t.option(__t.u32()),
+  eventId: __t.string(),
+  eventType: __t.string(),
+  idempotencyKey: __t.string(),
+  mediaId: __t.option(__t.string()),
+  playbackOccurrenceId: __t.option(__t.string()),
+  position: __t.option(__t.u32()),
+  queueItemId: __t.option(__t.string()),
+  reason: __t.option(__t.string()),
+  roomId: __t.string(),
+  roomSessionId: __t.string(),
+  schemaVersion: __t.u32(),
+  sourceType: __t.option(__t.string()),
+});
+export type RecommendationEventOutbox = __Infer<typeof RecommendationEventOutbox>;
+
+export const RecommendationEventOverflow = __t.object("RecommendationEventOverflow", {
+  droppedCount: __t.u32(),
+  roomId: __t.string(),
+  updatedMs: __t.i64(),
+});
+export type RecommendationEventOverflow = __Infer<typeof RecommendationEventOverflow>;
+
+export const RecommendationPlaybackMemory = __t.object("RecommendationPlaybackMemory", {
+  lastPlayedMs: __t.i64(),
+  mediaKey: __t.string(),
+  mediaId: __t.string(),
+  playCount: __t.u32(),
+  roomId: __t.string(),
+  roomSessionId: __t.string(),
+  sourceType: __t.string(),
+});
+export type RecommendationPlaybackMemory = __Infer<typeof RecommendationPlaybackMemory>;
+
+export const RecommendationPlaybackOccurrence = __t.object("RecommendationPlaybackOccurrence", {
+  actorMemberId: __t.string(),
+  contributorMemberId: __t.option(__t.string()),
+  durationSeconds: __t.option(__t.u32()),
+  mediaId: __t.string(),
+  playbackOccurrenceId: __t.string(),
+  queueItemId: __t.string(),
+  roomId: __t.string(),
+  roomSessionId: __t.string(),
+  sourceType: __t.string(),
+  startedMs: __t.i64(),
+});
+export type RecommendationPlaybackOccurrence = __Infer<typeof RecommendationPlaybackOccurrence>;
+
+export const RecommendationProcessedAction = __t.object("RecommendationProcessedAction", {
+  actionKey: __t.string(),
+  createdMs: __t.i64(),
+  roomId: __t.string(),
+});
+export type RecommendationProcessedAction = __Infer<typeof RecommendationProcessedAction>;
+
+export const RecommendationRoomSession = __t.object("RecommendationRoomSession", {
+  createdMs: __t.i64(),
+  roomId: __t.string(),
+  roomSessionId: __t.string(),
+});
+export type RecommendationRoomSession = __Infer<typeof RecommendationRoomSession>;
 
 export const RoomChatMessage = __t.object("RoomChatMessage", {
   avatarKey: __t.option(__t.string()),
@@ -120,6 +201,7 @@ export const RoomSession = __t.object("RoomSession", {
   hostMemberId: __t.string(),
   mode: __t.string(),
   playbackRate: __t.f64(),
+  playbackOccurrenceId: __t.option(__t.string()),
   positionSeconds: __t.f64(),
   roomId: __t.string(),
   serverUpdatedMs: __t.i64(),

@@ -12,6 +12,7 @@ import {
 
 export default {
   actorMemberId: __t.string(),
+  clientActionId: __t.string(),
   position: __t.u32(),
   queueItemId: __t.string(),
   roomId: __t.string(),
