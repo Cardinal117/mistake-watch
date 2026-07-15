@@ -18,8 +18,8 @@ Supabase project:
 
 ## Applied Migrations
 
-- `supabase/migrations/20260528094023_mvp_schema_guest_identity.sql`
-- `supabase/migrations/20260528094907_task9_advisor_fixes.sql`
+- `supabase/migrations/20260528094250_mvp_schema_guest_identity.sql`
+- `supabase/migrations/20260528094847_task9_advisor_fixes.sql`
 
 Task 9 applied tables for profiles, rooms, guest identities, room members, room
 settings, member permissions, queue items, and playback sessions. It also

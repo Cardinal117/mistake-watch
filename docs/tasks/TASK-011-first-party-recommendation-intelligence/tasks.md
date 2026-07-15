@@ -99,6 +99,9 @@ Safe commit point:
 
 ## Batch C: Durable Event And Aggregate Store
 
+Status: Not started. Pre-Batch C provider and migration-history reconciliation
+completed on 2026-07-15; no recommendation DDL has been created or applied.
+
 Suggested files:
 
 - `supabase/migrations/`

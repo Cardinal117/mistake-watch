@@ -6,6 +6,9 @@ Batches A and B are implemented and verified locally. Release readiness is 30%.
 No Supabase migration, Maincloud publish, Vercel deployment, provider scope, or
 production configuration has changed.
 
+The Batch A/B checkpoint is pushed as `bfc234b`. Pre-Batch C infrastructure
+reconciliation is complete, but Batch C implementation has not started.
+
 ## Batch A And B Outcome
 
 - Added a versioned first-party event taxonomy and explicit Like/Remove Like
@@ -91,6 +94,25 @@ production configuration has changed.
 - Approve direct/HLS first-pass identity as room-local `queue:<queue_item_id>`.
   YouTube IDs and uploaded asset IDs are stable; cross-add direct URL hashing is
   intentionally deferred until a server-side canonicalizer is approved.
+
+## Pre-Batch C Infrastructure Reconciliation
+
+- Confirmed all 18 local migration filenames now match the 18 migration version
+  and name pairs recorded by the production Supabase project.
+- Registered `media_upload_completion_idempotency` through the supported
+  migration ledger as version `20260715092501`. Its idempotent SQL made no
+  schema change because the exact unique partial index was already live.
+- Confirmed no recommendation event, preference, or aggregate tables exist in
+  Supabase. Batch C therefore starts from an explicit zero-schema baseline.
+- Reviewed Supabase advisors. The two service-only tables with RLS and no client
+  policies remain intentional; leaked-password protection is a separate
+  Google-only authentication hardening consideration. No blocker was found for
+  preparing Batch C locally.
+- Removed obsolete `SPACETIME_ROOM_SEED_SECRET` configuration from Vercel. The
+  active production `SPACETIME_SERVER_AUTH_TOKEN` remains configured; there are
+  currently no preview-target environment entries.
+- No Batch C DDL, persistence code, recommendation table, Maincloud publish, or
+  application deployment was performed during reconciliation.
 
 ## Existing System Findings
 

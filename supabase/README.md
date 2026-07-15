@@ -23,20 +23,19 @@ room-state and synchronization authority.
 
 ## Current Integrity State
 
-The local and remote migration timestamps differ because earlier migrations
-were applied through provider tooling that assigned new remote versions.
-[MIGRATION_HISTORY.md](./MIGRATION_HISTORY.md) is the reconciliation record.
+The 18 local migration filenames match the 18 production migration-history
+entries. [MIGRATION_HISTORY.md](./MIGRATION_HISTORY.md) is the reconciliation
+record.
 
-The CloudConvert idempotency index exists in production, but its local migration
-is absent from Supabase's migration-history table. Do not re-run that DDL
-blindly; its exact live index definition has already been verified.
+The CloudConvert idempotency index and its migration-history entry both exist in
+production. Its exact live index definition has been verified.
 
 `room_media_sessions` and `uploaded_catalogue_authorizations` intentionally
 use RLS with no client policies or grants. They are server-managed tables.
 
-## Pending Cloud Work
+## Advisor State
 
-`20260714142309_task009_database_integrity_indexes.sql` adds covering indexes
-for three foreign keys reported by the performance advisor. It has not been
-applied. Apply it only after TASK-009 local QA and explicit approval, then rerun
-both advisor groups and update the reconciliation record.
+`20260714153348_task009_database_integrity_indexes.sql` added the three covering
+foreign-key indexes reported by the performance advisor. Remaining performance
+notices are informational unused-index findings that require representative
+production traffic before removal decisions.

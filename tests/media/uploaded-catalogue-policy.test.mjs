@@ -142,7 +142,7 @@ test("uploaded catalogue migration keeps allowlist app-owned and RLS enabled", a
   const migrationSource = await readFile(
     path.join(
       rootDir,
-      "supabase/migrations/20260709054334_uploaded_catalogue_authorization.sql",
+      "supabase/migrations/20260709080604_uploaded_catalogue_authorization.sql",
     ),
     "utf8",
   );

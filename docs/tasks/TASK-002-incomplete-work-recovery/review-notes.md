@@ -327,7 +327,7 @@ Implementation implication:
 
 ## TASK-002.8A Implementation Notes
 
-- Added Supabase migration `20260612092858_account_identity_owner_authority.sql`.
+- Added Supabase migration `20260612132118_account_identity_owner_authority.sql`.
 - Extended `public.profiles` with handle, avatar key/source, Google avatar URL, `role`, and `account_status`.
 - Added column-level grants so authenticated users can maintain safe profile fields but cannot client-edit `profiles.role` or `profiles.account_status`.
 - Added `private.is_app_owner()` and `private.is_room_owner(room_id)` as server/database owner-authority primitives for TASK-002.8 Stream/R2 upload and source ingestion.
@@ -402,8 +402,8 @@ Implementation test expectations:
 ## TASK-002.8 Implementation Notes
 
 - Added Supabase migrations:
-  - `20260613152000_r2_media_library.sql`
-  - `20260613154500_r2_media_library_advisor_fixes.sql`
+  - `20260613153741_r2_media_library.sql`
+  - `20260613153949_r2_media_library_advisor_fixes.sql`
 - Added `public.media_assets`, `public.media_upload_sessions`, and `public.media_source_matches` with RLS enabled.
 - RLS/read model:
   - ready media assets are readable by `anon` and `authenticated`;
@@ -957,7 +957,7 @@ Manual review pending:
 
 ## TASK-002.8D Implementation Notes
 
-- Added Supabase migration `20260614101745_media_multipart_upload_progress.sql`.
+- Added Supabase migration `20260614103125_media_multipart_upload_progress.sql`.
 - Extended `media_upload_sessions` with multipart upload metadata: `upload_mode`, `multipart_upload_id`, `part_size_bytes`, `part_count`, `completed_parts`, `bytes_uploaded`, and `resumable_until`.
 - Kept single PUT upload support for smaller files and added automatic multipart mode for uploads at or above 500 MB.
 - Raised the default owner-upload limit to 10 GiB unless `MEDIA_UPLOAD_MAX_BYTES` overrides it.
@@ -989,7 +989,7 @@ Manual review pending:
 
 ## TASK-002.8D CloudConvert Processing Refinement Notes
 
-- Added Supabase migration `20260617064533_cloudconvert_processing_pipeline.sql`.
+- Added Supabase migration `20260617070756_cloudconvert_processing_pipeline.sql`.
 - Added CloudConvert processing metadata to `media_assets`, including source object metadata, processed object metadata, provider status, job id, processing timestamps, and friendly error storage.
 - Added `media_processing_events` with owner-only RLS so CloudConvert job/task status can be inspected without exposing processing events publicly.
 - Replaced the MP4-only upload assumption with an owner upload flow that accepts normal video files, stores the source in R2, starts a CloudConvert job, and only marks the asset ready after the processed browser-safe MP4 is exported back to R2.
@@ -1019,7 +1019,7 @@ Manual review pending:
 
 ## TASK-002.8E CloudConvert Credit Efficiency Notes
 
-- Added Supabase migration `20260617183000_cloudconvert_credit_efficiency.sql`.
+- Added Supabase migration `20260617164154_cloudconvert_credit_efficiency.sql`.
 - Added `media_assets.inspection_result`, `processing_strategy`, `estimated_credits`, `owner_approval_required`, and `owner_approved_at`.
 - Added a pure media processing decision helper in `lib/media/processing-decision.ts`.
 - Owner uploads now run a conservative browser preflight for MP4/M4V files before completion:

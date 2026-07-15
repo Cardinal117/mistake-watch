@@ -125,7 +125,7 @@
 - Task 8 added Supabase environment documentation for `watch-mistakestudios`, a typed config helper, a Supabase workspace README, and `docs/data-model.md`.
 - Task 8 keeps actual DDL, migrations, RLS policy creation, grants, and generated database types deferred to Task 9.
 - Task 8 uses current Supabase guidance that public/exposed-schema tables need RLS plus explicit access grants; RLS protects rows, while grants affect Data API/GraphQL schema visibility.
-- Task 9 applied the MVP Supabase schema to `watch-mistakestudios` through migrations `20260528094023_mvp_schema_guest_identity.sql` and `20260528094907_task9_advisor_fixes.sql`.
+- Task 9 applied the MVP Supabase schema to `watch-mistakestudios` through migrations `20260528094250_mvp_schema_guest_identity.sql` and `20260528094847_task9_advisor_fixes.sql`.
 - Task 9 created `profiles`, `rooms`, `guest_identities`, `room_members`, `room_settings`, `member_permissions`, `queue_items`, and `playback_sessions` with RLS enabled on every app table.
 - Task 9 keeps `guest_identities` server-managed. Direct client roles have no table grants, and a restrictive deny policy documents that clients cannot directly read or mutate token hashes.
 - Task 9 generated local Supabase database types and added browser, server, and admin client helpers.
