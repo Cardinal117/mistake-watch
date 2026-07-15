@@ -254,12 +254,13 @@
   <body>
     <main>
       <header>
-        <div class="eyebrow">TASK-011 / Batches A-B verified locally</div>
+        <div class="eyebrow">TASK-011 / Batches A-C verified locally</div>
         <h1>First-Party Recommendation Intelligence</h1>
         <p>
           Build trusted room events and deterministic ranking before richer
-          discovery or AI presentation. The authority foundation is now local;
-          migrations, publishing, and deployment have not begun.
+          discovery or AI presentation. Authority and durable-store foundations
+          are now local; the new migration remains unapplied and publishing and
+          deployment have not begun.
         </p>
         <div class="summary">
           <article>
@@ -295,11 +296,11 @@
       <section aria-labelledby="recommendation">
         <h2 id="recommendation">Executive Recommendation</h2>
         <p>
-          Batches A and B are complete at the approved no-publish stop point.
-          Review the
+          Batches A, B, and C are complete at the approved no-publish stop
+          point. Review the
           <a href="implementation-report.html">implementation report</a>
-          and approve retention, attribution, identity, DDL, and RLS decisions
-          before Batch C begins.
+          and the unapplied migration before a separate checkpoint. Batch D is
+          the next implementation slice.
         </p>
         <span class="badge">Spec-first / security and data sensitive</span>
       </section>
@@ -613,11 +614,14 @@
       </section>
 
       <section class="next" aria-labelledby="next">
-        <h2 id="next">Batch C Checkpoint</h2>
+        <h2 id="next">Batch C Review Checkpoint</h2>
         <p>
-          Confirm the 5,000-event outbox bound, room/session-first privacy
-          posture, guest retention, direct/HLS identity, account attribution,
-          and proposed service-only durable model before migration work starts.
+          Review the service-only DDL, 30/180-day retention, verified account
+          attribution, 180-day non-personal event-key tombstones, duplicate-safe
+          atomic ingest, and cleanup behavior. A disposable PostgreSQL
+          apply/rollback and behavior matrix now passes, including an
+          account-deletion retry; explicit approval is still required before any
+          cloud migration, and Batch D must not alter this persistence contract.
         </p>
       </section>
     </main>

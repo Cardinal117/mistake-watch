@@ -293,6 +293,48 @@ export type Database = {
         };
         Relationships: [];
       };
+      media_preferences: {
+        Row: {
+          created_at: string;
+          id: string;
+          media_id: string;
+          neutral_expires_at: string | null;
+          preference_state: string;
+          revision: number;
+          source_event_at: string;
+          source_event_id: string;
+          source_type: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          media_id: string;
+          neutral_expires_at?: string | null;
+          preference_state: string;
+          revision?: number;
+          source_event_at: string;
+          source_event_id: string;
+          source_type: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          media_id?: string;
+          neutral_expires_at?: string | null;
+          preference_state?: string;
+          revision?: number;
+          source_event_at?: string;
+          source_event_id?: string;
+          source_type?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       media_processing_events: {
         Row: {
           created_at: string;
@@ -768,6 +810,187 @@ export type Database = {
           },
         ];
       };
+      recommendation_events: {
+        Row: {
+          account_user_id: string | null;
+          actor_member_id: string | null;
+          authority_event_id: string;
+          completion_ratio_bps: number | null;
+          contributor_member_id: string | null;
+          duration_seconds: number | null;
+          event_type: string;
+          expires_at: string;
+          id: string;
+          idempotency_key: string;
+          ingested_at: string;
+          media_id: string | null;
+          occurred_at: string;
+          playback_occurrence_id: string | null;
+          queue_item_id: string | null;
+          queue_position: number | null;
+          reason: string | null;
+          room_id: string;
+          room_session_id: string;
+          schema_version: number;
+          source_type: string | null;
+        };
+        Insert: {
+          account_user_id?: string | null;
+          actor_member_id?: string | null;
+          authority_event_id: string;
+          completion_ratio_bps?: number | null;
+          contributor_member_id?: string | null;
+          duration_seconds?: number | null;
+          event_type: string;
+          expires_at: string;
+          id?: string;
+          idempotency_key: string;
+          ingested_at?: string;
+          media_id?: string | null;
+          occurred_at: string;
+          playback_occurrence_id?: string | null;
+          queue_item_id?: string | null;
+          queue_position?: number | null;
+          reason?: string | null;
+          room_id: string;
+          room_session_id: string;
+          schema_version: number;
+          source_type?: string | null;
+        };
+        Update: {
+          account_user_id?: string | null;
+          actor_member_id?: string | null;
+          authority_event_id?: string;
+          completion_ratio_bps?: number | null;
+          contributor_member_id?: string | null;
+          duration_seconds?: number | null;
+          event_type?: string;
+          expires_at?: string;
+          id?: string;
+          idempotency_key?: string;
+          ingested_at?: string;
+          media_id?: string | null;
+          occurred_at?: string;
+          playback_occurrence_id?: string | null;
+          queue_item_id?: string | null;
+          queue_position?: number | null;
+          reason?: string | null;
+          room_id?: string;
+          room_session_id?: string;
+          schema_version?: number;
+          source_type?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recommendation_events_room_id_fkey";
+            columns: ["room_id"];
+            isOneToOne: false;
+            referencedRelation: "rooms";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      recommendation_event_tombstones: {
+        Row: {
+          authority_event_id: string;
+          created_at: string;
+          expires_at: string;
+          idempotency_key: string;
+          payload_fingerprint: string;
+        };
+        Insert: {
+          authority_event_id: string;
+          created_at?: string;
+          expires_at: string;
+          idempotency_key: string;
+          payload_fingerprint: string;
+        };
+        Update: {
+          authority_event_id?: string;
+          created_at?: string;
+          expires_at?: string;
+          idempotency_key?: string;
+          payload_fingerprint?: string;
+        };
+        Relationships: [];
+      };
+      recommendation_media_aggregates: {
+        Row: {
+          account_user_id: string | null;
+          completed_count: number;
+          created_at: string;
+          expires_at: string;
+          id: string;
+          last_event_at: string;
+          liked_count: number;
+          media_id: string;
+          play_next_count: number;
+          queue_added_count: number;
+          queue_removed_count: number;
+          replayed_count: number;
+          room_id: string | null;
+          room_session_id: string | null;
+          scope_type: string;
+          skipped_count: number;
+          source_failed_count: number;
+          source_type: string;
+          unliked_count: number;
+          updated_at: string;
+        };
+        Insert: {
+          account_user_id?: string | null;
+          completed_count?: number;
+          created_at?: string;
+          expires_at: string;
+          id?: string;
+          last_event_at: string;
+          liked_count?: number;
+          media_id: string;
+          play_next_count?: number;
+          queue_added_count?: number;
+          queue_removed_count?: number;
+          replayed_count?: number;
+          room_id?: string | null;
+          room_session_id?: string | null;
+          scope_type: string;
+          skipped_count?: number;
+          source_failed_count?: number;
+          source_type: string;
+          unliked_count?: number;
+          updated_at?: string;
+        };
+        Update: {
+          account_user_id?: string | null;
+          completed_count?: number;
+          created_at?: string;
+          expires_at?: string;
+          id?: string;
+          last_event_at?: string;
+          liked_count?: number;
+          media_id?: string;
+          play_next_count?: number;
+          queue_added_count?: number;
+          queue_removed_count?: number;
+          replayed_count?: number;
+          room_id?: string | null;
+          room_session_id?: string | null;
+          scope_type?: string;
+          skipped_count?: number;
+          source_failed_count?: number;
+          source_type?: string;
+          unliked_count?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recommendation_media_aggregates_room_id_fkey";
+            columns: ["room_id"];
+            isOneToOne: false;
+            referencedRelation: "rooms";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       room_members: {
         Row: {
           display_name: string;
@@ -925,7 +1148,14 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      ingest_recommendation_events: {
+        Args: { event_batch: Json };
+        Returns: Json;
+      };
+      prune_recommendation_data: {
+        Args: { prune_at?: string };
+        Returns: Json;
+      };
     };
     Enums: {
       [_ in never]: never;

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TASK-011 Batches A-B Implementation Report</title>
+    <title>TASK-011 Batches A-C Implementation Report</title>
     <style>
       :root {
         color-scheme: dark;
@@ -178,27 +178,27 @@
   <body>
     <main>
       <header>
-        <div class="eyebrow">TASK-011 / Batches A-B / Local only</div>
-        <h1>Recommendation authority foundation</h1>
+        <div class="eyebrow">TASK-011 / Batches A-C / Local only</div>
+        <h1>Recommendation authority and durability</h1>
         <p class="summary">
           Event semantics, a private SpacetimeDB outbox, occurrence-safe
-          playback transitions, and room-scoped guest Likes are implemented and
-          verified locally. No durable database or production service has
+          playback transitions, room-scoped guest Likes, and a service-only
+          durable Supabase store are implemented and verified locally. The new
+          migration is unapplied and no production recommendation service has
           changed.
         </p>
         <div class="grid" aria-label="Implementation summary">
           <div class="metric">
-            <span>Release readiness</span><strong>30%</strong>
+            <span>Release readiness</span><strong>50%</strong>
           </div>
           <div class="metric">
             <span>Outbox batch</span><strong>100</strong>
           </div>
           <div class="metric">
-            <span>Room capacity</span><strong>5,000</strong>
+            <span>Guest retention</span><strong>30d</strong>
           </div>
           <div class="metric">
-            <span>Index entrypoint</span><strong>2,204</strong
-            ><span>of 2,205 lines</span>
+            <span>Account retention</span><strong>180d</strong>
           </div>
         </div>
       </header>
@@ -229,6 +229,30 @@
           <li>
             Pending outbox rows are never pruned; overflow is counted and
             logged.
+          </li>
+          <li>
+            One atomic service-role RPC inserts immutable events, updates only
+            newly accepted aggregate rows, and rejects conflicting idempotency
+            collisions.
+          </li>
+          <li>
+            Non-personal event-key tombstones remain for 180 days so deleting
+            account-linked recommendation data cannot make an unacknowledged
+            retry count as new guest activity.
+          </li>
+          <li>
+            Account attribution requires matching room, member, and user IDs in
+            both application and database checks. Guest activity remains
+            room-session scoped.
+          </li>
+          <li>
+            Signed-in Likes persist until neutralized or the account is deleted;
+            stale toggles cannot overwrite newer state and neutral rows expire
+            after 30 days.
+          </li>
+          <li>
+            A CRON-secret-protected drain route acknowledges SpacetimeDB only
+            after Supabase returns internally consistent persistence counts.
           </li>
         </ul>
       </section>
@@ -265,8 +289,8 @@
               <td>Privacy</td>
               <td>Pass</td>
               <td>
-                Private event/preference tables; event rows contain opaque
-                YouTube/uploaded IDs and no source or signed URL.
+                Private event, preference, and tombstone tables; durable rows
+                contain no source or signed URL.
               </td>
             </tr>
             <tr>
@@ -289,16 +313,36 @@
               <td>File policy</td>
               <td>Pass</td>
               <td>
-                No violations. The legacy reducer entrypoint remains below its
-                frozen ceiling.
+                No violations or new warnings. Production persistence is 434
+                lines and the migration is 527 lines.
+              </td>
+            </tr>
+            <tr>
+              <td>Batch C tests</td>
+              <td>Pass</td>
+              <td>
+                264 total tests cover durable normalization, RLS/grants,
+                account/guest retention, URL rejection, duplicate collisions,
+                stale preference ordering, cleanup, and drain authorization.
+              </td>
+            </tr>
+            <tr>
+              <td>PostgreSQL apply</td>
+              <td>Pass</td>
+              <td>
+                The complete migration history applied through a disposable
+                local Supabase reset. Real SQL assertions passed RLS denial,
+                duplicate/collision rollback, retention, stale preference
+                ordering, cleanup, account deletion, and post-deletion retry
+                deduplication.
               </td>
             </tr>
             <tr>
               <td>Independent review</td>
               <td>Pass</td>
               <td>
-                No unresolved Blocker or Important findings after Smart Shuffle,
-                occurrence, blank-ID, runtime-proof, and formatting corrections.
+                No unresolved Blocker or Important findings after collision,
+                attribution, retention, and account-deletion retry corrections.
               </td>
             </tr>
           </tbody>
@@ -338,25 +382,38 @@
             </p>
           </section>
           <section>
-            <h3>Verification</h3>
+            <h3>Durable store first</h3>
             <p>
-              <code>tests/recommendations/event-contract.test.mjs</code
+              <code
+                >supabase/migrations/20260715095321_recommendation_durable_store.sql</code
+              ><br /><code>lib/recommendations/persistence.ts</code><br /><code
+                >lib/recommendations/durable-outbox-drain.ts</code
+              ><br /><code>app/api/recommendations/drain/route.ts</code>
+            </p>
+          </section>
+          <section>
+            <h3>Batch C verification</h3>
+            <p>
+              <code>tests/recommendations/persistence-migration.test.mjs</code
               ><br /><code
-                >tests/spacetime/recommendation-authority.test.mjs</code
-              ><br /><code>scripts/verify-recommendation-reducers.mjs</code
-              ><br /><code>scripts/benchmark-recommendation-baseline.mjs</code>
+                >tests/recommendations/persistence-behavior.test.mjs</code
+              ><br /><code>lib/supabase/database.types.ts</code><br /><code
+                >docs/tasks/TASK-011-first-party-recommendation-intelligence/review-notes.md</code
+              >
             </p>
           </section>
         </div>
       </section>
 
       <section class="panel next">
-        <h2 class="gold">Stop point before Batch C</h2>
+        <h2 class="gold">Stop point before migration or Batch D</h2>
         <p>
-          Durable Supabase tables, signed-in account Likes, the production
-          drain, scoring, APIs, Heart UI, Maincloud publish, and deployment
-          remain deferred. Batch C requires explicit retention, attribution,
-          identity, DDL, RLS, and outbox-capacity approval.
+          Batch C is local and review-ready. Applying the Supabase migration,
+          activating a production drain schedule, deterministic scoring,
+          recommendation APIs, Heart UI, Maincloud publish, and deployment
+          remain deferred. The disposable PostgreSQL proof passes; explicit
+          cloud approval is still required before any production database
+          change.
         </p>
       </section>
     </main>

@@ -99,8 +99,12 @@ Safe commit point:
 
 ## Batch C: Durable Event And Aggregate Store
 
-Status: Not started. Pre-Batch C provider and migration-history reconciliation
-completed on 2026-07-15; no recommendation DDL has been created or applied.
+Status: Completed locally on 2026-07-15. The migration, generated types,
+service-only persistence, bounded drain route, retention cleanup, and focused
+security tests are ready for review. The migration has not been applied to any
+cloud Supabase project; it has passed a destructive reset and behavioral proof
+against a disposable local Supabase PostgreSQL instance. No drain schedule or
+application deployment is active.
 
 Suggested files:
 
@@ -118,6 +122,8 @@ Work:
 - Add durable signed-in media preference state with one current row per account
   and opaque media identity; Like and Remove Like remain idempotent.
 - Implement bounded, retryable, idempotent drain behavior.
+- Retain non-personal event-key tombstones for 180 days so account deletion
+  cannot turn an unacknowledged retry into duplicate guest activity.
 - Keep private URLs and account secrets out of durable rows.
 - Add migration, RLS, duplicate, retry, and partial-failure tests.
 
@@ -146,6 +152,9 @@ Safe commit point:
 - Migration and application code are verified locally but unapplied remotely.
 
 ## Batch D: Deterministic Ranking Engine
+
+Status: Not started. Batch C must pass final review and receive a separate
+checkpoint before Batch D implementation begins.
 
 Suggested files:
 

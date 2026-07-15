@@ -2,12 +2,55 @@
 
 ## Status
 
-Batches A and B are implemented and verified locally. Release readiness is 30%.
-No Supabase migration, Maincloud publish, Vercel deployment, provider scope, or
-production configuration has changed.
+Batches A, B, and C are implemented and verified locally. Release readiness is
+50%. The Batch C Supabase migration exists only in the repository and has not
+been applied. No Maincloud publish, Vercel deployment, provider scope, drain
+schedule, or production recommendation configuration has changed.
 
 The Batch A/B checkpoint is pushed as `bfc234b`. Pre-Batch C infrastructure
-reconciliation is complete, but Batch C implementation has not started.
+reconciliation is complete.
+
+The migration-history reconciliation checkpoint is pushed as `bc31399`. Batch
+C implementation is currently uncommitted and remains local-only.
+
+## Batch C Outcome
+
+- Added service-only `recommendation_events`,
+  `recommendation_media_aggregates`, and `media_preferences` DDL with RLS,
+  explicit grants, bounded fields, covering indexes, retention columns, and
+  account-deletion cascades.
+- Added one bounded atomic ingest RPC. Only newly inserted authority events can
+  increment room-session or verified-account aggregates; conflicting reuse of
+  an event ID or idempotency key fails instead of being treated as a retry.
+- Added service-only, non-personal event-key tombstones retained for 180 days.
+  Account deletion can erase account-linked recommendation rows without letting
+  an unacknowledged outbox retry increment the room aggregate a second time.
+- Added database-side room/member/account verification in addition to the
+  server lookup. Guest activity never receives account attribution.
+- Added stale-order protection for rapid Like/Remove Like transitions. Like is
+  durable until explicitly neutralized or the account is deleted; neutral
+  current-state rows expire after 30 days.
+- Set room-session event and aggregate retention to 30 days and verified-account
+  event and aggregate retention to 180 days. No guest-to-account migration is
+  implemented.
+- Added a trusted drain service and CRON-secret-protected route. The outbox is
+  acknowledged only after the atomic Supabase RPC returns consistent counts.
+  Malformed events, persistence errors, or inconsistent results leave the
+  outbox unacknowledged for investigation and retry.
+- Added pure normalization and migration-security tests covering forbidden URL
+  fields, opaque media IDs, attribution, retention, deterministic batches,
+  duplicate safety, RLS/grants, cleanup, and drain authorization.
+- Applied the complete 19-migration history to a disposable local Supabase
+  PostgreSQL instance. Real database assertions passed for service-role access,
+  `anon`/`authenticated` denial, exact retries, conflicting-batch rollback,
+  30/180-day retention after final attribution, stale Like ordering, cleanup,
+  account-deletion cascades, and post-deletion retry deduplication. The
+  temporary stack was stopped and removed.
+- Independent review found four behavioral issues: same-key payload conflicts,
+  incomplete database collision comparison, and retention calculated before
+  final database attribution, followed by loss of deduplication evidence after
+  account deletion. All four were corrected and covered by focused and
+  real-database verification; no Blocker or Important finding remains.
 
 ## Batch A And B Outcome
 
@@ -77,23 +120,22 @@ reconciliation is complete, but Batch C implementation has not started.
 - Signed-in Likes are durable and private; guest Likes remain room/session
   scoped. Remove Like restores neutral rather than creating dislike.
 
-## Decisions Required Before Batch C
+## Resolved Batch C Defaults
 
-- Approve the proven SpacetimeDB-to-Supabase drain mechanism.
-- Set guest room-event retention and signed-in account-history retention.
-- Decide whether the first production slice stores account attribution or only
-  room/session/member-scoped attribution.
-- Approve guest Like retention and whether guest-to-account Like migration is
-  excluded or offered through a later explicit consent flow.
-- Approve the exact Supabase DDL and RLS/grant model before migration.
-- Confirm whether the 5,000-event local outbox and processed-action bounds are
-  acceptable for production or should be raised after drain-load measurement.
-- Confirm room-lifetime guest preference scope. Guest state is currently bound
-  to the recommendation room-session ID and capped at 1,000 rows per member;
-  no guest-to-account migration is implemented.
-- Approve direct/HLS first-pass identity as room-local `queue:<queue_item_id>`.
-  YouTube IDs and uploaded asset IDs are stable; cross-add direct URL hashing is
-  intentionally deferred until a server-side canonicalizer is approved.
+- The trusted SpacetimeDB-to-Supabase drain remains server-only and bounded to
+  100 events per outbox read.
+- Guest room-session events and aggregates expire after 30 days. Verified
+  account events and aggregates expire after 180 days.
+- Account attribution is stored only after both application and database checks
+  match the event actor to the same room-member row and `auth.users` account.
+- Guest Likes remain private room-session state and are never migrated into an
+  account without a later explicit consent flow.
+- Signed-in Likes persist until Remove Like or account deletion. Neutral rows
+  expire after 30 days and never represent dislike.
+- The 5,000-event room outbox and 1,000-preference per-member limits remain the
+  first production bounds pending measured drain load.
+- Direct/HLS identity remains room-local `queue:<queue_item_id>`. YouTube IDs
+  and uploaded asset UUIDs remain stable; direct URL hashing is deferred.
 
 ## Pre-Batch C Infrastructure Reconciliation
 
@@ -181,9 +223,13 @@ The percentages below measure release readiness, not development effort:
 - Passed: deterministic Room Picks baseline benchmark.
 - Passed: isolated local trusted read, anonymous denial, bridge acknowledgement,
   and repeatable reducer-runtime transition proof.
-- Passed: full `npm test` (254 tests), ESLint, changed-file Prettier, and the
-  production Next.js build.
+- Passed after Batch C: full `npm test` (264 tests), TypeScript, ESLint,
+  changed-file Prettier, and file-length policy with no new warnings.
+- Passed: disposable local Supabase reset/apply plus behavioral SQL proof for
+  RLS, grants, duplicates, rollback, retention, preference ordering, cleanup,
+  account deletion, and post-deletion retry deduplication.
 - Passed: independent final security, idempotency, runtime-proof, formatting,
   and scope review found no unresolved Blocker or Important findings.
-- Intentionally deferred: durable account Likes, Supabase DDL/RLS, drain job,
-  ranker, recommendation API, Heart UI, Maincloud publish, and deployment.
+- Intentionally deferred: applying the Supabase migration, activating a drain
+  schedule, ranker, recommendation read/preference APIs, Heart UI, Maincloud
+  publish, and deployment.
