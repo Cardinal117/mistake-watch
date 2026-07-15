@@ -2,16 +2,59 @@
 
 ## Status
 
-Batches A, B, and C are implemented and verified locally. Release readiness is
-50%. The Batch C Supabase migration exists only in the repository and has not
+Batches A through D are implemented and verified locally. Release readiness is
+70%. The Batch C Supabase migration exists only in the repository and has not
 been applied. No Maincloud publish, Vercel deployment, provider scope, drain
-schedule, or production recommendation configuration has changed.
+schedule, recommendation API, or production recommendation configuration has
+changed.
 
 The Batch A/B checkpoint is pushed as `bfc234b`. Pre-Batch C infrastructure
 reconciliation is complete.
 
 The migration-history reconciliation checkpoint is pushed as `bc31399`. Batch
-C implementation is currently uncommitted and remains local-only.
+C is committed and pushed as `3a79b82`. Batch D remains uncommitted and local.
+
+## Batch D Outcome
+
+- Added one pure deterministic ranking boundary split across candidate/input
+  normalization, component scoring, and bounded diversity selection. No React,
+  network, database, provider, or room mutation dependency enters the ranker.
+- Reused the approved opaque identity rules: YouTube provider IDs, uploaded
+  asset UUIDs, and room-local `queue:<queue_item_id>` direct/HLS identities.
+  Candidate output is rebuilt from an allowlisted shape and never retains
+  source, signed, public, or R2 URL fields.
+- Added hard exclusions before scoring for invalid, unavailable,
+  authorization-incompatible, current, queued, recently played, and duplicate
+  candidates. Uploaded candidates fail closed unless catalogue authorization is
+  explicitly true.
+- Added integer score components for private Like, replay, completion, Play
+  Next/manual add, room context, current-media similarity, contributor context,
+  bounded recency, freshness, skip/remove penalties, and diversity.
+- Kept Like as the strongest individual positive component even when custom
+  weights are supplied. Remove Like and missing Like remain neutral; source
+  failure counters never become a taste penalty.
+- Prevented account and room-session aggregates for the same event stream from
+  doubling inferred behavior. Account signals drive signed-in affinity while
+  room aggregates contribute a separately capped room component.
+- Added stable media-key tie-breaking, factual reason codes/labels, deterministic
+  exclusion diagnostics, and a maximum result limit of 100.
+- Added deterministic fixtures for empty and sparse inputs, every hard
+  exclusion, reverse-input stability, Likes, positive and negative signals,
+  failure neutrality, similarity, diversity, private uploads, duplicates, and
+  1,000 candidates.
+- Fixture development exposed that oversized aggregate counters were discarded
+  instead of bounded, which could erase legitimate skip/remove penalties.
+  Counter normalization now saturates at 10,000 and has focused coverage.
+- Optimized the diversity loop to normalize metadata once and allocate only for
+  selected rows. The final focused 500-candidate benchmark measured `6.75 ms`
+  p95 against the `50 ms` gate.
+- Independent Batch D review found four Important issues: unauthorized upload
+  diagnostics exposed an opaque asset ID, negative-only activity could earn a
+  recency boost, room skip/remove evidence could disappear during account
+  composition, and two explanations overstated single observations. All four
+  were corrected and covered by focused regression tests. A locale-sensitive
+  tie-break was also replaced with code-point ordering for cross-runtime
+  determinism. Re-review found no unresolved Blocker or Important finding.
 
 ## Batch C Outcome
 
@@ -202,7 +245,8 @@ The percentages below measure release readiness, not development effort:
 - Batch B: 30% - authoritative inferred events and guest session preference
   commands work locally.
 - Batch C: 50% - durable preference/event storage and retry safety are ready.
-- Batch D: 70% - deterministic ranking, Like weighting, and explanations pass.
+- Batch D: 70% - deterministic ranking, Like weighting, explanations, and the
+  500-candidate performance gate pass locally.
 - Batch E: 82% - authorized, bounded service contracts pass.
 - Batch F: 92% - Like UI and existing Room Picks integration pass browser QA.
 - Batch G: 100% - migration, publish, deploy, and production QA are complete.
@@ -225,11 +269,15 @@ The percentages below measure release readiness, not development effort:
   and repeatable reducer-runtime transition proof.
 - Passed after Batch C: full `npm test` (264 tests), TypeScript, ESLint,
   changed-file Prettier, and file-length policy with no new warnings.
+- Passed after Batch D: full `npm test` (280 tests), including reverse-input
+  determinism, 1,000-candidate coverage, redacted authorization exclusions,
+  negative-only recency protection, and a measured focused 500-candidate p95
+  of `6.75 ms` against the `50 ms` gate.
 - Passed: disposable local Supabase reset/apply plus behavioral SQL proof for
   RLS, grants, duplicates, rollback, retention, preference ordering, cleanup,
   account deletion, and post-deletion retry deduplication.
 - Passed: independent final security, idempotency, runtime-proof, formatting,
   and scope review found no unresolved Blocker or Important findings.
 - Intentionally deferred: applying the Supabase migration, activating a drain
-  schedule, ranker, recommendation read/preference APIs, Heart UI, Maincloud
-  publish, and deployment.
+  schedule, recommendation read/preference APIs, Heart UI, Maincloud publish,
+  and deployment.

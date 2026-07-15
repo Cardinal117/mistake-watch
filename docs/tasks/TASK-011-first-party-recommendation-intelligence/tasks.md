@@ -153,8 +153,11 @@ Safe commit point:
 
 ## Batch D: Deterministic Ranking Engine
 
-Status: Not started. Batch C must pass final review and receive a separate
-checkpoint before Batch D implementation begins.
+Status: Completed locally on 2026-07-15. The pure ranker, hard exclusions,
+component scoring, stable reasons, deterministic tie-breaking, bounded
+diversity, adversarial fixtures, and 500-candidate performance gate pass. No
+recommendation API, UI integration, migration application, publish, or deploy
+is included.
 
 Suggested files:
 

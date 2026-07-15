@@ -89,9 +89,12 @@ test("media identities never retain direct or uploaded URLs", () => {
     identities.recommendationMediaIdentity({
       queueItemId: "queue-2",
       sourceType: "direct",
-      sourceUrl: "mw-uploaded-asset:asset-private-1",
+      sourceUrl: "mw-uploaded-asset:06f55f38-2f03-4a10-95b5-f343e6db8cc7",
     }),
-    { mediaId: "asset-private-1", sourceType: "uploaded" },
+    {
+      mediaId: "06f55f38-2f03-4a10-95b5-f343e6db8cc7",
+      sourceType: "uploaded",
+    },
   );
   assert.deepEqual(
     identities.recommendationMediaIdentity({

@@ -1,9 +1,46 @@
 const uploadedAssetPrefix = "mw-uploaded-asset:";
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const recommendationSourceTypes = new Set([
+  "direct",
+  "hls",
+  "uploaded",
+  "youtube",
+]);
 
 export type RecommendationMediaIdentity = {
   mediaId: string;
   sourceType: "direct" | "hls" | "uploaded" | "youtube";
 };
+
+export function normalizeRecommendationMediaIdentity({
+  mediaId,
+  sourceType,
+}: {
+  mediaId: string;
+  sourceType: string;
+}): RecommendationMediaIdentity | null {
+  const normalizedMediaId = mediaId.trim();
+  const normalizedSourceType = sourceType.trim().toLowerCase();
+
+  if (
+    !recommendationSourceTypes.has(normalizedSourceType) ||
+    !isValidMediaId(normalizedSourceType, normalizedMediaId)
+  ) {
+    return null;
+  }
+
+  return {
+    mediaId: normalizedMediaId,
+    sourceType:
+      normalizedSourceType as RecommendationMediaIdentity["sourceType"],
+  };
+}
+
+export function recommendationMediaKey(identity: RecommendationMediaIdentity) {
+  return `${identity.sourceType}:${identity.mediaId}`;
+}
 
 export function recommendationMediaIdentity({
   queueItemId,
@@ -23,18 +60,26 @@ export function recommendationMediaIdentity({
 
   if (normalizedUrl.startsWith(uploadedAssetPrefix)) {
     const assetId = normalizedUrl.slice(uploadedAssetPrefix.length).trim();
-    return assetId ? { mediaId: assetId, sourceType: "uploaded" } : null;
+    return normalizeRecommendationMediaIdentity({
+      mediaId: assetId,
+      sourceType: "uploaded",
+    });
   }
 
   if (normalizedType === "youtube") {
     const videoId = youtubeVideoId(normalizedUrl);
-    return videoId ? { mediaId: videoId, sourceType: "youtube" } : null;
+    return videoId
+      ? normalizeRecommendationMediaIdentity({
+          mediaId: videoId,
+          sourceType: "youtube",
+        })
+      : null;
   }
 
-  return {
+  return normalizeRecommendationMediaIdentity({
     mediaId: `queue:${queueItemId.trim()}`,
     sourceType: normalizedType === "hls" ? "hls" : "direct",
-  };
+  });
 }
 
 function youtubeVideoId(value: string) {
@@ -58,4 +103,24 @@ function youtubeVideoId(value: string) {
 function boundedProviderId(value: string) {
   const normalized = value.trim();
   return /^[A-Za-z0-9_-]{6,64}$/.test(normalized) ? normalized : null;
+}
+
+function isValidMediaId(sourceType: string, mediaId: string) {
+  if (!mediaId || mediaId.length > 180) {
+    return false;
+  }
+
+  if (sourceType === "youtube") {
+    return /^[A-Za-z0-9_-]{6,64}$/.test(mediaId);
+  }
+
+  if (sourceType === "uploaded") {
+    return uuidPattern.test(mediaId);
+  }
+
+  return (
+    mediaId.startsWith("queue:") &&
+    mediaId.length > "queue:".length &&
+    !/[/?#\\\s]/.test(mediaId.slice("queue:".length))
+  );
 }
