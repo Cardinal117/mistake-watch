@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TASK-011 Batches A-F Implementation Report</title>
+    <title>TASK-011 Production Implementation Report</title>
     <style>
       :root {
         color-scheme: dark;
@@ -16,6 +16,7 @@
         --blue: #00dbe9;
         --gold: #ffba20;
         --ok: #9fe3b1;
+        --warning: #ffdb9d;
       }
       * {
         box-sizing: border-box;
@@ -178,18 +179,23 @@
   <body>
     <main>
       <header>
-        <div class="eyebrow">TASK-011 / Batches A-F / Local only</div>
+        <div class="eyebrow">
+          TASK-011 / Production release / Final identity gate
+        </div>
         <h1>First-party recommendations and private Likes</h1>
         <p class="summary">
           Event semantics, a private SpacetimeDB outbox, occurrence-safe
           playback transitions, durable and room-scoped Likes, an authorized
           recommendation service, deterministic ranking, and the existing Listen
-          Room Picks integration are verified locally. The migration, Maincloud
-          publish, drain schedule, and deployment remain deferred.
+          Room Picks integration are live. Original functional production QA
+          passed. The attached-account provider regression is fixed, deployed,
+          user-verified, and merged to main. Two post-attachment Likes are in
+          the authoritative outbox; final closure needs their scheduled durable
+          drain and fresh-session persistence proof.
         </p>
         <div class="grid" aria-label="Implementation summary">
           <div class="metric">
-            <span>Release readiness</span><strong>92%</strong>
+            <span>Release readiness</span><strong>98%</strong>
           </div>
           <div class="metric">
             <span>Outbox batch</span><strong>100</strong>
@@ -201,13 +207,13 @@
             <span>Account retention</span><strong>180d</strong>
           </div>
           <div class="metric">
-            <span>Full test suite</span><strong>310</strong>
+            <span>Full test suite</span><strong>314</strong>
           </div>
         </div>
       </header>
 
       <section class="panel">
-        <span class="status">Verified locally</span>
+        <span class="status">Production live</span>
         <h2 style="margin-top: 12px">What changed</h2>
         <ul>
           <li>
@@ -408,6 +414,77 @@
                 fixed and the complete lint gate rerun.
               </td>
             </tr>
+            <tr>
+              <td>Supabase release</td>
+              <td>Pass</td>
+              <td>
+                Migration <code>20260716064635</code> is tracked in production.
+                Recommendation tables remain RLS-enabled and service-role only.
+              </td>
+            </tr>
+            <tr>
+              <td>Maincloud release</td>
+              <td>Pass</td>
+              <td>
+                Published with <code>--delete-data=never</code>. The occurrence
+                column and seven private tables were added without data loss or
+                a manual migration.
+              </td>
+            </tr>
+            <tr>
+              <td>Vercel release</td>
+              <td>Pass</td>
+              <td>
+                Exact commit <code>a163a4b</code> deployed as
+                <code>dpl_AFfECQewb4i9m6F5QwABLp3FzpvW</code>. Health,
+                readiness, aliases, provider-route QA, and both daily cron
+                registrations passed.
+              </td>
+            </tr>
+            <tr>
+              <td>Production interaction QA</td>
+              <td>Pass</td>
+              <td>
+                Two participants retained synchronized playback and queue
+                continuity. Like/Remove Like, recommendation refresh, guest
+                catalogue denial, and active uploaded playback passed.
+              </td>
+            </tr>
+            <tr>
+              <td>Authority and drain</td>
+              <td>Pass</td>
+              <td>
+                Two tested Likes produced two revision-1
+                <code>media_liked</code> events. The authenticated drain
+                returned 200 and acknowledged all 16 pending events.
+              </td>
+            </tr>
+            <tr>
+              <td>Account persistence</td>
+              <td>Needs verification</td>
+              <td>
+                Two post-attachment account Likes are present in Maincloud.
+                Their durable Supabase preference rows await the next scheduled
+                drain and fresh-session verification.
+              </td>
+            </tr>
+            <tr>
+              <td>Attached-room provider routes</td>
+              <td>Pass</td>
+              <td>
+                The account-membership fallback is deployed in
+                <code>a163a4b</code>, merged to main, and user QA confirmed
+                attached-account provider search works.
+              </td>
+            </tr>
+            <tr>
+              <td>Response-body privacy</td>
+              <td>Partially verified</td>
+              <td>
+                Automated contracts and production authority rows are URL-free.
+                Manual DevTools response-body inspection was not completed.
+              </td>
+            </tr>
           </tbody>
         </table>
       </section>
@@ -502,13 +579,14 @@
       </section>
 
       <section class="panel next">
-        <h2 class="gold">Stop point before Batch G release work</h2>
+        <h2 class="gold">Final gate before TASK-011 closure</h2>
         <p>
-          Batches E and F are local and review-ready. Applying the Supabase
-          migration, publishing the SpacetimeDB procedures, activating a drain
-          schedule, committing these batches, deploying Vercel, and two-client
-          production QA remain Batch G actions requiring explicit approval and
-          the documented safe release order.
+          Observe the next scheduled drain for the two post-attachment Likes,
+          confirm the resulting durable account preference, and verify it
+          survives a fresh signed-in session. Complete manual DevTools
+          response-body inspection before recording 100% closure. The Heart
+          interaction, direct-load coverage, and account-only versus guest
+          semantics remain focused follow-up work.
         </p>
       </section>
     </main>

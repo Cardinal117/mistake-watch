@@ -2,7 +2,10 @@
 
 ## Batch A: Contract, Baseline, And Bridge Proof
 
-Status: Completed locally on 2026-07-15. No production publish or migration.
+Status: Released to production on 2026-07-16. Original functional QA passed.
+The account-member provider authorization hotfix is deployed and merged to
+`main`. Final closure requires the scheduled durable drain and fresh-session
+proof for the two post-attachment account Likes.
 
 Suggested files:
 
@@ -314,6 +317,13 @@ Safe commit point:
 
 ## Batch G: QA, Migration, Publish, And Release Gates
 
+Status: Released to production on 2026-07-16. Local gates, Supabase migration,
+non-destructive Maincloud publish, exact-revision Vercel deployment, cron drain,
+and two-participant functional QA passed. The attached-account provider
+regression is fixed in deployed commit `a163a4b`, merged to `main`, and
+user-verified. Final task closure is pending the scheduled durable drain and
+fresh-session persistence proof for the two post-attachment account Likes.
+
 Work:
 
 - Run `npm test`, typecheck, ESLint, file-length policy, changed-file Prettier,
@@ -343,7 +353,40 @@ Expected outcome and cumulative progress:
   exact-revision Vercel deploy, and two-client production QA confirm stable
   Likes, recommendations, playback, queue authority, and private-media safety.
 
+Current outcome:
+
+- Production deployment `dpl_FHBEn8Ue865tEQfwvjqVkMRrfi4G` is healthy on the
+  live aliases.
+- Two-client QA passed Like/Remove Like, recommendation refresh, playback and
+  queue continuity, participant synchronization, and uploaded-catalogue
+  authorization.
+- Production emitted one `media_liked` event for each tested Like and the
+  authenticated drain acknowledged the complete outbox without a server error.
+- The tested room is now attached to the signed-in account. Ownership,
+  saved-room state, host membership, and the migration record are account-backed.
+- The tested Likes predate attachment and therefore correctly persisted only in
+  private room-session state; durable Google-account persistence was not
+  exercised.
+- Attachment exposed a `403` regression in the guest-only provider request
+  guard. The deployed correction accepts open-room account membership,
+  preserves guest fallback and rate limiting, and passes 314 tests plus the
+  complete static/build gate.
+- Exact commit `a163a4b` is live as
+  `dpl_AFfECQewb4i9m6F5QwABLp3FzpvW` and is now the head of `main`.
+- User QA confirmed attached-account provider search works. Maincloud records
+  two post-attachment `media_liked` events for the account-backed host.
+- The room outbox currently contains 45 pending events. Supabase does not yet
+  contain the corresponding durable account rows because the next scheduled
+  drain has not run since those actions.
+- Manual DevTools inspection of recommendation response bodies was not
+  completed. Automated URL/identity rejection contracts, private no-store
+  response headers, and production authority rows provide supporting evidence,
+  but this remains recorded as a manual QA limitation.
+
 Review checkpoint:
 
 - Security, authority, idempotency, privacy, performance, and rollback evidence
   are complete.
+- Observe the next scheduled drain, confirm the post-attachment Like becomes a
+  durable account preference, then verify it survives a fresh account session
+  before marking TASK-011 fully closed.

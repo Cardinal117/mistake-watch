@@ -254,14 +254,19 @@
   <body>
     <main>
       <header>
-        <div class="eyebrow">TASK-011 / Batches A-F verified locally</div>
+        <div class="eyebrow">
+          TASK-011 / Production live / 98% release readiness
+        </div>
         <h1>First-Party Recommendation Intelligence</h1>
         <p>
           Build trusted room events and deterministic ranking before richer
           discovery or AI presentation. Authority, durable storage,
           deterministic ranking, authorized room reads, private Likes, and the
-          existing Room Picks integration are local; migration, publishing,
-          deployment, and production QA have not begun.
+          existing Room Picks integration are live. Original functional
+          production QA passed. The attached-account provider correction is
+          deployed, user-verified, and merged to main. Two account-backed Likes
+          are waiting in the authoritative outbox for scheduled durable
+          persistence verification.
         </p>
         <div class="summary">
           <article>
@@ -297,11 +302,10 @@
       <section aria-labelledby="recommendation">
         <h2 id="recommendation">Executive Recommendation</h2>
         <p>
-          Batches A through F are complete at the approved no-publish stop point
-          and measure 92% release readiness. Review the
+          Batches A through G are released and measure 98% release readiness.
+          Review the
           <a href="implementation-report.html">implementation report</a>
-          before Batch G applies the migration, publishes SpacetimeDB, deploys
-          the exact revision, and performs two-client production QA.
+          for production evidence and the final identity-scope gate.
         </p>
         <span class="badge">Spec-first / security and data sensitive</span>
       </section>
@@ -395,7 +399,7 @@
               <li>YouTube account scopes</li>
               <li>Social graph and achievements</li>
               <li>Public dislike counts or YouTube Like mutation</li>
-              <li>Migration, Maincloud publish, schedule, and deployment</li>
+              <li>AI presentation and broader discovery surfaces</li>
             </ul>
           </article>
           <article class="callout">
@@ -616,14 +620,14 @@
       </section>
 
       <section class="next" aria-labelledby="next">
-        <h2 id="next">Batch G Release Checkpoint</h2>
+        <h2 id="next">Final Attached-Room Checkpoint</h2>
         <p>
-          Batches E and F now pass 310 total tests, 44 focused
-          service/UI/security tests, TypeScript, ESLint, file-length policy,
-          changed-file Prettier, production build, and local route/browser smoke
-          checks. Explicit approval remains required before the Supabase
-          migration, Maincloud publish, drain schedule, commit, deployment, or
-          production QA.
+          The provider correction passes 314 tests, build and static gates, is
+          deployed, and is merged to main. Observe the scheduled durable drain
+          for the two post-attachment account Likes, confirm their Supabase
+          preference state, and verify that state in a fresh signed-in session.
+          Manual recommendation response-body inspection remains the final
+          privacy evidence item.
         </p>
       </section>
     </main>

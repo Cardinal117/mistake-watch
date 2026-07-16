@@ -2,17 +2,120 @@
 
 ## Status
 
-Batches A through F are implemented and verified locally. Release readiness is
-92%. The Batch C Supabase migration exists only in the repository and has not
-been applied. No Maincloud publish, Vercel deployment, provider scope, or drain
-schedule has changed.
+TASK-011 is live in production and functional QA passed. Release readiness is
+98%. The account-member provider-route authorization hotfix is committed,
+deployed, user-verified, and merged to `main`. Two post-attachment account Like
+events are confirmed in the authoritative Maincloud outbox. Final closure
+requires observing those events after the scheduled durable drain and
+confirming the resulting account preference survives a fresh signed-in session.
+The Supabase migration is applied, Maincloud was published non-destructively,
+and Vercel deployment `dpl_AFfECQewb4i9m6F5QwABLp3FzpvW` is active on the live
+aliases.
 
 The Batch A/B checkpoint is pushed as `bfc234b`. Pre-Batch C infrastructure
 reconciliation is complete.
 
 The migration-history reconciliation checkpoint is pushed as `bc31399`. Batch
 C is committed and pushed as `3a79b82`. Batch D is committed and pushed as
-`3eab0e2`. Batches E and F are local and uncommitted.
+`3eab0e2`. Batches E/F, release corrections, and the attached-account provider
+fix are pushed through `a163a4b` on both
+`task-011-first-party-recommendations` and `main`.
+
+## Batch G Production Outcome
+
+- Applied the recommendation durable-store migration to Supabase as tracked
+  version `20260716064635`.
+- Published the SpacetimeDB module with `--delete-data=never`. Maincloud added
+  `room_session.playback_occurrence_id` and seven private recommendation tables
+  without deleting data or requiring a manual migration.
+- Added an append-only schema regression after the first publish plan exposed
+  that inserting the occurrence column into the middle of the production table
+  would require a manual migration.
+- Deployed exact commit `7462db6` to Vercel production as
+  `dpl_FHBEn8Ue865tEQfwvjqVkMRrfi4G`.
+- Verified both production aliases, `/api/health`, and `/api/ready` return
+  healthy responses. Vercel registers both daily cron jobs, and an authenticated
+  recommendation drain invocation returned `200`.
+- Two-participant manual QA passed Like/Remove Like, recommendation refresh,
+  playback and queue continuity, Next and natural completion synchronization,
+  guest uploaded-catalogue denial, and active uploaded playback visibility.
+- Production authority evidence recorded two distinct `media_liked` events at
+  revision 1, with no duplicate Like event for either action. The subsequent
+  drain acknowledged all 16 pending authority events and left the outbox empty.
+- Manual DevTools inspection of recommendation response bodies was not
+  completed. Automated contracts reject URLs, object destinations, email,
+  OAuth fields, and participant-controlled identity fields; production
+  authority rows contain opaque media IDs only.
+
+## Final Account-Persistence Gate
+
+- The supplied high-load room was successfully attached on 2026-07-16.
+  Supabase now records the signed-in account as owner and saved-room user, the
+  host membership is account-backed, and `account_guest_migrations` records
+  both ownership and saved-room transfer.
+- The two existing production Likes occurred before attachment. Refresh
+  persistence was real, but it proved private room-session persistence rather
+  than durable cross-session account state.
+- The pre-attachment Like events were correctly stored without account
+  attribution and did not create `media_preferences` rows. This originally left
+  the signed-in durable path unexercised; the current post-attachment events are
+  recorded below.
+- Final closure requires draining the post-attachment Likes and confirming the
+  durable account preference survives a fresh signed-in session.
+
+Current update:
+
+- The provider authorization hotfix is deployed from exact commit `a163a4b` as
+  `dpl_AFfECQewb4i9m6F5QwABLp3FzpvW` and is merged to `main`.
+- User QA confirmed attached-account YouTube search and the surrounding room
+  behavior work as intended.
+- Maincloud contains two post-attachment `media_liked` events for the
+  account-backed host member. The room outbox contains 45 pending events, which
+  is within the next scheduled 50-event drain batch.
+- Supabase currently has no durable account event or `media_preferences` row
+  for those Likes because the scheduled drain has not run since the actions.
+- Final closure is therefore reduced to observing the scheduled drain, checking
+  the resulting durable preference, and confirming it survives a fresh session.
+
+## Account Attachment Provider Regression
+
+- Production logs recorded two `403` responses from `/api/youtube/search`
+  immediately after room attachment.
+- `lib/rooms/request-guards.ts` authorized quota-bearing provider routes only
+  through the guest cookie. Attachment correctly clears
+  `room_members.guest_identity_id` and sets `room_members.user_id`, leaving the
+  converted owner unable to satisfy that guest-only guard.
+- Search, playlist preview, and related-video recommendations share this guard,
+  so all three provider workflows are affected for an attached account member.
+- The corrective patch checks an
+  authenticated Supabase user against an open room and account-backed
+  membership before retaining the existing guest fallback and rate limit.
+- Corrective verification passed 314 tests, TypeScript, ESLint, Prettier,
+  file-length policy with zero violations, and a production build. Commit
+  `a163a4b` is deployed and merged to `main`.
+- The SpacetimeDB client cache warning had no matching Maincloud warning or room
+  error. The host participant remained online and authoritative, so it is
+  recorded as a transient reconnect/cache observation rather than the cause of
+  the provider failure.
+
+## Post-Release Product Findings
+
+- The Now Playing Heart renders only when the live source has a corresponding
+  queue item. Direct `Load now` clears `active_queue_item_id`, so directly
+  loaded media has no Now Playing Heart even though it has a valid media
+  identity.
+- The Heart updates optimistically but remains disabled during the full
+  authorization and SpacetimeDB round trip. Production latency makes the
+  roughly one-second pending state feel slower because there is no positive
+  animation or pending treatment.
+- A follow-up should separate an account-only personal Like from any temporary
+  guest room preference, add reduced-motion-aware interaction feedback, and
+  support canonical current media even when it was not sourced from a queue
+  row.
+- Current Listen recommendations intentionally use the playing item to obtain
+  provider candidates, then rerank with first-party signals. The future Add
+  Media overhaul should distinguish `Related to what is playing` from an
+  account-history-driven `For You` surface.
 
 ## Batch E And F Outcome
 
@@ -282,7 +385,10 @@ The percentages below measure release readiness, not development effort:
   500-candidate performance gate pass locally.
 - Batch E: 82% - authorized, bounded service contracts pass.
 - Batch F: 92% - Like UI and existing Room Picks integration pass local gates.
-- Batch G: 100% - migration, publish, deploy, and production QA are complete.
+- Batch G: 98% - migration, publish, deploy, provider authorization correction,
+  and functional production QA are complete. Post-attachment account Likes are
+  present in the authoritative outbox; the scheduled durable drain and fresh
+  session persistence proof remain.
 
 ## Recommended Product Order After TASK-011
 
@@ -319,5 +425,14 @@ The percentages below measure release readiness, not development effort:
   account deletion, and post-deletion retry deduplication.
 - Passed: independent security/accessibility review findings were corrected;
   its final ref-lint blocker was fixed and the complete lint gate rerun.
-- Intentionally deferred: applying the Supabase migration, activating a drain
-  schedule, Maincloud publish, Vercel deployment, and two-client production QA.
+- Passed after Batch G: full `npm test` (311 tests), TypeScript, ESLint,
+  file-length policy with zero violations, production build, SpacetimeDB build,
+  exact generated-binding parity, deterministic ranking performance, browser
+  E2E, Supabase security checks, additive Maincloud publish, Vercel readiness,
+  authenticated drain, and two-client functional production QA.
+- Passed after attachment regression fix: full `npm test` (314 tests),
+  TypeScript, ESLint, changed-file Prettier, file-length policy, and production
+  build.
+- Pending final closure: observe the scheduled drain for the two account-backed
+  Likes, confirm the durable preference survives a fresh session, and complete
+  manual DevTools response-body inspection.
