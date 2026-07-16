@@ -6,6 +6,10 @@ import {
   getGuestIdentityCookieName,
   reclaimGuestMembership,
 } from "@/lib/identity";
+import {
+  createSupabaseAdminClient,
+  createSupabaseServerClient,
+} from "@/lib/supabase";
 
 type RateLimitEntry = {
   count: number;
@@ -50,6 +54,33 @@ export async function requireRoomMemberRequestContext(
       },
       ok: false,
       status: 400,
+    };
+  }
+
+  const accountMemberId = await resolveAccountRoomMemberId(roomId);
+
+  if (accountMemberId) {
+    if (
+      !consumeRateLimit({
+        key: `${roomId}:${accountMemberId}`,
+        limit,
+        windowMs,
+      })
+    ) {
+      return {
+        body: {
+          reason: "Too many provider requests for this room member.",
+          status: "unavailable",
+        },
+        ok: false,
+        status: 429,
+      };
+    }
+
+    return {
+      memberId: accountMemberId,
+      ok: true,
+      roomId,
     };
   }
 
@@ -102,6 +133,33 @@ export async function requireRoomMemberRequestContext(
     ok: true,
     roomId,
   };
+}
+
+async function resolveAccountRoomMemberId(roomId: string) {
+  const serverClient = await createSupabaseServerClient();
+  const { data, error } = await serverClient.auth.getUser();
+
+  if (error || !data.user) {
+    return null;
+  }
+
+  const admin = createSupabaseAdminClient();
+  const [{ data: room }, { data: member }] = await Promise.all([
+    admin
+      .from("rooms")
+      .select("id")
+      .eq("id", roomId)
+      .eq("status", "open")
+      .maybeSingle(),
+    admin
+      .from("room_members")
+      .select("id")
+      .eq("room_id", roomId)
+      .eq("user_id", data.user.id)
+      .maybeSingle(),
+  ]);
+
+  return room && member ? member.id : null;
 }
 
 function consumeRateLimit({
