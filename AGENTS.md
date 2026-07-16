@@ -69,6 +69,32 @@ Mistake Watch is a polished, room-based watch/listen website for synchronized di
 - Keep controls compact, stable, accessible, and responsive.
 - Avoid adding visual styles, colors, motion, or layout conventions that conflict with `DESIGN.md` once it exists.
 
+## Impeccable Design Skill
+
+Impeccable is an advisory frontend design and UX specialist.
+
+Authority order:
+
+1. Approved task specifications and acceptance criteria
+2. Product requirements and interaction contracts
+3. Project `AGENTS.md`
+4. Project `DESIGN.md` and `PRODUCT.md`
+5. Existing architecture and established component behaviour
+6. Impeccable recommendations
+
+Default to critique or audit before source-changing design commands.
+
+Do not use Impeccable to:
+
+- redesign unrelated surfaces
+- replace the established information architecture
+- override approved product behaviour
+- introduce generic AI-generated visual patterns
+- overwrite `DESIGN.md`
+- make source changes during read-only reviews
+
+For implementation work, keep changes tightly scoped and verify responsive behaviour, accessibility, application tests, and project-specific acceptance criteria.
+
 ## QA Expectations
 
 - Add tests proportional to risk.
