@@ -189,10 +189,10 @@ test("persistence rejects invalid rows and inconsistent RPC counts", async () =>
 });
 
 test("drain route uses the production cron-secret boundary", async () => {
-  const source = await readFile(
-    path.join(root, "app/api/recommendations/drain/route.ts"),
-    "utf8",
-  );
+  const [source, vercelConfig] = await Promise.all([
+    readFile(path.join(root, "app/api/recommendations/drain/route.ts"), "utf8"),
+    readFile(path.join(root, "vercel.json"), "utf8").then(JSON.parse),
+  ]);
   assert.match(source, /process\.env\.CRON_SECRET/);
   assert.match(source, /authorization.*Bearer/);
   assert.match(source, /status: 401/);
@@ -200,4 +200,14 @@ test("drain route uses the production cron-secret boundary", async () => {
     source,
     /SPACETIME_SERVER_AUTH_TOKEN|SUPABASE_SECRET_KEY/,
   );
+  assert.deepEqual(vercelConfig.crons, [
+    {
+      path: "/api/recommendations/drain",
+      schedule: "0 1 * * *",
+    },
+    {
+      path: "/api/media/uploads/cleanup",
+      schedule: "0 2 * * *",
+    },
+  ]);
 });

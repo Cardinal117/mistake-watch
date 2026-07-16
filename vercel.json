@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/recommendations/drain",
+      "schedule": "0 1 * * *"
+    },
+    {
       "path": "/api/media/uploads/cleanup",
       "schedule": "0 2 * * *"
     }
