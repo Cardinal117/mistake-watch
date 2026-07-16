@@ -1,6 +1,6 @@
 # Mistake Watch Handoff
 
-Updated: 2026-07-14
+Updated: 2026-07-16
 
 ## Current State
 
@@ -15,14 +15,28 @@ test infrastructure, and documentation reconciliation. Merge commit `5c5ab4b`
 passed the complete release gate and was deployed to production as
 `dpl_4TGx7PqWASe2kFbHMYKtFr4kdKTx`.
 
+TASK-010 Watch Media Hub Performance is also complete on `main`. Commit
+`b365b00` was deployed as `dpl_Es7z7LZd1AwwSyqtFagfXbAokgBm`; automated
+performance gates, production health/readiness, and user acceptance passed.
+TASK-011 First-Party Recommendation Intelligence is live. Commits through
+`a163a4b` are on `main` and production deployment
+`dpl_AFfECQewb4i9m6F5QwABLp3FzpvW` is active. Functional QA, attached-account
+provider search, playback, queue continuity, recommendation refresh, and
+private uploaded-media boundaries passed. Two post-attachment account Likes are
+present in the Maincloud outbox. TASK-011 remains at 98% until the scheduled
+drain creates durable Supabase preference state and that state survives a fresh
+signed-in session.
+
 ## Required Reading
 
 1. `AGENTS.md`
 2. `DESIGN.md`
 3. `docs/ROADMAP.md`
-4. `docs/tasks/TASK-009-project-integrity/`
-5. `supabase/MIGRATION_HISTORY.md`
-6. `docs/tasks/TASK-002-incomplete-work-recovery/` for historical detail
+4. `docs/tasks/TASK-011-first-party-recommendation-intelligence/`
+5. `docs/tasks/TASK-010-watch-media-hub-performance/`
+6. `docs/tasks/TASK-009-project-integrity/`
+7. `supabase/MIGRATION_HISTORY.md`
+8. `docs/tasks/TASK-002-incomplete-work-recovery/` for historical detail
 
 TASK-001 is historical MVP context. TASK-007 records completed modularization
 work and discovered issues. TASK-008 Spatial Cinema is an unapproved draft.
@@ -50,6 +64,7 @@ npm run test:e2e
 npm run typecheck
 npm run lint
 npm run build
+npm run check:file-lengths
 ```
 
 Local browser QA cannot prove Google OAuth callback behavior, multi-participant
@@ -73,9 +88,8 @@ verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
 
-Take one bounded Watch Media Hub performance pass for
-uploaded-grid virtualization and lazy signed-poster loading. This protects the
-new private-delivery path from issuing unnecessary signatures or rendering the
-whole catalogue. Then start the dedicated first-party
-recommendation-intelligence packet and follow the product order in
-`docs/ROADMAP.md`.
+Close the remaining TASK-011 durable account-persistence proof after the next
+scheduled drain. Then create a bounded packet for consented YouTube account
+signals before the Add/Discover overhaul. Keep provider scopes incremental,
+tokens server-only, and the existing first-party ranking engine authoritative.
+TASK-008 Spatial Cinema remains an unapproved separate direction packet.

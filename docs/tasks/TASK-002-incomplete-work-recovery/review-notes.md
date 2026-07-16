@@ -1,5 +1,11 @@
 # TASK-002 Review Notes
 
+> Historical status notice, 2026-07-16: this recovery packet contains
+> point-in-time implementation and QA notes from earlier phases. Its
+> "Canonical Next Task" section is superseded by `docs/HANDOFF.md`,
+> `docs/ROADMAP.md`, and the active numbered task packets. Do not treat older
+> pending or next-task statements below as current project state.
+
 ## Current Status
 
 Status: TASK-002.8 R2 Media Library and Authorized Upload Pipeline has progressed through upload recovery, status-state cleanup, and batch-upload planning/implementation notes. A security review found that uploaded private catalogue assets still need a stronger access boundary before more uploaded-media UX or roadmap work proceeds.

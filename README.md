@@ -19,6 +19,8 @@ Production:
 - YouTube, direct media, HLS, and first-party uploaded playback.
 - Search, playlist review/import, queue ordering, play next/now, shuffle,
   history, auto-advance, and large-queue virtualization.
+- Private Mistake Watch Likes, authoritative room-event capture, deterministic
+  first-party ranking, and explainable Listen Room Picks.
 - Owner upload catalogue with folders, multipart recovery, browser-safety
   inspection, optional CloudConvert processing, and room-scoped playback.
 - Media Session metadata and media-key integration as progressive enhancement.
@@ -30,11 +32,12 @@ that a feature is shipped merely because an older task packet discusses it.
 ## Architecture
 
 Supabase owns durable product data: accounts, room records, memberships,
-settings, uploaded-media metadata, upload sessions, processing events, and
-server-managed authorization.
+settings, uploaded-media metadata, upload sessions, processing events,
+recommendation events and preferences, and server-managed authorization.
 
 SpacetimeDB owns active room state: presence, permissions, queue mutations,
-playback authority, chat, and synchronized session events.
+playback authority, chat, synchronized session events, room-scoped preference
+state, and the authoritative recommendation-event outbox.
 
 Cloudflare R2 stores original, processed, and poster objects. Private catalogue
 responses use application-owned delivery routes and short-lived signed URLs;
@@ -186,6 +189,11 @@ TASK-009 private-object hardening is live: the R2 custom domain is disabled and
 purged, while authorized application routes issue five-minute signed delivery
 redirects. Do not re-enable a public R2 domain for this bucket.
 
+TASK-011 recommendation persistence uses the daily
+`/api/recommendations/drain` cron. A registered cron route is not proof that the
+latest outbox batch is durable; verify Maincloud acknowledgement and Supabase
+rows when closing account-persistence QA.
+
 ## Known Constraints
 
 - YouTube playback is subject to provider, region, embedding, age, and browser
@@ -207,7 +215,8 @@ Read in order:
 4. `docs/ROADMAP.md`
 5. the active packet under `docs/tasks/`
 
-TASK-009 cleanup/security implementation and release QA are complete. The next
-engineering packet is the bounded Watch Media Hub performance pass recorded in
-`docs/HANDOFF.md`; the next product foundation is first-party recommendation
-intelligence.
+TASK-009 security/integrity and TASK-010 Media Hub performance are complete.
+TASK-011 recommendation intelligence is live at 98% release readiness; only the
+scheduled durable-drain and fresh-session account-persistence proof remain.
+Continue from `docs/HANDOFF.md` and `docs/ROADMAP.md` rather than older recovery
+packet status summaries.

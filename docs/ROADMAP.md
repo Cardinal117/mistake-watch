@@ -1,6 +1,6 @@
 # Mistake Watch Roadmap
 
-Snapshot date: 2026-07-14
+Snapshot date: 2026-07-16
 
 This is the compact product-state index. Task packets remain the detailed
 requirements and evidence record.
@@ -15,6 +15,8 @@ requirements and evidence record.
 - Uploaded-media library, R2 storage, processing, room-scoped playback, and
   owner/allowlist catalogue controls.
 - Media Session metadata and room transport wiring.
+- Private Mistake Watch Likes, authoritative recommendation events,
+  deterministic ranking, and explainable Listen Room Picks.
 
 ## Completed Integrity Work
 
@@ -31,20 +33,30 @@ The Supabase migration, R2 public-access shutdown and cache purge, production
 deployment, signed owner delivery, public denial, and live owner/guest QA are
 complete. Merge commit `5c5ab4b` passed the full gate and is live in production.
 
-## Immediate Engineering Follow-up
+## Completed Media Hub Performance
 
-Before product expansion, run one bounded Watch Media Hub performance task:
+TASK-010 is complete, released, and user accepted:
 
-- virtualize or progressively render large uploaded catalogues;
-- lazy-load private poster routes near the viewport;
-- preserve owner-only catalogue authorization and room-session playback;
-- measure signature/request count, open-drawer latency, and mobile behavior.
+- uploaded catalogues progressively render in bounded batches;
+- private poster routes lazy-load near the Media Hub viewport;
+- owner catalogue and room-session authorization remain unchanged;
+- the controlled median opening improved by 64.5% and initial poster requests
+  fell by 95.2% for the 250-item fixture.
+
+## Active Release Verification
+
+TASK-011 is implemented, deployed, and merged to `main` through `a163a4b`.
+Functional production QA passed, including attached-account provider search.
+Two post-attachment account Likes are present in the authoritative Maincloud
+outbox. The final gate is the scheduled durable drain plus fresh-session
+Supabase preference verification. Until that evidence exists, release readiness
+remains 98% rather than complete.
 
 ## Planned Product Sequence
 
-1. **First-party recommendation intelligence**
-   Build deterministic recommendation events, explainable scoring, diversity,
-   repetition control, and room/session seeds before adding AI presentation.
+1. **Close TASK-011 durable persistence**
+   Observe the scheduled outbox drain and prove post-attachment account Likes
+   survive a fresh signed-in session.
 2. **Consented YouTube account signals**
    Add incremental OAuth only for approved playlist/subscription capabilities.
    Provider tokens remain server-only and revocable. Do not claim access to the
