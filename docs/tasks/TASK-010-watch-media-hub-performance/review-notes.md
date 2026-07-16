@@ -2,8 +2,8 @@
 
 ## Status
 
-Implementation and independent corrective review are complete. Automated gates
-pass. The post-deployment 348-item live-room smoke check remains open.
+Complete. Implementation, automated gates, independent review, production
+deployment, and user acceptance all passed.
 
 ## Decisions
 
@@ -46,9 +46,11 @@ pass. The post-deployment 348-item live-room smoke check remains open.
   future-scale client behavior without changing the public API.
 - TASK-010 makes no poster-route, R2-signing, catalogue authorization, database,
   upload-processing, or queue-state change.
-- The supplied 348-item production room was used only for read-only baseline
-  evidence. Final production authentication and playback continuity require the
-  normal post-deployment smoke check.
+- Production deployment `dpl_Es7z7LZd1AwwSyqtFagfXbAokgBm` was released from
+  commit `b365b00` and confirmed healthy on both production aliases.
+- User acceptance on 2026-07-14 confirmed the released Media Hub performance
+  was good. This closes the post-deployment smoke gate without adding new
+  claims beyond the automated owner/guest, traversal, and playback checks.
 
 ## Verification
 
@@ -61,3 +63,5 @@ pass. The post-deployment 348-item live-room smoke check remains open.
 - Deterministic Playwright performance test: passed.
 - Independent review: passed after ordered-result, full traversal, responsive,
   and final-card keyboard-action corrections.
+- Production health and readiness: passed.
+- User production acceptance: passed on 2026-07-14.

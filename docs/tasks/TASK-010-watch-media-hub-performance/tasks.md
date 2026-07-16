@@ -28,7 +28,8 @@ Review checkpoint: initial poster request budget and TASK-009 security pass.
 ## Batch D: Integration and QA
 
 - [x] Run deterministic tests and complete repository gates.
-- [ ] Run the post-deployment 348-item live-room browser check.
+- [x] Run the post-deployment 348-item live-room browser check and record user
+      acceptance.
 - [x] Run deterministic desktop and mobile browser checks.
 - [x] Compare five-run baseline and final measurements.
 - [x] Complete independent agent review and corrective re-review.
