@@ -16,6 +16,7 @@ import {
   type Tables,
 } from "@/lib/supabase";
 
+import { touchSignedInRoomActivity } from "./activity";
 import { buildRoomInvitePath, parseRoomInviteInput } from "./invite";
 
 const GUEST_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
@@ -185,16 +186,20 @@ export async function touchRoomActivityAction(input: { roomId: string }) {
     getGuestIdentityCookieName(input.roomId),
   )?.value;
 
-  if (!token) {
-    return { touched: false };
+  if (token) {
+    const session = await reclaimGuestMembership({
+      roomId: input.roomId,
+      token,
+    });
+
+    if (session) {
+      return { touched: true };
+    }
   }
 
-  const session = await reclaimGuestMembership({
-    roomId: input.roomId,
-    token,
-  });
-
-  return { touched: Boolean(session) };
+  return {
+    touched: await touchSignedInRoomActivity(input.roomId),
+  };
 }
 
 async function requireRoomHostAuthority(roomId: string, deniedMessage: string) {
@@ -259,7 +264,10 @@ async function getSignedInHostAuthority(roomId: string) {
     throw memberError;
   }
 
-  if (!member || !isHostAccountAuthority({ member, room, userId: data.user.id })) {
+  if (
+    !member ||
+    !isHostAccountAuthority({ member, room, userId: data.user.id })
+  ) {
     return null;
   }
 
@@ -281,9 +289,9 @@ function isHostAccountAuthority({
 }) {
   return Boolean(
     member &&
-      member.role === "host" &&
-      member.user_id === userId &&
-      room.owner_user_id === userId,
+    member.role === "host" &&
+    member.user_id === userId &&
+    room.owner_user_id === userId,
   );
 }
 

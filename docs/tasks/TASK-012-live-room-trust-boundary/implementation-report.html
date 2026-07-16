@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TASK-012A1 Implementation Report</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0e0e0f;
+        --surface: #1c1b1c;
+        --surface-high: #2a2a2b;
+        --line: #3b494b;
+        --text: #e5e2e3;
+        --muted: #b9cacb;
+        --cyan: #00dbe9;
+        --gold: #ffba20;
+        --ok: #7df4ff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          16px/1.55 Arial,
+          sans-serif;
+      }
+      main {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 36px 0 72px;
+      }
+      header,
+      .card,
+      table {
+        border: 1px solid var(--line);
+        background: var(--surface);
+        border-radius: 8px;
+      }
+      header {
+        padding: 26px;
+      }
+      h1 {
+        margin: 8px 0 12px;
+        font-size: clamp(28px, 5vw, 42px);
+        line-height: 1.12;
+      }
+      h2 {
+        margin: 0 0 14px;
+        font-size: 24px;
+      }
+      h3 {
+        margin: 0 0 8px;
+        font-size: 18px;
+      }
+      p {
+        margin: 0;
+        color: var(--muted);
+      }
+      section {
+        margin-top: 26px;
+      }
+      .eyebrow,
+      .badge {
+        font:
+          700 12px/1.2 Consolas,
+          monospace;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .eyebrow {
+        color: var(--cyan);
+      }
+      .badge {
+        display: inline-block;
+        border: 1px solid var(--cyan);
+        border-radius: 4px;
+        padding: 5px 7px;
+        color: var(--ok);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 14px;
+      }
+      .card {
+        padding: 18px;
+      }
+      ul {
+        margin: 10px 0 0;
+        padding-left: 20px;
+      }
+      li {
+        color: var(--muted);
+      }
+      li + li {
+        margin-top: 7px;
+      }
+      code {
+        color: var(--ok);
+      }
+      table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        overflow: hidden;
+      }
+      th,
+      td {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      th {
+        color: var(--ok);
+        font:
+          700 12px/1.3 Consolas,
+          monospace;
+        text-transform: uppercase;
+      }
+      td {
+        color: var(--muted);
+      }
+      .manual {
+        border-left: 3px solid var(--gold);
+        background: var(--surface-high);
+        padding: 18px;
+      }
+      a {
+        color: var(--ok);
+      }
+      a:focus-visible {
+        outline: 2px solid var(--gold);
+        outline-offset: 3px;
+      }
+      @media (max-width: 620px) {
+        main {
+          width: calc(100% - 24px);
+          padding-top: 20px;
+        }
+        header {
+          padding: 20px;
+        }
+        table {
+          display: block;
+          overflow-x: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="eyebrow">TASK-012 Batch A1</div>
+        <h1>Signed-In Durable Heartbeat</h1>
+        <p>
+          Local implementation and automated QA are complete. The change is
+          isolated from SpacetimeDB, migrations, recommendations, providers,
+          uploaded media, and account-panel work.
+        </p>
+      </header>
+
+      <section class="grid" aria-label="Implementation status">
+        <article class="card">
+          <span class="badge">Ready for commit review</span>
+          <h3>Automated gate</h3>
+          <p>
+            320 tests, typecheck, lint, build, formatting, and policy checks
+            pass.
+          </p>
+        </article>
+        <article class="card">
+          <span class="badge">No migration</span>
+          <h3>Release dependency</h3>
+          <p>No Supabase DDL or Maincloud publication is required.</p>
+        </article>
+        <article class="card">
+          <span class="badge">Scope held</span>
+          <h3>Deferred work</h3>
+          <p>A2 and B-E remain unimplemented and require separate approval.</p>
+        </article>
+      </section>
+
+      <section>
+        <h2>Implementation Summary</h2>
+        <div class="grid">
+          <article class="card">
+            <h3>Guest continuity</h3>
+            <p>
+              A valid guest cookie still uses the established guest membership
+              reclaim and activity refresh path.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Account fallback</h3>
+            <p>
+              Missing or stale guest identity now falls back to authenticated
+              active-account Supabase room membership.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Lifecycle update</h3>
+            <p>
+              Verified account activity updates member presence, room activity,
+              and the unsaved-room deadline.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Defense in depth</h3>
+            <p>
+              Member updates are constrained by member ID, room ID, and
+              authenticated active user ID.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section>
+        <h2>Files To Review</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Priority</th>
+              <th>File</th>
+              <th>Responsibility</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Must review</td>
+              <td><code>lib/rooms/activity-core.ts</code></td>
+              <td>
+                Deterministic account activity policy and update ordering.
+              </td>
+            </tr>
+            <tr>
+              <td>Must review</td>
+              <td><code>lib/rooms/activity.ts</code></td>
+              <td>
+                Server-only Supabase authentication and membership adapter.
+              </td>
+            </tr>
+            <tr>
+              <td>Must review</td>
+              <td><code>lib/rooms/actions.ts</code></td>
+              <td>Guest-first activity with authenticated fallback.</td>
+            </tr>
+            <tr>
+              <td>Must review</td>
+              <td><code>tests/rooms/room-activity.test.mjs</code></td>
+              <td>
+                Behavioral, failure, lifecycle, and boundary regression
+                coverage.
+              </td>
+            </tr>
+            <tr>
+              <td>Background</td>
+              <td>
+                <code>docs/tasks/TASK-012-live-room-trust-boundary/</code>
+              </td>
+              <td>
+                Canonical scope, later batches, acceptance, and release order.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Verification</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Check</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Focused room tests</td>
+              <td>9 passed</td>
+            </tr>
+            <tr>
+              <td><code>npm test</code></td>
+              <td>320 passed</td>
+            </tr>
+            <tr>
+              <td><code>npm run typecheck</code></td>
+              <td>Passed</td>
+            </tr>
+            <tr>
+              <td><code>npm run lint</code></td>
+              <td>Passed</td>
+            </tr>
+            <tr>
+              <td><code>npm run build</code></td>
+              <td>Passed</td>
+            </tr>
+            <tr>
+              <td>Changed-file Prettier</td>
+              <td>Passed</td>
+            </tr>
+            <tr>
+              <td><code>npm run check:file-lengths</code></td>
+              <td>0 violations</td>
+            </tr>
+            <tr>
+              <td><code>git diff --check</code></td>
+              <td>Passed</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Manual Production Proof</h2>
+        <div class="manual">
+          <p>
+            After an A1-only deployment, attach an unsaved room to a Google
+            account, remain active for more than one hour, and confirm the room
+            stays open through at least one ten-minute cleanup interval. This
+            verifies the real Auth cookie, Supabase membership, Vercel action,
+            and scheduled lifecycle job together.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h2>Next Checkpoint</h2>
+        <article class="card">
+          <p>
+            Use the report-first Git workflow for an A1-only commit. Do not
+            start A2, issue admission grants, alter SpacetimeDB visibility, or
+            deploy until the commit scope is reviewed and approved.
+          </p>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

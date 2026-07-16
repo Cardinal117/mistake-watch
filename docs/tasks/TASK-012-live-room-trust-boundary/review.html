@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TASK-012 Live Room Trust Boundary Review</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0e0e0f;
+        --surface: #1c1b1c;
+        --surface-high: #2a2a2b;
+        --text: #e5e2e3;
+        --muted: #b9cacb;
+        --line: #3b494b;
+        --cyan: #00dbe9;
+        --gold: #ffba20;
+        --danger: #ffb4ab;
+        --ok: #7df4ff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          16px/1.55 Arial,
+          sans-serif;
+      }
+      a {
+        color: var(--ok);
+      }
+      a:focus-visible {
+        outline: 2px solid var(--gold);
+        outline-offset: 3px;
+      }
+      main {
+        width: min(1160px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 40px 0 72px;
+      }
+      header {
+        border: 1px solid var(--line);
+        background: var(--surface);
+        padding: 28px;
+        border-radius: 8px;
+      }
+      .eyebrow,
+      .badge {
+        font:
+          700 12px/1.2 Consolas,
+          monospace;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .eyebrow {
+        color: var(--cyan);
+      }
+      h1 {
+        margin: 8px 0 12px;
+        font-size: clamp(28px, 5vw, 44px);
+        line-height: 1.1;
+      }
+      h2 {
+        margin: 0 0 16px;
+        font-size: 24px;
+      }
+      h3 {
+        margin: 0 0 8px;
+        font-size: 18px;
+      }
+      p {
+        margin: 0;
+        color: var(--muted);
+      }
+      nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 22px;
+      }
+      nav a {
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 8px 10px;
+        text-decoration: none;
+      }
+      section {
+        margin-top: 28px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 14px;
+      }
+      .card {
+        border: 1px solid var(--line);
+        background: var(--surface);
+        border-radius: 8px;
+        padding: 18px;
+      }
+      .card p,
+      li {
+        color: var(--muted);
+      }
+      ul,
+      ol {
+        margin: 12px 0 0;
+        padding-left: 22px;
+      }
+      li + li {
+        margin-top: 7px;
+      }
+      .badge {
+        display: inline-block;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 5px 7px;
+        color: var(--muted);
+      }
+      .approved {
+        border-color: var(--cyan);
+        color: var(--ok);
+      }
+      .review {
+        border-color: var(--gold);
+        color: #ffdb9d;
+      }
+      .blocked {
+        border-color: var(--danger);
+        color: var(--danger);
+      }
+      .timeline {
+        display: grid;
+        gap: 10px;
+      }
+      .timeline article {
+        display: grid;
+        grid-template-columns: 72px 1fr;
+        gap: 14px;
+        border-left: 3px solid var(--line);
+        background: var(--surface);
+        padding: 16px;
+      }
+      .timeline article.current {
+        border-left-color: var(--cyan);
+      }
+      .timeline article.reviewing {
+        border-left-color: var(--gold);
+      }
+      .callout {
+        border-left: 3px solid var(--gold);
+        background: var(--surface-high);
+        padding: 18px;
+      }
+      code {
+        color: var(--ok);
+      }
+      @media (max-width: 620px) {
+        main {
+          width: min(100% - 24px, 1160px);
+          padding-top: 20px;
+        }
+        header {
+          padding: 20px;
+        }
+        .timeline article {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="eyebrow">Mistake Watch security program</div>
+        <h1>TASK-012: Live Room Trust Boundary</h1>
+        <p>
+          Correct the signed-in lifecycle failure first, then harden admission,
+          room reads, revocation, abuse resistance, and the web perimeter as
+          separately releasable changes.
+        </p>
+        <nav aria-label="Review sections">
+          <a href="#files">Files to review</a>
+          <a href="#order">Release order</a>
+          <a href="#decisions">Decisions</a>
+          <a href="#risks">Risks</a>
+          <a href="#next">Next action</a>
+        </nav>
+      </header>
+
+      <section class="grid" aria-label="Current status">
+        <article class="card">
+          <span class="badge approved">QA passed</span>
+          <h3>Batch A1</h3>
+          <p>Implemented locally. No migration or SpacetimeDB change.</p>
+        </article>
+        <article class="card">
+          <span class="badge review">Design review</span>
+          <h3>Batch B</h3>
+          <p>Admission grants, reconnect semantics, and core revocation.</p>
+        </article>
+        <article class="card">
+          <span class="badge blocked">Not approved</span>
+          <h3>Batches A2-C-D-E</h3>
+          <p>Remain planned until their explicit review checkpoints are met.</p>
+        </article>
+      </section>
+
+      <section id="files">
+        <h2>Files To Review</h2>
+        <div class="grid">
+          <article class="card">
+            <h3>Must review</h3>
+            <ul>
+              <li><a href="proposal.md">proposal.md</a></li>
+              <li><a href="design.md">design.md</a></li>
+              <li><a href="tasks.md">tasks.md</a></li>
+              <li>
+                <a href="acceptance-criteria.md">acceptance-criteria.md</a>
+              </li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Optional context</h3>
+            <ul>
+              <li><a href="brain-dump.md">brain-dump.md</a></li>
+              <li><a href="review-notes.md">review-notes.md</a></li>
+              <li><code>docs/HANDOFF.md</code></li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Generated/supporting</h3>
+            <p>Generated SpacetimeDB bindings are not changed by Batch A1.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="order">
+        <h2>Controlled Release Order</h2>
+        <div class="timeline">
+          <article class="current">
+            <strong>A1</strong>
+            <div>
+              <h3>Durable heartbeat</h3>
+              <p>Correct active signed-in unsaved-room lifecycle.</p>
+            </div>
+          </article>
+          <article>
+            <strong>A2</strong>
+            <div>
+              <h3>Account status</h3>
+              <p>Centralize active-account room authorization.</p>
+            </div>
+          </article>
+          <article class="reviewing">
+            <strong>B</strong>
+            <div>
+              <h3>Admission grants</h3>
+              <p>
+                Require reviewed server proof for first admission and
+                revocation.
+              </p>
+            </div>
+          </article>
+          <article>
+            <strong>C</strong>
+            <div>
+              <h3>Private reads</h3>
+              <p>
+                Move clients to caller-authorized views before removing public
+                access.
+              </p>
+            </div>
+          </article>
+          <article>
+            <strong>D</strong>
+            <div>
+              <h3>Abuse resistance</h3>
+              <p>
+                Add durable operations, bounds, indexed access, and
+                malicious-client QA.
+              </p>
+            </div>
+          </article>
+          <article>
+            <strong>E</strong>
+            <div>
+              <h3>Web perimeter</h3>
+              <p>
+                Add distributed limits, telemetry, report-only CSP, then
+                enforcement.
+              </p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="decisions">
+        <h2>Locked Decisions</h2>
+        <div class="grid">
+          <article class="card">
+            <h3>One primary implementer</h3>
+            <p>Shared authority files are not edited in parallel.</p>
+          </article>
+          <article class="card">
+            <h3>Revocation starts in B</h3>
+            <p>
+              Grant issuance must reject revoked memberships from the beginning.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Views migrate in stages</h3>
+            <p>
+              New subscriptions are proven before public table access is
+              removed.
+            </p>
+          </article>
+          <article class="card">
+            <h3>CSP observes first</h3>
+            <p>Report-only evidence precedes browser-policy enforcement.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="risks">
+        <h2>Primary Risks</h2>
+        <div class="callout">
+          <p>
+            The largest implementation risk is breaking legitimate refresh and
+            reconnect while closing replay and invented-member admission. Batch
+            B therefore cannot begin until its protocol has an independent
+            read-only security review.
+          </p>
+        </div>
+      </section>
+
+      <section id="next">
+        <h2>Next Action</h2>
+        <article class="card">
+          <span class="badge approved">Review checkpoint</span>
+          <h3>Prepare the isolated A1 commit and production smoke test</h3>
+          <p>
+            Automated QA is complete. Review the implementation report, keep A2
+            and SpacetimeDB work out of the commit, then deploy A1 only when its
+            commit scope is approved.
+          </p>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
