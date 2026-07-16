@@ -8,7 +8,6 @@ export const roomSession = table(
     host_member_id: t.string(),
     mode: t.string(),
     playback_rate: t.f64(),
-    playback_occurrence_id: t.option(t.string()).default(undefined),
     position_seconds: t.f64(),
     room_id: t.string().primaryKey(),
     server_updated_ms: t.i64(),
@@ -21,6 +20,7 @@ export const roomSession = table(
     room_name: t.string().default("Untitled room"),
     queue_autoplay_enabled: t.bool().default(true),
     queue_mode: t.string().default("normal"),
+    playback_occurrence_id: t.option(t.string()).default(undefined),
   },
 );
 

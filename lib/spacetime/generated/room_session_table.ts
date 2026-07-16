@@ -16,7 +16,6 @@ export default __t.row({
   hostMemberId: __t.string().name("host_member_id"),
   mode: __t.string(),
   playbackRate: __t.f64().name("playback_rate"),
-  playbackOccurrenceId: __t.option(__t.string()).name("playback_occurrence_id"),
   positionSeconds: __t.f64().name("position_seconds"),
   roomId: __t.string().primaryKey().name("room_id"),
   serverUpdatedMs: __t.i64().name("server_updated_ms"),
@@ -29,4 +28,5 @@ export default __t.row({
   roomName: __t.string().name("room_name"),
   queueAutoplayEnabled: __t.bool().name("queue_autoplay_enabled"),
   queueMode: __t.string().name("queue_mode"),
+  playbackOccurrenceId: __t.option(__t.string()).name("playback_occurrence_id"),
 });

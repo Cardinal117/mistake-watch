@@ -201,7 +201,6 @@ export const RoomSession = __t.object("RoomSession", {
   hostMemberId: __t.string(),
   mode: __t.string(),
   playbackRate: __t.f64(),
-  playbackOccurrenceId: __t.option(__t.string()),
   positionSeconds: __t.f64(),
   roomId: __t.string(),
   serverUpdatedMs: __t.i64(),
@@ -214,6 +213,7 @@ export const RoomSession = __t.object("RoomSession", {
   roomName: __t.string(),
   queueAutoplayEnabled: __t.bool(),
   queueMode: __t.string(),
+  playbackOccurrenceId: __t.option(__t.string()),
 });
 export type RoomSession = __Infer<typeof RoomSession>;
 

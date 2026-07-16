@@ -16,6 +16,10 @@ const tablesSource = await readFile(
   path.join(root, "spacetime/src/recommendation-tables.ts"),
   "utf8",
 );
+const roomTablesSource = await readFile(
+  path.join(root, "spacetime/src/room-tables.ts"),
+  "utf8",
+);
 const eventsSource = await readFile(
   path.join(root, "spacetime/src/recommendation-events.ts"),
   "utf8",
@@ -127,6 +131,23 @@ test("playback retries are occurrence-bound and completion is classified", () =>
   );
   assert.match(failureReducer, /expected_playback_occurrence_id/);
   assert.match(failureReducer, /session\.playback_occurrence_id/);
+});
+
+test("room session occurrence state remains an append-only schema addition", () => {
+  const roomSession = sectionBetween(
+    roomTablesSource,
+    "export const roomSession",
+    "export const roomParticipant",
+  );
+  const queueModeIndex = roomSession.indexOf("queue_mode:");
+  const occurrenceIndex = roomSession.indexOf("playback_occurrence_id:");
+
+  assert.notEqual(queueModeIndex, -1);
+  assert.notEqual(occurrenceIndex, -1);
+  assert.ok(
+    queueModeIndex < occurrenceIndex,
+    "New room_session columns must remain after the existing production schema",
+  );
 });
 
 test("multi-move queue actions share an event id without suppressing later actions", () => {
