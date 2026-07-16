@@ -1,0 +1,981 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TASK-008 Review — Spatial Cinema Foundations</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --background: #131314;
+        --surface-lowest: #0e0e0f;
+        --surface-low: #1c1b1c;
+        --surface: #201f20;
+        --surface-high: #2a2a2b;
+        --text: #e5e2e3;
+        --muted: #b9cacb;
+        --outline: #3b494b;
+        --blue: #00dbe9;
+        --blue-soft: rgba(0, 219, 233, 0.12);
+        --gold: #ffba20;
+        --gold-soft: rgba(255, 186, 32, 0.12);
+        --error: #ffb4ab;
+        --error-soft: rgba(255, 180, 171, 0.1);
+        --max: 1240px;
+        font-family:
+          Geist,
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: var(--background);
+        color: var(--text);
+        line-height: 1.55;
+      }
+      a {
+        color: #7df4ff;
+      }
+      a:hover {
+        color: #dbfcff;
+      }
+      a:focus-visible,
+      button:focus-visible {
+        outline: 3px solid var(--blue);
+        outline-offset: 3px;
+      }
+      code,
+      .technical {
+        font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+      }
+      code {
+        color: #dbfcff;
+        overflow-wrap: anywhere;
+      }
+      h1,
+      h2,
+      h3 {
+        line-height: 1.18;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 5vw, 3rem);
+      }
+      h2 {
+        margin: 0 0 1rem;
+        font-size: clamp(1.45rem, 3vw, 2rem);
+      }
+      h3 {
+        margin: 0 0 0.55rem;
+        font-size: 1.05rem;
+      }
+      p {
+        margin: 0.45rem 0 0;
+      }
+      ul,
+      ol {
+        margin: 0.65rem 0 0;
+        padding-left: 1.25rem;
+      }
+      li + li {
+        margin-top: 0.35rem;
+      }
+
+      .shell {
+        width: min(var(--max), calc(100% - 32px));
+        margin: 0 auto;
+      }
+      .skip-link {
+        position: fixed;
+        left: 16px;
+        top: -80px;
+        z-index: 100;
+        padding: 10px 14px;
+        border-radius: 8px;
+        background: var(--blue);
+        color: #002022;
+        font-weight: 700;
+      }
+      .skip-link:focus {
+        top: 16px;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(14, 14, 15, 0.9);
+        backdrop-filter: blur(18px);
+      }
+      .topbar-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        min-height: 64px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        font-weight: 750;
+      }
+      .mark {
+        width: 30px;
+        height: 30px;
+        border: 2px solid var(--gold);
+        border-radius: 9px;
+        display: grid;
+        place-items: center;
+        box-shadow: inset 0 0 0 5px rgba(255, 186, 32, 0.08);
+      }
+      .mark::after {
+        content: "";
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--blue);
+        box-shadow: 0 0 16px var(--blue);
+      }
+      nav {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      nav a {
+        color: var(--muted);
+        font-size: 0.86rem;
+        text-decoration: none;
+      }
+
+      .hero {
+        padding: 64px 0 34px;
+      }
+      .eyebrow {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 18px;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: 4px 9px;
+        border: 1px solid var(--outline);
+        border-radius: 7px;
+        font:
+          600 0.75rem/1.1 "JetBrains Mono",
+          monospace;
+        letter-spacing: 0.045em;
+        text-transform: uppercase;
+      }
+      .badge.blue {
+        border-color: rgba(0, 219, 233, 0.45);
+        background: var(--blue-soft);
+        color: #7df4ff;
+      }
+      .badge.gold {
+        border-color: rgba(255, 186, 32, 0.45);
+        background: var(--gold-soft);
+        color: #ffdea8;
+      }
+      .badge.muted {
+        color: var(--muted);
+      }
+      .lede {
+        max-width: 850px;
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 1.1rem;
+      }
+      .recommendation {
+        margin-top: 28px;
+        border: 1px solid rgba(0, 219, 233, 0.28);
+        border-radius: 12px;
+        background: rgba(0, 219, 233, 0.055);
+        padding: 20px;
+      }
+      .recommendation strong {
+        color: #dbfcff;
+      }
+
+      main {
+        padding-bottom: 72px;
+      }
+      section {
+        scroll-margin-top: 84px;
+        padding: 34px 0;
+      }
+      .section-intro {
+        max-width: 820px;
+        color: var(--muted);
+      }
+      .grid {
+        display: grid;
+        gap: 16px;
+        margin-top: 20px;
+      }
+      .grid.two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .grid.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .card {
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 12px;
+        background: var(--surface-low);
+        padding: 18px;
+      }
+      .card.blue {
+        border-color: rgba(0, 219, 233, 0.26);
+      }
+      .card.gold {
+        border-color: rgba(255, 186, 32, 0.26);
+      }
+      .card.error {
+        border-color: rgba(255, 180, 171, 0.3);
+        background: var(--error-soft);
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .kicker {
+        color: var(--blue);
+        font:
+          650 0.75rem/1.2 "JetBrains Mono",
+          monospace;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 22px;
+      }
+      .flow-step {
+        position: relative;
+        min-height: 118px;
+        padding: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 12px;
+        background: var(--surface-lowest);
+      }
+      .flow-step:not(:last-child)::after {
+        content: "→";
+        position: absolute;
+        right: -18px;
+        top: 45px;
+        z-index: 2;
+        color: var(--gold);
+        font-size: 1.2rem;
+      }
+      .flow-step strong {
+        display: block;
+        margin-top: 9px;
+      }
+      .flow-step span {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .decision-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 20px;
+      }
+      .decision {
+        display: grid;
+        grid-template-columns: 126px 1fr;
+        gap: 14px;
+        align-items: start;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        padding: 0 0 12px;
+      }
+      .decision:last-child {
+        border-bottom: 0;
+      }
+
+      .file-list {
+        list-style: none;
+        padding: 0;
+      }
+      .file-list li {
+        border-top: 1px solid rgba(255, 255, 255, 0.07);
+        padding: 10px 0;
+      }
+      .file-list li:first-child {
+        border-top: 0;
+      }
+      .file-list a {
+        font-weight: 700;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      caption {
+        text-align: left;
+        color: var(--muted);
+        margin-bottom: 10px;
+      }
+      th,
+      td {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 12px 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        color: #dbfcff;
+        font-size: 0.82rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      td {
+        color: var(--muted);
+      }
+
+      .timeline {
+        display: grid;
+        gap: 0;
+        margin-top: 22px;
+      }
+      .timeline-item {
+        display: grid;
+        grid-template-columns: 50px 1fr;
+        gap: 14px;
+        min-height: 92px;
+      }
+      .timeline-marker {
+        display: grid;
+        justify-items: center;
+      }
+      .timeline-dot {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border: 1px solid rgba(0, 219, 233, 0.45);
+        border-radius: 9px;
+        background: var(--blue-soft);
+        color: #7df4ff;
+        font:
+          700 0.8rem "JetBrains Mono",
+          monospace;
+      }
+      .timeline-line {
+        width: 1px;
+        flex: 1;
+        background: var(--outline);
+      }
+      .timeline-content {
+        padding: 4px 0 22px;
+      }
+      .timeline-content p {
+        color: var(--muted);
+      }
+
+      .approval {
+        border: 1px solid rgba(255, 186, 32, 0.34);
+        border-radius: 12px;
+        background: var(--gold-soft);
+        padding: 22px;
+      }
+      .approval h2 {
+        color: #ffdea8;
+      }
+      footer {
+        padding: 28px 0 44px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      @media (max-width: 860px) {
+        .grid.two,
+        .grid.three,
+        .flow {
+          grid-template-columns: 1fr;
+        }
+        .flow-step:not(:last-child)::after {
+          content: "↓";
+          right: auto;
+          left: 22px;
+          top: auto;
+          bottom: -22px;
+        }
+        .topbar-inner {
+          align-items: flex-start;
+          flex-direction: column;
+          padding: 14px 0;
+        }
+        nav {
+          display: none;
+        }
+        .decision {
+          grid-template-columns: 1fr;
+          gap: 6px;
+        }
+        table {
+          display: block;
+          overflow-x: auto;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to review</a>
+    <header class="topbar">
+      <div class="shell topbar-inner">
+        <div class="brand">
+          <span class="mark" aria-hidden="true"></span> Mistake Watch
+        </div>
+        <nav aria-label="Review sections">
+          <a href="#direction">Direction</a>
+          <a href="#architecture">Architecture</a>
+          <a href="#files">Files</a>
+          <a href="#risks">Risks</a>
+          <a href="#roadmap">Roadmap</a>
+          <a href="#approval">Approval</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero shell">
+        <div class="eyebrow">
+          <span class="badge blue">TASK-008</span>
+          <span class="badge gold">Draft direction</span>
+          <span class="badge muted">Spec-first</span>
+          <span class="badge muted">No implementation approved</span>
+        </div>
+        <h1>Spatial Cinema Foundations</h1>
+        <p class="lede">
+          A cleanly rewritten desktop-3D and Quest/WebXR presentation inside the
+          existing Mistake Watch room—sharing the real playback, queue,
+          permissions, identity, and uploaded-media security systems.
+        </p>
+        <div class="recommendation">
+          <span class="kicker">Current recommendation</span>
+          <p>
+            <strong
+              >Approve the direction packet, then approve one bounded task at a
+              time.</strong
+            >
+            Wait for TASK-007 to establish stable module seams before locking
+            exact implementation paths. Start with a repository/dependency spike
+            and primitive scale proof, not the finished cinema.
+          </p>
+        </div>
+      </section>
+
+      <section class="shell" id="direction">
+        <h2>The direction being locked</h2>
+        <p class="section-intro">
+          Spatial Cinema is not another room product. It is a local way to
+          experience the same authoritative room alongside ordinary Watch
+          participants.
+        </p>
+        <div class="flow" aria-label="Spatial Cinema product flow">
+          <div class="flow-step">
+            <span class="technical">01</span><strong>Existing room</strong
+            ><span>Participant is already joined and authorized.</span>
+          </div>
+          <div class="flow-step">
+            <span class="technical">02</span><strong>Local presentation</strong
+            ><span>Standard Watch, desktop 3D, or Quest WebXR.</span>
+          </div>
+          <div class="flow-step">
+            <span class="technical">03</span><strong>Shared authority</strong
+            ><span
+              >Same playback, queue, permissions, chat, and media session.</span
+            >
+          </div>
+          <div class="flow-step">
+            <span class="technical">04</span><strong>Spatial presence</strong
+            ><span
+              >Only poses, seats, and reactions are newly synchronized.</span
+            >
+          </div>
+        </div>
+
+        <div class="grid three">
+          <article class="card blue">
+            <span class="kicker">Signature interaction</span>
+            <h3>Swipe down to summon</h3>
+            <p class="muted">
+              <code>OPEN_SYSTEM_MENU</code> is guaranteed through hand gesture,
+              controller, keyboard, and desktop-button inputs.
+            </p>
+          </article>
+          <article class="card gold">
+            <span class="kicker">First environment</span>
+            <h3>Orbital Cinema</h3>
+            <p class="muted">
+              Primitive blockout first, then one hand-authored Kenney golden
+              room before environment automation.
+            </p>
+          </article>
+          <article class="card">
+            <span class="kicker">First media</span>
+            <h3>Direct and authorized R2</h3>
+            <p class="muted">
+              One true video texture using the existing secure room-media
+              session path. YouTube and screen sharing remain deferred.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="shell" id="architecture">
+        <h2>Architecture status</h2>
+        <p class="section-intro">
+          The packet marks current repository evidence separately from future
+          proposals. Exact source paths are revalidated after TASK-007.
+        </p>
+        <div class="decision-list">
+          <div class="decision">
+            <span class="badge blue">Locked</span>
+            <div>
+              <strong>Presentation, not room mode</strong>
+              <p class="muted">
+                Do not add <code>spatial</code> to shared
+                <code>room_session.mode</code>. One participant entering VR must
+                not switch everyone.
+              </p>
+            </div>
+          </div>
+          <div class="decision">
+            <span class="badge blue">Confirmed</span>
+            <div>
+              <strong>Existing live capability facade</strong>
+              <p class="muted">
+                <code>LiveRoomState</code> already exposes playback, queue,
+                participants, permissions, chat, connection, and errors.
+              </p>
+            </div>
+          </div>
+          <div class="decision">
+            <span class="badge blue">Confirmed</span>
+            <div>
+              <strong>Uploaded-media gates exist</strong>
+              <p class="muted">
+                <code>canAccessUploadedCatalogue</code>,
+                <code>canStartUploadedMedia</code>, and
+                <code>canWatchRoomMedia</code> remain mandatory.
+              </p>
+            </div>
+          </div>
+          <div class="decision">
+            <span class="badge gold">Proposed</span>
+            <div>
+              <strong>Spatial session identity</strong>
+              <p class="muted">
+                Pose and seat state key to a client spatial session, not only a
+                user identity, preventing tab/reconnect collisions.
+              </p>
+            </div>
+          </div>
+          <div class="decision">
+            <span class="badge gold">Proposed</span>
+            <div>
+              <strong>R3F/WebXR stack</strong>
+              <p class="muted">
+                Three.js, R3F, drei, and <code>@react-three/xr</code> are
+                preferred but versions require a post-refactor primary-doc
+                spike.
+              </p>
+            </div>
+          </div>
+          <div class="decision">
+            <span class="badge muted">Deferred</span>
+            <div>
+              <strong>Provider and live-stream expansion</strong>
+              <p class="muted">
+                YouTube projection, screen sharing, voice, full bodies, physics,
+                and multiple environments do not enter the first slice.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid three">
+          <article class="card">
+            <span class="kicker">SpacetimeDB</span>
+            <h3>Shared transient reality</h3>
+            <ul class="muted">
+              <li>Spatial sessions</li>
+              <li>Current head/hand pose</li>
+              <li>Atomic seat claims</li>
+              <li>Bounded reactions</li>
+            </ul>
+          </article>
+          <article class="card">
+            <span class="kicker">Local client</span>
+            <h3>Personal interaction state</h3>
+            <ul class="muted">
+              <li>Menus and placement</li>
+              <li>Interpolation and pointers</li>
+              <li>Locomotion and gestures</li>
+              <li>Volume, quality, comfort</li>
+            </ul>
+          </article>
+          <article class="card">
+            <span class="kicker">Local + optional Supabase</span>
+            <h3>Durable preferences</h3>
+            <ul class="muted">
+              <li>Dominant hand</li>
+              <li>Gesture sensitivity</li>
+              <li>Snap turn/reduced motion</li>
+              <li>Guest settings remain local-first</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="shell" id="files">
+        <h2>Files To Review</h2>
+        <div class="grid three">
+          <article class="card blue">
+            <span class="kicker">Must review</span>
+            <ul class="file-list">
+              <li>
+                <a href="proposal.md">proposal.md</a><br /><span class="muted"
+                  >Product boundary, scope, value, risks, and success.</span
+                >
+              </li>
+              <li>
+                <a href="design.md">design.md</a><br /><span class="muted"
+                  >Authority, state, lifecycle, media, UI, assets, and
+                  budgets.</span
+                >
+              </li>
+              <li>
+                <a href="review-notes.md">review-notes.md</a><br /><span
+                  class="muted"
+                  >Locked decisions and questions requiring judgment.</span
+                >
+              </li>
+            </ul>
+          </article>
+          <article class="card gold">
+            <span class="kicker">Approval detail</span>
+            <ul class="file-list">
+              <li>
+                <a href="tasks.md">tasks.md</a><br /><span class="muted"
+                  >Bounded task order and approval checkpoints.</span
+                >
+              </li>
+              <li>
+                <a href="acceptance-criteria.md">acceptance-criteria.md</a
+                ><br /><span class="muted"
+                  >Functional, security, interaction, comfort, and performance
+                  gates.</span
+                >
+              </li>
+            </ul>
+          </article>
+          <article class="card">
+            <span class="kicker">Background/supporting</span>
+            <ul class="file-list">
+              <li>
+                <a href="brain-dump.md">brain-dump.md</a><br /><span
+                  class="muted"
+                  >Preserved vision, history, non-negotiables, assets, and
+                  sources.</span
+                >
+              </li>
+              <li>
+                <strong>review.html</strong><br /><span class="muted"
+                  >Generated human review surface; Markdown remains
+                  canonical.</span
+                >
+              </li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="shell" id="risks">
+        <h2>Highest-risk mistakes the packet prevents</h2>
+        <div class="grid two">
+          <article class="card error">
+            <h3>Duplicate authority</h3>
+            <p class="muted">
+              A second playback or queue system would eventually desynchronize
+              from ordinary Watch clients.
+            </p>
+          </article>
+          <article class="card error">
+            <h3>Private media regression</h3>
+            <p class="muted">
+              A direct R2 URL given to Three.js could bypass the existing
+              room-session authorization contract.
+            </p>
+          </article>
+          <article class="card error">
+            <h3>Pose-driven rendering collapse</h3>
+            <p class="muted">
+              Publishing at headset frame rate or storing transforms in ordinary
+              React state would damage Quest performance.
+            </p>
+          </article>
+          <article class="card error">
+            <h3>Lost or inaccessible controls</h3>
+            <p class="muted">
+              A hand-only gesture or unrecoverable world-anchored menu could
+              trap the user without an exit.
+            </p>
+          </article>
+          <article class="card error">
+            <h3>Premature environment polish</h3>
+            <p class="muted">
+              A finished Kenney room before blockout measurements would encode
+              untested scale, reach, lighting, and draw-call choices.
+            </p>
+          </article>
+          <article class="card error">
+            <h3>Provider scope explosion</h3>
+            <p class="muted">
+              YouTube textures and screen sharing are technically different
+              problems and must not control the first milestone.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="shell" id="roadmap">
+        <h2>Recommended task order</h2>
+        <p class="section-intro">
+          Each stage has a review checkpoint. Approval of this packet does not
+          approve every stage.
+        </p>
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-marker">
+              <span class="timeline-dot">0</span
+              ><span class="timeline-line"></span>
+            </div>
+            <div class="timeline-content">
+              <h3>Approve direction</h3>
+              <p>
+                Confirm the product boundary, headset baseline, entry placement,
+                and first interaction assumptions.
+              </p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-marker">
+              <span class="timeline-dot">1</span
+              ><span class="timeline-line"></span>
+            </div>
+            <div class="timeline-content">
+              <h3>Post-refactor integration spike</h3>
+              <p>
+                Map stable modules, verify package compatibility, and prove lazy
+                spatial loading.
+              </p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-marker">
+              <span class="timeline-dot">2</span
+              ><span class="timeline-line"></span>
+            </div>
+            <div class="timeline-content">
+              <h3>Asset audit and primitive scale</h3>
+              <p>
+                Measure exact GLBs, approve shortlist, and establish metres, eye
+                height, seats, screen, anchors, and colliders.
+              </p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-marker">
+              <span class="timeline-dot">3</span
+              ><span class="timeline-line"></span>
+            </div>
+            <div class="timeline-content">
+              <h3>Solo desktop/Quest proof</h3>
+              <p>
+                Enter and leave safely, render the primitive room, and establish
+                performance instrumentation.
+              </p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-marker">
+              <span class="timeline-dot">4</span
+              ><span class="timeline-line"></span>
+            </div>
+            <div class="timeline-content">
+              <h3>Multiplayer presence and seats</h3>
+              <p>
+                Add spatial sessions, current poses, interpolation, avatars,
+                atomic seats, and cleanup.
+              </p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-marker">
+              <span class="timeline-dot">5</span
+              ><span class="timeline-line"></span>
+            </div>
+            <div class="timeline-content">
+              <h3>Secure cinema media</h3>
+              <p>
+                Project one direct/authorized uploaded source using the existing
+                room authority and URL resolution.
+              </p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-marker">
+              <span class="timeline-dot">6</span
+              ><span class="timeline-line"></span>
+            </div>
+            <div class="timeline-content">
+              <h3>Guaranteed system menu</h3>
+              <p>
+                Add spatial controls, downward swipe, all fallbacks, placement
+                recovery, and comfort/accessibility behavior.
+              </p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-marker">
+              <span class="timeline-dot">7</span
+              ><span class="timeline-line"></span>
+            </div>
+            <div class="timeline-content">
+              <h3>Vertical-slice gate</h3>
+              <p>
+                Two-client and standard-Watch coexistence QA on real target
+                hardware.
+              </p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-marker">
+              <span class="timeline-dot">8</span>
+            </div>
+            <div class="timeline-content">
+              <h3>Golden Orbital Cinema</h3>
+              <p>
+                Author the approved Kenney room and compare it against the
+                primitive performance baseline.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="shell">
+        <h2>Starting performance hypotheses</h2>
+        <table>
+          <caption>
+            These are initial measurement targets, not permanent truths.
+          </caption>
+          <thead>
+            <tr>
+              <th>Area</th>
+              <th>Starting target</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Quest frame rate</td>
+              <td>72 Hz minimum; 13.9 ms mathematical frame budget</td>
+              <td><span class="badge gold">Validate on device</span></td>
+            </tr>
+            <tr>
+              <td>Spatial clients</td>
+              <td>Prove four; architect for eight</td>
+              <td><span class="badge gold">Hypothesis</span></td>
+            </tr>
+            <tr>
+              <td>Pose publication</td>
+              <td>10–15 Hz per active spatial client</td>
+              <td><span class="badge gold">Tune from jitter</span></td>
+            </tr>
+            <tr>
+              <td>Scene</td>
+              <td>
+                ~250k visible triangles, ~100 draw calls, ~50 materials as
+                review thresholds
+              </td>
+              <td><span class="badge gold">Not acceptance limits</span></td>
+            </tr>
+            <tr>
+              <td>Lighting</td>
+              <td>Zero realtime shadow casters; baked/unlit/emissive first</td>
+              <td><span class="badge blue">Direction</span></td>
+            </tr>
+            <tr>
+              <td>Video</td>
+              <td>One active video texture</td>
+              <td><span class="badge blue">First slice</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="shell" id="approval">
+        <div class="approval">
+          <span class="kicker">Approval checkpoint</span>
+          <h2>What approval means now</h2>
+          <p>
+            Approval confirms the product direction and allows TASK-008 to
+            remain the durable source of truth. It does
+            <strong>not</strong> authorize the full implementation.
+          </p>
+          <ol>
+            <li>
+              Resolve the minimum target Quest and initial desktop locomotion.
+            </li>
+            <li>Confirm where Enter Spatial Cinema should appear.</li>
+            <li>
+              Approve Task 1 only after TASK-007 reaches a stable integration
+              point.
+            </li>
+          </ol>
+          <p class="muted">
+            Current packet state: planning documents created; no app code,
+            schema, dependencies, assets, generated bindings, commits, or
+            deployments changed.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="shell">
+      TASK-008 Spatial Cinema Foundations · Canonical details live in the linked
+      Markdown files · Prepared 2026-07-14
+    </footer>
+  </body>
+</html>
