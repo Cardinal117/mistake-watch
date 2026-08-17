@@ -30,6 +30,13 @@ adds bounded active-client reconciliation. Commit `444b78f` is deployed as
 owner two-device QA measured four-second no-refresh convergence. TASK-011 is
 complete.
 
+TASK-014 Account Rooms Projection is implemented in the local working tree and
+awaits Git review, deployment, and signed-in production QA. It fixes the
+confirmed dashboard dependency on guest cookies, adds a private account-room
+API and Account Rooms surface, and requires no migration. All 334 tests,
+typecheck, ESLint, formatting, file-length policy, production build, local guest
+authorization, and desktop/mobile visual checks passed.
+
 ## Required Reading
 
 1. `AGENTS.md`
@@ -39,10 +46,11 @@ complete.
 5. `docs/product-intake/INDEX.md`
 6. `docs/ROADMAP.md`
 7. `docs/tasks/TASK-011-first-party-recommendation-intelligence/`
-8. `docs/tasks/TASK-010-watch-media-hub-performance/`
-9. `docs/tasks/TASK-009-project-integrity/`
-10. `supabase/MIGRATION_HISTORY.md`
-11. `docs/tasks/TASK-002-incomplete-work-recovery/` for historical detail
+8. `docs/tasks/TASK-014-account-rooms-projection/`
+9. `docs/tasks/TASK-010-watch-media-hub-performance/`
+10. `docs/tasks/TASK-009-project-integrity/`
+11. `supabase/MIGRATION_HISTORY.md`
+12. `docs/tasks/TASK-002-incomplete-work-recovery/` for historical detail
 
 TASK-001 is historical MVP context. TASK-007 records completed modularization
 work and discovered issues. TASK-008 Spatial Cinema is an unapproved draft.
@@ -94,8 +102,9 @@ verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
 
-Proceed with Account Rooms projection using `MW-FEAT-003` and `MW-BUG-002`, then
-consented YouTube account signals before the Add/Discover overhaul. Keep
-provider scopes incremental, tokens server-only, and the existing first-party
-ranking engine authoritative. TASK-008 Spatial Cinema remains an unapproved
-separate direction packet.
+Review and release TASK-014, then verify signed-in Account Rooms and the
+dashboard across browsers before resolving `MW-FEAT-003` and `MW-BUG-002`.
+After that gate, proceed with consented YouTube account signals before the
+Add/Discover overhaul. Keep provider scopes incremental, tokens server-only,
+and the existing first-party ranking engine authoritative. TASK-008 Spatial
+Cinema remains an unapproved separate direction packet.

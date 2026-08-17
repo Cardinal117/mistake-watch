@@ -60,11 +60,21 @@ The repository now tracks owner findings in `docs/product-intake/`.
 evidence. Other P1 reports remain explicitly marked for reproduction rather
 than being presented as confirmed root causes.
 
+## Account Rooms In Progress
+
+TASK-014 is implemented locally and awaiting Git review, deployment, and
+signed-in production QA. It adds one server-authenticated projection for owned,
+saved, and joined rooms, uses it to reconcile the dashboard after guest-cookie
+loss, and replaces the Account Rooms placeholder. Local automated, build,
+authorization, desktop, and mobile gates passed; it is not yet a shipped
+capability.
+
 ## Planned Product Sequence
 
-1. **Account Rooms projection**
-   Replace the placeholder account Rooms surface and reconcile guest/account
-   saved-room discovery, linked from `MW-FEAT-003` and `MW-BUG-002`.
+1. **Account Rooms release gate**
+   Review and deploy TASK-014, then verify signed-in cross-browser discovery,
+   dashboard persistence, and room re-entry before resolving `MW-FEAT-003` and
+   `MW-BUG-002`.
 2. **Consented YouTube account signals**
    Add incremental OAuth only for approved playlist/subscription capabilities.
    Provider tokens remain server-only and revocable. Do not claim access to the

@@ -1,7 +1,7 @@
 ---
 id: MW-FEAT-003
 type: feature
-status: planned
+status: in-progress
 priority: P1
 area: account-rooms
 related: [TASK-002.10, MW-BUG-002]
@@ -11,10 +11,15 @@ updated: 2026-08-17
 
 # Account Rooms management surface
 
-> [!feature] Planned - P1
+> [!feature] In progress - P1
 
 - **Request:** Replace the placeholder with saved, recent, owned, and migrated rooms from durable account data.
-- **Next action:** Use the identified TASK-002.10 account-room projection after the TASK-011 Like gap is bounded.
+- **Implementation:** `TASK-014` adds an authenticated owned, saved, and joined
+  room projection, dashboard reconciliation, and a lazy Account Rooms surface.
+- **Evidence:** Automated, production-build, guest authorization, desktop, and
+  mobile local gates passed on 2026-08-17.
+- **Next action:** Deploy only after Git review, then verify signed-in room rows,
+  cross-browser visibility, and room re-entry before marking resolved.
 
 ## Original Report
 

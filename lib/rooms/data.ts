@@ -10,7 +10,13 @@ import {
   getSourceDisplayTitle,
   getYouTubeThumbnailUrl,
 } from "@/lib/player/source";
-import { createSupabaseAdminClient, type Tables } from "@/lib/supabase";
+import { listAccountRooms } from "@/lib/account/room-data";
+import type { AccountRoomSummary } from "@/lib/account/room-projection";
+import {
+  createSupabaseAdminClient,
+  createSupabaseServerClient,
+  type Tables,
+} from "@/lib/supabase";
 
 import { isRoomAttachedToAccount } from "./account-attachment";
 import { closeIdleUnsavedRooms } from "./lifecycle";
@@ -52,20 +58,32 @@ export async function getDashboardData(): Promise<DashboardData> {
         Boolean(session && session.room.status === "open"),
     );
     const roomIds = activeSessions.map((session) => session.room.id);
+    const accountUserId = await getCurrentAccountUserId();
 
-    const recentRooms = await Promise.all(
-      roomIds.map(async (roomId) => getDashboardRoomSummary(roomId, "rejoin")),
-    );
+    const [guestRooms, accountRooms] = await Promise.all([
+      Promise.all(
+        roomIds.map(async (roomId) =>
+          getDashboardRoomSummary(roomId, "rejoin"),
+        ),
+      ),
+      accountUserId ? listAccountRooms(accountUserId) : Promise.resolve([]),
+    ]);
 
-    const sortedRecentRooms = recentRooms
+    const sortedGuestRooms = guestRooms
       .filter((room): room is DashboardRoomSummary => Boolean(room))
       .sort((a, b) => a.name.localeCompare(b.name));
-    const savedRooms = sortedRecentRooms.filter((room) => room.isSaved);
+    const recentRooms = mergeDashboardRooms(
+      sortedGuestRooms,
+      accountRooms
+        .filter((room) => room.status === "open")
+        .map(mapAccountDashboardRoom),
+    );
+    const savedRooms = recentRooms.filter((room) => room.isSaved);
 
     return {
-      currentRoom: sortedRecentRooms[0] ?? null,
+      currentRoom: recentRooms[0] ?? null,
       friendRooms: [],
-      recentRooms: sortedRecentRooms,
+      recentRooms,
       savedRooms,
     };
   } catch (error) {
@@ -80,6 +98,58 @@ export async function getDashboardData(): Promise<DashboardData> {
           : "Supabase-backed rooms are unavailable.",
     };
   }
+}
+
+async function getCurrentAccountUserId() {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.auth.getUser();
+
+  return error ? null : (data.user?.id ?? null);
+}
+
+function mapAccountDashboardRoom(
+  room: AccountRoomSummary,
+): DashboardRoomSummary {
+  return {
+    duration: "Ready to rejoin",
+    host: room.relationship === "owned" ? "You" : "Account room",
+    id: room.id,
+    isSaved: room.isSaved,
+    joinState: "rejoin",
+    mode: room.mode,
+    name: room.name,
+    nowPlaying: "Open room to resume playback",
+    participants: 0,
+    privacy: room.privacy,
+    updatedAt: formatDashboardActivity(room.lastActiveAt),
+  };
+}
+
+function mergeDashboardRooms(
+  primary: DashboardRoomSummary[],
+  secondary: DashboardRoomSummary[],
+) {
+  const rooms = new Map(primary.map((room) => [room.id, room]));
+
+  for (const room of secondary) {
+    if (!rooms.has(room.id)) {
+      rooms.set(room.id, room);
+    }
+  }
+
+  return [...rooms.values()];
+}
+
+function formatDashboardActivity(value: string) {
+  const timestamp = Date.parse(value);
+
+  if (!Number.isFinite(timestamp)) {
+    return "Account room";
+  }
+
+  return `Active ${new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+  }).format(timestamp)}`;
 }
 
 export async function getRoomSnapshotForGuest(

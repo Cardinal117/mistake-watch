@@ -1,16 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  Activity,
-  AlertTriangle,
   BadgeCheck,
   Check,
   LogIn,
   LogOut,
   Palette,
-  RefreshCw,
   Shield,
   UserRound,
   Users,
@@ -25,6 +22,8 @@ import {
 import { avatarCatalog, type AvatarKey } from "@/lib/identity/avatars";
 import { cx } from "@/lib/ui";
 import type { AccountSummary } from "@/lib/account/types";
+import { AccountRoomsSection } from "./account-rooms-section";
+import { CloudConvertSection } from "./cloudconvert-section";
 
 type AccountCommandPanelProps = {
   account: AccountSummary;
@@ -46,40 +45,6 @@ const tabs = [
 ] as const;
 
 type AccountPanelTab = (typeof tabs)[number]["id"];
-
-type CloudConvertDiagnostics = {
-  account: {
-    email: string | null;
-    id: string | null;
-    name: string | null;
-    username: string | null;
-  } | null;
-  configured: boolean;
-  error: string | null;
-  recentFailures: Array<{
-    assetId: string;
-    jobId: string | null;
-    message: string | null;
-    title: string;
-    updatedAt: string;
-  }>;
-  token: {
-    masked: string | null;
-    present: boolean;
-  };
-  efficiency: {
-    approvalRequired: number;
-    converted: number;
-    directReady: number;
-    estimatedCreditsAvoided: number;
-  };
-  usage: {
-    credits: number | null;
-    minutes: number | null;
-    tasks: number | null;
-  };
-  webhookConfigured: boolean;
-};
 
 export function AccountCommandPanel({
   account,
@@ -213,9 +178,8 @@ export function AccountCommandPanel({
 
           <footer className="flex flex-col gap-3 border-t border-white/10 bg-surface-container-lowest/35 p-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="max-w-2xl text-label-sm text-on-surface-variant">
-              Google sign-in is identity-only here. No YouTube, Drive,
-              playlist, history, contacts, calendar, or offline access is
-              requested.
+              Google sign-in is identity-only here. No YouTube, Drive, playlist,
+              history, contacts, calendar, or offline access is requested.
             </p>
             {isSignedIn ? (
               <a
@@ -285,205 +249,6 @@ export function AccountCommandPanel({
         : null}
     </>
   );
-}
-
-function CloudConvertSection() {
-  const [diagnostics, setDiagnostics] =
-    useState<CloudConvertDiagnostics | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  async function fetchDiagnostics() {
-    const response = await fetch("/api/media/cloudconvert/status", {
-      cache: "no-store",
-    });
-    const payload = (await response.json()) as {
-      diagnostics?: CloudConvertDiagnostics;
-      error?: string;
-    };
-
-    if (!response.ok || !payload.diagnostics) {
-      throw new Error(payload.error ?? "CloudConvert status could not load.");
-    }
-
-    return payload.diagnostics;
-  }
-
-  async function loadDiagnostics() {
-    setLoading(true);
-    setError(null);
-
-    try {
-      setDiagnostics(await fetchDiagnostics());
-    } catch (loadError) {
-      setError(readDiagnosticsError(loadError));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadInitialDiagnostics() {
-      try {
-        const nextDiagnostics = await fetchDiagnostics();
-
-        if (!cancelled) {
-          setDiagnostics(nextDiagnostics);
-        }
-      } catch (loadError) {
-        if (!cancelled) {
-          setError(readDiagnosticsError(loadError));
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadInitialDiagnostics();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return (
-    <section className="grid gap-4 rounded-md border border-white/10 bg-surface-container-lowest/42 p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="technical-label text-primary-fixed-dim">CloudConvert</p>
-          <h4 className="mt-2 text-headline-md font-semibold text-on-surface">
-            Video processing
-          </h4>
-          <p className="mt-2 max-w-2xl text-label-sm text-on-surface-variant">
-            Owner uploads are converted into browser-safe MP4 files before they
-            become playable.
-          </p>
-        </div>
-        <button
-          className="inline-flex h-9 items-center justify-center gap-2 rounded-sm border border-primary-fixed-dim/35 bg-primary-fixed-dim/10 px-3 text-label-sm font-semibold text-primary-fixed-dim transition hover:bg-primary-fixed-dim/16 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={loading}
-          onClick={() => void loadDiagnostics()}
-          type="button"
-        >
-          <RefreshCw className="h-3.5 w-3.5" aria-hidden />
-          Refresh
-        </button>
-      </div>
-
-      {error ? (
-        <div className="flex items-start gap-2 rounded-sm border border-error/30 bg-error/10 p-3 text-label-sm text-error">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-          {error}
-        </div>
-      ) : null}
-
-      <div className="grid gap-2 lg:grid-cols-3">
-        <AccountFactList
-          rows={[
-            [
-              "Status",
-              loading
-                ? "Checking"
-                : diagnostics?.configured
-                  ? "Configured"
-                  : "Missing token",
-            ],
-            ["Token", diagnostics?.token.masked ?? "Not configured"],
-            [
-              "Webhook",
-              diagnostics?.webhookConfigured ? "Configured" : "Not configured",
-            ],
-          ]}
-        />
-        <AccountFactList
-          rows={[
-            ["Account", diagnostics?.account?.email ?? diagnostics?.account?.name ?? "Unavailable"],
-            ["Username", diagnostics?.account?.username ?? "Unavailable"],
-            ["Account ID", diagnostics?.account?.id ?? "Unavailable"],
-          ]}
-        />
-        <AccountFactList
-          rows={[
-            ["Credits", formatNullableNumber(diagnostics?.usage.credits)],
-            ["Minutes", formatNullableNumber(diagnostics?.usage.minutes)],
-            ["Tasks", formatNullableNumber(diagnostics?.usage.tasks)],
-          ]}
-        />
-      </div>
-
-      <div className="grid gap-2 lg:grid-cols-4">
-        <AccountFactList
-          rows={[
-            ["Direct ready", formatNullableNumber(diagnostics?.efficiency.directReady)],
-          ]}
-        />
-        <AccountFactList
-          rows={[
-            ["Converted", formatNullableNumber(diagnostics?.efficiency.converted)],
-          ]}
-        />
-        <AccountFactList
-          rows={[
-            [
-              "Needs approval",
-              formatNullableNumber(diagnostics?.efficiency.approvalRequired),
-            ],
-          ]}
-        />
-        <AccountFactList
-          rows={[
-            [
-              "Credits avoided",
-              formatNullableNumber(diagnostics?.efficiency.estimatedCreditsAvoided),
-            ],
-          ]}
-        />
-      </div>
-
-      {diagnostics?.error ? (
-        <div className="flex items-start gap-2 rounded-sm border border-secondary-fixed-dim/30 bg-secondary-fixed-dim/10 p-3 text-label-sm text-secondary-fixed-dim">
-          <Activity className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-          {diagnostics.error}
-        </div>
-      ) : null}
-
-      <div className="grid gap-2">
-        <p className="technical-label text-on-surface-variant">
-          Recent processing failures
-        </p>
-        {diagnostics?.recentFailures.length ? (
-          diagnostics.recentFailures.map((failure) => (
-            <div
-              className="grid gap-1 rounded-sm border border-white/10 bg-white/[0.025] p-3 text-label-sm"
-              key={failure.assetId}
-            >
-              <span className="font-semibold text-on-surface">{failure.title}</span>
-              <span className="text-on-surface-variant">
-                {failure.message ?? "No provider message."}
-              </span>
-              <span className="technical-label text-primary-fixed-dim">
-                {failure.jobId ?? "No job id"}
-              </span>
-            </div>
-          ))
-        ) : (
-          <p className="rounded-sm border border-white/10 bg-white/[0.025] p-3 text-label-sm text-on-surface-variant">
-            No recent CloudConvert failures.
-          </p>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function readDiagnosticsError(error: unknown) {
-  return error instanceof Error
-    ? error.message
-    : "CloudConvert status could not load.";
 }
 
 function AccountPanelContent({
@@ -564,9 +329,9 @@ function AccountPanelContent({
                 Current guest room
               </p>
               <p className="mt-2 text-body-md text-on-surface-variant">
-                Attach this browser&apos;s current guest room session to your signed-in
-                account. Host ownership and saved-room attribution transfer only
-                when this guest session owns them.
+                Attach this browser&apos;s current guest room session to your
+                signed-in account. Host ownership and saved-room attribution
+                transfer only when this guest session owns them.
               </p>
               <a
                 className={buttonClassName({
@@ -625,6 +390,10 @@ function AccountPanelContent({
         />
       </div>
     );
+  }
+
+  if (activeTab === "rooms") {
+    return <AccountRoomsSection signedIn={signedIn} />;
   }
 
   if (activeTab === "account") {
@@ -755,7 +524,9 @@ function AccountFactList({ rows }: { rows: string[][] }) {
           key={label}
         >
           <dt className="technical-label text-on-surface-variant">{label}</dt>
-          <dd className="text-body-md font-semibold text-on-surface">{value}</dd>
+          <dd className="text-body-md font-semibold text-on-surface">
+            {value}
+          </dd>
         </div>
       ))}
     </dl>
@@ -786,12 +557,6 @@ function getPlaceholderCopy(tab: AccountPanelTab, signedIn: boolean) {
       : "Guest personalization stays local until you choose to sign in.";
   }
 
-  if (tab === "rooms") {
-    return signedIn
-      ? "Saved, recent, owned, and migrated guest rooms are prepared for TASK-002.10."
-      : "Guest rooms remain room-scoped and temporary unless you later attach them to an account.";
-  }
-
   if (tab === "privacy") {
     return "Provider tokens stay server-side. This task does not request or store YouTube, Drive, playlist, history, contacts, calendar, or offline access.";
   }
@@ -799,8 +564,4 @@ function getPlaceholderCopy(tab: AccountPanelTab, signedIn: boolean) {
   return signedIn
     ? "Account role, sign-out, and profile status are active. Deeper account settings are staged for later tasks."
     : "Sign-in is optional. Guest-first room access remains available without a Google account.";
-}
-
-function formatNullableNumber(value: number | null | undefined) {
-  return typeof value === "number" ? value.toLocaleString() : "Unavailable";
 }
