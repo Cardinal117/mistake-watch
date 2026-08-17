@@ -23,10 +23,9 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 
 ## Current Focus
 
-1. Complete `TASK-014B` account-aware persistence and lifecycle controls, then
-   repeat production QA for the account-room projection in `TASK-014`, linked to
-   [[items/MW-FEAT-003-account-rooms-surface|MW-FEAT-003]] and
-   [[items/MW-BUG-002-saved-room-dashboard-gap|MW-BUG-002]].
+1. Complete `TASK-014C` bounded Account Rooms live freshness, information
+   architecture, and Account-action placement, linked to
+   [[items/MW-FEAT-003-account-rooms-surface|MW-FEAT-003]].
 2. Reproduce remaining P1 playback and admission reports before implementation.
 3. Plan consented YouTube account signals after the Account Rooms boundary is
    stable.

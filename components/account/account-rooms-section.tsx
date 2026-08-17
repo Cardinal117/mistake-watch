@@ -5,6 +5,11 @@ import { RefreshCw, Users } from "lucide-react";
 
 import { buttonClassName } from "@/components/ui";
 import type { AccountRoomSummary } from "@/lib/account/room-projection";
+import {
+  ACCOUNT_ROOMS_REFRESH_INTERVAL_MS,
+  shouldApplyAccountRoomSnapshot,
+  shouldRefreshAccountRooms,
+} from "@/lib/account/room-refresh-policy";
 
 import { AccountRoomRow } from "./account-room-row";
 
@@ -45,9 +50,15 @@ function SignedInAccountRooms({ currentRoomId }: { currentRoomId?: string }) {
 
   useEffect(() => {
     const controller = new AbortController();
+    let disposed = false;
+    let requestPending = false;
+    let requestSequence = 0;
 
     async function loadRooms() {
-      setError(null);
+      if (requestPending) return;
+
+      requestPending = true;
+      const currentRequestSequence = ++requestSequence;
 
       try {
         const response = await fetch("/api/account/rooms", {
@@ -62,20 +73,70 @@ function SignedInAccountRooms({ currentRoomId }: { currentRoomId?: string }) {
           );
         }
 
+        if (
+          !shouldApplyAccountRoomSnapshot({
+            disposed,
+            latestRequestSequence: requestSequence,
+            requestSequence: currentRequestSequence,
+          })
+        ) {
+          return;
+        }
+
         setRooms(payload.rooms);
+        setError(null);
       } catch (loadError) {
-        if (!controller.signal.aborted) {
+        if (
+          !controller.signal.aborted &&
+          shouldApplyAccountRoomSnapshot({
+            disposed,
+            latestRequestSequence: requestSequence,
+            requestSequence: currentRequestSequence,
+          })
+        ) {
           setError(
             loadError instanceof Error
               ? loadError.message
               : "Account rooms could not be loaded.",
           );
         }
+      } finally {
+        if (currentRequestSequence === requestSequence) {
+          requestPending = false;
+        }
+      }
+    }
+
+    function refreshOnActivity() {
+      if (
+        shouldRefreshAccountRooms({
+          documentHidden: document.hidden,
+          online: navigator.onLine,
+          requestPending,
+        })
+      ) {
+        void loadRooms();
       }
     }
 
     void loadRooms();
-    return () => controller.abort();
+    const interval = window.setInterval(
+      refreshOnActivity,
+      ACCOUNT_ROOMS_REFRESH_INTERVAL_MS,
+    );
+    window.addEventListener("focus", refreshOnActivity);
+    window.addEventListener("online", refreshOnActivity);
+    document.addEventListener("visibilitychange", refreshOnActivity);
+
+    return () => {
+      disposed = true;
+      requestSequence += 1;
+      controller.abort();
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshOnActivity);
+      window.removeEventListener("online", refreshOnActivity);
+      document.removeEventListener("visibilitychange", refreshOnActivity);
+    };
   }, [requestRevision]);
 
   return (
@@ -110,7 +171,7 @@ function SignedInAccountRooms({ currentRoomId }: { currentRoomId?: string }) {
           <button
             className={buttonClassName({ size: "sm", variant: "secondary" })}
             onClick={() => {
-              setRooms(null);
+              setError(null);
               setRequestRevision((revision) => revision + 1);
             }}
             type="button"
@@ -119,8 +180,12 @@ function SignedInAccountRooms({ currentRoomId }: { currentRoomId?: string }) {
             Retry
           </button>
         </div>
-      ) : rooms === null ? (
-        <AccountRoomsLoading />
+      ) : null}
+
+      {rooms === null ? (
+        error ? null : (
+          <AccountRoomsLoading />
+        )
       ) : rooms.length === 0 ? (
         <div className="rounded-md border border-dashed border-white/10 bg-surface-container-lowest/42 p-5">
           <Users className="h-5 w-5 text-primary-fixed-dim" aria-hidden />
@@ -139,7 +204,6 @@ function SignedInAccountRooms({ currentRoomId }: { currentRoomId?: string }) {
               currentRoomId={currentRoomId}
               key={room.id}
               onChanged={() => {
-                setRooms(null);
                 setRequestRevision((revision) => revision + 1);
               }}
               room={room}

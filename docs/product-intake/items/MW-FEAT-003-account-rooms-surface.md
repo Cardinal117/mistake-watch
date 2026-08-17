@@ -4,7 +4,7 @@ type: feature
 status: in-progress
 priority: P1
 area: account-rooms
-related: [TASK-002.10, TASK-014B, MW-BUG-002, MW-BUG-007]
+related: [TASK-002.10, TASK-014B, TASK-014C, MW-BUG-002, MW-BUG-007]
 created: 2026-08-17
 updated: 2026-08-17
 ---
@@ -30,6 +30,13 @@ updated: 2026-08-17
 - **TASK-014B release:** Commit `a0cf709` is deployed to production as
   `dpl_2kBX4Eg2iS7R6ve46RBhNfQVSjWd`; both public aliases passed health and
   readiness checks.
+- **TASK-014B owner QA:** Account-aware room state and lifecycle actions persist
+  across devices, but a device with the Rooms tab already open requires reload
+  or tab remount to observe remote Unsave, Close, and Archive changes.
+- **TASK-014C Batch A:** Bounded four-second visible-tab refresh, activity
+  refresh, request serialization, stale-response protection, and retained-data
+  error handling are implemented and pass local automated gates. Signed-in
+  production owner QA remains required before Batch B.
 
 ## Original Report
 
