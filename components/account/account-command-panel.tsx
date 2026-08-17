@@ -150,7 +150,7 @@ export function AccountCommandPanel({
           </nav>
         </aside>
 
-        <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)_auto]">
+        <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)]">
           <header className="flex items-start justify-between gap-4 border-b border-white/10 bg-surface-container-lowest/35 p-5">
             <div className="min-w-0">
               <p className="technical-label text-primary-fixed-dim">
@@ -195,39 +195,10 @@ export function AccountCommandPanel({
               onAccountRoomsCountChange={handleAccountRoomsCountChange}
               roomAttached={roomAttached}
               roomId={roomId}
+              signInHref={signInHref}
+              signOutHref={signOutHref}
             />
           </div>
-
-          <footer className="flex flex-col gap-3 border-t border-white/10 bg-surface-container-lowest/35 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="max-w-2xl text-label-sm text-on-surface-variant">
-              Google sign-in is identity-only here. No YouTube, Drive, playlist,
-              history, contacts, calendar, or offline access is requested.
-            </p>
-            {isSignedIn ? (
-              <a
-                className={buttonClassName({
-                  className: "shrink-0",
-                  size: "sm",
-                  variant: "ghost",
-                })}
-                href={signOutHref}
-              >
-                <LogOut className="h-4 w-4" aria-hidden />
-                Sign out
-              </a>
-            ) : (
-              <a
-                className={buttonClassName({
-                  className: "shrink-0",
-                  size: "sm",
-                })}
-                href={signInHref}
-              >
-                <LogIn className="h-4 w-4" aria-hidden />
-                Continue with Google
-              </a>
-            )}
-          </footer>
         </div>
       </section>
     </div>
@@ -282,6 +253,8 @@ function AccountPanelContent({
   onAccountRoomsCountChange,
   roomAttached,
   roomId,
+  signInHref,
+  signOutHref,
 }: {
   account: AccountSummary;
   activeTab: AccountPanelTab;
@@ -291,6 +264,8 @@ function AccountPanelContent({
   onAccountRoomsCountChange(count: number | null): void;
   roomAttached: boolean;
   roomId?: string;
+  signInHref: string;
+  signOutHref: string;
 }) {
   const signedIn = account.status === "signed-in";
   const rows =
@@ -439,6 +414,42 @@ function AccountPanelContent({
               ? "Your Google sign-in is used for identity, ownership, and server-side app roles."
               : "Sign-in remains optional. Guest-first room access works without a Google account."}
           </p>
+          <div className="mt-5 flex flex-col gap-4 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="max-w-2xl">
+              <p className="technical-label text-on-surface-variant">
+                Identity scope
+              </p>
+              <p className="mt-1 text-label-sm text-on-surface-variant">
+                Google sign-in is identity-only here. No YouTube, Drive,
+                playlist, history, contacts, calendar, or offline access is
+                requested.
+              </p>
+            </div>
+            {signedIn ? (
+              <a
+                className={buttonClassName({
+                  className: "w-fit shrink-0",
+                  size: "sm",
+                  variant: "ghost",
+                })}
+                href={signOutHref}
+              >
+                <LogOut className="h-4 w-4" aria-hidden />
+                Sign out
+              </a>
+            ) : (
+              <a
+                className={buttonClassName({
+                  className: "w-fit shrink-0",
+                  size: "sm",
+                })}
+                href={signInHref}
+              >
+                <LogIn className="h-4 w-4" aria-hidden />
+                Continue with Google
+              </a>
+            )}
+          </div>
         </section>
         {account.status === "signed-in" &&
         account.role === "owner" &&

@@ -1,6 +1,6 @@
 # TASK-014C: Account Rooms Live Sync And Interface Refinement
 
-Status: In progress - Batches A-B implemented, owner QA pending
+Status: Implemented - Batches A-C complete, production owner QA pending
 Documentation level: Compact task
 Updated: 2026-08-17
 
@@ -159,4 +159,18 @@ changing room lifecycle authority.
   remained visible, the mobile duplicate close control was removed, content did
   not overlap, and no browser warnings or errors were recorded.
 - Signed-in room controls, filtering, and disclosure behavior remain the Batch B
-  production owner-QA gate. Batch C authentication placement is not implemented.
+  production owner-QA gate.
+- Batch B is committed locally as `6c92f33`; it has not been pushed or deployed.
+- Batch C removes the persistent authentication footer and places the unchanged
+  Google identity scope, sign-in route, and sign-out route inside the Account tab.
+  Other tabs now use the recovered panel height and render no authentication
+  action or identity-scope copy.
+- Focused account-room tests passed 25/25 and the full suite passed 355/355.
+  Typecheck, ESLint, changed-file Prettier, file-length policy with zero
+  violations, and the production build passed.
+- Local guest browser QA passed at desktop and 390x844. Account showed the
+  identity scope and Continue with Google action; Rooms showed neither, kept one
+  mobile close control, and produced no browser warnings or errors.
+- Signed-in Sign out placement and the combined Batches A-C cross-device room
+  workflow remain the production owner-QA gate because local Google OAuth is
+  unavailable.

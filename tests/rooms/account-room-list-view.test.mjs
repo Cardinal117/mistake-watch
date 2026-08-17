@@ -213,3 +213,21 @@ test("Rooms title and count live in one responsive command-panel header", async 
   assert.doesNotMatch(panel, /<header className="hidden/);
   assert.doesNotMatch(section, /Your spaces|Account rooms\s*<\/p>/);
 });
+
+test("authentication scope and actions live only in the Account tab content", async () => {
+  const panel = await readFile(
+    path.join(rootDir, "components/account/account-command-panel.tsx"),
+    "utf8",
+  );
+
+  assert.match(panel, /activeTab === "account"/);
+  assert.match(panel, /Identity scope/);
+  assert.match(panel, /Google sign-in is identity-only here/);
+  assert.match(panel, /Continue with Google/);
+  assert.match(panel, /Sign out/);
+  assert.match(panel, /signInHref=\{signInHref\}/);
+  assert.match(panel, /signOutHref=\{signOutHref\}/);
+  assert.match(panel, /grid-rows-\[auto_minmax\(0,1fr\)\]/);
+  assert.doesNotMatch(panel, /<footer/);
+  assert.doesNotMatch(panel, /grid-rows-\[auto_minmax\(0,1fr\)_auto\]/);
+});

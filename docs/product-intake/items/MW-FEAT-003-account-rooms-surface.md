@@ -41,6 +41,10 @@ updated: 2026-08-17
   list now supports local name search, relationship filters, deterministic
   sorting, result counts, and Open/Closed disclosure groups. Automated and
   guest desktop/mobile browser gates pass; signed-in production QA remains.
+- **TASK-014C Batch C:** Google identity scope and sign-in/sign-out actions now
+  live inside the Account tab, and the persistent panel footer has been removed.
+  Automated gates and guest desktop/mobile browser QA pass; signed-in production
+  owner QA remains before this item can be resolved.
 
 ## Original Report
 
