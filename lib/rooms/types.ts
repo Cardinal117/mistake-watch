@@ -61,6 +61,7 @@ export type RoomSnapshot = {
   name: string;
   code: string;
   inviteUrl?: string;
+  isAttachedToAccount: boolean;
   isSaved: boolean;
   liveSeedToken?: string | null;
   mode: "watch" | "listen";

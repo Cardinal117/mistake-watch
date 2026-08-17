@@ -52,7 +52,7 @@ export function ListenMobileRoomTools({
     (participant) => participant.status === "online",
   ).length;
   const roomAttached =
-    account.status === "signed-in" && room.currentMember?.userId === account.id;
+    account.status === "signed-in" && room.isAttachedToAccount;
 
   return (
     <section className="relative z-20 overflow-hidden rounded-md border border-white/10 bg-surface/82 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.035)] backdrop-blur-xl xl:hidden">

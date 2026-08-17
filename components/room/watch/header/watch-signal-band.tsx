@@ -46,7 +46,7 @@ export function WatchSignalBand({
 }) {
   const liveName = liveRoom.snapshot.session?.roomName ?? room.name;
   const roomAttached =
-    account.status === "signed-in" && room.currentMember?.userId === account.id;
+    account.status === "signed-in" && room.isAttachedToAccount;
 
   return (
     <header className="grid gap-2 border-b border-white/10 bg-background/52 px-0 py-1.5 backdrop-blur-xl md:grid-cols-[minmax(0,1fr)_auto] md:items-center">

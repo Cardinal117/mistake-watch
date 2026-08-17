@@ -67,7 +67,7 @@ export function ListenTechnicalRoomHeader({
     null;
   const roomName = liveRoom.snapshot.session?.roomName ?? room.name;
   const roomAttached =
-    account.status === "signed-in" && room.currentMember?.userId === account.id;
+    account.status === "signed-in" && room.isAttachedToAccount;
   const canRename =
     liveRoom.canManageAuthority && liveRoom.connectionStatus === "connected";
   const [editingName, setEditingName] = useState(roomName);

@@ -436,3 +436,34 @@ The percentages below measure release readiness, not development effort:
 - Pending final closure: observe the scheduled drain for the two account-backed
   Likes, confirm the durable preference survives a fresh session, and complete
   manual DevTools response-body inspection.
+
+## Cross-Browser Account Attachment Follow-Up
+
+- Production QA on 2026-08-17 confirmed that a Like becomes visible immediately
+  in a second private browser after that browser signs in to the same Google
+  account and joins the attached room. This verifies account-backed room
+  preference synchronization rather than browser-local persistence.
+- The same QA exposed an Account Overview mismatch: a browser retaining its own
+  guest room cookie was offered `Attach current room` even though the signed-in
+  account already had a durable room member. Recommendation authorization was
+  correct; only the panel's attachment presentation used the browser's current
+  guest member as its source of truth.
+- The local correction resolves the account once in the room server page and
+  derives a boolean attachment state from the existing room owner, saved-room,
+  and member records. It deliberately preserves the browser guest member as the
+  current live-room authority identity.
+- Regression coverage now verifies account-member, owner, saved-room,
+  guest-only, and unrelated-account outcomes, plus all desktop and mobile room
+  Account-panel entry points.
+- Passed locally after the correction: full `npm test` (324 tests), TypeScript,
+  ESLint, changed-file Prettier, file-length policy with zero violations,
+  `git diff --check`, and the production build.
+- The supplied WebInspector capture contains two successful preference updates
+  to `/api/recommendations/preferences`. Each request contains only
+  `actionId`, `expectedRevision`, `liked`, `mediaId`, `roomId`, and
+  `sourceType`; both responses are `private, no-store` with `nosniff`. The HAR
+  omitted response bodies, so manual response-body redaction inspection remains
+  pending.
+- Manual release QA remains required on a deployed build: reopen Account
+  Overview in both signed-in browsers and confirm both show the attached state
+  with no duplicate attachment action.

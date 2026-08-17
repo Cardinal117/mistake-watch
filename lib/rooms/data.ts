@@ -10,12 +10,9 @@ import {
   getSourceDisplayTitle,
   getYouTubeThumbnailUrl,
 } from "@/lib/player/source";
-import {
-  createSupabaseAdminClient,
-  createSupabaseServerClient,
-  type Tables,
-} from "@/lib/supabase";
+import { createSupabaseAdminClient, type Tables } from "@/lib/supabase";
 
+import { isRoomAttachedToAccount } from "./account-attachment";
 import { closeIdleUnsavedRooms } from "./lifecycle";
 import { createLiveRoomSeedToken } from "./live-authority";
 import type {
@@ -87,6 +84,7 @@ export async function getDashboardData(): Promise<DashboardData> {
 
 export async function getRoomSnapshotForGuest(
   roomId: string,
+  { accountUserId }: { accountUserId?: string | null } = {},
 ): Promise<RoomSnapshot | null> {
   try {
     const cookieStore = await cookies();
@@ -97,10 +95,13 @@ export async function getRoomSnapshotForGuest(
       : null;
 
     if (!session || session.room.status !== "open") {
-      return getRoomSnapshotForSignedInMember(roomId);
+      return getRoomSnapshotForSignedInMember(roomId, accountUserId);
     }
 
-    return getRoomSnapshot(session.room.id, session.member.id);
+    return getRoomSnapshot(session.room.id, {
+      accountUserId,
+      currentMemberId: session.member.id,
+    });
   } catch {
     return null;
   }
@@ -108,11 +109,9 @@ export async function getRoomSnapshotForGuest(
 
 async function getRoomSnapshotForSignedInMember(
   roomId: string,
+  accountUserId?: string | null,
 ): Promise<RoomSnapshot | null> {
-  const serverClient = await createSupabaseServerClient();
-  const { data, error } = await serverClient.auth.getUser();
-
-  if (error || !data.user) {
+  if (!accountUserId) {
     return null;
   }
 
@@ -121,14 +120,17 @@ async function getRoomSnapshotForSignedInMember(
     .from("room_members")
     .select("id")
     .eq("room_id", roomId)
-    .eq("user_id", data.user.id)
+    .eq("user_id", accountUserId)
     .maybeSingle();
 
   if (memberError || !member) {
     return null;
   }
 
-  return getRoomSnapshot(roomId, member.id);
+  return getRoomSnapshot(roomId, {
+    accountUserId,
+    currentMemberId: member.id,
+  });
 }
 
 export async function getRoomJoinPreview(
@@ -195,7 +197,13 @@ async function getDashboardRoomSummary(
 
 async function getRoomSnapshot(
   roomId: string,
-  currentMemberId?: string,
+  {
+    accountUserId,
+    currentMemberId,
+  }: {
+    accountUserId?: string | null;
+    currentMemberId?: string;
+  } = {},
 ): Promise<RoomSnapshot | null> {
   const supabase = createSupabaseAdminClient();
   const { data: room, error: roomError } = await supabase
@@ -229,6 +237,7 @@ async function getRoomSnapshot(
     ]);
 
   return mapRoomSnapshot({
+    accountUserId,
     members: members ?? [],
     queueItems: queueItems ?? [],
     room,
@@ -238,12 +247,14 @@ async function getRoomSnapshot(
 }
 
 async function mapRoomSnapshot({
+  accountUserId,
   members,
   queueItems,
   room,
   currentMemberId,
   settings,
 }: {
+  accountUserId?: string | null;
   currentMemberId?: string;
   members: RoomMember[];
   queueItems: QueueItem[];
@@ -281,6 +292,12 @@ async function mapRoomSnapshot({
     host: hostMember?.display_name ?? "Host",
     hostMemberId: hostMember?.id ?? null,
     id: room.id,
+    isAttachedToAccount: isRoomAttachedToAccount({
+      accountUserId,
+      memberUserIds: members.map((member) => member.user_id),
+      ownerUserId: room.owner_user_id,
+      savedByUserId: room.saved_by_user_id,
+    }),
     isSaved: room.is_saved,
     liveSeedToken,
     mode,

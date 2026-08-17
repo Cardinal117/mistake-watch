@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { RoomShell } from "@/components/room";
 import { RoomJoinGate } from "@/components/room/room-join-gate";
+import { getAccountSummary } from "@/lib/account/server";
 import {
   buildRoomInvitePath,
   getRoomJoinPreview,
@@ -26,7 +27,10 @@ export default async function RoomPage({
 }: RoomPageProps) {
   const { roomId } = await params;
   const { invite, notice } = await searchParams;
-  const room = await getRoomSnapshotForGuest(roomId);
+  const account = await getAccountSummary();
+  const room = await getRoomSnapshotForGuest(roomId, {
+    accountUserId: account.status === "signed-in" ? account.id : null,
+  });
 
   if (room) {
     const roomWithInvite = invite
@@ -35,6 +39,7 @@ export default async function RoomPage({
 
     return (
       <RoomShell
+        account={account}
         accountNotice={notice === "guest-room-attached" ? notice : undefined}
         room={roomWithInvite}
       />
