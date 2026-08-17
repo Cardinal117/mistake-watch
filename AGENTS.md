@@ -16,15 +16,29 @@ Mistake Watch is a polished, room-based watch/listen website for synchronized di
 
 ## Workflow
 
-- Follow the spec-first workflow for large, ambiguous, cross-cutting, realtime, database, media, browser, or design-heavy work.
+- Read `docs/product-intake/README.md`, `docs/product-intake/INBOX.md`, and
+  `docs/product-intake/INDEX.md` when
+  triaging findings, choosing the next task, planning related work, or closing
+  QA. Preserve untriaged Quick Capture text and never implement an intake entry
+  without explicit approval.
+- Use proportional documentation: inbox-only for small established fixes, one
+  compact `task.md` for bounded work by default, and a full packet for large,
+  ambiguous, cross-cutting, realtime, database, security, media-provider, or
+  design-heavy work.
 - Do not expand scope silently. Update the task packet first when new requirements change product behavior, architecture, data models, permissions, or phases.
 - Keep implementation aligned to the current approved task slice in `tasks.md`.
 - Prefer small, reviewable implementation slices with clear QA evidence.
 - Treat Markdown task files as the durable source of truth, and use HTML review artifacts as companion review surfaces when they improve comprehension.
-- Do not create decorative HTML artifacts for tiny tasks. Use them for UI milestones, architecture decisions, implementation handoff, QA readiness, or complex risk review.
+- HTML artifacts are opt-in. Create them only when explicitly requested or when
+  visual comparison, a complex decision, stakeholder review, or a QA dashboard
+  is materially easier to understand than Markdown.
+- Only one agent may edit the intake inbox or index at a time. Other agents may
+  inspect entries read-only or edit disjoint implementation files.
 
 ## Skill Checkpoints
 
+- Use `product-intake-triage` when importing, classifying, deduplicating,
+  prioritizing, promoting, or closing product-intake entries.
 - Use `spec-first-workflow` when creating or changing product scope, architecture, data models, feature phases, or task packets.
 - Use `approved-task-implementation` when implementing an approved task from `docs/tasks/TASK-002-incomplete-work-recovery/tasks.md`. Use TASK-001 task text only as historical context when a TASK-002 subtask references it.
 - Use `design-md-enforcer` for UI, CSS, layout, component, animation, responsive, or visual review work.
@@ -121,3 +135,5 @@ For implementation work, keep changes tightly scoped and verify responsive behav
 - Do not stage, commit, or push unless the user explicitly approves.
 - Once a git repository exists, use report-first commit prep through `git-commit-assistant` after QA passes.
 - If no git repository exists, report that limitation before commit prep and keep task summaries in the task packet.
+- Keep Quick Capture and triaged intake changes visible in commit reports. Never
+  stage unrelated untriaged owner notes as part of an implementation commit.

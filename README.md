@@ -2,8 +2,9 @@
 
 Mistake Watch is an experimental, AI-assisted private watch/listen-together
 application. Product direction, acceptance decisions, and manual QA remain
-human-controlled. The repository intentionally keeps detailed task packets so
-implementation claims can be traced to specs, tests, and review evidence.
+human-controlled. Documentation is proportional to risk: intake records for
+small findings, compact tasks by default, and full packets for sensitive or
+cross-cutting work.
 
 Production:
 
@@ -28,6 +29,15 @@ Production:
 
 The detailed product state is in [docs/ROADMAP.md](docs/ROADMAP.md). Do not infer
 that a feature is shipped merely because an older task packet discusses it.
+
+## Product Intake
+
+Owner findings, bugs, feature ideas, and operational work are captured in the
+portable [Obsidian product-intake vault](docs/product-intake/README.md). Add
+unstructured notes to [INBOX.md](docs/product-intake/INBOX.md), then ask Codex to
+triage them into the [active index](docs/product-intake/INDEX.md). Agents assign
+stable IDs, preserve the source report, and link work to tasks without
+implementing it automatically.
 
 ## Architecture
 
@@ -211,9 +221,12 @@ Read in order:
 
 1. `AGENTS.md`
 2. `DESIGN.md`
-3. `docs/HANDOFF.md`
-4. `docs/ROADMAP.md`
-5. the active packet under `docs/tasks/`
+3. `docs/product-intake/README.md`
+4. `docs/product-intake/INBOX.md`
+5. `docs/product-intake/INDEX.md`
+6. `docs/HANDOFF.md`
+7. `docs/ROADMAP.md`
+8. the active task under `docs/tasks/`
 
 TASK-009 security/integrity and TASK-010 Media Hub performance are complete.
 TASK-011 recommendation intelligence is live at 98% release readiness; only the

@@ -1,0 +1,7 @@
+.obsidian/*.json
+!.obsidian/app.json
+!.obsidian/appearance.json
+.obsidian/cache
+.obsidian/plugins
+.obsidian/themes
+.trash/

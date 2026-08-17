@@ -1,0 +1,159 @@
+/* Mistake Watch product-intake vault. Tokens mirror the repository DESIGN.md. */
+.theme-dark {
+  --background-primary: #131314;
+  --background-primary-alt: #0e0e0f;
+  --background-secondary: #1c1b1c;
+  --background-secondary-alt: #201f20;
+  --background-modifier-border: #3b494b;
+  --background-modifier-hover: #2a2a2b;
+  --background-modifier-active-hover: #353436;
+  --text-normal: #e5e2e3;
+  --text-muted: #b9cacb;
+  --text-faint: #849495;
+  --text-accent: #00dbe9;
+  --text-accent-hover: #7df4ff;
+  --interactive-accent: #00dbe9;
+  --interactive-accent-hover: #7df4ff;
+  --text-on-accent: #002022;
+  --tag-color: #ffdb9d;
+  --tag-background: rgba(254, 183, 0, 0.12);
+  --tag-border-color: rgba(254, 183, 0, 0.45);
+  --font-interface-theme: "Geist", "Segoe UI", sans-serif;
+  --font-text-theme: "Geist", "Segoe UI", sans-serif;
+  --font-monospace-theme: "JetBrains Mono", "Cascadia Code", monospace;
+  --radius-s: 4px;
+  --radius-m: 8px;
+  --radius-l: 12px;
+}
+
+body {
+  --file-line-width: 980px;
+  letter-spacing: 0;
+}
+
+.workspace-tab-header.is-active,
+.nav-file-title.is-active,
+.nav-folder-title.is-active {
+  color: #7df4ff;
+}
+
+.markdown-source-view.mod-cm6 .cm-content,
+.markdown-preview-view {
+  padding-bottom: 80px;
+}
+
+.markdown-rendered h1,
+.markdown-rendered h2,
+.markdown-rendered h3,
+.markdown-source-view.mod-cm6 .cm-header {
+  color: #e5e2e3;
+  letter-spacing: 0;
+}
+
+.markdown-rendered h1 {
+  border-bottom: 1px solid rgba(0, 219, 233, 0.32);
+  padding-bottom: 12px;
+}
+
+.markdown-rendered h2 {
+  color: #dbfcff;
+}
+
+.markdown-rendered h3 {
+  color: #ffdb9d;
+}
+
+.markdown-rendered code,
+.markdown-rendered table th,
+.markdown-rendered table td:first-child {
+  font-family: var(--font-monospace-theme);
+}
+
+.markdown-rendered table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.markdown-rendered table th {
+  background: #201f20;
+  color: #7df4ff;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+}
+
+.markdown-rendered table th,
+.markdown-rendered table td {
+  border-color: rgba(132, 148, 149, 0.28);
+  padding: 8px 10px;
+  vertical-align: top;
+}
+
+.markdown-rendered table tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.callout {
+  border-radius: 8px;
+  border-width: 1px;
+  box-shadow: none;
+}
+
+.callout[data-callout="tip"] {
+  --callout-color: 0, 219, 233;
+  --callout-icon: lucide-inbox;
+}
+
+.callout[data-callout="bug"] {
+  --callout-color: 255, 180, 171;
+  --callout-icon: lucide-bug;
+}
+
+.callout[data-callout="feature"] {
+  --callout-color: 0, 219, 233;
+  --callout-icon: lucide-sparkles;
+}
+
+.callout[data-callout="qol"] {
+  --callout-color: 255, 219, 157;
+  --callout-icon: lucide-sliders-horizontal;
+}
+
+.callout[data-callout="ops"] {
+  --callout-color: 182, 196, 255;
+  --callout-icon: lucide-wrench;
+}
+
+.callout[data-callout="observation"] {
+  --callout-color: 185, 202, 203;
+  --callout-icon: lucide-eye;
+}
+
+.callout[data-callout="resolved"] {
+  --callout-color: 125, 244, 255;
+  --callout-icon: lucide-circle-check;
+}
+
+.markdown-rendered a,
+.cm-hmd-internal-link {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.status-bar,
+.workspace-ribbon,
+.workspace-tab-header-container {
+  border-color: rgba(132, 148, 149, 0.24);
+}
+
+@media (max-width: 700px) {
+  body {
+    --file-line-width: 100%;
+  }
+
+  .markdown-rendered table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}

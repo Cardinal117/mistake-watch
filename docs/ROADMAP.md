@@ -1,6 +1,6 @@
 # Mistake Watch Roadmap
 
-Snapshot date: 2026-07-16
+Snapshot date: 2026-08-17
 
 This is the compact product-state index. Task packets remain the detailed
 requirements and evidence record.
@@ -52,25 +52,38 @@ outbox. The final gate is the scheduled durable drain plus fresh-session
 Supabase preference verification. Until that evidence exists, release readiness
 remains 98% rather than complete.
 
+## Active Product Intake
+
+The repository now tracks owner findings in `docs/product-intake/`. The current
+highest-priority confirmed behavior is `MW-BUG-005`: the tested attached room
+retrieves the expected Like after refresh, but another already-open device does
+not update in real time. Durable Supabase account-preference proof remains a
+separate open TASK-011 gate. Other P1 reports remain explicitly marked for
+reproduction rather than being presented as confirmed root causes.
+
 ## Planned Product Sequence
 
 1. **Close TASK-011 durable persistence**
    Observe the scheduled outbox drain and prove post-attachment account Likes
-   survive a fresh signed-in session.
-2. **Consented YouTube account signals**
+   survive a fresh signed-in session, then resolve the confirmed cross-device
+   Like-state update gap tracked as `MW-BUG-005`.
+2. **Account Rooms projection**
+   Replace the placeholder account Rooms surface and reconcile guest/account
+   saved-room discovery, linked from `MW-FEAT-003` and `MW-BUG-002`.
+3. **Consented YouTube account signals**
    Add incremental OAuth only for approved playlist/subscription capabilities.
    Provider tokens remain server-only and revocable. Do not claim access to the
    private YouTube home recommendation feed.
-3. **Add/Discover redesign**
+4. **Add/Discover redesign**
    Turn Add Media into a fast search/import/discovery workspace using the
    recommendation foundation, clear source states, and compact mobile flows.
-4. **Watch discovery overhaul**
+5. **Watch discovery overhaul**
    Evolve the Watch room media surface toward a streaming-style browse and
    recommendation experience without weakening the synchronized room focus.
-5. **AI DJ / session intelligence**
+6. **AI DJ / session intelligence**
    Explain session patterns and offer host-approved suggestions. AI output is
    advisory and cannot mutate the queue without an explicit action.
-6. **Social graph and incremental provider features**
+7. **Social graph and incremental provider features**
    Friends, invites, notifications, and provider-aware features remain separate
    permission and privacy work.
 

@@ -1,0 +1,9 @@
+{
+  "accentColor": "#00dbe9",
+  "baseFontSize": 16,
+  "cssTheme": "",
+  "enabledCssSnippets": [
+    "mistake-watch"
+  ],
+  "theme": "obsidian"
+}

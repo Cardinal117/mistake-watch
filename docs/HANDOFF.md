@@ -1,6 +1,6 @@
 # Mistake Watch Handoff
 
-Updated: 2026-07-16
+Updated: 2026-08-17
 
 ## Current State
 
@@ -31,12 +31,15 @@ signed-in session.
 
 1. `AGENTS.md`
 2. `DESIGN.md`
-3. `docs/ROADMAP.md`
-4. `docs/tasks/TASK-011-first-party-recommendation-intelligence/`
-5. `docs/tasks/TASK-010-watch-media-hub-performance/`
-6. `docs/tasks/TASK-009-project-integrity/`
-7. `supabase/MIGRATION_HISTORY.md`
-8. `docs/tasks/TASK-002-incomplete-work-recovery/` for historical detail
+3. `docs/product-intake/README.md`
+4. `docs/product-intake/INBOX.md`
+5. `docs/product-intake/INDEX.md`
+6. `docs/ROADMAP.md`
+7. `docs/tasks/TASK-011-first-party-recommendation-intelligence/`
+8. `docs/tasks/TASK-010-watch-media-hub-performance/`
+9. `docs/tasks/TASK-009-project-integrity/`
+10. `supabase/MIGRATION_HISTORY.md`
+11. `docs/tasks/TASK-002-incomplete-work-recovery/` for historical detail
 
 TASK-001 is historical MVP context. TASK-007 records completed modularization
 work and discovered issues. TASK-008 Spatial Cinema is an unapproved draft.
@@ -88,8 +91,12 @@ verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
 
-Close the remaining TASK-011 durable account-persistence proof after the next
-scheduled drain. Then create a bounded packet for consented YouTube account
-signals before the Add/Discover overhaul. Keep provider scopes incremental,
-tokens server-only, and the existing first-party ranking engine authoritative.
-TASK-008 Spatial Cinema remains an unapproved separate direction packet.
+Close the remaining TASK-011 durable account-persistence proof and address
+`MW-BUG-005`, the confirmed cross-device Like-state update gap. The tested
+attached room retrieves the expected Like after refresh, but already-open
+clients remain stale and the separate durable Supabase preference proof is still
+open. After that, continue with account-room projection and consented YouTube
+account signals before the Add/Discover overhaul. Keep provider scopes
+incremental, tokens server-only, and the existing first-party ranking engine
+authoritative. TASK-008 Spatial Cinema remains an unapproved separate direction
+packet.
