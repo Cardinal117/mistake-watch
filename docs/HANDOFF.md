@@ -25,8 +25,10 @@ provider search, playback, queue continuity, recommendation refresh, and
 private uploaded-media boundaries passed. Two post-attachment account Likes are
 now represented by durable Supabase preference state; a 2026-08-17 read-only
 check found four liked rows for one account. The local `MW-BUG-005` follow-up
-adds bounded active-client reconciliation and has passed the complete local
-gate, but is not committed or deployed and still requires two-device live QA.
+adds bounded active-client reconciliation. Commit `444b78f` is deployed as
+`dpl_3Z6mYK4tyqLtowcppLK6e2tSSz8t`; production health/readiness passed, and
+owner two-device QA measured four-second no-refresh convergence. TASK-011 is
+complete.
 
 ## Required Reading
 
@@ -92,10 +94,8 @@ verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
 
-Release and live-test `MW-BUG-005`, the cross-device Like-state reconciliation
-follow-up, then close TASK-011. Durable Supabase preference state is now proven;
-the remaining gate is an already-open second client updating without refresh.
-After that, continue with account-room projection and consented YouTube account
-signals before the Add/Discover overhaul. Keep provider scopes incremental,
-tokens server-only, and the existing first-party ranking engine authoritative.
-TASK-008 Spatial Cinema remains an unapproved separate direction packet.
+Proceed with Account Rooms projection using `MW-FEAT-003` and `MW-BUG-002`, then
+consented YouTube account signals before the Add/Discover overhaul. Keep
+provider scopes incremental, tokens server-only, and the existing first-party
+ranking engine authoritative. TASK-008 Spatial Cinema remains an unapproved
+separate direction packet.

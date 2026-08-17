@@ -2,12 +2,11 @@
 
 ## Status
 
-TASK-011 is live in production and functional QA passed. The account-member
-provider-route authorization hotfix is committed, deployed, user-verified, and
-merged to `main`. A read-only production check on 2026-08-17 confirmed four
-durable account Like rows for one account. Release readiness remains just below
-closure while the local `MW-BUG-005` cross-device reconciliation follow-up
-awaits commit, deployment, and two-client production QA.
+TASK-011 is complete, live in production, and owner QA passed. The
+account-member provider-route authorization hotfix and `MW-BUG-005`
+cross-device reconciliation are committed, deployed, and merged to `main`. A
+read-only production check confirmed four durable account Like rows for one
+account, and two-device QA measured a four-second no-refresh update.
 The Supabase migration is applied, Maincloud was published non-destructively,
 and Vercel deployment `dpl_AFfECQewb4i9m6F5QwABLp3FzpvW` is active on the live
 aliases.
@@ -409,10 +408,9 @@ The percentages below measure release readiness, not development effort:
   500-candidate performance gate pass locally.
 - Batch E: 82% - authorized, bounded service contracts pass.
 - Batch F: 92% - Like UI and existing Room Picks integration pass local gates.
-- Batch G: 99% - migration, publish, deploy, provider authorization correction,
-  functional production QA, and durable account preference evidence are
-  complete. The local `MW-BUG-005` active-client reconciliation follow-up still
-  requires deployment and two-client QA.
+- Batch G: 100% - migration, publish, deploy, provider authorization correction,
+  functional production QA, durable account preference evidence, and
+  cross-device active-client reconciliation are complete.
 
 ## Recommended Product Order After TASK-011
 
@@ -457,9 +455,10 @@ The percentages below measure release readiness, not development effort:
 - Passed after attachment regression fix: full `npm test` (314 tests),
   TypeScript, ESLint, changed-file Prettier, file-length policy, and production
   build.
-- Pending final closure: deploy the `MW-BUG-005` reconciliation follow-up,
-  confirm two-device no-refresh state convergence, and retain the documented
-  manual response-body inspection limitation.
+- Final closure passed: commit `444b78f` is deployed as
+  `dpl_3Z6mYK4tyqLtowcppLK6e2tSSz8t`, production health and readiness passed,
+  and owner QA measured four-second two-device convergence without refresh. The
+  earlier manual response-body inspection limitation remains documented.
 
 ## Cross-Browser Account Attachment Follow-Up
 

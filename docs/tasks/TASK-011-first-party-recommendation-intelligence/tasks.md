@@ -4,8 +4,9 @@
 
 Status: Released to production on 2026-07-16. Original functional QA passed.
 The account-member provider authorization hotfix is deployed and merged to
-`main`. Durable account preference state is confirmed. Final closure requires
-deployed two-client QA for the local `MW-BUG-005` reconciliation follow-up.
+`main`. Durable account preference state is confirmed. The `MW-BUG-005`
+cross-device reconciliation follow-up is deployed and owner QA passed with a
+measured four-second no-refresh update. TASK-011 is complete.
 
 Suggested files:
 
@@ -322,8 +323,8 @@ non-destructive Maincloud publish, exact-revision Vercel deployment, cron drain,
 and two-participant functional QA passed. The attached-account provider
 regression is fixed in deployed commit `a163a4b`, merged to `main`, and
 user-verified. A read-only production check on 2026-08-17 confirmed four durable
-account Like rows for one account. Final task closure now depends on releasing
-and live-testing the scoped cross-device reconciliation follow-up `MW-BUG-005`.
+account Like rows for one account. The scoped `MW-BUG-005` follow-up is deployed
+from commit `444b78f`, and two-device production QA passed. TASK-011 is complete.
 
 Work:
 
@@ -386,6 +387,9 @@ Current outcome:
   refresh. The local follow-up now performs bounded private-endpoint
   reconciliation every ten seconds and on focus, visibility return, or network
   reconnect, while preserving optimistic mutations and rejecting stale reads.
+- Commit `444b78f` is deployed as `dpl_3Z6mYK4tyqLtowcppLK6e2tSSz8t`. Owner QA
+  confirmed the second signed-in device displayed the Like without refresh
+  exactly four seconds after the first device changed it.
 - Manual DevTools inspection of recommendation response bodies was not
   completed. Automated URL/identity rejection contracts, private no-store
   response headers, and production authority rows provide supporting evidence,
@@ -395,5 +399,5 @@ Review checkpoint:
 
 - Security, authority, idempotency, privacy, performance, and rollback evidence
   are complete.
-- Deploy the `MW-BUG-005` follow-up and confirm a Like appears on another active
-  signed-in client without refresh before marking TASK-011 fully closed.
+- Complete. Durable state, private authority, deployment health, and
+  same-account two-device convergence are verified.

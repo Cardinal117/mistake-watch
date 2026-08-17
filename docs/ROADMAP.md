@@ -43,46 +43,42 @@ TASK-010 is complete, released, and user accepted:
 - the controlled median opening improved by 64.5% and initial poster requests
   fell by 95.2% for the 250-item fixture.
 
-## Active Release Verification
+## Completed Recommendation Intelligence
 
 TASK-011 is implemented, deployed, and merged to `main` through `a163a4b`.
 Functional production QA passed, including attached-account provider search.
 The scheduled drain has run, and a 2026-08-17 read-only production query
 confirmed four durable liked preference rows for one account. The final gate is
-deploying and live-testing the local `MW-BUG-005` active-client reconciliation
-follow-up.
+complete: commit `444b78f` is deployed as
+`dpl_3Z6mYK4tyqLtowcppLK6e2tSSz8t`, and owner two-device QA measured a
+four-second no-refresh Like update.
 
 ## Active Product Intake
 
-The repository now tracks owner findings in `docs/product-intake/`. The current
-highest-priority confirmed behavior is `MW-BUG-005`: the tested attached room
-retrieves the expected Like after refresh, but another already-open device does
-not update without refresh. The scoped fix is implemented locally and awaiting
-release QA. Other P1 reports remain explicitly marked for reproduction rather
+The repository now tracks owner findings in `docs/product-intake/`.
+`MW-BUG-005` is resolved and archived with its implementation and production QA
+evidence. Other P1 reports remain explicitly marked for reproduction rather
 than being presented as confirmed root causes.
 
 ## Planned Product Sequence
 
-1. **Close TASK-011 active-client synchronization**
-   Release `MW-BUG-005` and prove a same-account Like reaches another already-
-   open client without refresh. Durable Supabase account state is confirmed.
-2. **Account Rooms projection**
+1. **Account Rooms projection**
    Replace the placeholder account Rooms surface and reconcile guest/account
    saved-room discovery, linked from `MW-FEAT-003` and `MW-BUG-002`.
-3. **Consented YouTube account signals**
+2. **Consented YouTube account signals**
    Add incremental OAuth only for approved playlist/subscription capabilities.
    Provider tokens remain server-only and revocable. Do not claim access to the
    private YouTube home recommendation feed.
-4. **Add/Discover redesign**
+3. **Add/Discover redesign**
    Turn Add Media into a fast search/import/discovery workspace using the
    recommendation foundation, clear source states, and compact mobile flows.
-5. **Watch discovery overhaul**
+4. **Watch discovery overhaul**
    Evolve the Watch room media surface toward a streaming-style browse and
    recommendation experience without weakening the synchronized room focus.
-6. **AI DJ / session intelligence**
+5. **AI DJ / session intelligence**
    Explain session patterns and offer host-approved suggestions. AI output is
    advisory and cannot mutate the queue without an explicit action.
-7. **Social graph and incremental provider features**
+6. **Social graph and incremental provider features**
    Friends, invites, notifications, and provider-aware features remain separate
    permission and privacy work.
 

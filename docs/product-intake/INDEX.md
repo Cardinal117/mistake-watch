@@ -9,7 +9,6 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 | [MW-BUG-002](items/MW-BUG-002-saved-room-dashboard-gap.md)        | Bug        | P1       | Needs reproduction | Account rooms     | Attached room can disappear from dashboard after sign-out | TASK-002.10        |
 | [MW-BUG-003](items/MW-BUG-003-google-redirect-black-player.md)    | Bug        | P1       | Needs reproduction | Auth / playback   | Redirect failure may leave controls active without media  | TASK-012           |
 | [MW-BUG-004](items/MW-BUG-004-uploaded-session-renewal-freeze.md) | Bug        | P1       | Needs reproduction | Uploaded playback | One participant can freeze while room progress continues  | TASK-009           |
-| [MW-BUG-005](items/MW-BUG-005-cross-device-like-state.md)         | Bug        | P1       | In progress        | Recommendations   | Reconcile account Likes across already-open clients       | TASK-011           |
 | [MW-BUG-006](items/MW-BUG-006-host-refresh-playback-drift.md)     | Bug        | P1       | Needs reproduction | Playback sync     | Resume can start far from authoritative room position     | Playback stability |
 | [MW-FEAT-001](items/MW-FEAT-001-owner-enabled-vr.md)              | Feature    | P3       | Ready for planning | Spatial cinema    | Owner toggle exposes VR mode and headset prompt           | TASK-008           |
 | [MW-FEAT-002](items/MW-FEAT-002-first-visit-privacy-notice.md)    | Feature    | P2       | Ready for planning | Privacy UX        | Add an accurate first-visit privacy notice if required    | Privacy review     |
@@ -23,9 +22,9 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 
 ## Current Focus
 
-1. Release and live-test
-   [[items/MW-BUG-005-cross-device-like-state|MW-BUG-005]], then close TASK-011.
-2. Plan account-room projection with
+1. Plan account-room projection with
    [[items/MW-FEAT-003-account-rooms-surface|MW-FEAT-003]] and
    [[items/MW-BUG-002-saved-room-dashboard-gap|MW-BUG-002]].
-3. Reproduce remaining P1 playback and admission reports before implementation.
+2. Reproduce remaining P1 playback and admission reports before implementation.
+3. Plan consented YouTube account signals after the Account Rooms boundary is
+   stable.
