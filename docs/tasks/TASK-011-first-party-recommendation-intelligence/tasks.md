@@ -4,8 +4,8 @@
 
 Status: Released to production on 2026-07-16. Original functional QA passed.
 The account-member provider authorization hotfix is deployed and merged to
-`main`. Final closure requires the scheduled durable drain and fresh-session
-proof for the two post-attachment account Likes.
+`main`. Durable account preference state is confirmed. Final closure requires
+deployed two-client QA for the local `MW-BUG-005` reconciliation follow-up.
 
 Suggested files:
 
@@ -321,8 +321,9 @@ Status: Released to production on 2026-07-16. Local gates, Supabase migration,
 non-destructive Maincloud publish, exact-revision Vercel deployment, cron drain,
 and two-participant functional QA passed. The attached-account provider
 regression is fixed in deployed commit `a163a4b`, merged to `main`, and
-user-verified. Final task closure is pending the scheduled durable drain and
-fresh-session persistence proof for the two post-attachment account Likes.
+user-verified. A read-only production check on 2026-08-17 confirmed four durable
+account Like rows for one account. Final task closure now depends on releasing
+and live-testing the scoped cross-device reconciliation follow-up `MW-BUG-005`.
 
 Work:
 
@@ -375,9 +376,16 @@ Current outcome:
   `dpl_AFfECQewb4i9m6F5QwABLp3FzpvW` and is now the head of `main`.
 - User QA confirmed attached-account provider search works. Maincloud records
   two post-attachment `media_liked` events for the account-backed host.
-- The room outbox currently contains 45 pending events. Supabase does not yet
-  contain the corresponding durable account rows because the next scheduled
-  drain has not run since those actions.
+- The scheduled drain subsequently completed. A read-only production query on
+  2026-08-17 confirmed four `liked` `media_preferences` rows for one account,
+  with matching account-attributed Like events in the durable event store.
+- Cross-browser QA confirmed a fresh signed-in client retrieves the expected
+  state after refresh. Because that check used the same active room, the
+  production database rows remain the direct evidence for durable persistence.
+- `MW-BUG-005` confirmed that an already-open second client remains stale until
+  refresh. The local follow-up now performs bounded private-endpoint
+  reconciliation every ten seconds and on focus, visibility return, or network
+  reconnect, while preserving optimistic mutations and rejecting stale reads.
 - Manual DevTools inspection of recommendation response bodies was not
   completed. Automated URL/identity rejection contracts, private no-store
   response headers, and production authority rows provide supporting evidence,
@@ -387,6 +395,5 @@ Review checkpoint:
 
 - Security, authority, idempotency, privacy, performance, and rollback evidence
   are complete.
-- Observe the next scheduled drain, confirm the post-attachment Like becomes a
-  durable account preference, then verify it survives a fresh account session
-  before marking TASK-011 fully closed.
+- Deploy the `MW-BUG-005` follow-up and confirm a Like appears on another active
+  signed-in client without refresh before marking TASK-011 fully closed.

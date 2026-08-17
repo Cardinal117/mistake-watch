@@ -33,6 +33,18 @@ test("Like hook updates optimistically and restores authoritative state on failu
   assert.match(source, /roomIdRef\.current !== roomId/);
 });
 
+test("Like hook reconciles active clients without overriding newer local state", async () => {
+  const source = await read("lib/recommendations/use-media-preferences.ts");
+
+  assert.match(source, /PREFERENCE_RECONCILE_INTERVAL_MS = 10_000/);
+  assert.match(source, /window\.setInterval/);
+  assert.match(source, /window\.addEventListener\("focus"/);
+  assert.match(source, /window\.addEventListener\("online"/);
+  assert.match(source, /document\.addEventListener\("visibilitychange"/);
+  assert.match(source, /shouldApplyPreferenceSnapshot/);
+  assert.match(source, /pendingKeysRef\.current = new Set\(\)/);
+});
+
 test("Listen surfaces use the same room preference controller", async () => {
   const [layout, nowPlaying, cards] = await Promise.all([
     read("components/room/listen/listen-mode-layout.tsx"),

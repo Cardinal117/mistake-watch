@@ -2,12 +2,12 @@
 
 ## Status
 
-TASK-011 is live in production and functional QA passed. Release readiness is
-98%. The account-member provider-route authorization hotfix is committed,
-deployed, user-verified, and merged to `main`. Two post-attachment account Like
-events are confirmed in the authoritative Maincloud outbox. Final closure
-requires observing those events after the scheduled durable drain and
-confirming the resulting account preference survives a fresh signed-in session.
+TASK-011 is live in production and functional QA passed. The account-member
+provider-route authorization hotfix is committed, deployed, user-verified, and
+merged to `main`. A read-only production check on 2026-08-17 confirmed four
+durable account Like rows for one account. Release readiness remains just below
+closure while the local `MW-BUG-005` cross-device reconciliation follow-up
+awaits commit, deployment, and two-client production QA.
 The Supabase migration is applied, Maincloud was published non-destructively,
 and Vercel deployment `dpl_AFfECQewb4i9m6F5QwABLp3FzpvW` is active on the live
 aliases.
@@ -60,10 +60,10 @@ fix are pushed through `a163a4b` on both
   attribution and did not create `media_preferences` rows. This originally left
   the signed-in durable path unexercised; the current post-attachment events are
   recorded below.
-- Final closure requires draining the post-attachment Likes and confirming the
-  durable account preference survives a fresh signed-in session.
+- At this checkpoint, final closure still required draining the post-attachment
+  Likes and confirming durable account preference state.
 
-Current update:
+Previous release checkpoint:
 
 - The provider authorization hotfix is deployed from exact commit `a163a4b` as
   `dpl_AFfECQewb4i9m6F5QwABLp3FzpvW` and is merged to `main`.
@@ -72,10 +72,34 @@ Current update:
 - Maincloud contains two post-attachment `media_liked` events for the
   account-backed host member. The room outbox contains 45 pending events, which
   is within the next scheduled 50-event drain batch.
-- Supabase currently has no durable account event or `media_preferences` row
-  for those Likes because the scheduled drain has not run since the actions.
-- Final closure is therefore reduced to observing the scheduled drain, checking
-  the resulting durable preference, and confirming it survives a fresh session.
+- Supabase had no durable account event or `media_preferences` row for those
+  Likes because the scheduled drain had not run since the actions.
+- At that point, closure was reduced to observing the scheduled drain and
+  checking the resulting durable preference.
+
+Finalization update on 2026-08-17:
+
+- The scheduled durable path has run. A read-only production query returned
+  four `liked` `media_preferences` rows belonging to one account; the latest
+  durable update was recorded on 2026-07-20.
+- Durable recommendation events include account-attributed Like rows matching
+  the stored preference identities. No email, token, source URL, object key, or
+  participant detail was queried.
+- Owner QA showed the expected Like after a second private browser signed in and
+  refreshed. That proves the private endpoint can retrieve the expected state,
+  while the database query is the direct persistence evidence because the same
+  active room can also supply a live preference overlay.
+- The same QA confirmed `MW-BUG-005`: an already-open second client does not
+  reconcile the change until refresh.
+- The local fix revalidates the existing private, no-store preference endpoint
+  every ten seconds while visible and immediately on focus, visibility return,
+  or network reconnect. It does not expose private SpacetimeDB tables or change
+  Supabase, SpacetimeDB, or response contracts.
+- Reconciliation rejects superseded requests, room changes, and snapshots that
+  began before a local mutation. Pending optimistic state is preserved.
+- Local verification passed 329 tests, TypeScript, ESLint, changed-file
+  Prettier, file-length policy with zero violations, `git diff --check`, and a
+  production build. Live two-device no-refresh QA remains required.
 
 ## Account Attachment Provider Regression
 
@@ -385,10 +409,10 @@ The percentages below measure release readiness, not development effort:
   500-candidate performance gate pass locally.
 - Batch E: 82% - authorized, bounded service contracts pass.
 - Batch F: 92% - Like UI and existing Room Picks integration pass local gates.
-- Batch G: 98% - migration, publish, deploy, provider authorization correction,
-  and functional production QA are complete. Post-attachment account Likes are
-  present in the authoritative outbox; the scheduled durable drain and fresh
-  session persistence proof remain.
+- Batch G: 99% - migration, publish, deploy, provider authorization correction,
+  functional production QA, and durable account preference evidence are
+  complete. The local `MW-BUG-005` active-client reconciliation follow-up still
+  requires deployment and two-client QA.
 
 ## Recommended Product Order After TASK-011
 
@@ -433,9 +457,9 @@ The percentages below measure release readiness, not development effort:
 - Passed after attachment regression fix: full `npm test` (314 tests),
   TypeScript, ESLint, changed-file Prettier, file-length policy, and production
   build.
-- Pending final closure: observe the scheduled drain for the two account-backed
-  Likes, confirm the durable preference survives a fresh session, and complete
-  manual DevTools response-body inspection.
+- Pending final closure: deploy the `MW-BUG-005` reconciliation follow-up,
+  confirm two-device no-refresh state convergence, and retain the documented
+  manual response-body inspection limitation.
 
 ## Cross-Browser Account Attachment Follow-Up
 

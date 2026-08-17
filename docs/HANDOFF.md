@@ -23,9 +23,10 @@ TASK-011 First-Party Recommendation Intelligence is live. Commits through
 `dpl_AFfECQewb4i9m6F5QwABLp3FzpvW` is active. Functional QA, attached-account
 provider search, playback, queue continuity, recommendation refresh, and
 private uploaded-media boundaries passed. Two post-attachment account Likes are
-present in the Maincloud outbox. TASK-011 remains at 98% until the scheduled
-drain creates durable Supabase preference state and that state survives a fresh
-signed-in session.
+now represented by durable Supabase preference state; a 2026-08-17 read-only
+check found four liked rows for one account. The local `MW-BUG-005` follow-up
+adds bounded active-client reconciliation and has passed the complete local
+gate, but is not committed or deployed and still requires two-device live QA.
 
 ## Required Reading
 
@@ -91,12 +92,10 @@ verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
 
-Close the remaining TASK-011 durable account-persistence proof and address
-`MW-BUG-005`, the confirmed cross-device Like-state update gap. The tested
-attached room retrieves the expected Like after refresh, but already-open
-clients remain stale and the separate durable Supabase preference proof is still
-open. After that, continue with account-room projection and consented YouTube
-account signals before the Add/Discover overhaul. Keep provider scopes
-incremental, tokens server-only, and the existing first-party ranking engine
-authoritative. TASK-008 Spatial Cinema remains an unapproved separate direction
-packet.
+Release and live-test `MW-BUG-005`, the cross-device Like-state reconciliation
+follow-up, then close TASK-011. Durable Supabase preference state is now proven;
+the remaining gate is an already-open second client updating without refresh.
+After that, continue with account-room projection and consented YouTube account
+signals before the Add/Discover overhaul. Keep provider scopes incremental,
+tokens server-only, and the existing first-party ranking engine authoritative.
+TASK-008 Spatial Cinema remains an unapproved separate direction packet.

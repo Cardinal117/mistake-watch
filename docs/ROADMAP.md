@@ -47,26 +47,25 @@ TASK-010 is complete, released, and user accepted:
 
 TASK-011 is implemented, deployed, and merged to `main` through `a163a4b`.
 Functional production QA passed, including attached-account provider search.
-Two post-attachment account Likes are present in the authoritative Maincloud
-outbox. The final gate is the scheduled durable drain plus fresh-session
-Supabase preference verification. Until that evidence exists, release readiness
-remains 98% rather than complete.
+The scheduled drain has run, and a 2026-08-17 read-only production query
+confirmed four durable liked preference rows for one account. The final gate is
+deploying and live-testing the local `MW-BUG-005` active-client reconciliation
+follow-up.
 
 ## Active Product Intake
 
 The repository now tracks owner findings in `docs/product-intake/`. The current
 highest-priority confirmed behavior is `MW-BUG-005`: the tested attached room
 retrieves the expected Like after refresh, but another already-open device does
-not update in real time. Durable Supabase account-preference proof remains a
-separate open TASK-011 gate. Other P1 reports remain explicitly marked for
-reproduction rather than being presented as confirmed root causes.
+not update without refresh. The scoped fix is implemented locally and awaiting
+release QA. Other P1 reports remain explicitly marked for reproduction rather
+than being presented as confirmed root causes.
 
 ## Planned Product Sequence
 
-1. **Close TASK-011 durable persistence**
-   Observe the scheduled outbox drain and prove post-attachment account Likes
-   survive a fresh signed-in session, then resolve the confirmed cross-device
-   Like-state update gap tracked as `MW-BUG-005`.
+1. **Close TASK-011 active-client synchronization**
+   Release `MW-BUG-005` and prove a same-account Like reaches another already-
+   open client without refresh. Durable Supabase account state is confirmed.
 2. **Account Rooms projection**
    Replace the placeholder account Rooms surface and reconcile guest/account
    saved-room discovery, linked from `MW-FEAT-003` and `MW-BUG-002`.

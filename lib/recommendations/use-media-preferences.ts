@@ -9,8 +9,16 @@ import {
   PreferenceMutationError,
   queueItemRecommendationIdentity,
   updateRoomMediaPreference,
-  type ClientMediaPreference,
 } from "./room-client";
+import {
+  indexMediaPreferences,
+  reconcileMediaPreferences,
+  shouldApplyPreferenceSnapshot,
+  type MediaPreferenceMap,
+} from "./media-preference-reconciliation";
+
+const PREFERENCE_RECONCILE_INTERVAL_MS = 10_000;
+const PREFERENCE_ACTIVITY_THROTTLE_MS = 2_000;
 
 export type MediaPreferenceView = {
   available: boolean;
@@ -33,37 +41,111 @@ export function useMediaPreferences({
   allowUploaded: boolean;
   roomId: string;
 }) {
-  const [preferences, setPreferences] = useState<
-    Record<string, ClientMediaPreference>
-  >({});
+  const [preferences, setPreferences] = useState<MediaPreferenceMap>({});
   const [loadedRoomId, setLoadedRoomId] = useState(roomId);
   const [pendingKeys, setPendingKeys] = useState<Set<string>>(new Set());
   const [blockedKeys, setBlockedKeys] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [rankingRevision, setRankingRevision] = useState(0);
   const roomIdRef = useRef(roomId);
+  const preferencesRef = useRef<MediaPreferenceMap>({});
+  const pendingKeysRef = useRef<Set<string>>(new Set());
+  const mutationGenerationRef = useRef(0);
+  const requestSequenceRef = useRef(0);
+  const lastRefreshStartedAtRef = useRef(0);
+  const lastAppliedRoomIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     roomIdRef.current = roomId;
   }, [roomId]);
 
   useEffect(() => {
-    let cancelled = false;
+    let disposed = false;
 
-    void fetchRoomMediaPreferences(roomId)
-      .then((items) => {
-        if (!cancelled) {
-          setPreferences(
-            Object.fromEntries(items.map((item) => [item.mediaKey, item])),
-          );
-          setLoadedRoomId(roomId);
+    mutationGenerationRef.current += 1;
+    pendingKeysRef.current = new Set();
+
+    async function refreshPreferences(force = false) {
+      const now = Date.now();
+
+      if (
+        !force &&
+        now - lastRefreshStartedAtRef.current < PREFERENCE_ACTIVITY_THROTTLE_MS
+      ) {
+        return;
+      }
+
+      lastRefreshStartedAtRef.current = now;
+      const requestSequence = requestSequenceRef.current + 1;
+      const requestMutationGeneration = mutationGenerationRef.current;
+      requestSequenceRef.current = requestSequence;
+
+      try {
+        const items = await fetchRoomMediaPreferences(roomId);
+
+        if (
+          disposed ||
+          !shouldApplyPreferenceSnapshot({
+            currentMutationGeneration: mutationGenerationRef.current,
+            currentRoomId: roomIdRef.current,
+            latestRequestSequence: requestSequenceRef.current,
+            requestMutationGeneration,
+            requestRoomId: roomId,
+            requestSequence,
+          })
+        ) {
+          return;
+        }
+
+        const result = reconcileMediaPreferences({
+          current: preferencesRef.current,
+          incoming: indexMediaPreferences(items),
+          pendingKeys: pendingKeysRef.current,
+        });
+        const roomChanged = lastAppliedRoomIdRef.current !== roomId;
+
+        if (result.changed) {
+          preferencesRef.current = result.preferences;
+          setPreferences(result.preferences);
+        }
+
+        lastAppliedRoomIdRef.current = roomId;
+        if (roomChanged) {
+          setPendingKeys(new Set());
+          setBlockedKeys(new Set());
+          setErrors({});
+        }
+        setLoadedRoomId(roomId);
+        if (result.changed || roomChanged) {
           setRankingRevision((current) => current + 1);
         }
-      })
-      .catch(() => undefined);
+      } catch {
+        // Preference reconciliation is non-blocking for playback and queue use.
+      }
+    }
+
+    function refreshOnActivity() {
+      if (!document.hidden && navigator.onLine) {
+        void refreshPreferences();
+      }
+    }
+
+    void refreshPreferences(true);
+    const interval = window.setInterval(
+      refreshOnActivity,
+      PREFERENCE_RECONCILE_INTERVAL_MS,
+    );
+    window.addEventListener("focus", refreshOnActivity);
+    window.addEventListener("online", refreshOnActivity);
+    document.addEventListener("visibilitychange", refreshOnActivity);
 
     return () => {
-      cancelled = true;
+      disposed = true;
+      requestSequenceRef.current += 1;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshOnActivity);
+      window.removeEventListener("online", refreshOnActivity);
+      document.removeEventListener("visibilitychange", refreshOnActivity);
     };
   }, [roomId]);
 
@@ -115,7 +197,9 @@ export function useMediaPreferences({
 
       const key = recommendationMediaKey(identity);
       const hasCurrentRoomState = loadedRoomId === roomId;
-      const current = (hasCurrentRoomState ? preferences[key] : undefined) ?? {
+      const current = (hasCurrentRoomState
+        ? preferencesRef.current[key]
+        : undefined) ?? {
         ...identity,
         liked: false,
         mediaKey: key,
@@ -123,7 +207,7 @@ export function useMediaPreferences({
       };
 
       if (
-        (hasCurrentRoomState && pendingKeys.has(key)) ||
+        (hasCurrentRoomState && pendingKeysRef.current.has(key)) ||
         (hasCurrentRoomState && blockedKeys.has(key)) ||
         (identity.sourceType === "uploaded" && !allowUploaded)
       ) {
@@ -131,13 +215,19 @@ export function useMediaPreferences({
       }
 
       const optimistic = { ...current, liked: !current.liked };
-      setPreferences((state) => ({
-        ...(hasCurrentRoomState ? state : {}),
+      const optimisticPreferences = {
+        ...(hasCurrentRoomState ? preferencesRef.current : {}),
         [key]: optimistic,
-      }));
-      setPendingKeys((state) =>
-        new Set(hasCurrentRoomState ? state : []).add(key),
-      );
+      };
+      const nextPendingKeys = new Set(
+        hasCurrentRoomState ? pendingKeysRef.current : [],
+      ).add(key);
+
+      mutationGenerationRef.current += 1;
+      preferencesRef.current = optimisticPreferences;
+      pendingKeysRef.current = nextPendingKeys;
+      setPreferences(optimisticPreferences);
+      setPendingKeys(nextPendingKeys);
       setErrors((state) => ({
         ...(hasCurrentRoomState ? state : {}),
         [key]: "",
@@ -159,7 +249,14 @@ export function useMediaPreferences({
         if (roomIdRef.current !== roomId) {
           return;
         }
-        setPreferences((state) => ({ ...state, [key]: updated }));
+        const updatedPreferences = {
+          ...preferencesRef.current,
+          [key]: updated,
+        };
+
+        mutationGenerationRef.current += 1;
+        preferencesRef.current = updatedPreferences;
+        setPreferences(updatedPreferences);
         setRankingRevision((state) => state + 1);
       } catch (error) {
         if (roomIdRef.current !== roomId) {
@@ -167,10 +264,14 @@ export function useMediaPreferences({
         }
         const mutationError =
           error instanceof PreferenceMutationError ? error : null;
-        setPreferences((state) => ({
-          ...state,
+        const restoredPreferences = {
+          ...preferencesRef.current,
           [key]: mutationError?.current ?? current,
-        }));
+        };
+
+        mutationGenerationRef.current += 1;
+        preferencesRef.current = restoredPreferences;
+        setPreferences(restoredPreferences);
         setErrors((state) => ({
           ...state,
           [key]: mutationError?.message ?? "Like could not be updated.",
@@ -181,22 +282,14 @@ export function useMediaPreferences({
         }
       } finally {
         if (roomIdRef.current === roomId) {
-          setPendingKeys((state) => {
-            const next = new Set(state);
-            next.delete(key);
-            return next;
-          });
+          const nextPendingKeys = new Set(pendingKeysRef.current);
+          nextPendingKeys.delete(key);
+          pendingKeysRef.current = nextPendingKeys;
+          setPendingKeys(nextPendingKeys);
         }
       }
     },
-    [
-      allowUploaded,
-      blockedKeys,
-      loadedRoomId,
-      pendingKeys,
-      preferences,
-      roomId,
-    ],
+    [allowUploaded, blockedKeys, loadedRoomId, roomId],
   );
 
   return useMemo<MediaPreferenceController>(
