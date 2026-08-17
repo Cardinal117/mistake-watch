@@ -1,24 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  BookmarkCheck,
-  Clock3,
-  Headphones,
-  RefreshCw,
-  Users,
-  Video,
-} from "lucide-react";
+import { RefreshCw, Users } from "lucide-react";
 
-import { Badge, PendingLink, buttonClassName } from "@/components/ui";
+import { buttonClassName } from "@/components/ui";
 import type { AccountRoomSummary } from "@/lib/account/room-projection";
+
+import { AccountRoomRow } from "./account-room-row";
 
 type AccountRoomsResponse = {
   error?: string;
   rooms?: AccountRoomSummary[];
 };
 
-export function AccountRoomsSection({ signedIn }: { signedIn: boolean }) {
+export function AccountRoomsSection({
+  currentRoomId,
+  signedIn,
+}: {
+  currentRoomId?: string;
+  signedIn: boolean;
+}) {
   if (!signedIn) {
     return (
       <section className="rounded-md border border-white/10 bg-surface-container-lowest/42 p-5">
@@ -34,10 +35,10 @@ export function AccountRoomsSection({ signedIn }: { signedIn: boolean }) {
     );
   }
 
-  return <SignedInAccountRooms />;
+  return <SignedInAccountRooms currentRoomId={currentRoomId} />;
 }
 
-function SignedInAccountRooms() {
+function SignedInAccountRooms({ currentRoomId }: { currentRoomId?: string }) {
   const [rooms, setRooms] = useState<AccountRoomSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [requestRevision, setRequestRevision] = useState(0);
@@ -134,72 +135,19 @@ function SignedInAccountRooms() {
       ) : (
         <div className="divide-y divide-white/10 overflow-hidden rounded-md border border-white/10 bg-surface-container-lowest/42">
           {rooms.map((room) => (
-            <AccountRoomRow key={room.id} room={room} />
+            <AccountRoomRow
+              currentRoomId={currentRoomId}
+              key={room.id}
+              onChanged={() => {
+                setRooms(null);
+                setRequestRevision((revision) => revision + 1);
+              }}
+              room={room}
+            />
           ))}
         </div>
       )}
     </section>
-  );
-}
-
-function AccountRoomRow({ room }: { room: AccountRoomSummary }) {
-  const ModeIcon = room.mode === "listen" ? Headphones : Video;
-  const isOpen = room.status === "open";
-
-  return (
-    <article className="grid min-w-0 gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-      <div className="min-w-0">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <ModeIcon
-            className={
-              room.mode === "listen"
-                ? "h-4 w-4 shrink-0 text-secondary-fixed-dim"
-                : "h-4 w-4 shrink-0 text-primary-fixed-dim"
-            }
-            aria-hidden
-          />
-          <h5 className="min-w-0 truncate text-body-md font-semibold text-on-surface">
-            {room.name}
-          </h5>
-          <Badge tone={relationshipTone(room.relationship)}>
-            {relationshipLabel(room.relationship)}
-          </Badge>
-          {room.isSaved ? (
-            <BookmarkCheck
-              aria-label="Saved room"
-              className="h-4 w-4 text-primary-fixed-dim"
-            />
-          ) : null}
-        </div>
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-label-sm text-on-surface-variant">
-          <span className="capitalize">{room.mode} room</span>
-          <span>{isOpen ? "Open" : "Closed"}</span>
-          <span className="inline-flex items-center gap-1.5">
-            <Clock3 className="h-3.5 w-3.5" aria-hidden />
-            {formatLastActive(room.lastActiveAt)}
-          </span>
-        </div>
-      </div>
-      {isOpen ? (
-        <PendingLink
-          className={buttonClassName({
-            className: "w-full sm:w-auto",
-            size: "sm",
-            variant: "secondary",
-          })}
-          href={`/rooms/${room.id}`}
-          loadingDetail="Opening the room with your account membership."
-          loadingLabel="Opening room"
-          tone={room.mode === "listen" ? "amber" : "cyan"}
-        >
-          Open
-        </PendingLink>
-      ) : (
-        <Badge className="w-fit" tone="neutral">
-          Closed
-        </Badge>
-      )}
-    </article>
   );
 }
 
@@ -218,28 +166,4 @@ function AccountRoomsLoading() {
       ))}
     </div>
   );
-}
-
-function relationshipLabel(relationship: AccountRoomSummary["relationship"]) {
-  if (relationship === "owned") return "Owned";
-  if (relationship === "saved") return "Saved";
-  return "Joined";
-}
-
-function relationshipTone(relationship: AccountRoomSummary["relationship"]) {
-  if (relationship === "owned") return "amber" as const;
-  if (relationship === "saved") return "cyan" as const;
-  return "neutral" as const;
-}
-
-function formatLastActive(value: string) {
-  const timestamp = Date.parse(value);
-
-  if (!Number.isFinite(timestamp)) {
-    return "Activity unavailable";
-  }
-
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-  }).format(timestamp);
 }

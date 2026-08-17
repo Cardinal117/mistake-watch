@@ -36,7 +36,12 @@ dashboard dependency on guest cookies, adds a private account-room API and
 Account Rooms surface, and requires no migration. All 334 tests, typecheck,
 ESLint, formatting, file-length policy, production build, desktop/mobile visual
 checks, production health/readiness, and guest API denial passed. Signed-in
-owner QA remains required.
+owner QA found that signed-in create/save could remain browser-scoped.
+TASK-014B now implements automatic account attachment for signed-in create,
+invite join, and save, plus explicit Unsave, Leave, Close, and Archive controls.
+Its 341-test, typecheck, ESLint, formatting, file-length, build, and local visual
+gates pass. It is uncommitted and undeployed; signed-in production QA remains
+required after an approved release.
 
 ## Required Reading
 
@@ -48,10 +53,11 @@ owner QA remains required.
 6. `docs/ROADMAP.md`
 7. `docs/tasks/TASK-011-first-party-recommendation-intelligence/`
 8. `docs/tasks/TASK-014-account-rooms-projection/`
-9. `docs/tasks/TASK-010-watch-media-hub-performance/`
-10. `docs/tasks/TASK-009-project-integrity/`
-11. `supabase/MIGRATION_HISTORY.md`
-12. `docs/tasks/TASK-002-incomplete-work-recovery/` for historical detail
+9. `docs/tasks/TASK-014B-account-room-lifecycle/`
+10. `docs/tasks/TASK-010-watch-media-hub-performance/`
+11. `docs/tasks/TASK-009-project-integrity/`
+12. `supabase/MIGRATION_HISTORY.md`
+13. `docs/tasks/TASK-002-incomplete-work-recovery/` for historical detail
 
 TASK-001 is historical MVP context. TASK-007 records completed modularization
 work and discovered issues. TASK-008 Spatial Cinema is an unapproved draft.
@@ -103,9 +109,11 @@ verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
 
-Verify signed-in Account Rooms and the dashboard across browsers before
-resolving `MW-FEAT-003` and `MW-BUG-002`. After that gate, proceed with consented
-YouTube account signals before the Add/Discover overhaul. Keep provider scopes
+Prepare TASK-014B through report-first Git review and an approved production
+release, then verify signed-in create, invite join, save, lifecycle controls,
+and cross-device Account Rooms discovery before resolving `MW-FEAT-003`,
+`MW-BUG-002`, and `MW-BUG-007`. After that gate, proceed with consented YouTube
+account signals before the Add/Discover overhaul. Keep provider scopes
 incremental, tokens server-only, and the existing first-party ranking engine
 authoritative. TASK-008 Spatial Cinema remains an unapproved separate direction
 packet.

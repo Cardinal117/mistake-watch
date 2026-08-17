@@ -169,3 +169,12 @@ test("dashboard combines account rooms with guest-cookie rooms", async () => {
   assert.match(dashboardSource, /mergeDashboardRooms\(/);
   assert.match(dashboardSource, /room\.status === "open"/);
 });
+
+test("account projection excludes archived room history", async () => {
+  const dataSource = await readFile(
+    path.join(rootDir, "lib/account/room-data.ts"),
+    "utf8",
+  );
+
+  assert.equal(dataSource.match(/\.neq\("status", "archived"\)/g)?.length, 3);
+});

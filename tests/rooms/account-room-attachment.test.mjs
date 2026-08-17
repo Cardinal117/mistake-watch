@@ -101,3 +101,16 @@ test("all room account panels use server-resolved attachment state", async () =>
     assert.doesNotMatch(componentSource, /room\.currentMember\?\.userId/);
   }
 });
+
+test("cross-browser attachment removes a redundant guest membership", async () => {
+  const serverSource = await readFile(
+    path.join(rootDir, "lib/account/server.ts"),
+    "utf8",
+  );
+
+  assert.match(serverSource, /if \(existingUserMember\)/);
+  assert.match(
+    serverSource,
+    /\.delete\(\)[\s\S]*\.eq\("id", guestSession\.member\.id\)[\s\S]*\.eq\(\s*"guest_identity_id",\s*guestSession\.guestIdentity\.id/,
+  );
+});

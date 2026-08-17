@@ -393,7 +393,7 @@ function AccountPanelContent({
   }
 
   if (activeTab === "rooms") {
-    return <AccountRoomsSection signedIn={signedIn} />;
+    return <AccountRoomsSection currentRoomId={roomId} signedIn={signedIn} />;
   }
 
   if (activeTab === "account") {

@@ -60,20 +60,21 @@ The repository now tracks owner findings in `docs/product-intake/`.
 evidence. Other P1 reports remain explicitly marked for reproduction rather
 than being presented as confirmed root causes.
 
-## Account Rooms In Progress
+## Account Rooms Lifecycle In Progress
 
-TASK-014 is deployed from commit `d415362` and awaiting signed-in owner QA. It
-adds one server-authenticated projection for owned, saved, and joined rooms,
-uses it to reconcile the dashboard after guest-cookie loss, and replaces the
-Account Rooms placeholder. Automated, build, authorization, desktop, mobile,
-production health, readiness, and guest-denial gates passed; it is not yet an
-owner-accepted capability.
+TASK-014 is deployed from commit `d415362`. Attached-room cross-browser QA
+passed, but owner testing found that signed-in create/save could remain tied to
+the browser guest identity. TASK-014B implements account-aware create, invite
+join, and save behavior plus explicit Unsave, Leave, Close, and Archive
+controls. Local automated, build, authority, desktop, and mobile gates pass;
+TASK-014B is not committed, deployed, or owner-accepted yet.
 
 ## Planned Product Sequence
 
 1. **Account Rooms release gate**
-   Verify TASK-014 signed-in cross-browser discovery, dashboard persistence,
-   and room re-entry before resolving `MW-FEAT-003` and `MW-BUG-002`.
+   Release TASK-014B, then verify signed-in create, invite join, save, lifecycle
+   controls, cross-browser discovery, dashboard persistence, and room re-entry
+   before resolving `MW-FEAT-003`, `MW-BUG-002`, and `MW-BUG-007`.
 2. **Consented YouTube account signals**
    Add incremental OAuth only for approved playlist/subscription capabilities.
    Provider tokens remain server-only and revocable. Do not claim access to the

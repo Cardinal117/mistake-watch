@@ -4,6 +4,10 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import {
+  getAccountSummary,
+  migrateCurrentGuestRoomToAccount,
+} from "@/lib/account";
+import {
   createGuestHostedRoom,
   getGuestIdentityCookieName,
   joinRoomAsGuestByInviteCode,
@@ -36,6 +40,7 @@ export async function createRoomAction(formData: FormData) {
     });
 
     await setGuestCookie(session.tokenCookieName, session.token);
+    await attachRoomToCurrentAccountIfSignedIn(session.room.id);
     redirectPath = buildRoomInvitePath(session.room, session.inviteToken);
   } catch (error) {
     redirect(`/?error=${encodeURIComponent(getActionErrorMessage(error))}`);
@@ -64,6 +69,7 @@ export async function joinRoomAction(formData: FormData) {
           });
 
     await setGuestCookie(session.tokenCookieName, session.token);
+    await attachRoomToCurrentAccountIfSignedIn(session.room.id);
     redirectPath = `/rooms/${session.room.id}`;
   } catch (error) {
     redirect(`/?error=${encodeURIComponent(getActionErrorMessage(error))}`);
@@ -88,6 +94,7 @@ export async function joinRoomFromInviteAction(formData: FormData) {
         });
 
     await setGuestCookie(session.tokenCookieName, session.token);
+    await attachRoomToCurrentAccountIfSignedIn(session.room.id);
     redirectPath = `/rooms/${session.room.id}`;
   } catch (error) {
     redirect(`/?error=${encodeURIComponent(getActionErrorMessage(error))}`);
@@ -126,6 +133,7 @@ export async function setRoomSavedAction(input: {
   roomId: string;
   saved: boolean;
 }) {
+  await attachRoomToCurrentAccountIfSignedIn(input.roomId);
   const authority = await requireRoomHostAuthority(
     input.roomId,
     "Only the host can save this room.",
@@ -203,6 +211,12 @@ export async function touchRoomActivityAction(input: { roomId: string }) {
 }
 
 async function requireRoomHostAuthority(roomId: string, deniedMessage: string) {
+  const accountAuthority = await getSignedInHostAuthority(roomId);
+
+  if (accountAuthority) {
+    return accountAuthority;
+  }
+
   const cookieStore = await cookies();
   const token = cookieStore.get(getGuestIdentityCookieName(roomId))?.value;
 
@@ -221,13 +235,15 @@ async function requireRoomHostAuthority(roomId: string, deniedMessage: string) {
     }
   }
 
-  const accountAuthority = await getSignedInHostAuthority(roomId);
-
-  if (accountAuthority) {
-    return accountAuthority;
-  }
-
   throw new Error(deniedMessage);
+}
+
+async function attachRoomToCurrentAccountIfSignedIn(roomId: string) {
+  const account = await getAccountSummary();
+
+  if (account.status === "signed-in") {
+    await migrateCurrentGuestRoomToAccount(roomId);
+  }
 }
 
 async function getSignedInHostAuthority(roomId: string) {

@@ -4,7 +4,7 @@ type: bug
 status: in-progress
 priority: P1
 area: account-rooms
-related: [TASK-002.10, MW-FEAT-003]
+related: [TASK-002.10, TASK-014B, MW-FEAT-003, MW-BUG-007]
 created: 2026-08-17
 updated: 2026-08-17
 ---
@@ -21,8 +21,10 @@ updated: 2026-08-17
   with guest-cookie rooms while preserving the richer active guest snapshot.
 - **Release:** Commit `d415362` is deployed to production with owner QA still
   pending.
-- **Next action:** Production QA must cover attach, guest-cookie loss/sign-out,
-  dashboard reload, account sign-in, and re-entry before resolution.
+- **Owner QA:** Attached-room cross-browser recovery passed. A separate
+  signed-in create/save path can still remain browser-scoped and is tracked as
+  `MW-BUG-007` under `TASK-014B`.
+- **Next action:** Repeat the persistence matrix after `TASK-014B` is released.
 
 ## Original Report
 

@@ -6,7 +6,10 @@ import {
   getGuestIdentityCookieName,
   reclaimGuestMembership,
 } from "@/lib/identity";
-import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase";
+import {
+  createSupabaseAdminClient,
+  createSupabaseServerClient,
+} from "@/lib/supabase";
 import type { Tables } from "@/lib/supabase";
 
 import type {
@@ -121,7 +124,40 @@ export async function migrateCurrentGuestRoomToAccount(roomId: string) {
 
   const targetMember = existingUserMember ?? guestSession.member;
 
-  if (!existingUserMember) {
+  if (existingUserMember) {
+    const { error: existingMemberUpdateError } = await admin
+      .from("room_members")
+      .update({
+        display_name: profile.display_name,
+        last_seen_at: now,
+      })
+      .eq("id", existingUserMember.id)
+      .eq("user_id", data.user.id);
+
+    if (existingMemberUpdateError) {
+      throw existingMemberUpdateError;
+    }
+
+    const { error: guestPermissionDeleteError } = await admin
+      .from("member_permissions")
+      .delete()
+      .eq("room_id", roomId)
+      .eq("guest_identity_id", guestSession.guestIdentity.id);
+
+    if (guestPermissionDeleteError) {
+      throw guestPermissionDeleteError;
+    }
+
+    const { error: redundantMemberDeleteError } = await admin
+      .from("room_members")
+      .delete()
+      .eq("id", guestSession.member.id)
+      .eq("guest_identity_id", guestSession.guestIdentity.id);
+
+    if (redundantMemberDeleteError) {
+      throw redundantMemberDeleteError;
+    }
+  } else {
     const { error: memberUpdateError } = await admin
       .from("room_members")
       .update({

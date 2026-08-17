@@ -19,8 +19,16 @@ export async function listAccountRooms(
   const supabase = createSupabaseAdminClient();
   const [membershipsResult, ownedResult, savedResult] = await Promise.all([
     supabase.from("room_members").select("room_id").eq("user_id", userId),
-    supabase.from("rooms").select(ROOM_COLUMNS).eq("owner_user_id", userId),
-    supabase.from("rooms").select(ROOM_COLUMNS).eq("saved_by_user_id", userId),
+    supabase
+      .from("rooms")
+      .select(ROOM_COLUMNS)
+      .eq("owner_user_id", userId)
+      .neq("status", "archived"),
+    supabase
+      .from("rooms")
+      .select(ROOM_COLUMNS)
+      .eq("saved_by_user_id", userId)
+      .neq("status", "archived"),
   ]);
 
   if (membershipsResult.error) {
@@ -48,7 +56,8 @@ export async function listAccountRooms(
     const { data, error } = await supabase
       .from("rooms")
       .select(ROOM_COLUMNS)
-      .in("id", memberOnlyRoomIds);
+      .in("id", memberOnlyRoomIds)
+      .neq("status", "archived");
 
     if (error) {
       throw error;

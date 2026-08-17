@@ -1,6 +1,6 @@
 # TASK-014: Account Rooms Projection
 
-Status: Deployed - Owner QA pending
+Status: Deployed - Follow-up in progress
 Documentation level: Compact task
 Updated: 2026-08-17
 
@@ -106,6 +106,9 @@ the dashboard path that loses attached rooms when guest cookies are absent.
   room data.
 - Signed-in account projection, cross-browser persistence, and dashboard
   re-entry remain explicit production QA gates before resolution.
+- Owner QA passed attached-room cross-browser discovery but found that a room
+  created and saved while signed in could remain browser-scoped. The confirmed
+  follow-up is tracked in `TASK-014B` and `MW-BUG-007`.
 - Commit `d415362` is on `origin/main` and deployed to Vercel production as
   `dpl_C2A6j4qFrEkoa82hocq7wiyCLXJX`.
 - Production `/api/health` and `/api/ready` returned `200`. Unauthenticated
