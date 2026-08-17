@@ -1,6 +1,6 @@
 # TASK-014B: Account-Aware Room Lifecycle
 
-Status: Implemented - Production QA pending
+Status: Deployed - Owner QA pending
 Documentation level: Compact task
 Updated: 2026-08-17
 
@@ -99,3 +99,8 @@ signed-out visitors.
 - Local guest Account Rooms passed desktop and 390x844 browser checks with no
   console warnings or errors. Signed-in mutation and cross-device behavior
   remain production QA gates because local Google OAuth is unavailable.
+- Commit `a0cf709` is on `origin/main` and deployed to Vercel production as
+  `dpl_2kBX4Eg2iS7R6ve46RBhNfQVSjWd`.
+- `watch.mistakestudios.com` and `mistake-watch.vercel.app` resolve to the
+  deployment. Both `/api/health` and `/api/ready` returned `200`; readiness
+  confirmed Supabase and SpacetimeDB ready.

@@ -67,14 +67,15 @@ passed, but owner testing found that signed-in create/save could remain tied to
 the browser guest identity. TASK-014B implements account-aware create, invite
 join, and save behavior plus explicit Unsave, Leave, Close, and Archive
 controls. Local automated, build, authority, desktop, and mobile gates pass;
-TASK-014B is not committed, deployed, or owner-accepted yet.
+commit `a0cf709` is deployed as `dpl_2kBX4Eg2iS7R6ve46RBhNfQVSjWd`, with health
+and readiness passing on both public aliases. It is not owner-accepted yet.
 
 ## Planned Product Sequence
 
 1. **Account Rooms release gate**
-   Release TASK-014B, then verify signed-in create, invite join, save, lifecycle
-   controls, cross-browser discovery, dashboard persistence, and room re-entry
-   before resolving `MW-FEAT-003`, `MW-BUG-002`, and `MW-BUG-007`.
+   Verify signed-in create, invite join, save, lifecycle controls, cross-browser
+   discovery, dashboard persistence, and room re-entry before resolving
+   `MW-FEAT-003`, `MW-BUG-002`, and `MW-BUG-007`.
 2. **Consented YouTube account signals**
    Add incremental OAuth only for approved playlist/subscription capabilities.
    Provider tokens remain server-only and revocable. Do not claim access to the

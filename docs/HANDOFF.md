@@ -40,8 +40,9 @@ owner QA found that signed-in create/save could remain browser-scoped.
 TASK-014B now implements automatic account attachment for signed-in create,
 invite join, and save, plus explicit Unsave, Leave, Close, and Archive controls.
 Its 341-test, typecheck, ESLint, formatting, file-length, build, and local visual
-gates pass. It is uncommitted and undeployed; signed-in production QA remains
-required after an approved release.
+gates pass. Commit `a0cf709` is on `origin/main` and deployed to production as
+`dpl_2kBX4Eg2iS7R6ve46RBhNfQVSjWd`; both public aliases passed health and
+readiness checks. Signed-in owner QA remains required.
 
 ## Required Reading
 
@@ -109,9 +110,8 @@ verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
 
-Prepare TASK-014B through report-first Git review and an approved production
-release, then verify signed-in create, invite join, save, lifecycle controls,
-and cross-device Account Rooms discovery before resolving `MW-FEAT-003`,
+Verify TASK-014B signed-in create, invite join, save, lifecycle controls, and
+cross-device Account Rooms discovery before resolving `MW-FEAT-003`,
 `MW-BUG-002`, and `MW-BUG-007`. After that gate, proceed with consented YouTube
 account signals before the Add/Discover overhaul. Keep provider scopes
 incremental, tokens server-only, and the existing first-party ranking engine

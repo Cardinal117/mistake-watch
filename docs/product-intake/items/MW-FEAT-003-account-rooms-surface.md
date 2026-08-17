@@ -27,6 +27,9 @@ updated: 2026-08-17
 - **TASK-014B result:** Account-aware create/join/save and relationship-specific
   Unsave, Leave, Close, and Archive controls are implemented and locally gated.
   Production owner QA remains required.
+- **TASK-014B release:** Commit `a0cf709` is deployed to production as
+  `dpl_2kBX4Eg2iS7R6ve46RBhNfQVSjWd`; both public aliases passed health and
+  readiness checks.
 
 ## Original Report
 

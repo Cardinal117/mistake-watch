@@ -25,6 +25,8 @@ updated: 2026-08-17
 - **Local result:** Implementation and automated QA pass. Production owner QA
   must still verify signed-in create, invite join, save, and cross-device room
   discovery before resolution.
+- **Release:** Commit `a0cf709` is deployed to production as
+  `dpl_2kBX4Eg2iS7R6ve46RBhNfQVSjWd`; health and readiness checks pass.
 
 ## Evidence
 
