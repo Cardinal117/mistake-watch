@@ -125,12 +125,19 @@ test("Rooms client refreshes on activity and cleans up every listener", async ()
 });
 
 test("background refresh errors retain the last successful room list", async () => {
-  const component = await readFile(
-    path.join(rootDir, "components/account/account-rooms-section.tsx"),
-    "utf8",
-  );
+  const [component, listView] = await Promise.all([
+    readFile(
+      path.join(rootDir, "components/account/account-rooms-section.tsx"),
+      "utf8",
+    ),
+    readFile(
+      path.join(rootDir, "components/account/account-room-list-view.tsx"),
+      "utf8",
+    ),
+  ]);
 
   assert.doesNotMatch(component, /setRooms\(null\)/);
   assert.match(component, /error \? null : \(/);
-  assert.match(component, /rooms\.map/);
+  assert.match(component, /rooms=\{rooms\}/);
+  assert.match(listView, /rooms\.map/);
 });

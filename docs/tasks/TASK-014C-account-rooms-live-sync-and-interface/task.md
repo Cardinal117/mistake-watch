@@ -1,6 +1,6 @@
 # TASK-014C: Account Rooms Live Sync And Interface Refinement
 
-Status: In progress - Batch A implemented, owner QA pending
+Status: In progress - Batches A-B implemented, owner QA pending
 Documentation level: Compact task
 Updated: 2026-08-17
 
@@ -141,3 +141,22 @@ changing room lifecycle authority.
   warning and remains outside this task.
 - Signed-in cross-device timing remains the Batch A production owner-QA gate
   because local Google OAuth is unavailable.
+- Batch A is committed locally as `1aaa331`; it has not been pushed or deployed.
+- Batch B replaces the duplicate signed-in Rooms content heading with one
+  responsive command-panel title, description, and total room count. Guest copy
+  remains browser-accurate and the mobile header retains one close control.
+- Room-name search, Owned/Joined/Saved relationship filtering, Recent/Name/Oldest
+  sorting, result counts, and accessible Open rooms and Closed history
+  disclosures now operate locally on the existing safe room summaries.
+- Saved filtering includes rooms whose primary relationship is Owned, filtered
+  groups reveal matching results, and every rendered row retains its original
+  room object and stable ID for lifecycle commands.
+- Focused lifecycle, projection, refresh, and list-view tests passed 24/24. The
+  final full suite passed 354/354.
+- Final typecheck, ESLint, changed-file Prettier, file-length policy, production
+  build, and scoped task diff checks passed.
+- Local guest browser QA passed at desktop and 390x844: the active Rooms title
+  remained visible, the mobile duplicate close control was removed, content did
+  not overlap, and no browser warnings or errors were recorded.
+- Signed-in room controls, filtering, and disclosure behavior remain the Batch B
+  production owner-QA gate. Batch C authentication placement is not implemented.

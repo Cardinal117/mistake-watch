@@ -37,6 +37,10 @@ updated: 2026-08-17
   refresh, request serialization, stale-response protection, and retained-data
   error handling are implemented and pass local automated gates. Signed-in
   production owner QA remains required before Batch B.
+- **TASK-014C Batch B:** The Rooms header is consolidated and the account-room
+  list now supports local name search, relationship filters, deterministic
+  sorting, result counts, and Open/Closed disclosure groups. Automated and
+  guest desktop/mobile browser gates pass; signed-in production QA remains.
 
 ## Original Report
 

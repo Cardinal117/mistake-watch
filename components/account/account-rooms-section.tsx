@@ -11,7 +11,7 @@ import {
   shouldRefreshAccountRooms,
 } from "@/lib/account/room-refresh-policy";
 
-import { AccountRoomRow } from "./account-room-row";
+import { AccountRoomListView } from "./account-room-list-view";
 
 type AccountRoomsResponse = {
   error?: string;
@@ -20,16 +20,17 @@ type AccountRoomsResponse = {
 
 export function AccountRoomsSection({
   currentRoomId,
+  onCountChange,
   signedIn,
 }: {
   currentRoomId?: string;
+  onCountChange?(count: number | null): void;
   signedIn: boolean;
 }) {
   if (!signedIn) {
     return (
       <section className="rounded-md border border-white/10 bg-surface-container-lowest/42 p-5">
-        <p className="technical-label text-primary-fixed-dim">Rooms</p>
-        <h4 className="mt-2 text-headline-md font-semibold text-on-surface">
+        <h4 className="text-headline-md font-semibold text-on-surface">
           Local room access
         </h4>
         <p className="mt-3 max-w-2xl text-body-md text-on-surface-variant">
@@ -40,13 +41,28 @@ export function AccountRoomsSection({
     );
   }
 
-  return <SignedInAccountRooms currentRoomId={currentRoomId} />;
+  return (
+    <SignedInAccountRooms
+      currentRoomId={currentRoomId}
+      onCountChange={onCountChange}
+    />
+  );
 }
 
-function SignedInAccountRooms({ currentRoomId }: { currentRoomId?: string }) {
+function SignedInAccountRooms({
+  currentRoomId,
+  onCountChange,
+}: {
+  currentRoomId?: string;
+  onCountChange?(count: number | null): void;
+}) {
   const [rooms, setRooms] = useState<AccountRoomSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [requestRevision, setRequestRevision] = useState(0);
+
+  useEffect(() => {
+    onCountChange?.(rooms?.length ?? null);
+  }, [onCountChange, rooms]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -140,29 +156,7 @@ function SignedInAccountRooms({ currentRoomId }: { currentRoomId?: string }) {
   }, [requestRevision]);
 
   return (
-    <section aria-labelledby="account-rooms-heading" className="grid gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="technical-label text-primary-fixed-dim">
-            Account rooms
-          </p>
-          <h4
-            className="mt-2 text-headline-md font-semibold text-on-surface"
-            id="account-rooms-heading"
-          >
-            Your spaces
-          </h4>
-          <p className="mt-2 max-w-2xl text-label-sm text-on-surface-variant">
-            Owned, saved, and previously joined rooms linked to this account.
-          </p>
-        </div>
-        {rooms ? (
-          <span className="technical-label text-on-surface-variant">
-            {rooms.length} {rooms.length === 1 ? "room" : "rooms"}
-          </span>
-        ) : null}
-      </div>
-
+    <section aria-label="Account rooms" className="grid gap-4">
       {error ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-error/30 bg-error/10 p-4">
           <p className="text-label-sm text-error" role="alert">
@@ -198,18 +192,13 @@ function SignedInAccountRooms({ currentRoomId }: { currentRoomId?: string }) {
           </p>
         </div>
       ) : (
-        <div className="divide-y divide-white/10 overflow-hidden rounded-md border border-white/10 bg-surface-container-lowest/42">
-          {rooms.map((room) => (
-            <AccountRoomRow
-              currentRoomId={currentRoomId}
-              key={room.id}
-              onChanged={() => {
-                setRequestRevision((revision) => revision + 1);
-              }}
-              room={room}
-            />
-          ))}
-        </div>
+        <AccountRoomListView
+          currentRoomId={currentRoomId}
+          onChanged={() => {
+            setRequestRevision((revision) => revision + 1);
+          }}
+          rooms={rooms}
+        />
       )}
     </section>
   );

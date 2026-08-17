@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   BadgeCheck,
@@ -57,6 +57,12 @@ export function AccountCommandPanel({
 }: AccountCommandPanelProps) {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<AccountPanelTab>("overview");
+  const [accountRoomsCount, setAccountRoomsCount] = useState<number | null>(
+    null,
+  );
+  const handleAccountRoomsCountChange = useCallback((count: number | null) => {
+    setAccountRoomsCount(count);
+  }, []);
   const { avatarKey } = useSelectedAvatarKey(
     account.status === "signed-in" ? account.id : "dashboard-host",
   );
@@ -145,18 +151,33 @@ export function AccountCommandPanel({
         </aside>
 
         <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)_auto]">
-          <header className="hidden items-start justify-between gap-4 border-b border-white/10 bg-surface-container-lowest/35 p-5 md:flex">
-            <div>
+          <header className="flex items-start justify-between gap-4 border-b border-white/10 bg-surface-container-lowest/35 p-5">
+            <div className="min-w-0">
               <p className="technical-label text-primary-fixed-dim">
                 Account Command Panel
               </p>
-              <h3 className="mt-1 text-headline-md font-semibold text-on-surface">
-                {getTabTitle(activeTab)}
-              </h3>
+              <div className="mt-1 flex min-w-0 flex-wrap items-end gap-x-4 gap-y-1">
+                <h3 className="text-headline-md font-semibold text-on-surface">
+                  {getTabTitle(activeTab)}
+                </h3>
+                {activeTab === "rooms" && accountRoomsCount !== null ? (
+                  <span className="technical-label pb-1 text-on-surface-variant">
+                    {accountRoomsCount}{" "}
+                    {accountRoomsCount === 1 ? "room" : "rooms"}
+                  </span>
+                ) : null}
+              </div>
+              {activeTab === "rooms" ? (
+                <p className="mt-1 max-w-2xl text-label-sm text-on-surface-variant">
+                  {isSignedIn
+                    ? "Owned, saved, and previously joined spaces linked to this account."
+                    : "Guest rooms stay local to this browser until you choose to sign in."}
+                </p>
+              ) : null}
             </div>
             <button
               aria-label="Close account panel"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-white/10 text-on-surface-variant transition hover:bg-surface-variant/35 hover:text-on-surface"
+              className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-white/10 text-on-surface-variant transition hover:bg-surface-variant/35 hover:text-on-surface md:inline-flex"
               onClick={() => setOpen(false)}
               type="button"
             >
@@ -171,6 +192,7 @@ export function AccountCommandPanel({
               avatarKey={avatarKey}
               displayName={displayName}
               notice={notice}
+              onAccountRoomsCountChange={handleAccountRoomsCountChange}
               roomAttached={roomAttached}
               roomId={roomId}
             />
@@ -257,6 +279,7 @@ function AccountPanelContent({
   avatarKey,
   displayName,
   notice,
+  onAccountRoomsCountChange,
   roomAttached,
   roomId,
 }: {
@@ -265,6 +288,7 @@ function AccountPanelContent({
   avatarKey: AvatarKey;
   displayName: string;
   notice?: "guest-room-attached";
+  onAccountRoomsCountChange(count: number | null): void;
   roomAttached: boolean;
   roomId?: string;
 }) {
@@ -393,7 +417,13 @@ function AccountPanelContent({
   }
 
   if (activeTab === "rooms") {
-    return <AccountRoomsSection currentRoomId={roomId} signedIn={signedIn} />;
+    return (
+      <AccountRoomsSection
+        currentRoomId={roomId}
+        onCountChange={onAccountRoomsCountChange}
+        signedIn={signedIn}
+      />
+    );
   }
 
   if (activeTab === "account") {
