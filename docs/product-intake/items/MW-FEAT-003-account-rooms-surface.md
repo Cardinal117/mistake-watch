@@ -18,8 +18,10 @@ updated: 2026-08-17
   room projection, dashboard reconciliation, and a lazy Account Rooms surface.
 - **Evidence:** Automated, production-build, guest authorization, desktop, and
   mobile local gates passed on 2026-08-17.
-- **Next action:** Deploy only after Git review, then verify signed-in room rows,
-  cross-browser visibility, and room re-entry before marking resolved.
+- **Release:** Commit `d415362` is deployed to production; health, readiness,
+  and the unauthenticated API boundary passed.
+- **Next action:** Verify signed-in room rows, cross-browser visibility, and room
+  re-entry before marking resolved.
 
 ## Original Report
 

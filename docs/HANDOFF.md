@@ -30,12 +30,13 @@ adds bounded active-client reconciliation. Commit `444b78f` is deployed as
 owner two-device QA measured four-second no-refresh convergence. TASK-011 is
 complete.
 
-TASK-014 Account Rooms Projection is implemented in the local working tree and
-awaits Git review, deployment, and signed-in production QA. It fixes the
-confirmed dashboard dependency on guest cookies, adds a private account-room
-API and Account Rooms surface, and requires no migration. All 334 tests,
-typecheck, ESLint, formatting, file-length policy, production build, local guest
-authorization, and desktop/mobile visual checks passed.
+TASK-014 Account Rooms Projection is on `main` as `d415362` and deployed to
+Vercel production as `dpl_C2A6j4qFrEkoa82hocq7wiyCLXJX`. It fixes the confirmed
+dashboard dependency on guest cookies, adds a private account-room API and
+Account Rooms surface, and requires no migration. All 334 tests, typecheck,
+ESLint, formatting, file-length policy, production build, desktop/mobile visual
+checks, production health/readiness, and guest API denial passed. Signed-in
+owner QA remains required.
 
 ## Required Reading
 
@@ -102,9 +103,9 @@ verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
 
-Review and release TASK-014, then verify signed-in Account Rooms and the
-dashboard across browsers before resolving `MW-FEAT-003` and `MW-BUG-002`.
-After that gate, proceed with consented YouTube account signals before the
-Add/Discover overhaul. Keep provider scopes incremental, tokens server-only,
-and the existing first-party ranking engine authoritative. TASK-008 Spatial
-Cinema remains an unapproved separate direction packet.
+Verify signed-in Account Rooms and the dashboard across browsers before
+resolving `MW-FEAT-003` and `MW-BUG-002`. After that gate, proceed with consented
+YouTube account signals before the Add/Discover overhaul. Keep provider scopes
+incremental, tokens server-only, and the existing first-party ranking engine
+authoritative. TASK-008 Spatial Cinema remains an unapproved separate direction
+packet.

@@ -62,19 +62,18 @@ than being presented as confirmed root causes.
 
 ## Account Rooms In Progress
 
-TASK-014 is implemented locally and awaiting Git review, deployment, and
-signed-in production QA. It adds one server-authenticated projection for owned,
-saved, and joined rooms, uses it to reconcile the dashboard after guest-cookie
-loss, and replaces the Account Rooms placeholder. Local automated, build,
-authorization, desktop, and mobile gates passed; it is not yet a shipped
-capability.
+TASK-014 is deployed from commit `d415362` and awaiting signed-in owner QA. It
+adds one server-authenticated projection for owned, saved, and joined rooms,
+uses it to reconcile the dashboard after guest-cookie loss, and replaces the
+Account Rooms placeholder. Automated, build, authorization, desktop, mobile,
+production health, readiness, and guest-denial gates passed; it is not yet an
+owner-accepted capability.
 
 ## Planned Product Sequence
 
 1. **Account Rooms release gate**
-   Review and deploy TASK-014, then verify signed-in cross-browser discovery,
-   dashboard persistence, and room re-entry before resolving `MW-FEAT-003` and
-   `MW-BUG-002`.
+   Verify TASK-014 signed-in cross-browser discovery, dashboard persistence,
+   and room re-entry before resolving `MW-FEAT-003` and `MW-BUG-002`.
 2. **Consented YouTube account signals**
    Add incremental OAuth only for approved playlist/subscription capabilities.
    Provider tokens remain server-only and revocable. Do not claim access to the

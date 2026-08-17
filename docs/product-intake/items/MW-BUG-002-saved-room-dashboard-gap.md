@@ -19,6 +19,8 @@ updated: 2026-08-17
   saved attribution, or membership.
 - **Implementation:** `TASK-014` merges the authenticated account projection
   with guest-cookie rooms while preserving the richer active guest snapshot.
+- **Release:** Commit `d415362` is deployed to production with owner QA still
+  pending.
 - **Next action:** Production QA must cover attach, guest-cookie loss/sign-out,
   dashboard reload, account sign-in, and re-entry before resolution.
 
