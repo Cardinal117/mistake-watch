@@ -20,11 +20,12 @@ import { ListenMobileRoomTools } from "@/components/room/listen/mobile/mobile-ro
 import { ListenDiscoveryPanel } from "@/components/room/listen/discovery/discovery-panel";
 import { ListenQueueDrawer } from "@/components/room/listen/queue/queue-drawer";
 import {
-  ListenCenterWaveform,
   ListenAmbientBackdrop,
   useArtworkTheme,
   getListenTheme,
 } from "@/components/room/listen/theme/listen-theme";
+import { ListenVisualization } from "@/components/room/listen/theme/listen-visualization";
+import { useListenVisualizationPreference } from "@/components/room/listen/theme/use-listen-visualization-preference";
 import {
   useListenQueueItems,
   useDesktopListenShell,
@@ -55,6 +56,7 @@ export function ListenModeLayout({
   );
   const [tvMode, setTvMode] = useState(false);
   const [tvSettings, setTvSettings] = usePersistentListenTvSettings();
+  const { mode: visualizationMode } = useListenVisualizationPreference();
   const [volume, setVolume] = useState(DEFAULT_LISTEN_VOLUME);
   const [queueDrawerOpen, setQueueDrawerOpen] = useState(false);
   const mediaPreferences = useMediaPreferences({
@@ -268,21 +270,23 @@ export function ListenModeLayout({
       )}
       style={listenThemeStyle}
     >
-      {desktopShell ? (
+      {desktopShell && visualizationMode !== "off" ? (
         <ListenAmbientBackdrop artworkUrl={activeArtworkUrl} />
       ) : null}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 transition-opacity duration-1000"
-        style={{
-          background:
-            "radial-gradient(circle at 0% 18%, rgb(var(--listen-primary) / 0.3), transparent 44%), radial-gradient(circle at 18% 62%, rgb(var(--listen-secondary) / 0.18), transparent 40%), radial-gradient(circle at 38% 100%, rgb(var(--listen-wave) / 0.1), transparent 46%), linear-gradient(90deg, rgb(var(--listen-primary) / 0.05), rgb(14 14 15 / 0.64) 34%, rgb(19 19 20 / 0.97) 100%)",
-        }}
-      />
+      {visualizationMode !== "off" ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 transition-opacity duration-1000"
+          style={{
+            background:
+              "radial-gradient(circle at 0% 18%, rgb(var(--listen-primary) / 0.3), transparent 44%), radial-gradient(circle at 18% 62%, rgb(var(--listen-secondary) / 0.18), transparent 40%), radial-gradient(circle at 38% 100%, rgb(var(--listen-wave) / 0.1), transparent 46%), linear-gradient(90deg, rgb(var(--listen-primary) / 0.05), rgb(14 14 15 / 0.64) 34%, rgb(19 19 20 / 0.97) 100%)",
+          }}
+        />
+      ) : null}
       {desktopShell ? (
-        <ListenCenterWaveform
+        <ListenVisualization
           active={session?.status === "playing"}
-          artworkUrl={activeArtworkUrl}
+          mode={visualizationMode}
         />
       ) : null}
       <div

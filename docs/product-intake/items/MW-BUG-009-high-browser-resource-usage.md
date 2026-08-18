@@ -1,7 +1,7 @@
 ---
 id: MW-BUG-009
 type: bug
-status: needs-reproduction
+status: in-progress
 priority: P1
 area: performance
 related: [TASK-002.5I, TASK-010]
@@ -11,7 +11,7 @@ updated: 2026-08-18
 
 # Room playback consumes excessive browser resources
 
-> [!bug] Needs reproduction - P1
+> [!bug] Confirmed and in progress - P1
 
 - **Expected:** A normal room should sustain synchronized audio without
   periodic stalls and should remain usable on a laptop within a measured CPU,
@@ -21,17 +21,17 @@ updated: 2026-08-18
 - **Evidence:** Reducing the room from 186 queued and 330 history items to one
   active item, no queue, and 18 history items did not materially reduce the
   reported usage. Queue size is therefore not established as the cause.
-- **Unknowns:** Browser/device profile, foreground/background behavior,
-  YouTube iframe cost, listen visualizer cost, TV mode, Account Rooms polling,
-  recommendation polling, React render frequency, and extension influence all
-  require controlled isolation.
+- **Confirmed cause:** Active Listen mounts 96 independently animated center
+  waveform bars with two large glow shadows per bar. A controlled 120-second
+  active-playback run measured 17% median and 32% peak aggregate Chrome CPU,
+  versus 0% median and 3% peak while paused. Reduced-motion testing lowered the
+  Mistake Watch tab from approximately 26-32% to approximately 3.6% CPU.
 - **Related work:** TASK-002.5I queue performance and TASK-010 Media Hub
   performance provide prior measurement patterns but do not cover sustained
   room rendering or playback-resource budgets.
-- **Next action:** Run a read-only performance characterization matrix before
-  changing code: idle room, paused media, YouTube playing, visualizer disabled,
-  queue closed/open, Account panel closed/open, one participant, and multiple
-  participants. Capture browser task-manager usage and performance traces over
-  several minutes.
+- **Next action:** Implement and verify TASK-015. Replace the 96-bar renderer
+  with bounded SVG modes, preserve reduced-motion behavior, and repeat the same
+  active-playback measurement on the affected laptop before release approval.
+- **Task:** [[../../tasks/TASK-015-listen-visualizer-performance/task|TASK-015]]
 - **Original report:**
   [[../archive/quick-capture-2026-08-18#Capture 3]]

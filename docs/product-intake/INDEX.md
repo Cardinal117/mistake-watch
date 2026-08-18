@@ -12,7 +12,7 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 | [MW-BUG-006](items/MW-BUG-006-host-refresh-playback-drift.md)           | Bug         | P1       | Needs reproduction | Playback sync     | Resume can start far from authoritative room position     | Playback stability |
 | [MW-BUG-007](items/MW-BUG-007-signed-in-room-remains-browser-scoped.md) | Bug         | P1       | In progress        | Account rooms     | Signed-in room can remain browser-scoped                  | TASK-014B          |
 | [MW-BUG-008](items/MW-BUG-008-tv-mode-like-control-missing.md)          | Bug         | P2       | Needs verification | TV mode           | Like control is missing from TV mode                      | TASK-002.5G, 011   |
-| [MW-BUG-009](items/MW-BUG-009-high-browser-resource-usage.md)           | Bug         | P1       | Needs reproduction | Performance       | Room playback consumes excessive browser resources        | TASK-002.5I, 010   |
+| [MW-BUG-009](items/MW-BUG-009-high-browser-resource-usage.md)           | Bug         | P1       | In progress        | Performance       | Room playback consumes excessive browser resources        | TASK-015           |
 | [MW-BUG-010](items/MW-BUG-010-account-owner-rejoin-loses-authority.md)  | Bug         | P1       | Needs reproduction | Room authority    | Account owner can lose host authority after rejoining     | TASK-012, 014B     |
 | [MW-BUG-011](items/MW-BUG-011-room-picks-actions-permission-toast.md)   | Bug         | P2       | Needs verification | Recommendations   | Room Picks actions may reject permitted members           | TASK-011           |
 | [MW-BUG-012](items/MW-BUG-012-recommendation-preference-rate-limit.md)  | Bug         | P2       | Confirmed          | Recommendations   | Preference reconciliation reaches shared rate limit       | TASK-011, 012      |
@@ -34,8 +34,9 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 1. Release the final `TASK-014C` guest sign-in-footer refinement separately
    from this intake-only triage, then close owner QA for
    [[items/MW-FEAT-003-account-rooms-surface|MW-FEAT-003]].
-2. Characterize [[items/MW-BUG-009-high-browser-resource-usage|MW-BUG-009]]
-   before changing rendering, polling, or visualizer code.
+2. Implement [[../tasks/TASK-015-listen-visualizer-performance/task|TASK-015]]
+   and repeat the active-playback laptop measurement before resolving
+   [[items/MW-BUG-009-high-browser-resource-usage|MW-BUG-009]].
 3. Reproduce [[items/MW-BUG-010-account-owner-rejoin-loses-authority|MW-BUG-010]]
    across durable account ownership and live SpacetimeDB authority boundaries.
 4. Plan the confirmed

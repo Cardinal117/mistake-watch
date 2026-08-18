@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cx } from "@/lib/ui";
 import { type ListenTheme } from "@/components/room/listen/shared";
 import { extractThemeFromImage } from "@/components/room/listen/helpers";
 
@@ -31,58 +30,6 @@ export const LISTEN_THEME_PRESETS = [
     wave: "255 205 88",
   },
 ] satisfies ListenTheme[];
-export function ListenCenterWaveform({
-  active,
-  artworkUrl,
-}: {
-  active: boolean;
-  artworkUrl?: string | null;
-}) {
-  return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute inset-x-0 bottom-0 top-0 z-0 overflow-hidden"
-    >
-      {artworkUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element -- Provider artwork is used as a low-detail center-stage ambient layer.
-        <img
-          alt=""
-          className="absolute inset-x-[-12%] bottom-[-24%] h-[105%] w-[124%] object-cover opacity-24 blur-3xl saturate-150"
-          key={artworkUrl}
-          loading="eager"
-          src={artworkUrl}
-          style={{
-            animation: "listen-artwork-fade-in 1400ms ease-out both",
-          }}
-        />
-      ) : null}
-      <div className="absolute inset-0 z-0 bg-[linear-gradient(180deg,rgb(19_19_20_/_0.02),transparent_34%,rgb(19_19_20_/_0.42)),linear-gradient(90deg,rgb(14_14_15_/_0.44),transparent_34%,transparent_66%,rgb(14_14_15_/_0.44))]" />
-      <div
-        className={cx(
-          "absolute inset-x-[-12%] bottom-0 z-10 flex h-[72%] items-end justify-center gap-2 px-8 transition-opacity duration-1000",
-          active ? "opacity-100" : "opacity-78",
-        )}
-      >
-        {Array.from({ length: 96 }).map((_, index) => (
-          <span
-            className={cx(
-              "listen-center-wave-bar w-2 rounded-t-sm",
-              !active && "animation-paused",
-            )}
-            key={index}
-            style={{
-              animationDelay: `${(index % 13) * 80}ms`,
-              backgroundColor: "rgb(var(--listen-wave))",
-              boxShadow:
-                "0 0 24px rgb(var(--listen-wave) / 0.48), 0 0 54px rgb(var(--listen-shadow) / 0.28)",
-              height: `${18 + ((index * 23) % 78)}%`,
-            }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
 export function ListenAmbientBackdrop({
   artworkUrl,
 }: {

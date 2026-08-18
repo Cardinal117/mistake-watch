@@ -24,6 +24,7 @@ import { cx } from "@/lib/ui";
 import type { AccountSummary } from "@/lib/account/types";
 import { AccountRoomsSection } from "./account-rooms-section";
 import { CloudConvertSection } from "./cloudconvert-section";
+import { PersonalizationSection } from "./personalization-section";
 
 type AccountCommandPanelProps = {
   account: AccountSummary;
@@ -413,6 +414,10 @@ function AccountPanelContent({
     );
   }
 
+  if (activeTab === "personalization") {
+    return <PersonalizationSection />;
+  }
+
   if (activeTab === "rooms") {
     return (
       <AccountRoomsSection
@@ -603,12 +608,6 @@ function getTabTitle(tab: AccountPanelTab) {
 }
 
 function getPlaceholderCopy(tab: AccountPanelTab, signedIn: boolean) {
-  if (tab === "personalization") {
-    return signedIn
-      ? "Durable themes, room preferences, and accessibility comfort settings arrive in TASK-002.10."
-      : "Guest personalization stays local until you choose to sign in.";
-  }
-
   if (tab === "privacy") {
     return "Provider tokens stay server-side. This task does not request or store YouTube, Drive, playlist, history, contacts, calendar, or offline access.";
   }
