@@ -26,23 +26,29 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 | [MW-QOL-004](items/MW-QOL-004-previous-button-behavior.md)              | QoL         | P2       | Ready for planning | Playback          | Restart first, then move to previous on repeated action   | Playback UX        |
 | [MW-QOL-005](items/MW-QOL-005-persist-local-volume.md)                  | QoL         | P2       | Needs verification | Player settings   | Preserve chosen volume through refresh                    | Personalization    |
 | [MW-QOL-006](items/MW-QOL-006-tv-mode-card-transitions.md)              | QoL         | P3       | Ready for planning | TV mode           | Add restrained card-deck transitions                      | TASK-002.5G        |
+| [MW-QOL-007](items/MW-QOL-007-configurable-listen-artwork.md)           | QoL         | P2       | Ready for planning | Listen visuals    | Configure artwork per visualization and improve framing   | TASK-015           |
+| [MW-QOL-008](items/MW-QOL-008-tv-mode-settings-access.md)               | QoL         | P2       | Ready for planning | TV mode           | Open TV settings without leaving TV mode                  | TASK-002.5G        |
 | [MW-OPS-001](items/MW-OPS-001-controlled-conversion-prep.md)            | Operations  | P1       | Planned            | Media processing  | Restore CloudConvert safely and plan local preparation    | Incident follow-up |
 | [MW-OBS-001](items/MW-OBS-001-spacetime-participant-cache-warning.md)   | Observation | P3       | Needs reproduction | Live room sync    | Participant update can target a missing cached row        | TASK-009, 012      |
 
 ## Current Focus
 
-1. Release the final `TASK-014C` guest sign-in-footer refinement separately
-   from this intake-only triage, then close owner QA for
-   [[items/MW-FEAT-003-account-rooms-surface|MW-FEAT-003]].
-2. Run responsive live QA for TASK-015A2's implemented Static Artwork
-   visibility controls, then run TASK-015B as a separately measured
+1. Reproduce
+   [[items/MW-BUG-010-account-owner-rejoin-loses-authority|MW-BUG-010]] first,
+   including Account Rooms entry and same-account multi-device cases. Do not
+   patch live authority until the durable-account and active-participant
+   mismatch is identified.
+2. TASK-015A2 owner QA passed. Run TASK-015B as a separately measured
    raster/throttling experiment before resolving
-   [[items/MW-BUG-009-high-browser-resource-usage|MW-BUG-009]].
-3. Reproduce [[items/MW-BUG-010-account-owner-rejoin-loses-authority|MW-BUG-010]]
-   across durable account ownership and live SpacetimeDB authority boundaries.
-4. Plan the confirmed
+   [[items/MW-BUG-009-high-browser-resource-usage|MW-BUG-009]]. Keep
+   [[items/MW-QOL-007-configurable-listen-artwork|MW-QOL-007]] as later
+   composition work rather than expanding the performance task.
+3. Plan the confirmed
    [[items/MW-BUG-012-recommendation-preference-rate-limit|MW-BUG-012]] fix
    with separate read and mutation abuse budgets.
-5. Verify the remaining P1 playback/admission reports before implementation;
-   keep TV-mode motion and Account Rooms creation behind current reliability
-   work.
+4. Reconcile the released TASK-014 guest-footer refinement and completed owner
+   QA into the Account Rooms task records before closing
+   [[items/MW-FEAT-003-account-rooms-surface|MW-FEAT-003]].
+5. Schedule [[items/MW-QOL-008-tv-mode-settings-access|MW-QOL-008]] as a compact
+   UI task after the authority investigation; keep optional TV-mode motion behind
+   current reliability work.

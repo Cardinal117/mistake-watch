@@ -6,7 +6,6 @@
 > convenient.
 
 <!-- QUICK-CAPTURE:START -->
-
 <!-- QUICK-CAPTURE:END -->
 
 Triaged work is listed in [[INDEX]]. Completed and declined work remains in

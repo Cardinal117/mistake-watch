@@ -1,6 +1,6 @@
 # TASK-015: Listen Visualizer Performance
 
-Status: TASK-015A2 second visibility correction locally verified - live QA pending
+Status: TASK-015A2 owner QA passed - TASK-015B remains planned
 Documentation level: Compact task
 Updated: 2026-08-18
 Related intake: MW-BUG-009
@@ -231,3 +231,8 @@ motion behavior, and the established Mistake Watch visual language.
   mobile checks reported zero horizontal overflow. Full verification passed
   all 363 tests, typecheck, ESLint, changed-file formatting, file-length policy,
   and the production build.
+- Commit `0fa7fc4` deployed as `dpl_Fqi6ndY3BzbC6gYJAW9EXkoLJQiw`. Owner live
+  QA confirmed Static Artwork renders the active YouTube thumbnail and accepted
+  TASK-015A2. Per-mode artwork enablement, clarity, and right-weighted framing
+  are deferred to [[../../product-intake/items/MW-QOL-007-configurable-listen-artwork|MW-QOL-007]]
+  rather than expanding the performance remediation.

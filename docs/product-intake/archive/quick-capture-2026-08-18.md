@@ -14,6 +14,7 @@ Also, in tv mode perhaps a cool transition animation to and from tv mode and als
 
 ## Capture 3
 
+<!-- prettier-ignore -->
 For some obnoxious reason the site is using a  ton of GPU and CPU resources. and on my laptop it occasionally freezes the audio then plays then freezes then platys every 20 seconds or so due to not enough resources, it also uses a lot of ram and yes it is the only site pretty much running in the browser. My suspicion is that it might be due to the Queue size of 186 and history of 330. So I tested it and it does not seem to be the case, even with 1 actively playing song and 0 in the queue and only 18 in history it still shows massive usage. So my next idea is that perhaps the new rooms code is causing high usage with refreshes? Doe not make sense though, so perhaps it is the animation of the song laying, like the wave bar but then I would have noticed it in the past. So this is a high priority and deep research and discovery task.
 
 ## Capture 4
@@ -27,6 +28,7 @@ Future Task, in the new rooms tab there should be a way to add/create a new room
 ## Capture 6
 
 These are 2 Bug reports the should be handled when the time sees right:
+
 ## Bug: Recommendation preference polling returns repeated 429 responses
 
 Date observed: 2026-08-18
@@ -108,3 +110,23 @@ Correlate participant subscription readiness with join/update event ordering.
 Test rapid join, reconnect, refresh, account attachment, and guest-to-account
 transitions. Confirm whether this is harmless SDK ordering noise or a missed
 participant-state transition.
+
+## Capture 8
+
+Ahh I see it only shows the image if it is on the static Artwork mode
+
+The perviews mae it look misleading so there should be an option per allowed visualision to show the artwork on it, also the artwork should be moved to the right to pretty much cover the entire right side not partly the left and some of the right like in the screenshot:
+
+But for now I am happy it can be chalked up as passed for now but what I said must be logged as future QOL features in the obsidian vault
+
+## Capture 9
+
+Adjust it slightly as I can very slightly see the artwork it is just very dulled and blurred whre it is slightly not noticable so having that as a adjustable bar to show more of the artwork is a must that should be added with this QOL task
+
+## Capture 10
+
+So another thing, this is a QOL change. In the tv mode there should be a 3 dot setting button which allow the user to change the tv mode settings as leaving it to then change the setting to come back is a bad experience.
+
+## Capture 11
+
+When joining through the rooms tab, I get the message "Playback control denied because the caller is not an active room participant" This should be fixed along with the room handling of multiple devices but same google account I imagine

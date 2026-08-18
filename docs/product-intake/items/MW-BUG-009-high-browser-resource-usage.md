@@ -37,9 +37,12 @@ updated: 2026-08-18
   opacity with `0.38`, and Static Artwork's `64px` blur removed recognizable
   image detail. The second correction binds the fade endpoint to the selected
   intensity and uses an `8px` Static Artwork blur without adding motion.
-- **Next action:** Verify the second corrected room visibility in production while
-  preserving text/control contrast, then treat TASK-015B as a separate pre-
-  rasterized/throttled rendering experiment before any BPM integration.
+- **Owner QA:** Commit `0fa7fc4`, deployed as
+  `dpl_Fqi6ndY3BzbC6gYJAW9EXkoLJQiw`, passed production visibility QA. Future
+  per-mode artwork controls and framing are tracked separately as
+  [[MW-QOL-007-configurable-listen-artwork|MW-QOL-007]].
+- **Next action:** Treat TASK-015B as a separate pre-rasterized/throttled
+  rendering experiment before any BPM integration.
 - **Task:** [[../../tasks/TASK-015-listen-visualizer-performance/task|TASK-015]]
 - **Original report:**
   [[../archive/quick-capture-2026-08-18#Capture 3]]
