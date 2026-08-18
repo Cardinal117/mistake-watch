@@ -3,29 +3,44 @@
 This is the active product backlog. Priority is advisory until the owner approves
 scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 
-| ID                                                                      | Type       | Priority | Status             | Area              | Summary                                                   | Related work       |
-| ----------------------------------------------------------------------- | ---------- | -------- | ------------------ | ----------------- | --------------------------------------------------------- | ------------------ |
-| [MW-BUG-001](items/MW-BUG-001-long-participant-names.md)                | Bug        | P1       | Needs reproduction | Room admission    | Long names may prevent joining or normal room use         | TASK-012           |
-| [MW-BUG-002](items/MW-BUG-002-saved-room-dashboard-gap.md)              | Bug        | P1       | In progress        | Account rooms     | Attached room can disappear from dashboard after sign-out | TASK-014           |
-| [MW-BUG-003](items/MW-BUG-003-google-redirect-black-player.md)          | Bug        | P1       | Needs reproduction | Auth / playback   | Redirect failure may leave controls active without media  | TASK-012           |
-| [MW-BUG-004](items/MW-BUG-004-uploaded-session-renewal-freeze.md)       | Bug        | P1       | Needs reproduction | Uploaded playback | One participant can freeze while room progress continues  | TASK-009           |
-| [MW-BUG-006](items/MW-BUG-006-host-refresh-playback-drift.md)           | Bug        | P1       | Needs reproduction | Playback sync     | Resume can start far from authoritative room position     | Playback stability |
-| [MW-BUG-007](items/MW-BUG-007-signed-in-room-remains-browser-scoped.md) | Bug        | P1       | In progress        | Account rooms     | Signed-in room can remain browser-scoped                  | TASK-014B          |
-| [MW-FEAT-001](items/MW-FEAT-001-owner-enabled-vr.md)                    | Feature    | P3       | Ready for planning | Spatial cinema    | Owner toggle exposes VR mode and headset prompt           | TASK-008           |
-| [MW-FEAT-002](items/MW-FEAT-002-first-visit-privacy-notice.md)          | Feature    | P2       | Ready for planning | Privacy UX        | Add an accurate first-visit privacy notice if required    | Privacy review     |
-| [MW-FEAT-003](items/MW-FEAT-003-account-rooms-surface.md)               | Feature    | P1       | In progress        | Account rooms     | Replace placeholder Rooms tab with durable room data      | TASK-014           |
-| [MW-QOL-001](items/MW-QOL-001-simplify-listen-youtube-embed.md)         | QoL        | P2       | Planned            | Listen player     | Reduce duplicate iframe controls and add copy-link        | Add/Discover       |
-| [MW-QOL-002](items/MW-QOL-002-drag-drop-queue.md)                       | QoL        | P2       | Ready for planning | Queue             | Reorder queue items directly instead of repeated clicks   | Queue UX           |
-| [MW-QOL-003](items/MW-QOL-003-media-session-room-authority.md)          | QoL        | P2       | Needs verification | Media Session     | Verify device controls use room-authoritative actions     | TASK-006           |
-| [MW-QOL-004](items/MW-QOL-004-previous-button-behavior.md)              | QoL        | P2       | Ready for planning | Playback          | Restart first, then move to previous on repeated action   | Playback UX        |
-| [MW-QOL-005](items/MW-QOL-005-persist-local-volume.md)                  | QoL        | P2       | Needs verification | Player settings   | Preserve chosen volume through refresh                    | Personalization    |
-| [MW-OPS-001](items/MW-OPS-001-controlled-conversion-prep.md)            | Operations | P1       | Planned            | Media processing  | Restore CloudConvert safely and plan local preparation    | Incident follow-up |
+| ID                                                                      | Type        | Priority | Status             | Area              | Summary                                                   | Related work       |
+| ----------------------------------------------------------------------- | ----------- | -------- | ------------------ | ----------------- | --------------------------------------------------------- | ------------------ |
+| [MW-BUG-001](items/MW-BUG-001-long-participant-names.md)                | Bug         | P1       | Needs reproduction | Room admission    | Long names may prevent joining or normal room use         | TASK-012           |
+| [MW-BUG-002](items/MW-BUG-002-saved-room-dashboard-gap.md)              | Bug         | P1       | In progress        | Account rooms     | Attached room can disappear from dashboard after sign-out | TASK-014           |
+| [MW-BUG-003](items/MW-BUG-003-google-redirect-black-player.md)          | Bug         | P1       | Needs reproduction | Auth / playback   | Redirect failure may leave controls active without media  | TASK-012           |
+| [MW-BUG-004](items/MW-BUG-004-uploaded-session-renewal-freeze.md)       | Bug         | P1       | Needs reproduction | Uploaded playback | One participant can freeze while room progress continues  | TASK-009           |
+| [MW-BUG-006](items/MW-BUG-006-host-refresh-playback-drift.md)           | Bug         | P1       | Needs reproduction | Playback sync     | Resume can start far from authoritative room position     | Playback stability |
+| [MW-BUG-007](items/MW-BUG-007-signed-in-room-remains-browser-scoped.md) | Bug         | P1       | In progress        | Account rooms     | Signed-in room can remain browser-scoped                  | TASK-014B          |
+| [MW-BUG-008](items/MW-BUG-008-tv-mode-like-control-missing.md)          | Bug         | P2       | Needs verification | TV mode           | Like control is missing from TV mode                      | TASK-002.5G, 011   |
+| [MW-BUG-009](items/MW-BUG-009-high-browser-resource-usage.md)           | Bug         | P1       | Needs reproduction | Performance       | Room playback consumes excessive browser resources        | TASK-002.5I, 010   |
+| [MW-BUG-010](items/MW-BUG-010-account-owner-rejoin-loses-authority.md)  | Bug         | P1       | Needs reproduction | Room authority    | Account owner can lose host authority after rejoining     | TASK-012, 014B     |
+| [MW-BUG-011](items/MW-BUG-011-room-picks-actions-permission-toast.md)   | Bug         | P2       | Needs verification | Recommendations   | Room Picks actions may reject permitted members           | TASK-011           |
+| [MW-BUG-012](items/MW-BUG-012-recommendation-preference-rate-limit.md)  | Bug         | P2       | Confirmed          | Recommendations   | Preference reconciliation reaches shared rate limit       | TASK-011, 012      |
+| [MW-FEAT-001](items/MW-FEAT-001-owner-enabled-vr.md)                    | Feature     | P3       | Ready for planning | Spatial cinema    | Owner toggle exposes VR mode and headset prompt           | TASK-008           |
+| [MW-FEAT-002](items/MW-FEAT-002-first-visit-privacy-notice.md)          | Feature     | P2       | Ready for planning | Privacy UX        | Add an accurate first-visit privacy notice if required    | Privacy review     |
+| [MW-FEAT-003](items/MW-FEAT-003-account-rooms-surface.md)               | Feature     | P1       | In progress        | Account rooms     | Replace placeholder Rooms tab with durable room data      | TASK-014           |
+| [MW-FEAT-004](items/MW-FEAT-004-create-room-from-account-rooms.md)      | Feature     | P2       | Ready for planning | Account rooms     | Create a room directly from Account Rooms                 | TASK-014C          |
+| [MW-QOL-001](items/MW-QOL-001-simplify-listen-youtube-embed.md)         | QoL         | P2       | Planned            | Listen player     | Reduce duplicate iframe controls and add copy-link        | Add/Discover       |
+| [MW-QOL-002](items/MW-QOL-002-drag-drop-queue.md)                       | QoL         | P2       | Ready for planning | Queue             | Reorder queue items directly instead of repeated clicks   | Queue UX           |
+| [MW-QOL-003](items/MW-QOL-003-media-session-room-authority.md)          | QoL         | P2       | Needs verification | Media Session     | Verify device controls use room-authoritative actions     | TASK-006           |
+| [MW-QOL-004](items/MW-QOL-004-previous-button-behavior.md)              | QoL         | P2       | Ready for planning | Playback          | Restart first, then move to previous on repeated action   | Playback UX        |
+| [MW-QOL-005](items/MW-QOL-005-persist-local-volume.md)                  | QoL         | P2       | Needs verification | Player settings   | Preserve chosen volume through refresh                    | Personalization    |
+| [MW-QOL-006](items/MW-QOL-006-tv-mode-card-transitions.md)              | QoL         | P3       | Ready for planning | TV mode           | Add restrained card-deck transitions                      | TASK-002.5G        |
+| [MW-OPS-001](items/MW-OPS-001-controlled-conversion-prep.md)            | Operations  | P1       | Planned            | Media processing  | Restore CloudConvert safely and plan local preparation    | Incident follow-up |
+| [MW-OBS-001](items/MW-OBS-001-spacetime-participant-cache-warning.md)   | Observation | P3       | Needs reproduction | Live room sync    | Participant update can target a missing cached row        | TASK-009, 012      |
 
 ## Current Focus
 
-1. Complete `TASK-014C` bounded Account Rooms live freshness, information
-   architecture, and Account-action placement, linked to
+1. Release the final `TASK-014C` guest sign-in-footer refinement separately
+   from this intake-only triage, then close owner QA for
    [[items/MW-FEAT-003-account-rooms-surface|MW-FEAT-003]].
-2. Reproduce remaining P1 playback and admission reports before implementation.
-3. Plan consented YouTube account signals after the Account Rooms boundary is
-   stable.
+2. Characterize [[items/MW-BUG-009-high-browser-resource-usage|MW-BUG-009]]
+   before changing rendering, polling, or visualizer code.
+3. Reproduce [[items/MW-BUG-010-account-owner-rejoin-loses-authority|MW-BUG-010]]
+   across durable account ownership and live SpacetimeDB authority boundaries.
+4. Plan the confirmed
+   [[items/MW-BUG-012-recommendation-preference-rate-limit|MW-BUG-012]] fix
+   with separate read and mutation abuse budgets.
+5. Verify the remaining P1 playback/admission reports before implementation;
+   keep TV-mode motion and Account Rooms creation behind current reliability
+   work.
