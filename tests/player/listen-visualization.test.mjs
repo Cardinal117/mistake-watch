@@ -38,20 +38,29 @@ test.after(async () => {
   await rm(tempDir, { force: true, recursive: true });
 });
 
-test("Dynamic Horizon is the bounded default visualization", () => {
-  assert.equal(DEFAULT_LISTEN_VISUALIZATION_MODE, "dynamic-horizon");
+test("Static Artwork is the safe default visualization", () => {
+  assert.equal(DEFAULT_LISTEN_VISUALIZATION_MODE, "static-artwork");
   assert.deepEqual(
     listenVisualizationModes.map((mode) => mode.id),
     [
+      "static-artwork",
+      "off",
       "dynamic-horizon",
       "signal-ribbon",
       "minimal-pulse",
-      "static-artwork",
-      "off",
     ],
   );
   assert.equal(getListenVisualizationMode("dynamic-horizon").motionLayers, 3);
   assert.ok(listenVisualizationModes.every((mode) => mode.motionLayers <= 3));
+  assert.equal(
+    getListenVisualizationMode("static-artwork").powerProfile,
+    "recommended",
+  );
+  assert.ok(
+    listenVisualizationModes
+      .filter((mode) => mode.motionLayers > 0)
+      .every((mode) => mode.powerProfile === "higher"),
+  );
 });
 
 test("unknown stored visualization values fail closed to the default", () => {
@@ -59,9 +68,9 @@ test("unknown stored visualization values fail closed to the default", () => {
   assert.equal(isListenVisualizationMode("legacy-bars"), false);
   assert.equal(
     normalizeListenVisualizationMode("legacy-bars"),
-    "dynamic-horizon",
+    "static-artwork",
   );
-  assert.equal(normalizeListenVisualizationMode(null), "dynamic-horizon");
+  assert.equal(normalizeListenVisualizationMode(null), "static-artwork");
 });
 
 test("the Listen renderer removes the 96-bar glow implementation", async () => {
@@ -134,6 +143,8 @@ test("personalization provides one bounded keyboard-operable preview", async () 
   assert.match(panel, /<PersonalizationSection \/>/);
   assert.match(personalization, /role="radiogroup"/);
   assert.match(personalization, /type="radio"/);
+  assert.match(personalization, /option\.powerLabel/);
+  assert.match(personalization, /option\.powerProfile/);
   assert.match(personalization, /5_000/);
   assert.match(personalization, /option\.id === previewMode/);
   assert.match(preference, /mw_listen_visualization_mode_v1/);

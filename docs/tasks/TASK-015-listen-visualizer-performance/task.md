@@ -1,6 +1,6 @@
 # TASK-015: Listen Visualizer Performance
 
-Status: Implemented - performance QA pending
+Status: TASK-015A implemented - TASK-015B pending
 Documentation level: Compact task
 Updated: 2026-08-18
 Related intake: MW-BUG-009
@@ -15,8 +15,10 @@ motion behavior, and the established Mistake Watch visual language.
 
 - Replace the 96 independently animated waveform bars and their 192 glow
   shadows with a maximum of three transform-animated SVG wave layers.
-- Make artwork-reactive Dynamic Horizon the default Listen visualization.
+- Make Static Artwork the safe default Listen visualization.
 - Add Signal Ribbon, Minimal Pulse, Static Artwork, and Off alternatives.
+- Identify every continuously animated mode as a higher-power experiment until
+  it independently passes the affected-laptop performance budget.
 - Expose the visual mode in Account Personalization with browser-local
   persistence for both signed-in and guest sessions in this task.
 - Animate only the selected Personalization preview and stop previews after a
@@ -35,14 +37,15 @@ motion behavior, and the established Mistake Watch visual language.
 - No queue, playback authority, SpacetimeDB, recommendation, upload-processing,
   CloudConvert, or media API changes.
 - No Listen-room layout redesign and no new dependency.
-- No deployment, production mutation, commit, or push in this implementation
-  run.
 
 ## Decisions And Approach
 
 - Adapt the public CodePen Responsive and Configurable SVG Waves pattern under
   its MIT license. Keep the attribution in the source and store all visual
   assets locally.
+- Treat the affected-laptop benchmark as authoritative for the default. The
+  three-layer SVG implementation reduced DOM complexity but did not reduce
+  steady-state CPU, so it cannot remain the default.
 - Render three reusable SVG wave paths and animate only their wrapper transforms.
   Do not animate blur, shadow, clip-path geometry, path data, layout, or color.
 - Continue using `useArtworkTheme`; palette extraction runs once when artwork
@@ -52,8 +55,9 @@ motion behavior, and the established Mistake Watch visual language.
 - Keep personalization viewer-local. A room participant's visual choice must
   not enter room-authoritative state or affect another participant.
 - Persist a versioned, allowlisted mode value in `localStorage`, synchronize it
-  across same-origin tabs through the storage event, and fall back safely when
-  storage is unavailable or corrupt.
+  across same-origin tabs through the storage event, and fall back to Static
+  Artwork when storage is unavailable or corrupt. Preserve an explicit stored
+  animated choice rather than silently overriding it.
 - Account-backed persistence is deferred until a durable general account-
   personalization contract is designed.
 
@@ -72,6 +76,18 @@ motion behavior, and the established Mistake Watch visual language.
    tests; run full repository gates and local responsive browser QA.
 6. Run the same two-minute active-playback CPU comparison on the affected
    laptop before release approval.
+7. TASK-015A: make Static Artwork the default, mark continuous modes as higher
+   power, preserve explicit user choices, and deploy the safety remediation.
+
+## Remediation Batches
+
+- **TASK-015A - Safe default:** release Static Artwork as the default and retain
+  the animated variants only as explicit higher-power choices.
+- **TASK-015B - Rendering experiment:** separately test one shallow,
+  pre-rasterized wave surface and throttled motion. Do not ship it as the
+  default unless it passes the same laptop benchmark.
+- Keep GetSongBPM and tempo-aware motion blocked until an animated renderer
+  meets the resource budget.
 
 ## Risks
 
@@ -83,15 +99,17 @@ motion behavior, and the established Mistake Watch visual language.
   freeze every new continuous animation.
 - **Palette contrast:** artwork-derived colors remain decorative and may not
   reduce control or text contrast.
-- **Storage drift:** unknown stored values must resolve to Dynamic Horizon
+- **Storage drift:** unknown stored values must resolve to Static Artwork
   without breaking rendering.
 - **License loss:** retain the source attribution and MIT notice with the
   adapted component.
 
 ## Acceptance Criteria
 
-- Dynamic Horizon is the default and changes its three wave colors when the
-  active artwork-derived theme changes.
+- Static Artwork is the default for users without a valid stored choice.
+- Dynamic Horizon, Signal Ribbon, and Minimal Pulse are visibly identified as
+  higher-power experiments and remain opt-in.
+- An explicit valid stored choice remains selected after the default changes.
 - Active Listen renders no more than three continuously animated wave layers,
   no per-wave box shadows, and no animated blur or path geometry.
 - Signal Ribbon and Minimal Pulse render no more than two continuous animated
@@ -105,9 +123,9 @@ motion behavior, and the established Mistake Watch visual language.
   TV mode, and mobile Listen behavior remain unchanged.
 - Full tests, typecheck, ESLint, changed-file formatting, file-length policy,
   production build, and desktop/mobile browser checks pass.
-- On the affected laptop, active playback improves by at least 70% from the
-  measured 17% aggregate-Chrome median, with a target of no more than 5%
-  median and 10% short peak using the same measurement method.
+- The default mode meets no more than 5% median and 10% peak using the same
+  affected-laptop measurement method. Animated modes do not qualify as safe
+  defaults until they meet that budget independently.
 
 ## Evidence
 
@@ -132,5 +150,30 @@ motion behavior, and the established Mistake Watch visual language.
   mode survived reload, and a preview stopped after five seconds.
 - Browser inspection confirmed one preview active at a time, three Dynamic
   Horizon layers, one Signal Ribbon layer, and zero legacy waveform bars.
-- Release approval remains blocked on the affected laptop's two-minute active-
-  playback CPU comparison and ordinary playback/TV-mode regression smoke test.
+- The affected-laptop comparison and ordinary playback regression smoke test
+  completed. Functional behavior passed, but all three animated variants
+  failed the performance budget.
+- Production comparison results showed that the first animated replacement
+  failed its primary performance gate:
+
+  | Visualization   | Median |   Mean | P95 | Peak | Result        |
+  | --------------- | -----: | -----: | --: | ---: | ------------- |
+  | Dynamic Horizon |    17% | 17.41% | 23% |  41% | Fail          |
+  | Signal Ribbon   |    17% | 16.52% | 20% |  23% | Fail          |
+  | Minimal Pulse   |    12% | 12.15% | 15% |  35% | Fail          |
+  | Static Artwork  |     5% |  5.15% |  8% |   9% | Pass at limit |
+  | Off             |     5% |  5.32% |  8% |   9% | Pass at limit |
+
+- Dynamic Horizon matched the former waveform's 17% median despite reducing
+  the animated element count from 96 to three. Its large translated SVG-mask
+  surfaces remained expensive to rasterize and composite.
+- Functional QA passed: pause returned every mode near idle, artwork colors
+  changed between songs, natural transitions reset metadata correctly, queue
+  counts advanced, and no playback or synchronization failure was observed.
+- TASK-015A verification passed 362 repository tests, typecheck, ESLint,
+  changed-file formatting, file-length policy, and the production build.
+- Local browser QA confirmed the safe-first option order and power labels, one
+  visible close control, no horizontal overflow, and no console warnings or
+  errors at desktop and 390x844 mobile dimensions.
+- An explicit stored Dynamic Horizon choice survived the default change. After
+  selecting Static Artwork, that choice also survived reload.

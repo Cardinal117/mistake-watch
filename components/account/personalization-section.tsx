@@ -125,8 +125,22 @@ export function PersonalizationSection() {
                   {selected ? <Check className="h-3.5 w-3.5" /> : null}
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-body-md font-semibold text-on-surface">
-                    {option.label}
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="text-body-md font-semibold text-on-surface">
+                      {option.label}
+                    </span>
+                    <span
+                      className={cx(
+                        "technical-label rounded-sm border px-1.5 py-0.5",
+                        option.powerProfile === "recommended"
+                          ? "border-primary-fixed-dim/45 text-primary-fixed-dim"
+                          : option.powerProfile === "lowest"
+                            ? "border-white/12 text-on-surface-variant"
+                            : "border-secondary-fixed-dim/35 text-secondary-fixed-dim",
+                      )}
+                    >
+                      {option.powerLabel}
+                    </span>
                   </span>
                   <span className="mt-1 block text-label-sm text-on-surface-variant">
                     {option.description}
