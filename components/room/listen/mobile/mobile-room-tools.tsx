@@ -19,6 +19,7 @@ export function ListenMobileRoomTools({
   activeTab,
   account,
   accountNotice,
+  artworkUrl,
   canAddQueue,
   canLoadSource,
   connectionStatus,
@@ -35,6 +36,7 @@ export function ListenMobileRoomTools({
   activeTab: "members" | "room";
   account: AccountSummary;
   accountNotice?: "guest-room-attached";
+  artworkUrl?: string | null;
   canAddQueue: boolean;
   canLoadSource: boolean;
   connectionStatus: string;
@@ -115,6 +117,7 @@ export function ListenMobileRoomTools({
                 account={account}
                 notice={accountNotice}
                 nextPath={`/rooms/${room.id}`}
+                personalizationArtworkUrl={artworkUrl}
                 roomAttached={roomAttached}
                 roomId={room.id}
               />

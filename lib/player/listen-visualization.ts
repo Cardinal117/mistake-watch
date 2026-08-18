@@ -47,6 +47,20 @@ export type ListenVisualizationMode =
 export const DEFAULT_LISTEN_VISUALIZATION_MODE: ListenVisualizationMode =
   "static-artwork";
 
+export const LISTEN_VISUAL_INTENSITY = {
+  default: 75,
+  max: 100,
+  min: 25,
+  step: 5,
+} as const;
+
+export const LISTEN_BACKGROUND_DIMMING = {
+  default: 55,
+  max: 85,
+  min: 35,
+  step: 5,
+} as const;
+
 export function isListenVisualizationMode(
   value: unknown,
 ): value is ListenVisualizationMode {
@@ -66,4 +80,70 @@ export function getListenVisualizationMode(mode: ListenVisualizationMode) {
     listenVisualizationModes.find((candidate) => candidate.id === mode) ??
     listenVisualizationModes[0]
   );
+}
+
+export function normalizeListenAmbientLevel(
+  value: unknown,
+  bounds: { default: number; max: number; min: number; step: number },
+) {
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim()
+        ? Number(value)
+        : Number.NaN;
+
+  if (!Number.isFinite(parsed)) {
+    return bounds.default;
+  }
+
+  const clamped = Math.min(bounds.max, Math.max(bounds.min, parsed));
+  return Math.round(clamped / bounds.step) * bounds.step;
+}
+
+export function getListenPresentationVariables(
+  visualIntensity: unknown,
+  backgroundDimming: unknown,
+) {
+  const intensity =
+    normalizeListenAmbientLevel(visualIntensity, LISTEN_VISUAL_INTENSITY) / 100;
+  const dimming =
+    normalizeListenAmbientLevel(backgroundDimming, LISTEN_BACKGROUND_DIMMING) /
+    100;
+
+  return {
+    "--listen-artwork-opacity": roundPresentationValue(0.25 + intensity * 0.6),
+    "--listen-dim-bottom": roundPresentationValue(0.45 + dimming * 0.5),
+    "--listen-dim-edge": roundPresentationValue(0.42 + dimming * 0.5),
+    "--listen-dim-left": roundPresentationValue(0.22 + dimming * 0.5),
+    "--listen-dim-middle": roundPresentationValue(0.1 + dimming * 0.3),
+    "--listen-dim-top": roundPresentationValue(0.04 + dimming * 0.2),
+    "--listen-panel-dim-end": roundPresentationValue(0.58 + dimming * 0.5),
+    "--listen-panel-dim-middle": roundPresentationValue(0.48 + dimming * 0.5),
+    "--listen-panel-dim-start": roundPresentationValue(0.55 + dimming * 0.5),
+    "--listen-rail-dim-bottom": roundPresentationValue(0.35 + dimming * 0.5),
+    "--listen-rail-dim-top": roundPresentationValue(0.4 + dimming * 0.5),
+    "--listen-room-dim-end": roundPresentationValue(0.68 + dimming * 0.35),
+    "--listen-room-dim-middle": roundPresentationValue(0.35 + dimming * 0.5),
+    "--listen-horizon-back-opacity": roundPresentationValue(
+      0.08 + intensity * 0.18,
+    ),
+    "--listen-horizon-front-opacity": roundPresentationValue(
+      0.14 + intensity * 0.28,
+    ),
+    "--listen-horizon-middle-opacity": roundPresentationValue(
+      0.1 + intensity * 0.24,
+    ),
+    "--listen-pulse-high-opacity": roundPresentationValue(
+      0.55 + intensity * 0.4,
+    ),
+    "--listen-pulse-low-opacity": roundPresentationValue(
+      0.18 + intensity * 0.32,
+    ),
+    "--listen-ribbon-opacity": roundPresentationValue(0.28 + intensity * 0.38),
+  } as const;
+}
+
+function roundPresentationValue(value: number) {
+  return Number(value.toFixed(3));
 }

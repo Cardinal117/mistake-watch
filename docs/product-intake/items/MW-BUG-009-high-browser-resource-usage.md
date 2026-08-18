@@ -30,10 +30,12 @@ updated: 2026-08-18
 - **Related work:** TASK-002.5I queue performance and TASK-010 Media Hub
   performance provide prior measurement patterns but do not cover sustained
   room rendering or playback-resource budgets.
-- **Next action:** Release TASK-015A with Static Artwork as the default and
-  animated modes clearly marked as higher power. Keep explicit stored choices.
-  Then run TASK-015B as a separate pre-rasterized/throttled rendering experiment
-  before any BPM integration.
+- **Current remediation:** TASK-015A2 is implemented and locally verified. The
+  safe Static Artwork default now has representative previews plus bounded
+  browser-local intensity and dimming controls without new continuous motion.
+- **Next action:** Run responsive live QA for TASK-015A2, then treat TASK-015B
+  as a separate pre-rasterized/throttled rendering experiment before any BPM
+  integration.
 - **Task:** [[../../tasks/TASK-015-listen-visualizer-performance/task|TASK-015]]
 - **Original report:**
   [[../archive/quick-capture-2026-08-18#Capture 3]]

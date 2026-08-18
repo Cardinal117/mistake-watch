@@ -34,8 +34,9 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 1. Release the final `TASK-014C` guest sign-in-footer refinement separately
    from this intake-only triage, then close owner QA for
    [[items/MW-FEAT-003-account-rooms-surface|MW-FEAT-003]].
-2. Release TASK-015A's Static Artwork safety default, then run TASK-015B as a
-   separately measured raster/throttling experiment before resolving
+2. Run responsive live QA for TASK-015A2's implemented Static Artwork
+   visibility controls, then run TASK-015B as a separately measured
+   raster/throttling experiment before resolving
    [[items/MW-BUG-009-high-browser-resource-usage|MW-BUG-009]].
 3. Reproduce [[items/MW-BUG-010-account-owner-rejoin-loses-authority|MW-BUG-010]]
    across durable account ownership and live SpacetimeDB authority boundaries.

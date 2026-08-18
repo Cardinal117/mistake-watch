@@ -105,7 +105,7 @@ export function ListenNowPlayingPanel({
         desktopShell
           ? {
               background:
-                "radial-gradient(circle at 18% 10%, rgb(var(--listen-primary) / 0.16), transparent 22rem), linear-gradient(180deg, rgb(14 14 15 / 0.72), rgb(14 14 15 / 0.62))",
+                "radial-gradient(circle at 18% 10%, rgb(var(--listen-primary) / 0.16), transparent 22rem), linear-gradient(180deg, rgb(14 14 15 / var(--listen-rail-dim-top,0.72)), rgb(14 14 15 / var(--listen-rail-dim-bottom,0.62)))",
             }
           : undefined
       }

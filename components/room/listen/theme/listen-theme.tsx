@@ -44,17 +44,24 @@ export function ListenAmbientBackdrop({
         // eslint-disable-next-line @next/next/no-img-element -- Provider artwork drives the ambient listen-room backdrop.
         <img
           alt=""
-          className="absolute -inset-[12%] h-[124%] w-[124%] object-cover opacity-48 blur-3xl saturate-150"
+          className="absolute -inset-[12%] h-[124%] w-[124%] object-cover blur-3xl saturate-150"
           fetchPriority="high"
           key={artworkUrl}
           loading="eager"
           src={artworkUrl}
           style={{
             animation: "listen-artwork-fade-in 1400ms ease-out both",
+            opacity: "var(--listen-artwork-opacity, 0.48)",
           }}
         />
       ) : null}
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgb(14_14_15_/_0.58),rgb(19_19_20_/_0.34)_38%,rgb(14_14_15_/_0.88)),linear-gradient(180deg,rgb(14_14_15_/_0.18),rgb(14_14_15_/_0.9))]" />
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(90deg,rgb(14 14 15 / var(--listen-dim-left,0.58)),rgb(19 19 20 / var(--listen-dim-middle,0.34)) 38%,rgb(14 14 15 / var(--listen-dim-edge,0.88))),linear-gradient(180deg,rgb(14 14 15 / var(--listen-dim-top,0.18)),rgb(14 14 15 / var(--listen-dim-bottom,0.9)))",
+        }}
+      />
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgb(255_255_255_/_0.028)_1px,transparent_1px),linear-gradient(180deg,rgb(255_255_255_/_0.022)_1px,transparent_1px)] bg-[size:72px_72px] opacity-25" />
     </div>
   );

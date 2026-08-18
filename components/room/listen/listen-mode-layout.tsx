@@ -25,7 +25,9 @@ import {
   getListenTheme,
 } from "@/components/room/listen/theme/listen-theme";
 import { ListenVisualization } from "@/components/room/listen/theme/listen-visualization";
+import { useListenAmbientPreference } from "@/components/room/listen/theme/use-listen-ambient-preference";
 import { useListenVisualizationPreference } from "@/components/room/listen/theme/use-listen-visualization-preference";
+import { getListenPresentationVariables } from "@/lib/player/listen-visualization";
 import {
   useListenQueueItems,
   useDesktopListenShell,
@@ -56,6 +58,7 @@ export function ListenModeLayout({
   );
   const [tvMode, setTvMode] = useState(false);
   const [tvSettings, setTvSettings] = usePersistentListenTvSettings();
+  const { backgroundDimming, visualIntensity } = useListenAmbientPreference();
   const { mode: visualizationMode } = useListenVisualizationPreference();
   const [volume, setVolume] = useState(DEFAULT_LISTEN_VOLUME);
   const [queueDrawerOpen, setQueueDrawerOpen] = useState(false);
@@ -88,6 +91,7 @@ export function ListenModeLayout({
   );
   const listenTheme = useArtworkTheme(activeArtworkUrl, fallbackListenTheme);
   const listenThemeStyle = {
+    ...getListenPresentationVariables(visualIntensity, backgroundDimming),
     "--listen-primary": listenTheme.primary,
     "--listen-secondary": listenTheme.secondary,
     "--listen-shadow": listenTheme.shadow,
@@ -279,7 +283,7 @@ export function ListenModeLayout({
           className="pointer-events-none absolute inset-0 transition-opacity duration-1000"
           style={{
             background:
-              "radial-gradient(circle at 0% 18%, rgb(var(--listen-primary) / 0.3), transparent 44%), radial-gradient(circle at 18% 62%, rgb(var(--listen-secondary) / 0.18), transparent 40%), radial-gradient(circle at 38% 100%, rgb(var(--listen-wave) / 0.1), transparent 46%), linear-gradient(90deg, rgb(var(--listen-primary) / 0.05), rgb(14 14 15 / 0.64) 34%, rgb(19 19 20 / 0.97) 100%)",
+              "radial-gradient(circle at 0% 18%, rgb(var(--listen-primary) / 0.3), transparent 44%), radial-gradient(circle at 18% 62%, rgb(var(--listen-secondary) / 0.18), transparent 40%), radial-gradient(circle at 38% 100%, rgb(var(--listen-wave) / 0.1), transparent 46%), linear-gradient(90deg, rgb(var(--listen-primary) / 0.05), rgb(14 14 15 / var(--listen-room-dim-middle,0.64)) 34%, rgb(19 19 20 / var(--listen-room-dim-end,0.97)) 100%)",
           }}
         />
       ) : null}
@@ -310,6 +314,7 @@ export function ListenModeLayout({
               activeTab={mobileToolsTab}
               account={account}
               accountNotice={accountNotice}
+              artworkUrl={activeArtworkUrl}
               canAddQueue={liveRoom.canAddQueue}
               canLoadSource={liveRoom.canManageAuthority}
               connectionStatus={liveRoom.connectionStatus}
@@ -346,7 +351,7 @@ export function ListenModeLayout({
           )}
           style={{
             background:
-              "radial-gradient(circle at 0% 20%, rgb(var(--listen-primary) / 0.085), transparent 34rem), radial-gradient(circle at 20% 54%, rgb(var(--listen-secondary) / 0.055), transparent 42rem), linear-gradient(90deg,rgb(14 14 15 / 0.88),rgb(14 14 15 / 0.78) 44%,rgb(19 19 20 / 0.9))",
+              "radial-gradient(circle at 0% 20%, rgb(var(--listen-primary) / 0.085), transparent 34rem), radial-gradient(circle at 20% 54%, rgb(var(--listen-secondary) / 0.055), transparent 42rem), linear-gradient(90deg,rgb(14 14 15 / var(--listen-panel-dim-start,0.88)),rgb(14 14 15 / var(--listen-panel-dim-middle,0.78)) 44%,rgb(19 19 20 / var(--listen-panel-dim-end,0.9)))",
           }}
         >
           <div
@@ -356,6 +361,7 @@ export function ListenModeLayout({
           <ListenTechnicalRoomHeader
             account={account}
             accountNotice={accountNotice}
+            artworkUrl={activeArtworkUrl}
             canAddQueue={liveRoom.canAddQueue}
             canLoadSource={liveRoom.canManageAuthority}
             connectionStatus={liveRoom.connectionStatus}

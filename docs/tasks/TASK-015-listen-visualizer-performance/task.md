@@ -1,6 +1,6 @@
 # TASK-015: Listen Visualizer Performance
 
-Status: TASK-015A implemented - TASK-015B pending
+Status: TASK-015A2 implemented and locally verified - TASK-015B pending
 Documentation level: Compact task
 Updated: 2026-08-18
 Related intake: MW-BUG-009
@@ -21,6 +21,9 @@ motion behavior, and the established Mistake Watch visual language.
   it independently passes the affected-laptop performance budget.
 - Expose the visual mode in Account Personalization with browser-local
   persistence for both signed-in and guest sessions in this task.
+- Add browser-local Visual Intensity and Background Dimming controls directly
+  below the visualization choices, with representative current-artwork
+  previews when the panel opens from a Listen room.
 - Animate only the selected Personalization preview and stop previews after a
   bounded interval.
 - Pause continuous visual motion while playback is paused, the document is
@@ -83,6 +86,9 @@ motion behavior, and the established Mistake Watch visual language.
 
 - **TASK-015A - Safe default:** release Static Artwork as the default and retain
   the animated variants only as explicit higher-power choices.
+- **TASK-015A2 - Visibility controls:** make previews representative, add
+  bounded intensity and dimming sliders, and preserve Static Artwork's lack of
+  continuous motion.
 - **TASK-015B - Rendering experiment:** separately test one shallow,
   pre-rasterized wave surface and throttled motion. Do not ship it as the
   default unless it passes the same laptop benchmark.
@@ -99,6 +105,8 @@ motion behavior, and the established Mistake Watch visual language.
   freeze every new continuous animation.
 - **Palette contrast:** artwork-derived colors remain decorative and may not
   reduce control or text contrast.
+- **Over-bright artwork:** maximum intensity must retain dark-overlay control
+  contrast and may not animate filters, blur, brightness, or opacity.
 - **Storage drift:** unknown stored values must resolve to Static Artwork
   without breaking rendering.
 - **License loss:** retain the source attribution and MIT notice with the
@@ -110,6 +118,13 @@ motion behavior, and the established Mistake Watch visual language.
 - Dynamic Horizon, Signal Ribbon, and Minimal Pulse are visibly identified as
   higher-power experiments and remain opt-in.
 - An explicit valid stored choice remains selected after the default changes.
+- Visual Intensity and Background Dimming are keyboard-operable, bounded, and
+  persist locally across reload and same-origin tabs.
+- Listen-room Personalization previews use the current artwork transiently;
+  non-room surfaces use a local fallback asset without creating durable media
+  state.
+- Intensity and dimming changes update static presentation variables only and
+  do not add animation layers or room-authoritative state.
 - Active Listen renders no more than three continuously animated wave layers,
   no per-wave box shadows, and no animated blur or path geometry.
 - Signal Ribbon and Minimal Pulse render no more than two continuous animated
@@ -177,3 +192,15 @@ motion behavior, and the established Mistake Watch visual language.
   errors at desktop and 390x844 mobile dimensions.
 - An explicit stored Dynamic Horizon choice survived the default change. After
   selecting Static Artwork, that choice also survived reload.
+- TASK-015A2 adds bounded 25-100 Visual Intensity and 35-85 Background
+  Dimming preferences using versioned browser-local storage and same-origin
+  change events. The values only feed static presentation variables.
+- Account Personalization now previews the current Listen artwork when supplied
+  by the room and otherwise uses the local Signal Aperture asset. Browser
+  inspection confirmed four local fallback artwork previews, one visible close
+  control, no horizontal dialog overflow, and zero running infinite preview
+  animations with Static Artwork selected.
+- TASK-015A2 local verification passed 363 repository tests, standalone
+  typecheck, ESLint, changed-file formatting, file-length policy with zero
+  violations, and the Next.js production build. Responsive live QA and the
+  affected-laptop comparison remain release checks rather than local claims.

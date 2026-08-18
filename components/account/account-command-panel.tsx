@@ -32,6 +32,7 @@ type AccountCommandPanelProps = {
   compact?: boolean;
   nextPath: string;
   notice?: "guest-room-attached";
+  personalizationArtworkUrl?: string | null;
   roomAttached?: boolean;
   roomId?: string;
 };
@@ -53,6 +54,7 @@ export function AccountCommandPanel({
   compact = false,
   nextPath,
   notice,
+  personalizationArtworkUrl,
   roomAttached = false,
   roomId,
 }: AccountCommandPanelProps) {
@@ -201,6 +203,7 @@ export function AccountCommandPanel({
               displayName={displayName}
               notice={notice}
               onAccountRoomsCountChange={handleAccountRoomsCountChange}
+              personalizationArtworkUrl={personalizationArtworkUrl}
               roomAttached={roomAttached}
               roomId={roomId}
               signOutHref={signOutHref}
@@ -276,6 +279,7 @@ function AccountPanelContent({
   displayName,
   notice,
   onAccountRoomsCountChange,
+  personalizationArtworkUrl,
   roomAttached,
   roomId,
   signOutHref,
@@ -286,6 +290,7 @@ function AccountPanelContent({
   displayName: string;
   notice?: "guest-room-attached";
   onAccountRoomsCountChange(count: number | null): void;
+  personalizationArtworkUrl?: string | null;
   roomAttached: boolean;
   roomId?: string;
   signOutHref: string;
@@ -415,7 +420,7 @@ function AccountPanelContent({
   }
 
   if (activeTab === "personalization") {
-    return <PersonalizationSection />;
+    return <PersonalizationSection artworkUrl={personalizationArtworkUrl} />;
   }
 
   if (activeTab === "rooms") {

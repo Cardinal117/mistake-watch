@@ -28,9 +28,13 @@ await writeFile(contractModulePath, contractJs);
 
 const {
   DEFAULT_LISTEN_VISUALIZATION_MODE,
+  LISTEN_BACKGROUND_DIMMING,
+  LISTEN_VISUAL_INTENSITY,
+  getListenPresentationVariables,
   getListenVisualizationMode,
   isListenVisualizationMode,
   listenVisualizationModes,
+  normalizeListenAmbientLevel,
   normalizeListenVisualizationMode,
 } = await import(pathToFileURL(contractModulePath));
 
@@ -71,6 +75,42 @@ test("unknown stored visualization values fail closed to the default", () => {
     "static-artwork",
   );
   assert.equal(normalizeListenVisualizationMode(null), "static-artwork");
+});
+
+test("ambient presentation levels are bounded and deterministic", () => {
+  assert.equal(
+    normalizeListenAmbientLevel(null, LISTEN_VISUAL_INTENSITY),
+    LISTEN_VISUAL_INTENSITY.default,
+  );
+  assert.equal(normalizeListenAmbientLevel("27", LISTEN_VISUAL_INTENSITY), 25);
+  assert.equal(
+    normalizeListenAmbientLevel(140, LISTEN_VISUAL_INTENSITY),
+    LISTEN_VISUAL_INTENSITY.max,
+  );
+
+  const subdued = getListenPresentationVariables(
+    LISTEN_VISUAL_INTENSITY.min,
+    LISTEN_BACKGROUND_DIMMING.min,
+  );
+  const strong = getListenPresentationVariables(
+    LISTEN_VISUAL_INTENSITY.max,
+    LISTEN_BACKGROUND_DIMMING.max,
+  );
+
+  assert.ok(
+    strong["--listen-artwork-opacity"] > subdued["--listen-artwork-opacity"],
+  );
+  assert.ok(
+    strong["--listen-horizon-front-opacity"] >
+      subdued["--listen-horizon-front-opacity"],
+  );
+  assert.ok(strong["--listen-dim-bottom"] > subdued["--listen-dim-bottom"]);
+  assert.ok(
+    strong["--listen-panel-dim-start"] > subdued["--listen-panel-dim-start"],
+  );
+  assert.ok(strong["--listen-room-dim-end"] > subdued["--listen-room-dim-end"]);
+  assert.ok(strong["--listen-dim-edge"] <= 1);
+  assert.ok(strong["--listen-room-dim-end"] <= 1);
 });
 
 test("the Listen renderer removes the 96-bar glow implementation", async () => {
@@ -120,29 +160,42 @@ test("visual motion uses local masks without animated filters or shadows", async
   assert.doesNotMatch(visualizationCss, /clip-path|animation[^;]+color/);
 });
 
-test("personalization provides one bounded keyboard-operable preview", async () => {
-  const [panel, personalization, preference] = await Promise.all([
-    readFile(
-      path.join(rootDir, "components/account/account-command-panel.tsx"),
-      "utf8",
-    ),
-    readFile(
-      path.join(rootDir, "components/account/personalization-section.tsx"),
-      "utf8",
-    ),
-    readFile(
-      path.join(
-        rootDir,
-        "components/room/listen/theme/use-listen-visualization-preference.ts",
+test("personalization provides bounded previews and ambient controls", async () => {
+  const [panel, personalization, preference, ambientPreference] =
+    await Promise.all([
+      readFile(
+        path.join(rootDir, "components/account/account-command-panel.tsx"),
+        "utf8",
       ),
-      "utf8",
-    ),
-  ]);
+      readFile(
+        path.join(rootDir, "components/account/personalization-section.tsx"),
+        "utf8",
+      ),
+      readFile(
+        path.join(
+          rootDir,
+          "components/room/listen/theme/use-listen-visualization-preference.ts",
+        ),
+        "utf8",
+      ),
+      readFile(
+        path.join(
+          rootDir,
+          "components/room/listen/theme/use-listen-ambient-preference.ts",
+        ),
+        "utf8",
+      ),
+    ]);
 
   assert.match(panel, /activeTab === "personalization"/);
-  assert.match(panel, /<PersonalizationSection \/>/);
+  assert.match(panel, /<PersonalizationSection artworkUrl=/);
   assert.match(personalization, /role="radiogroup"/);
   assert.match(personalization, /type="radio"/);
+  assert.match(personalization, /type="range"/);
+  assert.match(personalization, /LISTEN_VISUAL_INTENSITY/);
+  assert.match(personalization, /LISTEN_BACKGROUND_DIMMING/);
+  assert.match(personalization, /FALLBACK_PREVIEW_ARTWORK/);
+  assert.match(personalization, /previewArtworkUrl/);
   assert.match(personalization, /option\.powerLabel/);
   assert.match(personalization, /option\.powerProfile/);
   assert.match(personalization, /5_000/);
@@ -150,6 +203,10 @@ test("personalization provides one bounded keyboard-operable preview", async () 
   assert.match(preference, /mw_listen_visualization_mode_v1/);
   assert.match(preference, /addEventListener\("storage"/);
   assert.match(preference, /normalizeListenVisualizationMode/);
+  assert.match(ambientPreference, /mw_listen_visual_intensity_v1/);
+  assert.match(ambientPreference, /mw_listen_background_dimming_v1/);
+  assert.match(ambientPreference, /addEventListener\("storage"/);
+  assert.match(ambientPreference, /normalizeListenAmbientLevel/);
 });
 
 test("wave assets retain source attribution and local delivery", async () => {

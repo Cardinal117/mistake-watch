@@ -2,24 +2,54 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import { Check, Play, Square } from "lucide-react";
+import { useListenAmbientPreference } from "@/components/room/listen/theme/use-listen-ambient-preference";
+import { useArtworkTheme } from "@/components/room/listen/theme/listen-theme";
 import { ListenVisualization } from "@/components/room/listen/theme/listen-visualization";
 import { useListenVisualizationPreference } from "@/components/room/listen/theme/use-listen-visualization-preference";
 import {
+  getListenPresentationVariables,
+  LISTEN_BACKGROUND_DIMMING,
+  LISTEN_VISUAL_INTENSITY,
   listenVisualizationModes,
   type ListenVisualizationMode,
 } from "@/lib/player/listen-visualization";
+import type { ListenTheme } from "@/components/room/listen/shared";
 import { cx } from "@/lib/ui";
 
-const previewTheme = {
-  "--listen-primary": "0 219 233",
-  "--listen-secondary": "255 186 32",
-  "--listen-wave": "219 252 255",
-} as CSSProperties;
+const FALLBACK_PREVIEW_ARTWORK = "/brand/logo-concept-01-signal-aperture.png";
+const previewFallbackTheme = {
+  primary: "0 219 233",
+  secondary: "255 186 32",
+  shadow: "0 219 233",
+  wave: "219 252 255",
+} satisfies ListenTheme;
 
-export function PersonalizationSection() {
+export function PersonalizationSection({
+  artworkUrl,
+}: {
+  artworkUrl?: string | null;
+}) {
   const { mode, setMode } = useListenVisualizationPreference();
+  const {
+    backgroundDimming,
+    setBackgroundDimming,
+    setVisualIntensity,
+    visualIntensity,
+  } = useListenAmbientPreference();
   const [previewMode, setPreviewMode] =
     useState<ListenVisualizationMode | null>(null);
+  const previewArtworkUrl = artworkUrl ?? FALLBACK_PREVIEW_ARTWORK;
+  const previewArtworkTheme = useArtworkTheme(
+    previewArtworkUrl,
+    previewFallbackTheme,
+  );
+  const previewTheme = {
+    ...getListenPresentationVariables(visualIntensity, backgroundDimming),
+    "--listen-primary": previewArtworkTheme.primary,
+    "--listen-secondary": previewArtworkTheme.secondary,
+    "--listen-shadow": previewArtworkTheme.shadow,
+    "--listen-wave": previewArtworkTheme.wave,
+  } as CSSProperties;
 
   useEffect(() => {
     if (!previewMode) {
@@ -83,7 +113,25 @@ export function PersonalizationSection() {
                 style={previewTheme}
               >
                 {option.id !== "off" ? (
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_30%,rgb(var(--listen-primary)_/_0.18),transparent_46%),linear-gradient(180deg,rgb(14_14_15_/_0.2),rgb(14_14_15_/_0.94))]" />
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element -- A transient preview may use provider artwork from the active room. */}
+                    <img
+                      alt=""
+                      className="absolute -inset-[8%] h-[116%] w-[116%] object-cover blur-sm saturate-150"
+                      src={previewArtworkUrl}
+                      style={{
+                        opacity: "var(--listen-artwork-opacity, 0.48)",
+                      }}
+                    />
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background:
+                          "linear-gradient(90deg,rgb(14 14 15 / var(--listen-dim-left,0.58)),rgb(19 19 20 / var(--listen-dim-middle,0.34)) 38%,rgb(14 14 15 / var(--listen-dim-edge,0.88))),linear-gradient(180deg,rgb(14 14 15 / var(--listen-dim-top,0.18)),rgb(14 14 15 / var(--listen-dim-bottom,0.9)))",
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_30%,rgb(var(--listen-primary)_/_0.18),transparent_46%)]" />
+                  </>
                 ) : null}
                 <ListenVisualization active={previewing} mode={option.id} />
                 {option.motionLayers > 0 ? (
@@ -151,6 +199,78 @@ export function PersonalizationSection() {
           );
         })}
       </div>
+
+      <div className="mt-5 grid gap-5 border-t border-white/10 pt-5 lg:grid-cols-2">
+        <AmbientRangeControl
+          bounds={LISTEN_VISUAL_INTENSITY}
+          description="Controls artwork and visualization presence."
+          id="listen-visual-intensity"
+          label="Visual intensity"
+          onChange={setVisualIntensity}
+          value={visualIntensity}
+        />
+        <AmbientRangeControl
+          bounds={LISTEN_BACKGROUND_DIMMING}
+          description="Darkens the artwork behind room content."
+          id="listen-background-dimming"
+          label="Background dimming"
+          onChange={setBackgroundDimming}
+          value={backgroundDimming}
+        />
+      </div>
     </section>
+  );
+}
+
+function AmbientRangeControl({
+  bounds,
+  description,
+  id,
+  label,
+  onChange,
+  value,
+}: {
+  bounds: { max: number; min: number; step: number };
+  description: string;
+  id: string;
+  label: string;
+  onChange(value: number): void;
+  value: number;
+}) {
+  const descriptionId = `${id}-description`;
+  const progress = ((value - bounds.min) / (bounds.max - bounds.min)) * 100;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3">
+        <label
+          className="text-body-md font-semibold text-on-surface"
+          htmlFor={id}
+        >
+          {label}
+        </label>
+        <output className="technical-label text-primary-fixed-dim" htmlFor={id}>
+          {value}%
+        </output>
+      </div>
+      <p
+        className="mt-1 text-label-sm text-on-surface-variant"
+        id={descriptionId}
+      >
+        {description}
+      </p>
+      <input
+        aria-describedby={descriptionId}
+        className="mistake-slider mt-3 w-full"
+        id={id}
+        max={bounds.max}
+        min={bounds.min}
+        onChange={(event) => onChange(Number(event.currentTarget.value))}
+        step={bounds.step}
+        style={{ "--slider-progress": `${progress}%` } as CSSProperties}
+        type="range"
+        value={value}
+      />
+    </div>
   );
 }
