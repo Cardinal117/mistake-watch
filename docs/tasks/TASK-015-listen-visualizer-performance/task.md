@@ -1,6 +1,6 @@
 # TASK-015: Listen Visualizer Performance
 
-Status: TASK-015A2 visibility correction locally verified - live QA pending
+Status: TASK-015A2 second visibility correction locally verified - live QA pending
 Documentation level: Compact task
 Updated: 2026-08-18
 Related intake: MW-BUG-009
@@ -216,3 +216,18 @@ motion behavior, and the established Mistake Watch visual language.
   typecheck, ESLint, changed-file formatting, the file-length policy with zero
   violations, and the Next.js production build. Production room visibility
   remains the acceptance gate.
+- Production QA then confirmed the calibration alone was insufficient. The
+  artwork fade's `both` fill mode permanently held opacity at `0.38`, overriding
+  the intensity preference, while Static Artwork's `64px` blur removed
+  recognizable image detail. The second correction binds the fade endpoint to
+  `--listen-artwork-opacity` and applies an `8px` blur only to Static Artwork;
+  animated modes retain the softer ambient artwork treatment.
+- Local rendered QA used guaranteed same-origin artwork to isolate application
+  rendering from YouTube availability. At 100% intensity and 35% dimming,
+  Static Artwork resolved to `opacity: 0.85`, `blur(8px)`, and a loaded
+  1254-pixel image; the artwork was recognizable behind readable controls.
+- The same local room rendered the expected Dynamic Horizon, Signal Ribbon,
+  Minimal Pulse, and Off layer counts of 3, 1, 1, and 0. Desktop and 390-pixel
+  mobile checks reported zero horizontal overflow. Full verification passed
+  all 363 tests, typecheck, ESLint, changed-file formatting, file-length policy,
+  and the production build.

@@ -275,7 +275,10 @@ export function ListenModeLayout({
       style={listenThemeStyle}
     >
       {desktopShell && visualizationMode !== "off" ? (
-        <ListenAmbientBackdrop artworkUrl={activeArtworkUrl} />
+        <ListenAmbientBackdrop
+          artworkUrl={activeArtworkUrl}
+          mode={visualizationMode}
+        />
       ) : null}
       {visualizationMode !== "off" ? (
         <div

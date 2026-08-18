@@ -148,6 +148,15 @@ test("the Listen renderer removes the 96-bar glow implementation", async () => {
   assert.doesNotMatch(layout, /ListenCenterWaveform/);
   assert.match(layout, /useListenVisualizationPreference/);
   assert.match(layout, /visualizationMode !== "off"/);
+  assert.match(layout, /mode=\{visualizationMode\}/);
+  assert.match(theme, /mode === "static-artwork"/);
+  assert.match(theme, /blur-\[8px\] saturate-125/);
+  assert.match(theme, /blur-3xl saturate-150/);
+  assert.match(
+    css,
+    /to\s*\{\s*opacity:\s*var\(--listen-artwork-opacity,\s*0\.48\)/,
+  );
+  assert.doesNotMatch(css, /to\s*\{\s*opacity:\s*0\.38/);
   assert.doesNotMatch(css, /listen-center-wave-bar|listen-center-wave\s*\{/);
   assert.match(css, /translate3d\(-50%, 0, 0\)/);
   assert.match(css, /animation-play-state: paused/);

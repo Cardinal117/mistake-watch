@@ -32,10 +32,12 @@ updated: 2026-08-18
   room rendering or playback-resource budgets.
 - **Current remediation:** TASK-015A2 has representative previews plus bounded
   browser-local intensity and dimming controls without new continuous motion.
-  Production QA exposed a calibration defect: compounded foreground scrims hid
-  the visualization even at 100% intensity and minimum dimming. The corrective
-  static-alpha calibration is locally verified and awaits production room QA.
-- **Next action:** Verify the corrected room visibility in production while
+  Production QA exposed two visibility defects after the static-alpha
+  calibration: the artwork fade animation permanently overrode the selected
+  opacity with `0.38`, and Static Artwork's `64px` blur removed recognizable
+  image detail. The second correction binds the fade endpoint to the selected
+  intensity and uses an `8px` Static Artwork blur without adding motion.
+- **Next action:** Verify the second corrected room visibility in production while
   preserving text/control contrast, then treat TASK-015B as a separate pre-
   rasterized/throttled rendering experiment before any BPM integration.
 - **Task:** [[../../tasks/TASK-015-listen-visualizer-performance/task|TASK-015]]

@@ -315,7 +315,7 @@
     }
 
     to {
-      opacity: 0.38;
+      opacity: var(--listen-artwork-opacity, 0.48);
       transform: scale(1);
     }
   }

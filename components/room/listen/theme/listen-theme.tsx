@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { type ListenTheme } from "@/components/room/listen/shared";
 import { extractThemeFromImage } from "@/components/room/listen/helpers";
+import type { ListenVisualizationMode } from "@/lib/player/listen-visualization";
+import { cx } from "@/lib/ui";
 
 export const LISTEN_THEME_PRESETS = [
   {
@@ -32,8 +34,10 @@ export const LISTEN_THEME_PRESETS = [
 ] satisfies ListenTheme[];
 export function ListenAmbientBackdrop({
   artworkUrl,
+  mode,
 }: {
   artworkUrl?: string | null;
+  mode: ListenVisualizationMode;
 }) {
   return (
     <div
@@ -44,7 +48,12 @@ export function ListenAmbientBackdrop({
         // eslint-disable-next-line @next/next/no-img-element -- Provider artwork drives the ambient listen-room backdrop.
         <img
           alt=""
-          className="absolute -inset-[12%] h-[124%] w-[124%] object-cover blur-3xl saturate-150"
+          className={cx(
+            "absolute -inset-[12%] h-[124%] w-[124%] object-cover",
+            mode === "static-artwork"
+              ? "blur-[8px] saturate-125"
+              : "blur-3xl saturate-150",
+          )}
           fetchPriority="high"
           key={artworkUrl}
           loading="eager"
