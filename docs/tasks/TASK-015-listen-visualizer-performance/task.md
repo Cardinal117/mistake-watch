@@ -1,6 +1,6 @@
 # TASK-015: Listen Visualizer Performance
 
-Status: TASK-015A2 implemented and locally verified - TASK-015B pending
+Status: TASK-015A2 visibility correction locally verified - live QA pending
 Documentation level: Compact task
 Updated: 2026-08-18
 Related intake: MW-BUG-009
@@ -88,7 +88,8 @@ motion behavior, and the established Mistake Watch visual language.
   the animated variants only as explicit higher-power choices.
 - **TASK-015A2 - Visibility controls:** make previews representative, add
   bounded intensity and dimming sliders, and preserve Static Artwork's lack of
-  continuous motion.
+  continuous motion. Keep minimum dimming visibly permissive across the room,
+  content panel, and now-playing rail rather than only inside previews.
 - **TASK-015B - Rendering experiment:** separately test one shallow,
   pre-rasterized wave surface and throttled motion. Do not ship it as the
   default unless it passes the same laptop benchmark.
@@ -125,6 +126,8 @@ motion behavior, and the established Mistake Watch visual language.
   state.
 - Intensity and dimming changes update static presentation variables only and
   do not add animation layers or room-authoritative state.
+- At minimum dimming, room, content-panel, and now-playing-rail scrims leave the
+  selected visualization clearly visible behind readable foreground content.
 - Active Listen renders no more than three continuously animated wave layers,
   no per-wave box shadows, and no animated blur or path geometry.
 - Signal Ribbon and Minimal Pulse render no more than two continuous animated
@@ -204,3 +207,12 @@ motion behavior, and the established Mistake Watch visual language.
   typecheck, ESLint, changed-file formatting, file-length policy with zero
   violations, and the Next.js production build. Responsive live QA and the
   affected-laptop comparison remain release checks rather than local claims.
+- Owner production QA found that previews were representative but the room's
+  compounded foreground scrims still hid Static Artwork and animated modes at
+  100% intensity and the 35% minimum dimming setting. The corrective calibration
+  lowers only existing static scrim alpha budgets and adds explicit visibility
+  ceilings; it adds no render layer, animation, filter, or API behavior.
+- Corrective verification passed all 363 repository tests, standalone
+  typecheck, ESLint, changed-file formatting, the file-length policy with zero
+  violations, and the Next.js production build. Production room visibility
+  remains the acceptance gate.

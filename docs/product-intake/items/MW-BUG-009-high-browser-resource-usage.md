@@ -30,12 +30,14 @@ updated: 2026-08-18
 - **Related work:** TASK-002.5I queue performance and TASK-010 Media Hub
   performance provide prior measurement patterns but do not cover sustained
   room rendering or playback-resource budgets.
-- **Current remediation:** TASK-015A2 is implemented and locally verified. The
-  safe Static Artwork default now has representative previews plus bounded
+- **Current remediation:** TASK-015A2 has representative previews plus bounded
   browser-local intensity and dimming controls without new continuous motion.
-- **Next action:** Run responsive live QA for TASK-015A2, then treat TASK-015B
-  as a separate pre-rasterized/throttled rendering experiment before any BPM
-  integration.
+  Production QA exposed a calibration defect: compounded foreground scrims hid
+  the visualization even at 100% intensity and minimum dimming. The corrective
+  static-alpha calibration is locally verified and awaits production room QA.
+- **Next action:** Verify the corrected room visibility in production while
+  preserving text/control contrast, then treat TASK-015B as a separate pre-
+  rasterized/throttled rendering experiment before any BPM integration.
 - **Task:** [[../../tasks/TASK-015-listen-visualizer-performance/task|TASK-015]]
 - **Original report:**
   [[../archive/quick-capture-2026-08-18#Capture 3]]

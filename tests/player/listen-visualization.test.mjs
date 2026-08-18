@@ -110,7 +110,13 @@ test("ambient presentation levels are bounded and deterministic", () => {
   );
   assert.ok(strong["--listen-room-dim-end"] > subdued["--listen-room-dim-end"]);
   assert.ok(strong["--listen-dim-edge"] <= 1);
-  assert.ok(strong["--listen-room-dim-end"] <= 1);
+  assert.ok(subdued["--listen-panel-dim-middle"] <= 0.4);
+  assert.ok(subdued["--listen-panel-dim-start"] <= 0.45);
+  assert.ok(subdued["--listen-room-dim-end"] <= 0.55);
+  assert.ok(subdued["--listen-rail-dim-top"] <= 0.45);
+  assert.ok(strong["--listen-panel-dim-end"] <= 0.75);
+  assert.ok(strong["--listen-room-dim-end"] <= 0.75);
+  assert.ok(strong["--listen-rail-dim-top"] <= 0.65);
 });
 
 test("the Listen renderer removes the 96-bar glow implementation", async () => {
