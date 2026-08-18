@@ -214,7 +214,7 @@ test("Rooms title and count live in one responsive command-panel header", async 
   assert.doesNotMatch(section, /Your spaces|Account rooms\s*<\/p>/);
 });
 
-test("authentication scope and actions live only in the Account tab content", async () => {
+test("signed-in authentication scope and sign out remain in Account", async () => {
   const panel = await readFile(
     path.join(rootDir, "components/account/account-command-panel.tsx"),
     "utf8",
@@ -223,11 +223,23 @@ test("authentication scope and actions live only in the Account tab content", as
   assert.match(panel, /activeTab === "account"/);
   assert.match(panel, /Identity scope/);
   assert.match(panel, /Google sign-in is identity-only here/);
-  assert.match(panel, /Continue with Google/);
   assert.match(panel, /Sign out/);
-  assert.match(panel, /signInHref=\{signInHref\}/);
   assert.match(panel, /signOutHref=\{signOutHref\}/);
+  assert.match(panel, /\{signedIn \? \(/);
+  assert.match(panel, /\) : null\}/);
+});
+
+test("guest accounts retain one persistent sign-in footer", async () => {
+  const panel = await readFile(
+    path.join(rootDir, "components/account/account-command-panel.tsx"),
+    "utf8",
+  );
+
+  assert.match(panel, /!isSignedIn \? \(/);
+  assert.match(panel, /<footer/);
+  assert.match(panel, /grid-rows-\[auto_minmax\(0,1fr\)_auto\]/);
   assert.match(panel, /grid-rows-\[auto_minmax\(0,1fr\)\]/);
-  assert.doesNotMatch(panel, /<footer/);
-  assert.doesNotMatch(panel, /grid-rows-\[auto_minmax\(0,1fr\)_auto\]/);
+  assert.match(panel, /Continue with Google/);
+  assert.match(panel, /href=\{signInHref\}/);
+  assert.match(panel, /identity, rooms, and preferences available/);
 });

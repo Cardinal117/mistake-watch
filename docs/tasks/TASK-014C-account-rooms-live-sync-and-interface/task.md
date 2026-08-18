@@ -1,8 +1,8 @@
 # TASK-014C: Account Rooms Live Sync And Interface Refinement
 
-Status: Implemented - Batches A-C complete, production owner QA pending
+Status: Implemented - production QA passed, guest footer refinement pending release
 Documentation level: Compact task
-Updated: 2026-08-17
+Updated: 2026-08-18
 
 ## Objective
 
@@ -21,8 +21,9 @@ changing room lifecycle authority.
   header with a room count and concise description.
 - Add local room-name search, relationship filtering, sorting, and separate
   Open rooms and Closed history disclosure groups.
-- Move Google identity scope copy and sign-in/sign-out actions into the Account
-  tab so other tabs recover the persistent footer space.
+- Move Google identity scope copy and signed-in sign-out action into the Account
+  tab. Preserve a compact persistent sign-in footer for guests so optional
+  account access remains discoverable across tabs.
 - Preserve all existing room relationship labels, lifecycle commands,
   confirmations, loading states, and authorization behavior.
 
@@ -53,9 +54,10 @@ changing room lifecycle authority.
   rooms remain excluded from the account projection.
 - Keep one visible Rooms heading at every viewport. Desktop may enrich the
   command-panel header; mobile must not lose the active-tab title.
-- Place identity scope and authentication actions inside the Account tab for
-  both signed-in and guest states. Do not show a persistent authentication
-  footer on unrelated tabs.
+- Place identity scope and the signed-in sign-out action inside the Account tab.
+  Signed-in users do not reserve persistent footer space. Guests retain one
+  persistent Continue with Google footer across tabs without duplicating that
+  action inside Account.
 
 ## Implementation
 
@@ -74,8 +76,9 @@ changing room lifecycle authority.
    - Preserve command availability and stable room IDs through every view.
    - Safe review point: desktop/mobile room discovery and management pass.
 3. **Batch C - Account action placement and final QA**
-   - Move identity scope and sign-in/sign-out controls into the Account tab.
-   - Remove the persistent footer and verify the reclaimed scroll area.
+   - Move identity scope and signed-in sign-out control into the Account tab.
+   - Remove the persistent footer for signed-in users while preserving one
+     compact guest sign-in footer for discoverability.
    - Run accessibility, responsive, authorization, lifecycle, and regression
      QA across signed-in and guest states.
    - Safe review point: TASK-014C is ready for release and owner QA.
@@ -108,8 +111,9 @@ changing room lifecycle authority.
   commands to the wrong room.
 - Open, Closed, Owned, Joined, and Saved state remains legible on desktop and
   mobile.
-- The Account tab owns identity-scope and authentication actions; other tabs do
-  not reserve footer space.
+- The Account tab owns identity scope and signed-in Sign out. Signed-in users
+  reserve no authentication footer space; guests retain one persistent
+  Continue with Google footer across tabs.
 - Guests receive no account-room data, and account-room responses continue to
   exclude invite secrets, participants, queue data, emails, provider data, and
   source URLs.
@@ -174,3 +178,20 @@ changing room lifecycle authority.
 - Signed-in Sign out placement and the combined Batches A-C cross-device room
   workflow remain the production owner-QA gate because local Google OAuth is
   unavailable.
+- Production owner QA passed cross-device Save/Unsave, Close, Archive, focus
+  refresh, action targeting, search, relationship filters, sorting, counts,
+  disclosure groups, keyboard navigation, signed-in authentication placement,
+  desktop/mobile layout, private account-room API responses, and core room
+  playback/queue regression checks. Remote changes appeared in about 2.8
+  seconds without refresh.
+- Owner QA requested one final behavior adjustment: guests should retain a
+  persistent Continue with Google footer across tabs, while signed-in users
+  keep the reclaimed space and Sign out remains only inside Account.
+- The supplied recommendation trace showed sequential requests in the captured
+  sample, but separate console evidence contained recommendation preference
+  `429` responses. A SpacetimeDB client cache warning also appeared after guest
+  admission. These are tracked as separate follow-ups because this task does
+  not change recommendation or live-room synchronization behavior.
+- Authorized uploaded-playback regression QA remains unavailable while the
+  revoked CloudConvert credential prevents preparing new uploaded media. Guest
+  catalogue denial still passed, and no uploaded-media behavior changed here.

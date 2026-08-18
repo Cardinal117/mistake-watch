@@ -6,7 +6,7 @@ priority: P1
 area: account-rooms
 related: [TASK-002.10, TASK-014B, TASK-014C, MW-BUG-002, MW-BUG-007]
 created: 2026-08-17
-updated: 2026-08-17
+updated: 2026-08-18
 ---
 
 # Account Rooms management surface
@@ -45,6 +45,11 @@ updated: 2026-08-17
   live inside the Account tab, and the persistent panel footer has been removed.
   Automated gates and guest desktop/mobile browser QA pass; signed-in production
   owner QA remains before this item can be resolved.
+- **TASK-014C production QA:** Cross-device lifecycle refresh completed in about
+  2.8 seconds; controls, organization, responsive layout, keyboard access,
+  signed-in Account placement, account-room privacy, and room regression checks
+  passed. Owner QA requested a compact persistent guest sign-in footer while
+  keeping signed-in tabs footer-free; that final refinement is pending release.
 
 ## Original Report
 

@@ -150,7 +150,14 @@ export function AccountCommandPanel({
           </nav>
         </aside>
 
-        <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)]">
+        <div
+          className={cx(
+            "grid min-h-0",
+            isSignedIn
+              ? "grid-rows-[auto_minmax(0,1fr)]"
+              : "grid-rows-[auto_minmax(0,1fr)_auto]",
+          )}
+        >
           <header className="flex items-start justify-between gap-4 border-b border-white/10 bg-surface-container-lowest/35 p-5">
             <div className="min-w-0">
               <p className="technical-label text-primary-fixed-dim">
@@ -195,10 +202,27 @@ export function AccountCommandPanel({
               onAccountRoomsCountChange={handleAccountRoomsCountChange}
               roomAttached={roomAttached}
               roomId={roomId}
-              signInHref={signInHref}
               signOutHref={signOutHref}
             />
           </div>
+          {!isSignedIn ? (
+            <footer className="flex flex-col gap-3 border-t border-white/10 bg-surface-container-lowest/35 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="max-w-2xl text-label-sm text-on-surface-variant">
+                Sign in to keep your identity, rooms, and preferences available
+                across devices.
+              </p>
+              <a
+                className={buttonClassName({
+                  className: "w-fit shrink-0",
+                  size: "sm",
+                })}
+                href={signInHref}
+              >
+                <LogIn className="h-4 w-4" aria-hidden />
+                Continue with Google
+              </a>
+            </footer>
+          ) : null}
         </div>
       </section>
     </div>
@@ -253,7 +277,6 @@ function AccountPanelContent({
   onAccountRoomsCountChange,
   roomAttached,
   roomId,
-  signInHref,
   signOutHref,
 }: {
   account: AccountSummary;
@@ -264,7 +287,6 @@ function AccountPanelContent({
   onAccountRoomsCountChange(count: number | null): void;
   roomAttached: boolean;
   roomId?: string;
-  signInHref: string;
   signOutHref: string;
 }) {
   const signedIn = account.status === "signed-in";
@@ -437,18 +459,7 @@ function AccountPanelContent({
                 <LogOut className="h-4 w-4" aria-hidden />
                 Sign out
               </a>
-            ) : (
-              <a
-                className={buttonClassName({
-                  className: "w-fit shrink-0",
-                  size: "sm",
-                })}
-                href={signInHref}
-              >
-                <LogIn className="h-4 w-4" aria-hidden />
-                Continue with Google
-              </a>
-            )}
+            ) : null}
           </div>
         </section>
         {account.status === "signed-in" &&
