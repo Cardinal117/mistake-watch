@@ -1,6 +1,6 @@
 ---
 id: TASK-015B
-status: laptop-qa-pending
+status: completed
 type: compact-subtask
 related: [TASK-015, MW-BUG-009, MW-QOL-007]
 created: 2026-08-19
@@ -87,8 +87,9 @@ Reference concepts:
 | Silk Nebula      | Showcase candidate    | Bound particles, alpha layers, and overdraw                                               |
 | Mirror Spectrum  | Showcase candidate    | Cap frequency buckets and mirrored draw calls                                             |
 
-Obsidian Grid and Constellation remain research-only until the initial shortlist
-meets the resource budget.
+Silk Nebula and Obsidian Grid remain research-only holds. Constellation failed
+the resource budget by a wide margin but is retained as an owner-approved
+extreme-power experiment rather than a production recommendation.
 
 ## Implementation Order
 
@@ -102,14 +103,15 @@ meets the resource budget.
    never mount several active renderers during a measurement.
 4. **Laptop checkpoint:** run repeatable active and paused comparisons on the
    affected i3-1115G4/20 GB/integrated-GPU Opera GX laptop.
-5. **Decision checkpoint:** promote only passing candidates into a separately
-   approved production-integration slice; leave GetSongBPM blocked until a
-   compatible renderer passes.
+5. **Decision checkpoint:** preserve Static Artwork and Off as the only
+   production-suitable choices. Record selected animated modes as explicit
+   owner-approved experiments without relabeling their failed measurements.
 
-Current checkpoint: inventory, harness, and prototype work are complete. The
-affected-laptop comparison and owner decision remain pending. The default run
-includes Static Artwork, Off, Signal Bloom, Mirror Spectrum, Siri Ribbon, and
-Dot Waves; known performance holds require `--include-holds=1`.
+Final checkpoint: inventory, harness, prototype work, three-run affected-laptop
+comparison, 24 FPS diagnostics, ten-minute soak, and owner decision are
+complete. No animated mode passed the production budget. Static Artwork and Off
+remain the production choices; selected animated modes continue only under the
+experimental policy below.
 
 ## Measurement Protocol
 
@@ -124,6 +126,72 @@ Dot Waves; known performance holds require `--include-holds=1`.
   when it is the only consistent measure, memory start/end, and any playback
   or synchronization effect.
 - Compare every result with Static Artwork, Off, and the 17% animated baseline.
+
+## Final Laptop Evidence
+
+The affected i3-1115G4, 20 GB, integrated-GPU Opera GX laptop completed three
+30 FPS runs per mode. CPU and memory are aggregate Opera process telemetry, not
+exact tab attribution. Stable early and late Off controls make relative medians
+useful, while unrelated Opera work can distort peaks and working-set totals.
+
+Each run value is median/peak aggregate Opera CPU:
+
+| Mode            |         Run 1 |         Run 2 |         Run 3 | Three-run median | Median p95 | Paused median |
+| --------------- | ------------: | ------------: | ------------: | ---------------: | ---------: | ------------: |
+| Off             |   4.62/20.02% |   4.61/76.87% |   4.64/21.50% |        **4.62%** |     16.75% |         1.56% |
+| Static Artwork  |   4.61/60.01% |   4.62/27.85% |  6.17/253.69% |        **4.62%** |     18.43% |         1.56% |
+| Signal Bloom    | 44.48/307.13% |  53.92/70.64% |  43.21/59.75% |       **44.48%** |     58.45% |         1.54% |
+| Mirror Spectrum |  26.19/49.40% |  27.69/46.25% |  25.71/44.71% |       **26.19%** |     36.98% |         1.54% |
+| Siri Ribbon     |  29.47/59.17% |  30.77/61.74% |  29.18/52.20% |       **29.47%** |     40.85% |         3.02% |
+| Dot Waves       |  24.66/40.32% |  26.14/44.65% |  26.22/52.17% |       **26.14%** |     36.83% |         1.56% |
+| Silk Nebula     | 89.39/142.80% | 77.17/124.89% | 78.19/133.99% |       **78.19%** |    110.19% |         3.02% |
+| Obsidian Grid   |  49.20/69.21% |  46.12/64.06% |  50.77/69.09% |       **49.20%** |     59.42% |         2.93% |
+| Constellation   | 84.48/113.82% | 83.09/114.17% | 81.17/116.46% |       **83.09%** |    103.16% |         3.07% |
+
+The exact Static Artwork peak gate cannot be certified from aggregate Opera
+peaks. Its median matched Off, and neither control runs a continuous renderer.
+
+The diagnostic 24 FPS cap improved every animated mode but produced no budget
+pass:
+
+| Mode            | 30 FPS median | 24 FPS median | Improvement |
+| --------------- | ------------: | ------------: | ----------: |
+| Signal Bloom    |        44.48% |        41.51% |        6.7% |
+| Mirror Spectrum |        26.19% |        24.54% |        6.3% |
+| Siri Ribbon     |        29.47% |        26.14% |       11.3% |
+| Dot Waves       |        26.14% |        19.99% |       23.5% |
+| Silk Nebula     |        78.19% |        64.44% |       17.6% |
+| Obsidian Grid   |        49.20% |        41.64% |       15.4% |
+| Constellation   |        83.09% |        64.50% |       22.4% |
+
+Dot Waves completed a ten-minute soak at 26.14% median, 27.65% mean, and
+38.41% p95 aggregate CPU. Aggregate memory decreased from 1357.4 MB to
+1223.0 MB, all 120 responsiveness checks completed, and no lifecycle or console
+failure appeared. The short local track required three recorded replays, so the
+soak does not prove uninterrupted audio across the full ten minutes.
+
+Unavailable evidence remains explicit: exact tab CPU and memory, GPU
+attribution, observed FPS, frame intervals, long-frame percentage, failed-
+request inspection, and the absent deployed benchmark snapshot API.
+
+## Owner Classification
+
+- **Recommended default:** Static Artwork.
+- **Maximum efficiency:** Off.
+- **Beta, very high power:** Mirror Spectrum and Dot Waves.
+- **Experimental, high power:** Siri Ribbon and Signal Bloom.
+- **Experimental, extreme power:** Constellation.
+- **Hold:** Silk Nebula and Obsidian Grid.
+
+The owner accepts the selected experimental modes for enjoyment despite their
+measured cost. They must remain disabled by default, display a clear power
+warning, stop on pause/hidden/reduced-motion/unmount, and retain an immediate
+Static Artwork fallback. Dot Waves should receive a later visual adjustment
+that concentrates its reactive field toward the center.
+
+Mirror Spectrum and Siri Ribbon are the first rhythm-contract candidates for
+TASK-018. Dot Waves, Signal Bloom, and Constellation follow. This owner decision
+does not turn any animated result into a production performance pass.
 
 ## Risks
 
@@ -168,3 +236,17 @@ Dot Waves; known performance holds require `--include-holds=1`.
 - Desktop/mobile screenshots and reduced-motion/hidden-state checks.
 - License and attribution decision for every promoted source or asset.
 - Explicit owner decision on production candidates and any opt-in budget.
+
+## Acceptance Outcome
+
+- **Passed:** isolated scope, bounded renderer ownership, pause and stop
+  lifecycle, mode switching, duplicate-loop prevention, responsive controls,
+  clean console, stable soak memory, deterministic tempo support, and safe
+  Static Artwork/Off controls.
+- **Failed:** every animated renderer exceeded the 8% median production target
+  at both 30 FPS and 24 FPS.
+- **Not certifiable with available tooling:** exact tab peak, GPU attribution,
+  observed cadence, long-frame percentage, and strict per-tab memory growth.
+- **Decision:** benchmark complete. Preserve the failed measurements, retain the
+  five selected modes only as explicit experiments, and continue optimization
+  as future work rather than blocking the private TASK-018 capture prototype.

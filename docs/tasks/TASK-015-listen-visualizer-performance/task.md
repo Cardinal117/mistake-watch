@@ -1,8 +1,8 @@
 # TASK-015: Listen Visualizer Performance
 
-Status: TASK-015A2 owner QA passed - TASK-015B remains planned
+Status: Completed - TASK-015B benchmark and owner classification recorded
 Documentation level: Compact task
-Updated: 2026-08-18
+Updated: 2026-08-19
 Related intake: MW-BUG-009
 
 ## Objective
@@ -90,11 +90,13 @@ motion behavior, and the established Mistake Watch visual language.
   bounded intensity and dimming sliders, and preserve Static Artwork's lack of
   continuous motion. Keep minimum dimming visibly permissive across the room,
   content panel, and now-playing rail rather than only inside previews.
-- **TASK-015B - Rendering experiment:** separately test one shallow,
-  pre-rasterized wave surface and throttled motion. Do not ship it as the
-  default unless it passes the same laptop benchmark.
+- **TASK-015B - Rendering experiment:** use
+  [[TASK-015B-visualizer-renderer-benchmark|the isolated renderer benchmark]]
+  to compare the owner showcase and bounded canvas adaptations before changing
+  the production visualization menu.
 - Keep GetSongBPM and tempo-aware motion blocked until an animated renderer
-  meets the resource budget.
+  has an approved input path. TASK-018 now owns the private local-audio proof;
+  no external BPM provider is planned.
 
 ## Risks
 
@@ -236,3 +238,14 @@ motion behavior, and the established Mistake Watch visual language.
   TASK-015A2. Per-mode artwork enablement, clarity, and right-weighted framing
   are deferred to [[../../product-intake/items/MW-QOL-007-configurable-listen-artwork|MW-QOL-007]]
   rather than expanding the performance remediation.
+- TASK-015B completed three 30 FPS affected-laptop runs per mode, 24 FPS
+  diagnostics for every animated mode, and a ten-minute Dot Waves soak. Static
+  Artwork and Off matched a 4.62% aggregate Opera median; no animated mode met
+  the 8% production target. The lowest animated 24 FPS result was Dot Waves at
+  19.99%, followed by Mirror Spectrum at 24.54%.
+- Owner classification retains Static Artwork as recommended and Off as the
+  efficiency option. Mirror Spectrum, Siri Ribbon, Dot Waves, Signal Bloom, and
+  Constellation are accepted only as clearly labeled high-power experiments;
+  Silk Nebula and Obsidian Grid remain held. Full evidence and measurement
+  limitations are recorded in
+  [[TASK-015B-visualizer-renderer-benchmark|TASK-015B]].

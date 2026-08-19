@@ -33,8 +33,10 @@ scope.
 
 ## Benchmark status
 
-This preparation does not claim any renderer meets TASK-015B CPU, memory, FPS,
-or long-frame budgets. Target-laptop OS and Opera measurements remain required.
+Target-laptop Opera GX measurement is complete. Static Artwork and Off are the
+only production-suitable modes. No animated renderer met the 8% median CPU
+target at 30 FPS or 24 FPS. Selected animated modes remain owner-approved
+experiments rather than performance passes.
 
 ## Verification
 
@@ -70,11 +72,37 @@ signal and are excluded from the default matrix. No resource-budget pass is
 claimed until the target laptop collects longer browser-process and in-page
 samples.
 
+## Target-laptop result
+
+Three 30 FPS runs per mode used the same aggregate Opera process-counter method
+as the earlier MW-BUG-009 comparison. Stable Off controls measured 4.61-4.64%
+median. Static Artwork's three-run median was 4.62%. Animated three-run medians
+ranged from 26.14% for Dot Waves to 83.09% for Constellation.
+
+At 24 FPS, Dot Waves improved most but still measured 19.99% median. Mirror
+Spectrum measured 24.54%, Siri Ribbon 26.14%, Signal Bloom 41.51%, Obsidian
+Grid 41.64%, Silk Nebula 64.44%, and Constellation 64.50%.
+
+All modes stopped their renderer loops when paused, mode switches preserved the
+local audio element, repeated start/stop cycles created no duplicate loop, and
+the console remained clean. A ten-minute Dot Waves soak showed no repeatable
+memory growth or responsiveness failure. Exact tab CPU, GPU attribution,
+observed frame cadence, long-frame percentage, and failed-request inspection
+were unavailable, so those claims remain intentionally unmade.
+
+Owner classification:
+
+- Static Artwork: recommended default.
+- Off: maximum efficiency.
+- Mirror Spectrum and Dot Waves: beta, very high power.
+- Siri Ribbon and Signal Bloom: experimental, high power.
+- Constellation: experimental, extreme power.
+- Silk Nebula and Obsidian Grid: hold.
+
 ## Remaining blockers
 
-- Target-laptop browser-process evidence.
 - Exact external concept license verification.
 - Replacement of restricted owner-supplied audio with synthetic or explicitly
   licensed automated fixtures.
-- Production React integration and GetSongBPM work remain separate approved
-  tasks.
+- Production React integration remains a separate approved task. GetSongBPM is
+  no longer planned; TASK-018 owns the private first-party local rhythm proof.

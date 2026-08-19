@@ -6,7 +6,7 @@ priority: P1
 area: performance
 related: [TASK-002.5I, TASK-010]
 created: 2026-08-18
-updated: 2026-08-18
+updated: 2026-08-19
 ---
 
 # Room playback consumes excessive browser resources
@@ -41,8 +41,19 @@ updated: 2026-08-18
   `dpl_Fqi6ndY3BzbC6gYJAW9EXkoLJQiw`, passed production visibility QA. Future
   per-mode artwork controls and framing are tracked separately as
   [[MW-QOL-007-configurable-listen-artwork|MW-QOL-007]].
-- **Next action:** Treat TASK-015B as a separate pre-rasterized/throttled
-  rendering experiment before any BPM integration.
+- **TASK-015B outcome:** Three affected-laptop runs confirmed Static Artwork and
+  Off at a 4.62% aggregate Opera median. No animated renderer met the 8%
+  production target. Dot Waves was lowest at 26.14% at 30 FPS and 19.99% at
+  24 FPS. All tested renderers stopped correctly while paused and showed no
+  repeatable memory or lifecycle failure.
+- **Owner decision:** Keep Static Artwork as the safe default. Mirror Spectrum,
+  Siri Ribbon, Dot Waves, Signal Bloom, and Constellation may continue only as
+  clearly labeled high-power experiments; their failed measurements remain
+  recorded. Silk Nebula and Obsidian Grid remain held.
+- **Next action:** Keep the normal default remediation in place. TASK-018 may
+  now prove the private Opera GX capture and focused rhythm path without
+  relabeling any experimental renderer as efficient. Renderer optimization
+  remains future work.
 - **Task:** [[../../tasks/TASK-015-listen-visualizer-performance/task|TASK-015]]
 - **Original report:**
   [[../archive/quick-capture-2026-08-18#Capture 3]]
