@@ -237,11 +237,12 @@ test("played queue items receive server-authoritative history sequence", () => {
   assert.match(helper, /calculateNextPlayedSequence\(items\)/);
   assert.match(queueCalculationsSource, /played_sequence/);
   assert.match(reducer, /commitQueueAdvance/);
+  assert.match(commitHelper, /calculateQueueAdvancePatches/);
   assert.match(
-    commitHelper,
-    /played_sequence:\s*nextPlayedSequence\(ctx,\s*session\.room_id\)/,
+    queueCalculationsSource,
+    /played_sequence:\s*nextPlayedSequence/,
   );
-  assert.match(commitHelper, /played_sequence:\s*0/);
+  assert.match(queueCalculationsSource, /played_sequence:\s*0/);
 });
 
 test("autoplay queue advancement is atomic and stale-safe", () => {
@@ -298,11 +299,9 @@ test("autoplay queue advancement is atomic and stale-safe", () => {
     /active_queue_item_id:\s*nextQueueItem\.queue_item_id/,
   );
   assert.match(commitHelper, /source_url:\s*sourceUrl/);
-  assert.match(commitHelper, /status:\s*"playing"/);
-  assert.match(
-    commitHelper,
-    /played_sequence:\s*nextPlayedSequence\(ctx,\s*session\.room_id\)/,
-  );
+  assert.match(commitHelper, /status:\s*playbackStatus/);
+  assert.match(queueCalculationsSource, /status:\s*"playing"/);
+  assert.match(commitHelper, /calculateQueueAdvancePatches/);
   assert.ok(
     uploadedReducer.indexOf(
       "nextQueueItem.queue_item_id !== expectedNextQueueItemId",

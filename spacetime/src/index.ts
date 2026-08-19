@@ -24,6 +24,7 @@ import {
   calculateNextPlayedSequence,
   calculateNextQueuePosition,
   calculatePlayNextQueuePosition,
+  calculateQueueAdvancePatches,
   selectActiveQueueItems,
   selectQueuedQueueItems,
   sortQueueItems,
@@ -431,6 +432,9 @@ function commitQueueAdvance(
     outcome: "completed" | "failed" | "skipped";
     reason: string;
   },
+  options?: {
+    preserveCurrentAsNext?: boolean;
+  },
 ) {
   if (transition) {
     finishPlaybackOccurrence(
@@ -449,18 +453,19 @@ function commitQueueAdvance(
     );
   }
 
-  for (const item of roomQueueItems(ctx, session.room_id)) {
-    if (item.queue_item_id === nextQueueItem.queue_item_id) {
-      replaceQueueItem(ctx, item, {
-        is_play_next: false,
-        played_sequence: 0,
-        status: "playing",
-      });
-    } else if (item.status === "playing") {
-      replaceQueueItem(ctx, item, {
-        played_sequence: nextPlayedSequence(ctx, session.room_id),
-        status: "played",
-      });
+  const queueItems = roomQueueItems(ctx, session.room_id);
+  const patches = calculateQueueAdvancePatches(
+    queueItems,
+    nextQueueItem.queue_item_id,
+    nextPlayedSequence(ctx, session.room_id),
+    options?.preserveCurrentAsNext,
+  );
+
+  for (const { queue_item_id: queueItemId, ...patch } of patches) {
+    const item = ctx.db.live_queue_item.queue_item_id.find(queueItemId);
+
+    if (item) {
+      replaceQueueItem(ctx, item, patch);
     }
   }
 
@@ -1624,6 +1629,9 @@ export const play_uploaded_queue_item = spacetimedb.reducer(
         outcome: "skipped",
         reason: "manual_play",
       },
+      {
+        preserveCurrentAsNext: queueItem.status === "played",
+      },
     );
   },
 );
@@ -1841,6 +1849,9 @@ export const play_queue_item = spacetimedb.reducer(
         actorMemberId: actor_member_id,
         outcome: "skipped",
         reason: "manual_play",
+      },
+      {
+        preserveCurrentAsNext: queueItem.status === "played",
       },
     );
   },

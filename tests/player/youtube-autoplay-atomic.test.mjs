@@ -28,6 +28,10 @@ const spacetimeModuleSource = await readFile(
   path.join(root, "spacetime/src/index.ts"),
   "utf8",
 );
+const queueCalculationsSource = await readFile(
+  path.join(root, "spacetime/src/queue-calculations.ts"),
+  "utf8",
+);
 
 function sectionBetween(source, start, end) {
   const startIndex = source.indexOf(start);
@@ -108,9 +112,9 @@ test("manual uploaded playback atomically promotes the selected queue item", () 
 
 test("queue advancement consumes one-shot play-next priority", () => {
   const queueCommit = sectionBetween(
-    spacetimeModuleSource,
-    "function commitQueueAdvance",
-    "function normalizeQueuedPositions",
+    queueCalculationsSource,
+    "export function calculateQueueAdvancePatches",
+    "return patches;",
   );
   const failureAdvance = sectionBetween(
     spacetimeModuleSource,
@@ -127,6 +131,32 @@ test("queue advancement consumes one-shot play-next priority", () => {
   assert.match(queueCommit, /status:\s*"playing"/);
   assert.match(failureAdvance, /commitQueueAdvance/);
   assert.match(manualPlay, /commitQueueAdvance/);
+});
+
+test("manual history navigation preserves a forward item for every source", () => {
+  const queueCommit = sectionBetween(
+    spacetimeModuleSource,
+    "function commitQueueAdvance",
+    "function normalizeQueuedPositions",
+  );
+  const uploadedManualPlay = sectionBetween(
+    spacetimeModuleSource,
+    "export const play_uploaded_queue_item",
+    "export const report_media_failure",
+  );
+  const standardManualPlay = sectionBetween(
+    spacetimeModuleSource,
+    "export const play_queue_item",
+    "export const move_queue_item",
+  );
+
+  assert.match(queueCommit, /options\?\.preserveCurrentAsNext/);
+  for (const reducer of [uploadedManualPlay, standardManualPlay]) {
+    assert.match(
+      reducer,
+      /preserveCurrentAsNext:\s*queueItem\.status === "played"/,
+    );
+  }
 });
 
 test("youtube ended event advances before publishing ended when autoplay can continue", () => {

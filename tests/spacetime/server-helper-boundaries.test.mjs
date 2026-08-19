@@ -86,11 +86,11 @@ test("index imports pure helpers while room admission stays modular", async () =
     commitStart,
   );
   const commitQueueAdvance = source.slice(commitStart, commitEnd);
+  assert.match(commitQueueAdvance, /calculateQueueAdvancePatches/);
   assert.match(
     commitQueueAdvance,
-    /played_sequence:\s*nextPlayedSequence\(ctx,\s*session\.room_id\)/,
+    /nextPlayedSequence\(ctx, session\.room_id\)/,
   );
-  assert.match(commitQueueAdvance, /played_sequence:\s*0/);
 
   for (const reducerName of [
     "advance_queue_item",
@@ -219,4 +219,169 @@ test("queue calculations preserve ordering, filtering, and sequence rules", () =
     ),
     1,
   );
+});
+
+function applyQueueAdvancePatches(items, patches) {
+  const patchById = new Map(
+    patches.map(({ queue_item_id: queueItemId, ...patch }) => [
+      queueItemId,
+      patch,
+    ]),
+  );
+
+  return items.map((item) => ({
+    ...item,
+    ...(patchById.get(item.queue_item_id) ?? {}),
+  }));
+}
+
+test("manual Previous preserves the active item as the first forward item", () => {
+  const initial = [
+    {
+      is_pinned: false,
+      is_play_next: false,
+      played_sequence: 1,
+      position: 0,
+      queue_item_id: "a",
+      status: "played",
+    },
+    {
+      is_pinned: false,
+      is_play_next: false,
+      played_sequence: 0,
+      position: 0,
+      queue_item_id: "b",
+      status: "playing",
+    },
+    {
+      is_pinned: false,
+      is_play_next: false,
+      played_sequence: 0,
+      position: 0,
+      queue_item_id: "c",
+      status: "queued",
+    },
+  ];
+  const afterPrevious = applyQueueAdvancePatches(
+    initial,
+    queue.calculateQueueAdvancePatches(initial, "a", 2, true),
+  );
+
+  assert.equal(
+    afterPrevious.find((item) => item.queue_item_id === "a")?.status,
+    "playing",
+  );
+  assert.deepEqual(
+    queue
+      .selectQueuedQueueItems(afterPrevious)
+      .map((item) => item.queue_item_id),
+    ["b", "c"],
+  );
+
+  const afterNext = applyQueueAdvancePatches(
+    afterPrevious,
+    queue.calculateQueueAdvancePatches(afterPrevious, "b", 2),
+  );
+
+  assert.equal(
+    afterNext.find((item) => item.queue_item_id === "b")?.status,
+    "playing",
+  );
+  assert.deepEqual(
+    queue.selectQueuedQueueItems(afterNext).map((item) => item.queue_item_id),
+    ["c"],
+  );
+});
+
+test("repeated Previous preserves the complete forward order", () => {
+  const initial = [
+    {
+      is_pinned: false,
+      is_play_next: false,
+      played_sequence: 1,
+      position: 0,
+      queue_item_id: "x",
+      status: "played",
+    },
+    {
+      is_pinned: false,
+      is_play_next: false,
+      played_sequence: 2,
+      position: 1,
+      queue_item_id: "a",
+      status: "played",
+    },
+    {
+      is_pinned: false,
+      is_play_next: false,
+      played_sequence: 0,
+      position: 0,
+      queue_item_id: "b",
+      status: "playing",
+    },
+    {
+      is_pinned: false,
+      is_play_next: true,
+      played_sequence: 0,
+      position: 0,
+      queue_item_id: "c",
+      status: "queued",
+    },
+  ];
+  const afterFirstPrevious = applyQueueAdvancePatches(
+    initial,
+    queue.calculateQueueAdvancePatches(initial, "a", 3, true),
+  );
+  const afterSecondPrevious = applyQueueAdvancePatches(
+    afterFirstPrevious,
+    queue.calculateQueueAdvancePatches(afterFirstPrevious, "x", 3, true),
+  );
+
+  assert.deepEqual(
+    queue
+      .selectQueuedQueueItems(afterSecondPrevious)
+      .map((item) => item.queue_item_id),
+    ["a", "b", "c"],
+  );
+  assert.equal(
+    afterSecondPrevious.find((item) => item.queue_item_id === "a")
+      ?.is_play_next,
+    false,
+  );
+  assert.equal(
+    afterSecondPrevious.find((item) => item.queue_item_id === "c")
+      ?.is_play_next,
+    true,
+  );
+});
+
+test("loop replay does not create a forward queue item", () => {
+  const initial = [
+    {
+      is_pinned: false,
+      is_play_next: false,
+      played_sequence: 1,
+      position: 0,
+      queue_item_id: "a",
+      status: "played",
+    },
+    {
+      is_pinned: false,
+      is_play_next: false,
+      played_sequence: 0,
+      position: 1,
+      queue_item_id: "b",
+      status: "playing",
+    },
+  ];
+  const afterLoopAdvance = applyQueueAdvancePatches(
+    initial,
+    queue.calculateQueueAdvancePatches(initial, "a", 2),
+  );
+
+  assert.equal(
+    afterLoopAdvance.find((item) => item.queue_item_id === "b")?.status,
+    "played",
+  );
+  assert.deepEqual(queue.selectQueuedQueueItems(afterLoopAdvance), []);
 });
