@@ -38,6 +38,18 @@ evidence, commit, and deployment reference where applicable.
 - **Original report:**
   [[archive/MW-BUG-012-recommendation-preference-rate-limit|Archived item]]
 
+## MW-BUG-013 Previous then Next loses the return item
+
+- **Final status:** Resolved
+- **Decision date:** 2026-08-19
+- **Task:** TASK-017
+- **Evidence:** Commit `5792328`; deployment
+  `dpl_4UZdgUmuWQfY8APy3mkvd5pPuoy9`; 377 local tests and complete local gates;
+  owner two-participant production QA confirmed Previous followed by Next
+  preserves the return item.
+- **Original report:**
+  [[archive/MW-BUG-013-previous-next-loses-return-item|Archived item]]
+
 ## Archived Entry Shape
 
 ```md
