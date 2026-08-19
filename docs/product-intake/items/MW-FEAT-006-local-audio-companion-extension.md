@@ -1,0 +1,51 @@
+---
+id: MW-FEAT-006
+type: feature
+status: in-progress
+priority: P2
+area: listen-visuals
+related: [TASK-015, TASK-018, MW-BUG-009]
+created: 2026-08-19
+updated: 2026-08-19
+---
+
+# Private local audio companion extension
+
+> [!idea] Planned after TASK-015B - P2
+
+- **Requested:** Build an optional Chromium companion extension that captures
+  the active Mistake Watch tab after an explicit user action, analyses audio
+  locally, and returns bounded rhythm features for enhanced Listen visuals.
+- **Product decision:** Prefer local extension analysis over GetSongBPM or
+  another paid BPM API. Keep the ordinary website usable without an extension.
+- **DSP decision:** Use a focused first-party `BeatDetector` built around an
+  AudioWorklet, onset energy, spectral flux, peak detection, autocorrelation,
+  tempo normalization, and beat-phase alignment. Do not add Essentia.js or
+  another general music-information-retrieval dependency.
+- **Privacy boundary:** Audio samples stay on the device. Do not upload, retain,
+  replay, expose, or distribute captured audio. The website may receive only a
+  small, versioned rhythm contract such as BPM, beat interval, beat offset,
+  confidence, onset, bass, mids, highs, and energy.
+- **Distribution boundary:** Design for private installation by trusted Mistake
+  Watch users. Do not design around Chrome Web Store or Opera Add-ons
+  publication, and do not expand the prototype into public distribution.
+- **Platform boundary:** Opera GX is the owner-priority browser. Chrome and Edge
+  compatibility are useful, but Opera GX `tabCapture`, permission, audio-output,
+  and lifecycle behavior require explicit proof before support is claimed.
+- **Synchronization direction:** A later, separately approved integration may
+  let one authorized host publish stable BPM, beat offset, and confidence for
+  the active media generation. Other participants can reconstruct identical
+  beat pulses from the synchronized room playback clock without installing the
+  extension. Continuously changing energy bands stay local initially.
+- **Policy boundary:** Treat YouTube capture as private research. Private use
+  does not establish YouTube policy approval, and the prototype must not be
+  presented as approved public functionality.
+- **Related work:** TASK-015B selects visualizers and establishes rendering
+  budgets. TASK-018 owns the isolated extension proof. MW-BUG-009 retains the
+  combined resource budget.
+- **Current progress:** TASK-015B is recorded. The isolated TASK-018 Phase 1
+  capture spike is implemented with local automated coverage and no production
+  website, SpacetimeDB, or room-authority changes.
+- **Next action:** Load the unpacked extension in Opera GX and record capture,
+  audible-output, local PCM, hidden-tab, cleanup, and extension-network proof
+  before starting the focused beat detector.
