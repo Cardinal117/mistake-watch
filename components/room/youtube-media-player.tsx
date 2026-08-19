@@ -454,9 +454,8 @@ export function YoutubeMediaPlayer({
   );
 
   useEffect(() => {
-    const initialVideoId = activeSourceUrlRef.current
-      ? parseYouTubeVideoId(activeSourceUrlRef.current)
-      : null;
+    const initialSourceUrl = activeSourceUrlRef.current ?? null;
+    const initialVideoId = parseYouTubeVideoId(initialSourceUrl ?? "");
 
     if (!initialVideoId || playerRef.current) {
       return;
@@ -470,6 +469,8 @@ export function YoutubeMediaPlayer({
           return;
         }
 
+        playerSourceUrlRef.current = initialSourceUrl;
+        playerVideoIdRef.current = initialVideoId;
         playerRef.current = new yt.Player(elementId, {
           events: {
             onAutoplayBlocked: () => {
@@ -780,7 +781,6 @@ export function YoutubeMediaPlayer({
       ) : null}
     </>
   );
-
 }
 
 function buildCanonicalPlaybackState(
