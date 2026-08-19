@@ -7,7 +7,9 @@ delivery, but its original live-room core has two different classes of risk:
 
 1. Authenticated account members do not refresh durable room presence after
    guest-to-account attachment, so active unsaved rooms can be closed as idle.
-2. SpacetimeDB first-time participant admission and public room-state reads are
+2. A durable account owner can open a room from Account Rooms yet reach playback
+   controls without a matching active SpacetimeDB participant.
+3. SpacetimeDB first-time participant admission and public room-state reads are
    not backed by server-issued room authorization.
 
 Related weaknesses include short member-ID-based kick records, missing active
@@ -34,6 +36,8 @@ private uploaded media, and existing recommendation behavior.
 ## Scope
 
 - Account-aware durable heartbeat and lifecycle correction.
+- Legitimate account-owner re-entry diagnosis and active-participant
+  reconciliation.
 - Consistent disabled-account authorization.
 - Server-issued participant admission grants.
 - Stable membership identity, replay resistance, reconnect, and revocation.
@@ -55,6 +59,8 @@ private uploaded media, and existing recommendation behavior.
 ## Risks
 
 - Admission-grant mistakes could lock legitimate participants out.
+- Treating durable ownership as an automatic live-control grant could bypass
+  participant admission or elevate the wrong browser session.
 - Reconnect rules could either weaken replay protection or make refresh brittle.
 - Private-table migration can break generated clients and active subscriptions.
 - Revocation can be ineffective if keyed to replaceable browser identifiers.
@@ -66,6 +72,8 @@ private uploaded media, and existing recommendation behavior.
 
 - Every lifecycle update is tied to a verified guest or authenticated room
   membership.
+- A durable owner entering through Account Rooms or an invite becomes exactly
+  one active live participant before playback control is enabled.
 - Every first-time SpacetimeDB participant admission requires a valid,
   room-scoped server grant.
 - Cross-room subscriptions and unauthorized room reads fail.

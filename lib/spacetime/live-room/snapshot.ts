@@ -28,6 +28,7 @@ export function buildFallbackSnapshot(room: RoomSnapshot): LiveRoomSnapshot {
       roomId: room.id,
       status: participant.status,
     })),
+    participantPresences: [],
     permissions: room.participantsList.map((participant) => ({
       canAddQueue: participant.permissions.queue,
       canControlBrowser: participant.permissions.browser,
@@ -146,6 +147,15 @@ export function readLiveSnapshot(liveDb: LiveDb): LiveRoomSnapshot {
       role: participant.role === "host" ? "host" : "guest",
       roomId: participant.roomId,
       status: participant.status === "online" ? "online" : "idle",
+    })),
+    participantPresences: [
+      ...liveDb.room_participant_presence.iter(),
+    ].map((presence) => ({
+      admissionId: presence.admissionId,
+      lastSeenMs: toNumber(presence.lastSeenMs),
+      memberId: presence.memberId,
+      roomId: presence.roomId,
+      status: presence.status === "online" ? "online" : "idle",
     })),
     permissions: [...liveDb.room_permission.iter()].map((permission) => ({
       canAddQueue: permission.canAddQueue,

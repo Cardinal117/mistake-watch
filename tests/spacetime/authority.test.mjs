@@ -114,7 +114,7 @@ test("seed grant validation rejects expired and mismatched grants", () => {
   const helper = sectionBetween(
     spacetimeSource,
     "function getValidRoomSeedGrant",
-    "function kickKey",
+    "function getAuthorizedHost",
   );
 
   assert.match(helper, /grant\.expires_ms\s*<\s*nowMs\(\)/);

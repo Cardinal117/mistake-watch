@@ -1,6 +1,11 @@
 import { SenderError, t } from "spacetimedb/server";
 import { spacetimedb } from "./module-schema";
 import {
+  isCurrentParticipantSession,
+  senderIdentityHex,
+} from "./room-admission";
+import { participantSessionKey } from "./room-keys";
+import {
   asRecommendationContext,
   claimRecommendationAction,
   guestMediaPreference,
@@ -85,7 +90,7 @@ export const set_guest_media_preference = spacetimedb.reducer(
 
     if (
       !actor ||
-      !actor.identity.isEqual(ctx.sender) ||
+      !isCurrentParticipantSession(ctx, room_id, actor_member_id) ||
       !queueItem ||
       queueItem.room_id !== room_id
     ) {
@@ -208,8 +213,15 @@ export const read_my_guest_media_preferences = spacetimedb.procedure(
       const actor = tx.db.room_participant.participant_key.find(
         `${room_id}:${actor_member_id}`,
       );
+      const actorSession = tx.db.room_participant_session.session_key.find(
+        participantSessionKey(
+          room_id,
+          actor_member_id,
+          senderIdentityHex(ctx),
+        ),
+      );
 
-      if (!actor || !actor.identity.isEqual(ctx.sender)) {
+      if (!actor || !actorSession || !actorSession.identity.isEqual(ctx.sender)) {
         throw new SenderError("Room-scoped preference access required.");
       }
 
@@ -252,11 +264,6 @@ export function isTrustedRecommendationAuthority(
   return Boolean(
     ctx.db.trusted_seed_issuer.identity_hex.find(senderIdentityHex(ctx)),
   );
-}
-
-function senderIdentityHex(ctx: { sender: unknown }) {
-  const sender = ctx.sender as { toHexString?: () => string };
-  return sender.toHexString?.() ?? String(ctx.sender);
 }
 
 function verifiedPreferenceMedia(

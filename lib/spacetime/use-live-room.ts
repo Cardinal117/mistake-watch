@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo } from "react";
 
-import { useSelectedAvatarKey } from "@/lib/identity/avatar-selection";
 import { renameRoomAction, setRoomModeAction } from "@/lib/rooms/actions";
 import type { QueueMode } from "@/lib/queue/model";
 import type { RoomParticipant, RoomSnapshot } from "@/lib/rooms";
@@ -10,17 +9,18 @@ import { parseUploadedAssetReference } from "@/lib/media/uploaded-playback-refer
 import { createUploadedPlaybackSessionReference } from "@/lib/media/uploaded-room-session-client";
 import { predictNextQueueItem } from "@/lib/player/next-item-preparation";
 import type { LiveRoomState } from "./live-room/client-types";
+import { hasLiveRoomAdmission } from "./live-room/admission";
 import { mapLiveParticipants } from "./live-room/snapshot";
 import { useRoomConnection } from "./live-room/use-room-connection";
 
 export type { LiveRoomState } from "./live-room/client-types";
 
-const LIVE_ROOM_STALE_MEMBER_REJOIN_MS = 4_000;
 const LIVE_ROOM_MEMBER_MISSING_NOTICE_MS = 30_000;
 
 export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
   const currentMember = room.currentMember;
   const {
+    admissionId,
     connectionReadiness,
     connectionStatus,
     errorMessage,
@@ -32,10 +32,13 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     setSnapshot,
     snapshot,
   } = useRoomConnection(room);
-  const { avatarKey: selectedAvatarKey } = useSelectedAvatarKey(
-    currentMember?.id ?? currentMember?.name,
-  );
-  const canManageAuthority = currentMember?.role === "host";
+  const hasCurrentLiveAuthority = hasLiveRoomAdmission({
+    admissionId,
+    memberId: currentMember?.id,
+    presences: snapshot.participantPresences,
+  });
+  const canManageAuthority =
+    currentMember?.role === "host" && hasCurrentLiveAuthority;
   const currentLiveParticipant = snapshot.participants.find(
     (participant) => participant.memberId === currentMember?.id,
   );
@@ -43,26 +46,26 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     (permission) => permission.memberId === currentMember?.id,
   );
   const canControlPlayback =
-    currentMember?.role === "host" ||
+    hasCurrentLiveAuthority &&
     Boolean(
-      currentLiveParticipant &&
-      currentLiveParticipant.status === "online" &&
-      currentLivePermission?.canControlPlayback,
+      currentMember?.role === "host" ||
+        (currentLiveParticipant?.status === "online" &&
+          currentLivePermission?.canControlPlayback),
     );
   const canAddQueue =
-    currentMember?.role === "host" ||
+    hasCurrentLiveAuthority &&
     Boolean(
-      currentLiveParticipant &&
-      currentLiveParticipant.status === "online" &&
-      currentLivePermission?.canAddQueue,
+      currentMember?.role === "host" ||
+        (currentLiveParticipant?.status === "online" &&
+          currentLivePermission?.canAddQueue),
     );
   const canManageQueue =
-    currentMember?.role === "host" ||
+    hasCurrentLiveAuthority &&
     Boolean(
-      currentLiveParticipant &&
-      currentLiveParticipant.status === "online" &&
-      (currentLivePermission?.canAddQueue ||
-        currentLivePermission?.canManageQueue),
+      currentMember?.role === "host" ||
+        (currentLiveParticipant?.status === "online" &&
+          (currentLivePermission?.canAddQueue ||
+            currentLivePermission?.canManageQueue)),
     );
 
   const currentMemberKick = currentMember
@@ -70,7 +73,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     : null;
   const removalNotice = currentMemberKick
     ? "You were removed from this room by the host."
-    : currentLiveParticipant || !currentMember
+    : hasCurrentLiveAuthority || !currentMember
       ? null
       : memberMissingNotice;
 
@@ -79,7 +82,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       return;
     }
 
-    if (currentLiveParticipant) {
+    if (hasCurrentLiveAuthority) {
       return;
     }
 
@@ -92,53 +95,10 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     return () => window.clearTimeout(timer);
   }, [
     connectionStatus,
-    currentLiveParticipant,
+    hasCurrentLiveAuthority,
     currentMember,
     setMemberMissingNotice,
   ]);
-
-  useEffect(() => {
-    if (!currentMember || !reducers || connectionStatus !== "connected") {
-      return;
-    }
-
-    if (currentLiveParticipant?.status === "online") {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      void reducers.joinRoom({
-        avatarKey: selectedAvatarKey,
-        displayName: currentMember.name,
-        memberId: currentMember.id,
-        role: currentMember.role,
-        roomId: room.id,
-      });
-    }, LIVE_ROOM_STALE_MEMBER_REJOIN_MS);
-
-    return () => window.clearTimeout(timer);
-  }, [
-    connectionStatus,
-    currentLiveParticipant?.status,
-    currentMember,
-    reducers,
-    room.id,
-    selectedAvatarKey,
-  ]);
-
-  useEffect(() => {
-    if (!currentMember || !reducers || connectionStatus !== "connected") {
-      return;
-    }
-
-    void reducers.joinRoom({
-      avatarKey: selectedAvatarKey,
-      displayName: currentMember.name,
-      memberId: currentMember.id,
-      role: currentMember.role,
-      roomId: room.id,
-    });
-  }, [connectionStatus, currentMember, reducers, room.id, selectedAvatarKey]);
 
   const participants = useMemo(
     () => mapLiveParticipants(room, snapshot),

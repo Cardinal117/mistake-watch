@@ -11,7 +11,6 @@ import {
 } from "./media-references";
 import {
   clampPositionSeconds,
-  normalizeAvatarKey,
   normalizeChatText,
   normalizeDurationSeconds,
   normalizePlaybackStatus,
@@ -42,10 +41,22 @@ import {
   recordSourceFailureEvent,
 } from "./recommendation-events";
 import { isTrustedRecommendationAuthority } from "./recommendation-authority";
+import {
+  getCurrentParticipantSession,
+  isCurrentParticipantSession,
+  removeMemberSessions,
+} from "./room-admission";
+import {
+  getParticipant,
+  isParticipantSender,
+  upsertAggregateParticipant,
+  upsertPermission,
+} from "./room-participant-state";
 import { spacetimedb } from "./module-schema";
 import { recordRoomError } from "./room-errors";
 import {
   constantTimeStringEqual,
+  kickKey,
   nowMs,
   participantKey,
   permissionKey,
@@ -61,7 +72,12 @@ export {
   set_guest_media_preference,
   set_verified_room_media_preference,
 } from "./recommendation-authority";
-const KICK_REJOIN_BLOCK_MS = 8_000;
+export {
+  issue_room_admission_grant,
+  join_room,
+  leave_room,
+  on_disconnect,
+} from "./room-participation";
 
 export default spacetimedb;
 
@@ -93,27 +109,6 @@ function getValidRoomSeedGrant(
   }
 
   return grant;
-}
-
-function kickKey(roomId: string, memberId: string) {
-  return `${roomId}:${memberId}`;
-}
-
-function getParticipant(
-  ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
-  roomId: string,
-  memberId: string,
-) {
-  return ctx.db.room_participant.participant_key.find(
-    participantKey(roomId, memberId),
-  );
-}
-
-function isParticipantSender(
-  ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
-  participant: NonNullable<ReturnType<typeof getParticipant>>,
-) {
-  return participant.identity.isEqual(ctx.sender);
 }
 
 function getAuthorizedHost(
@@ -524,50 +519,12 @@ function normalizeQueuedPositions(
   });
 }
 
-function upsertPermission(
-  ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
-  {
-    canAddQueue,
-    canControlBrowser,
-    canControlPlayback,
-    canManageQueue,
-    memberId,
-    roomId,
-    updatedByMemberId,
-  }: {
-    canAddQueue: boolean;
-    canControlBrowser: boolean;
-    canControlPlayback: boolean;
-    canManageQueue: boolean;
-    memberId: string;
-    roomId: string;
-    updatedByMemberId: string;
-  },
-) {
-  const key = permissionKey(roomId, memberId);
-  const existing = ctx.db.room_permission.permission_key.find(key);
-
-  if (existing) {
-    ctx.db.room_permission.delete(existing);
-  }
-
-  ctx.db.room_permission.insert({
-    can_add_queue: canAddQueue,
-    can_control_browser: canControlBrowser,
-    can_control_playback: canControlPlayback,
-    can_manage_queue: canManageQueue,
-    member_id: memberId,
-    permission_key: key,
-    room_id: roomId,
-    updated_by_member_id: updatedByMemberId,
-    updated_ms: nowMs(),
-  });
-}
-
 function deleteParticipantAndPermissions(
   ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
   participant: NonNullable<ReturnType<typeof getParticipant>>,
 ) {
+  removeMemberSessions(ctx, participant.room_id, participant.member_id);
+
   const permission = ctx.db.room_permission.permission_key.find(
     permissionKey(participant.room_id, participant.member_id),
   );
@@ -578,103 +535,6 @@ function deleteParticipantAndPermissions(
 
   ctx.db.room_participant.delete(participant);
 }
-
-export const join_room = spacetimedb.reducer(
-  {
-    avatar_key: t.option(t.string()),
-    display_name: t.string(),
-    member_id: t.string(),
-    role: t.string(),
-    room_id: t.string(),
-  },
-  (ctx, { avatar_key, display_name, member_id, role, room_id }) => {
-    const session = ctx.db.room_session.room_id.find(room_id);
-    const kicked = ctx.db.room_kick.kick_key.find(kickKey(room_id, member_id));
-    const participantKeyValue = participantKey(room_id, member_id);
-    const existing =
-      ctx.db.room_participant.participant_key.find(participantKeyValue);
-    const resolvedRole =
-      session?.host_member_id === member_id && role === "host"
-        ? "host"
-        : "guest";
-
-    if (
-      kicked &&
-      resolvedRole !== "host" &&
-      nowMs() - kicked.created_ms < KICK_REJOIN_BLOCK_MS
-    ) {
-      recordRoomError(ctx, {
-        code: "member_removed",
-        message: "Join ignored because this guest was removed by the host.",
-        roomId: room_id,
-        severity: "info",
-      });
-      return;
-    }
-
-    if (kicked) {
-      ctx.db.room_kick.delete(kicked);
-    }
-
-    if (existing) {
-      if (!existing.identity.isEqual(ctx.sender)) {
-        recordRoomError(ctx, {
-          code: "member_identity_conflict",
-          message:
-            "Join ignored because this member identity is already in use.",
-          roomId: room_id,
-        });
-        return;
-      }
-
-      ctx.db.room_participant.delete(existing);
-    }
-
-    ctx.db.room_participant.insert({
-      avatar_key: normalizeAvatarKey(avatar_key),
-      connection_id: ctx.connectionId ?? undefined,
-      display_name,
-      identity: ctx.sender,
-      last_seen_ms: nowMs(),
-      member_id,
-      participant_key: participantKeyValue,
-      role: resolvedRole,
-      room_id,
-      status: "online",
-    });
-
-    if (!ctx.db.room_permission.permission_key.find(participantKeyValue)) {
-      const isHost = resolvedRole === "host";
-      upsertPermission(ctx, {
-        canAddQueue: true,
-        canControlBrowser: isHost,
-        canControlPlayback: isHost,
-        canManageQueue: isHost,
-        memberId: member_id,
-        roomId: room_id,
-        updatedByMemberId: member_id,
-      });
-    }
-  },
-);
-
-export const leave_room = spacetimedb.reducer(
-  {
-    member_id: t.string(),
-    room_id: t.string(),
-  },
-  (ctx, { member_id, room_id }) => {
-    const participant = ctx.db.room_participant.participant_key.find(
-      participantKey(room_id, member_id),
-    );
-
-    if (!participant || !isParticipantSender(ctx, participant)) {
-      return;
-    }
-
-    ctx.db.room_participant.delete(participant);
-  },
-);
 
 export const kick_member = spacetimedb.reducer(
   {
@@ -769,11 +629,14 @@ export const heartbeat = spacetimedb.reducer(
     room_id: t.string(),
   },
   (ctx, { member_id, room_id }) => {
-    const participantKey = `${room_id}:${member_id}`;
-    const participant =
-      ctx.db.room_participant.participant_key.find(participantKey);
+    const participant = getParticipant(ctx, room_id, member_id);
+    const participantSession = getCurrentParticipantSession(
+      ctx,
+      room_id,
+      member_id,
+    );
 
-    if (!participant) {
+    if (!participant || !participantSession) {
       recordRoomError(ctx, {
         code: "participant_missing",
         message: "Heartbeat received before join_room.",
@@ -783,7 +646,7 @@ export const heartbeat = spacetimedb.reducer(
       return;
     }
 
-    if (!isParticipantSender(ctx, participant)) {
+    if (!isCurrentParticipantSession(ctx, room_id, member_id)) {
       recordRoomError(ctx, {
         code: "identity_mismatch",
         message:
@@ -793,11 +656,34 @@ export const heartbeat = spacetimedb.reducer(
       return;
     }
 
-    ctx.db.room_participant.delete(participant);
-    ctx.db.room_participant.insert({
-      ...participant,
+    const presence = ctx.db.room_participant_presence.admission_id.find(
+      participantSession.admission_id,
+    );
+
+    ctx.db.room_participant_session.delete(participantSession);
+    ctx.db.room_participant_session.insert({
+      ...participantSession,
       connection_id: ctx.connectionId ?? undefined,
       last_seen_ms: nowMs(),
+      status: "online",
+    });
+
+    if (presence) {
+      ctx.db.room_participant_presence.delete(presence);
+      ctx.db.room_participant_presence.insert({
+        ...presence,
+        last_seen_ms: nowMs(),
+        status: "online",
+      });
+    }
+
+    upsertAggregateParticipant(ctx, {
+      avatarKey: participant.avatar_key,
+      displayName: participant.display_name,
+      identity: ctx.sender,
+      memberId: member_id,
+      role: participantSession.role,
+      roomId: room_id,
       status: "online",
     });
   },
@@ -2185,21 +2071,3 @@ export const revoke_room_control = spacetimedb.reducer(
     });
   },
 );
-
-export const on_disconnect = spacetimedb.clientDisconnected((ctx) => {
-  if (!ctx.connectionId) {
-    return;
-  }
-
-  for (const participant of ctx.db.room_participant.iter()) {
-    if (participant.connection_id?.isEqual(ctx.connectionId)) {
-      ctx.db.room_participant.delete(participant);
-      ctx.db.room_participant.insert({
-        ...participant,
-        connection_id: undefined,
-        last_seen_ms: nowMs(),
-        status: "idle",
-      });
-    }
-  }
-});

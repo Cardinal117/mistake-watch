@@ -60,18 +60,23 @@ test("server helper modules remain independent of reducer context", async () => 
   }
 });
 
-test("index imports pure helpers while retaining reducer definitions", async () => {
+test("index imports pure helpers while room admission stays modular", async () => {
   const source = await readFile(path.join(sourceDir, "index.ts"), "utf8");
+  const participation = await readFile(
+    path.join(sourceDir, "room-participation.ts"),
+    "utf8",
+  );
   assert.match(source, /from "\.\/normalization"/);
   assert.match(source, /from "\.\/media-references"/);
   assert.match(source, /from "\.\/queue-calculations"/);
-  assert.match(source, /export const join_room = spacetimedb\.reducer/);
+  assert.match(source, /join_room,[\s\S]*from "\.\/room-participation"/);
+  assert.match(participation, /export const join_room = spacetimedb\.reducer/);
   assert.match(
     source,
     /export const play_uploaded_queue_item = spacetimedb\.reducer/,
   );
   assert.match(
-    source,
+    participation,
     /export const on_disconnect = spacetimedb\.clientDisconnected/,
   );
 

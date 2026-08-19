@@ -10,12 +10,10 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default {
-  admissionId: __t.string(),
-  admissionToken: __t.string(),
-  avatarKey: __t.option(__t.string()),
-  displayName: __t.string(),
-  memberId: __t.string(),
-  role: __t.string(),
-  roomId: __t.string(),
-};
+export default __t.row({
+  admissionId: __t.string().primaryKey().name("admission_id"),
+  lastSeenMs: __t.i64().name("last_seen_ms"),
+  memberId: __t.string().name("member_id"),
+  roomId: __t.string().name("room_id"),
+  status: __t.string(),
+});

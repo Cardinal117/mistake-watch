@@ -41,6 +41,7 @@ import AdvanceUploadedQueueItemReducer from "./advance_uploaded_queue_item_reduc
 import ClearQueueReducer from "./clear_queue_reducer";
 import GrantRoomControlReducer from "./grant_room_control_reducer";
 import HeartbeatReducer from "./heartbeat_reducer";
+import IssueRoomAdmissionGrantReducer from "./issue_room_admission_grant_reducer";
 import IssueRoomSeedGrantReducer from "./issue_room_seed_grant_reducer";
 import JoinRoomReducer from "./join_room_reducer";
 import KickMemberReducer from "./kick_member_reducer";
@@ -77,6 +78,7 @@ import RoomChatMessageRow from "./room_chat_message_table";
 import RoomErrorRow from "./room_error_table";
 import RoomKickRow from "./room_kick_table";
 import RoomParticipantRow from "./room_participant_table";
+import RoomParticipantPresenceRow from "./room_participant_presence_table";
 import RoomPermissionRow from "./room_permission_table";
 import RoomSessionRow from "./room_session_table";
 
@@ -162,6 +164,20 @@ const tablesSchema = __schema({
       { name: 'room_participant_participant_key_key', constraint: 'unique', columns: ['participantKey'] },
     ],
   }, RoomParticipantRow),
+  room_participant_presence: __table({
+    name: 'room_participant_presence',
+    indexes: [
+      { accessor: 'admission_id', name: 'room_participant_presence_admission_id_idx_btree', algorithm: 'btree', columns: [
+        'admissionId',
+      ] },
+      { accessor: 'by_room_id', name: 'room_participant_presence_room_id_idx_btree', algorithm: 'btree', columns: [
+        'roomId',
+      ] },
+    ],
+    constraints: [
+      { name: 'room_participant_presence_admission_id_key', constraint: 'unique', columns: ['admissionId'] },
+    ],
+  }, RoomParticipantPresenceRow),
   room_permission: __table({
     name: 'room_permission',
     indexes: [
@@ -201,6 +217,7 @@ const reducersSchema = __reducers(
   __reducerSchema("clear_queue", ClearQueueReducer),
   __reducerSchema("grant_room_control", GrantRoomControlReducer),
   __reducerSchema("heartbeat", HeartbeatReducer),
+  __reducerSchema("issue_room_admission_grant", IssueRoomAdmissionGrantReducer),
   __reducerSchema("issue_room_seed_grant", IssueRoomSeedGrantReducer),
   __reducerSchema("join_room", JoinRoomReducer),
   __reducerSchema("kick_member", KickMemberReducer),

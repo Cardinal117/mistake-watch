@@ -39,6 +39,14 @@ export type LiveParticipant = {
   lastSeenMs: number;
 };
 
+export type LiveParticipantPresence = {
+  admissionId: string;
+  lastSeenMs: number;
+  memberId: string;
+  roomId: string;
+  status: "online" | "idle";
+};
+
 export type LivePermission = {
   permissionKey: string;
   roomId: string;
@@ -116,6 +124,7 @@ export type LiveChatMessage = {
 export type LiveRoomSnapshot = {
   session: LiveRoomSession | null;
   participants: LiveParticipant[];
+  participantPresences: LiveParticipantPresence[];
   permissions: LivePermission[];
   queue: LiveQueueItem[];
   chatMessages: LiveChatMessage[];
@@ -128,6 +137,8 @@ export type LiveRoomSnapshot = {
 };
 
 export type JoinRoomReducerPayload = {
+  admissionId: string;
+  admissionToken: string;
   avatarKey?: string;
   roomId: string;
   memberId: string;

@@ -12,6 +12,10 @@ const indexSource = await readFile(
   path.join(root, "spacetime/src/index.ts"),
   "utf8",
 );
+const participationSource = await readFile(
+  path.join(root, "spacetime/src/room-participation.ts"),
+  "utf8",
+);
 const tablesSource = await readFile(
   path.join(root, "spacetime/src/recommendation-tables.ts"),
   "utf8",
@@ -88,7 +92,7 @@ test("guest preferences verify identity, revision, and action id", () => {
     "export const set_guest_media_preference",
     "export const read_my_guest_media_preferences",
   );
-  assert.match(reducer, /actor\.identity\.isEqual\(ctx\.sender\)/);
+  assert.match(reducer, /isCurrentParticipantSession\(/);
   assert.match(reducer, /expected_revision/);
   assert.match(reducer, /claimRecommendationAction/);
   assert.match(eventsSource, /current\?\.revision \?\? 0/);
@@ -173,14 +177,16 @@ test("multi-move queue actions share an event id without suppressing later actio
   );
 });
 
-test("member ids cannot be rebound to another Spacetime identity", () => {
+test("member ids require trusted admission before a new live session", () => {
   const reducer = sectionBetween(
-    indexSource,
+    participationSource,
     "export const join_room",
     "export const leave_room",
   );
-  assert.match(reducer, /!existing\.identity\.isEqual\(ctx\.sender\)/);
-  assert.match(reducer, /member_identity_conflict/);
+  assert.match(reducer, /getValidRoomAdmissionGrant/);
+  assert.match(reducer, /code: "admission_denied"/);
+  assert.match(reducer, /ctx\.db\.room_participant_session\.insert/);
+  assert.doesNotMatch(reducer, /member_identity_conflict/);
 });
 
 test("outbox overflow preserves queued rows and records dropped events", () => {

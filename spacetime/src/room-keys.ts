@@ -6,6 +6,18 @@ export function participantKey(roomId: string, memberId: string) {
   return `${roomId}:${memberId}`;
 }
 
+export function participantSessionKey(
+  roomId: string,
+  memberId: string,
+  identityHex: string,
+) {
+  return `${roomId}:${memberId}:${identityHex}`;
+}
+
+export function kickKey(roomId: string, memberId: string) {
+  return `${roomId}:${memberId}`;
+}
+
 export function permissionKey(roomId: string, memberId: string) {
   return `${roomId}:${memberId}`;
 }

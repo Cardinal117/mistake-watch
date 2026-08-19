@@ -8,6 +8,7 @@ export const emptyLiveRoomSnapshot: LiveRoomSnapshot = {
   kicks: [],
   chatMessages: [],
   participants: [],
+  participantPresences: [],
   permissions: [],
   queue: [],
   session: null,
@@ -23,6 +24,8 @@ export function mergeLiveRoomSnapshot(
     kicks: partial.kicks ?? snapshot.kicks,
     chatMessages: partial.chatMessages ?? snapshot.chatMessages,
     participants: partial.participants ?? snapshot.participants,
+    participantPresences:
+      partial.participantPresences ?? snapshot.participantPresences,
     permissions: partial.permissions ?? snapshot.permissions,
     queue: partial.queue ?? snapshot.queue,
     session: partial.session ?? snapshot.session,

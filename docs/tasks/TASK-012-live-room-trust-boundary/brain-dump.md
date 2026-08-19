@@ -10,6 +10,9 @@ separately releasable batches.
 
 - Active signed-in members of unsaved rooms currently stop refreshing durable
   `room_members.last_seen_at` after the guest identity cookie is removed.
+- Owner production QA reports that opening an account-owned room through Account
+  Rooms can reach the room UI while playback is denied because the caller is not
+  an active room participant.
 - The idle cleanup process can therefore close a legitimately occupied unsaved
   room.
 - SpacetimeDB mutation reducers perform meaningful identity and permission
@@ -23,6 +26,8 @@ separately releasable batches.
 - Preserve guest-first room behavior.
 - Support authenticated durable room activity without trusting a client-supplied
   member ID.
+- Reconcile durable account ownership with one canonical live participant before
+  enabling host/controller actions.
 - Keep every security stage independently testable, reviewable, and releasable.
 - Design participant grants around stable room membership, expiry, replay
   resistance, reconnect behavior, and revocation.
@@ -35,6 +40,8 @@ separately releasable batches.
 
 - TASK-011 recommendation persistence remains a separate closure track.
 - TASK-013 Account Command Panel Completion remains separate.
+- Account Rooms layout and lifecycle UX remain TASK-014 work; this task owns only
+  the live authority boundary exposed by re-entry.
 - No SpacetimeDB schema or Maincloud publication occurs in Batch A.
 - No database migration is required for Batch A1.
 - Do not combine broad reducer modularization with security behavior changes.
@@ -53,6 +60,9 @@ separately releasable batches.
 
 - The exact SpacetimeDB identity-binding mechanism for server-issued admission
   grants requires a focused design review before Batch B implementation.
+- The reported re-entry failure is not yet classified as durable membership,
+  server snapshot, join admission, subscription readiness, or controller
+  derivation drift.
 - The compatibility window for replacing public tables with authorized views
   requires a Maincloud release plan.
 - The distributed rate-limit provider should be selected only during Batch E.

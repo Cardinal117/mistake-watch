@@ -7,6 +7,7 @@ import type {
   RoomError as GeneratedRoomError,
   RoomKick as GeneratedRoomKick,
   RoomParticipant as GeneratedRoomParticipant,
+  RoomParticipantPresence as GeneratedRoomParticipantPresence,
   RoomPermission as GeneratedRoomPermission,
   RoomSession as GeneratedRoomSession,
 } from "../generated/types";
@@ -37,6 +38,7 @@ export type LiveDb = {
   room_error: ClientTable<GeneratedRoomError>;
   room_kick: ClientTable<GeneratedRoomKick>;
   room_participant: ClientTable<GeneratedRoomParticipant>;
+  room_participant_presence: ClientTable<GeneratedRoomParticipantPresence>;
   room_permission: ClientTable<GeneratedRoomPermission>;
   room_session: ClientTable<GeneratedRoomSession>;
 };
@@ -86,6 +88,8 @@ export type LiveReducers = {
   }): Promise<void>;
   heartbeat(params: { memberId: string; roomId: string }): Promise<void>;
   joinRoom(params: {
+    admissionId: string;
+    admissionToken: string;
     avatarKey?: string;
     displayName: string;
     memberId: string;

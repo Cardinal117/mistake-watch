@@ -13,7 +13,7 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 | [MW-BUG-007](items/MW-BUG-007-signed-in-room-remains-browser-scoped.md) | Bug         | P1       | In progress        | Account rooms     | Signed-in room can remain browser-scoped                  | TASK-014B          |
 | [MW-BUG-008](items/MW-BUG-008-tv-mode-like-control-missing.md)          | Bug         | P2       | Needs verification | TV mode           | Like control is missing from TV mode                      | TASK-002.5G, 011   |
 | [MW-BUG-009](items/MW-BUG-009-high-browser-resource-usage.md)           | Bug         | P1       | In progress        | Performance       | Room playback consumes excessive browser resources        | TASK-015           |
-| [MW-BUG-010](items/MW-BUG-010-account-owner-rejoin-loses-authority.md)  | Bug         | P1       | Needs reproduction | Room authority    | Account owner can lose host authority after rejoining     | TASK-012, 014B     |
+| [MW-BUG-010](items/MW-BUG-010-account-owner-rejoin-loses-authority.md)  | Bug         | P1       | In progress        | Room authority    | Account owner can lose host authority after rejoining     | TASK-012, 014B     |
 | [MW-BUG-011](items/MW-BUG-011-room-picks-actions-permission-toast.md)   | Bug         | P2       | Needs verification | Recommendations   | Room Picks actions may reject permitted members           | TASK-011           |
 | [MW-BUG-012](items/MW-BUG-012-recommendation-preference-rate-limit.md)  | Bug         | P2       | Confirmed          | Recommendations   | Preference reconciliation reaches shared rate limit       | TASK-011, 012      |
 | [MW-FEAT-001](items/MW-FEAT-001-owner-enabled-vr.md)                    | Feature     | P3       | Ready for planning | Spatial cinema    | Owner toggle exposes VR mode and headset prompt           | TASK-008           |
@@ -33,11 +33,9 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 
 ## Current Focus
 
-1. Reproduce
-   [[items/MW-BUG-010-account-owner-rejoin-loses-authority|MW-BUG-010]] first,
-   including Account Rooms entry and same-account multi-device cases. Do not
-   patch live authority until the durable-account and active-participant
-   mismatch is identified.
+1. Review the locally verified TASK-012 A3/B correction for
+   [[items/MW-BUG-010-account-owner-rejoin-loses-authority|MW-BUG-010]], then
+   use the separately approved Maincloud, Vercel, and production QA order.
 2. TASK-015A2 owner QA passed. Run TASK-015B as a separately measured
    raster/throttling experiment before resolving
    [[items/MW-BUG-009-high-browser-resource-usage|MW-BUG-009]]. Keep

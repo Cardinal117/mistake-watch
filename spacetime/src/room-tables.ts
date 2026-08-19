@@ -47,6 +47,50 @@ export const roomParticipant = table(
   },
 );
 
+export const roomParticipantSession = table(
+  {
+    indexes: [
+      { accessor: "by_room_id", algorithm: "btree", columns: ["room_id"] },
+      {
+        accessor: "by_room_member",
+        algorithm: "btree",
+        columns: ["room_id", "member_id"],
+      },
+    ],
+    name: "room_participant_session",
+  },
+  {
+    admission_id: t.string(),
+    avatar_key: t.option(t.string()).default(undefined),
+    connection_id: t.option(t.connectionId()),
+    display_name: t.string(),
+    identity: t.identity(),
+    last_seen_ms: t.i64(),
+    member_id: t.string(),
+    role: t.string(),
+    room_id: t.string(),
+    session_key: t.string().primaryKey(),
+    status: t.string(),
+  },
+);
+
+export const roomParticipantPresence = table(
+  {
+    indexes: [
+      { accessor: "by_room_id", algorithm: "btree", columns: ["room_id"] },
+    ],
+    name: "room_participant_presence",
+    public: true,
+  },
+  {
+    admission_id: t.string().primaryKey(),
+    last_seen_ms: t.i64(),
+    member_id: t.string(),
+    room_id: t.string(),
+    status: t.string(),
+  },
+);
+
 export const roomPermission = table(
   {
     indexes: [
@@ -186,6 +230,22 @@ export const roomSeedGrant = table(
     host_member_id: t.string(),
     room_id: t.string(),
     seed_token: t.string(),
+  },
+);
+
+export const roomAdmissionGrant = table(
+  { name: "room_admission_grant" },
+  {
+    admission_id: t.string(),
+    admission_token: t.string().primaryKey(),
+    authorization_kind: t.string(),
+    created_by_identity: t.identity(),
+    created_ms: t.i64(),
+    expires_ms: t.i64(),
+    identity_hex: t.string(),
+    member_id: t.string(),
+    role: t.string(),
+    room_id: t.string(),
   },
 );
 

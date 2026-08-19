@@ -44,6 +44,44 @@ account-authorized room operations. Replace A1's local active-profile check with
 the shared helper so policy cannot drift. Keep this separate from A1 so the
 lifecycle correction remains a narrow release.
 
+## Batch A3: Account Re-entry And Active Participant Reconciliation
+
+Diagnose the legitimate re-entry path as an ordered authority chain:
+
+1. Supabase authenticates the account and resolves active profile state.
+2. Durable room ownership or membership resolves one canonical room-member ID.
+3. The server room snapshot exposes that member to the current browser without
+   preferring an unrelated retained guest identity.
+4. The SpacetimeDB connection admits or reconnects that canonical member exactly
+   once.
+5. The subscribed participant row becomes active before playback controls are
+   enabled.
+6. Host/controller permissions derive from canonical room state rather than a
+   display name or browser-local assumption.
+
+Account Rooms navigation is only an entry path. It must not itself grant live
+authority or skip participant admission. Conversely, a valid durable owner must
+not be left in a permanently connected-but-unadmitted state.
+
+The investigation records which boundary first diverges for every reproduction
+case. Logs and evidence may include room/member/participant relationships, but
+must redact cookies, access tokens, invite secrets, provider credentials, and
+private media references. No fix shape is selected until this evidence exists.
+
+Static tracing has identified one concrete collision to reproduce: independent
+browsers can share the same durable account member ID while holding different
+room-scoped Spacetime identities. The current participant key permits one row
+per room member, while `join_room` rejects an existing row owned by another
+identity and disconnect retains that row as idle. This confirms the defect but
+does not authorize identity takeover. Any correction must prove durable
+membership through a trusted server-issued admission or handoff mechanism and
+must not let an arbitrary client rebind a known member ID.
+
+If a reproduction isolates an additional client-readiness race, keep that
+correction in application/client code. The confirmed identity collision touches
+the reducer admission protocol, so its runtime correction requires separate
+implementation approval and a Maincloud publication plan.
+
 ## Batch B: Admission Grants And Core Revocation
 
 Design a short-lived server-issued grant with:
@@ -63,6 +101,41 @@ connection recovery from a new admission.
 
 Core revocation belongs here because grant issuance cannot be secure without
 checking it. Management UX and extended abuse telemetry remain later work.
+
+### Approved Admission Protocol
+
+Approved for local implementation on 2026-08-19.
+
+- Supabase remains the durable source for account or guest membership and role.
+- The Next.js server verifies the current request with Supabase Auth or the
+  existing room-scoped guest cookie before issuing any live admission.
+- The server issues a random, short-lived, one-time grant through the existing
+  trusted Spacetime server identity. The grant is bound to room ID, member ID,
+  canonical role, intended Spacetime identity, expiry, and an opaque admission
+  ID.
+- `join_room` consumes that grant before creating a first live session. Missing,
+  altered, expired, replayed, wrong-room, wrong-member, wrong-role, and
+  wrong-identity grants fail closed.
+- One durable member can own multiple concurrent private live sessions, one per
+  admitted Spacetime identity. This is the explicit same-account device policy:
+  authenticated devices coexist; a newer device does not silently replace an
+  older device.
+- The existing public participant remains one aggregate row per durable member
+  so audience counts and permissions do not duplicate people. Reducer authority
+  derives from the caller's private live session rather than the aggregate row's
+  last observed identity.
+- Each admitted browser receives an opaque public presence receipt containing no
+  token, connection ID, account ID, email, or provider data. Client controls
+  remain unavailable until that browser's receipt is observed online.
+- Disconnect and leave update only the caller's live session. The aggregate
+  participant stays online while another admitted session for that member is
+  online and becomes idle or disappears only when no admitted session remains.
+- Kick and idle removal revoke every live session for the target member. Durable
+  revocation administration remains Batch D.
+
+The admission endpoint and grant tables are internal implementation details.
+No permanent grant or admission secret is stored in Supabase, browser storage,
+room state, or public Spacetime rows.
 
 ## Batch C: Authorized Room Reads
 

@@ -10,6 +10,10 @@ import type { SpacetimeConnectionStatus } from "../adapter";
 import { getSpacetimeConfig } from "../config";
 import { DbConnection } from "../generated";
 import type { LiveRoomSnapshot } from "../types";
+import {
+  readSpacetimeIdentityHex,
+  requestLiveRoomAdmission,
+} from "./admission";
 import type { LiveDb, LiveReducers } from "./client-types";
 import {
   beginRoomConnectionAttempt,
@@ -37,6 +41,7 @@ export function useRoomConnection(room: RoomSnapshot) {
   const [memberMissingNotice, setMemberMissingNotice] = useState<string | null>(
     null,
   );
+  const [admissionId, setAdmissionId] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<LiveRoomSnapshot>(() =>
     buildFallbackSnapshot(room),
   );
@@ -57,6 +62,7 @@ export function useRoomConnection(room: RoomSnapshot) {
 
     reconnectAttemptRef.current = 0;
     setErrorMessage(null);
+    setAdmissionId(null);
     setConnectionStatus("connecting");
     setConnectionReadiness({ status: "connecting" });
     setConnectionRunId((current) => current + 1);
@@ -136,6 +142,9 @@ export function useRoomConnection(room: RoomSnapshot) {
       liveDb.room_participant.removeOnInsert(handleRowChange);
       liveDb.room_participant.removeOnUpdate(handleRowChange);
       liveDb.room_participant.removeOnDelete(handleRowChange);
+      liveDb.room_participant_presence.removeOnInsert(handleRowChange);
+      liveDb.room_participant_presence.removeOnUpdate(handleRowChange);
+      liveDb.room_participant_presence.removeOnDelete(handleRowChange);
       liveDb.room_permission.removeOnInsert(handleRowChange);
       liveDb.room_permission.removeOnUpdate(handleRowChange);
       liveDb.room_permission.removeOnDelete(handleRowChange);
@@ -165,6 +174,7 @@ export function useRoomConnection(room: RoomSnapshot) {
       removeLiveListeners();
       activeReducers = undefined;
       setReducers(null);
+      setAdmissionId(null);
 
       const attempt = reconnectAttemptRef.current + 1;
       reconnectAttemptRef.current = attempt;
@@ -196,13 +206,21 @@ export function useRoomConnection(room: RoomSnapshot) {
           .withUri(config.uri)
           .withDatabaseName(config.databaseName)
           .withToken(storedToken ?? "")
-          .onConnect((connected, _identity, token) => {
-            onConnect({ connected, token });
+          .onConnect((connected, identity, token) => {
+            try {
+              onConnect({
+                connected,
+                identityHex: readSpacetimeIdentityHex(identity),
+                token,
+              });
+            } catch {
+              onConnectError();
+            }
           })
           .onDisconnect(onDisconnect)
           .onConnectError(onConnectError)
           .build(),
-      onConnect: ({ connected, token }) => {
+      onConnect: ({ connected, identityHex, token }) => {
         reconnectAttemptRef.current = 0;
         window.localStorage.setItem(tokenStorageKey, token);
         setConnectionStatus("connected");
@@ -216,6 +234,9 @@ export function useRoomConnection(room: RoomSnapshot) {
         liveDb.room_participant.onInsert(handleRowChange);
         liveDb.room_participant.onUpdate(handleRowChange);
         liveDb.room_participant.onDelete(handleRowChange);
+        liveDb.room_participant_presence.onInsert(handleRowChange);
+        liveDb.room_participant_presence.onUpdate(handleRowChange);
+        liveDb.room_participant_presence.onDelete(handleRowChange);
         liveDb.room_permission.onInsert(handleRowChange);
         liveDb.room_permission.onUpdate(handleRowChange);
         liveDb.room_permission.onDelete(handleRowChange);
@@ -232,27 +253,6 @@ export function useRoomConnection(room: RoomSnapshot) {
         liveDb.room_chat_message.onInsert(handleRowChange);
         liveDb.room_chat_message.onDelete(handleRowChange);
 
-        if (currentMember.role === "host" && room.liveSeedToken) {
-          void connected.reducers.seedRoomSession({
-            hostMemberId,
-            mode: room.mode,
-            roomId: room.id,
-            roomName: room.name,
-            seedToken: room.liveSeedToken,
-          });
-        } else if (currentMember.role === "host") {
-          setErrorMessage(
-            "Live room host authority is not configured. Set SPACETIME_SERVER_AUTH_TOKEN and trusted_seed_issuer before opening live rooms.",
-          );
-        }
-        void connected.reducers.joinRoom({
-          avatarKey: readStoredAvatarKey(currentMember.id),
-          displayName: currentMember.name,
-          memberId: currentMember.id,
-          role: currentMember.role,
-          roomId: room.id,
-        });
-
         connected
           .subscriptionBuilder()
           .onApplied(() => refreshSnapshot())
@@ -262,16 +262,60 @@ export function useRoomConnection(room: RoomSnapshot) {
           })
           .subscribe(getRoomSubscriptions(room.id));
 
-        heartbeatTimer = window.setInterval(() => {
-          void connected.reducers.heartbeat({
-            memberId: currentMember.id,
+        void (async () => {
+          if (currentMember.role === "host" && room.liveSeedToken) {
+            await connected.reducers.seedRoomSession({
+              hostMemberId,
+              mode: room.mode,
+              roomId: room.id,
+              roomName: room.name,
+              seedToken: room.liveSeedToken,
+            });
+          } else if (currentMember.role === "host") {
+            throw new Error(
+              "Live room host authority is not configured. Set SPACETIME_SERVER_AUTH_TOKEN and trusted_seed_issuer before opening live rooms.",
+            );
+          }
+
+          const admission = await requestLiveRoomAdmission({
+            identityHex,
             roomId: room.id,
           });
-        }, 15_000);
 
-        durableHeartbeatTimer = window.setInterval(() => {
-          void touchRoomActivityAction({ roomId: room.id });
-        }, 60_000);
+          if (disposed) {
+            return;
+          }
+
+          setAdmissionId(admission.admissionId);
+          await connected.reducers.joinRoom({
+            admissionId: admission.admissionId,
+            admissionToken: admission.admissionToken,
+            avatarKey: readStoredAvatarKey(currentMember.id),
+            displayName: currentMember.name,
+            memberId: currentMember.id,
+            role: currentMember.role,
+            roomId: room.id,
+          });
+
+          heartbeatTimer = window.setInterval(() => {
+            void connected.reducers.heartbeat({
+              memberId: currentMember.id,
+              roomId: room.id,
+            });
+          }, 15_000);
+
+          durableHeartbeatTimer = window.setInterval(() => {
+            void touchRoomActivityAction({ roomId: room.id });
+          }, 60_000);
+        })().catch((error: unknown) => {
+          const message =
+            error instanceof Error && error.message.trim()
+              ? error.message
+              : "Live room admission failed. Reconnecting...";
+          setErrorMessage(message);
+          scheduleReconnect(message);
+          connected.disconnect();
+        });
       },
       onDisconnect: () => {
         setConnectionStatus("disconnected");
@@ -304,6 +348,7 @@ export function useRoomConnection(room: RoomSnapshot) {
 
       connection.disconnect();
       setReducers(null);
+      setAdmissionId(null);
     };
   }, [
     connectionRunId,
@@ -317,6 +362,7 @@ export function useRoomConnection(room: RoomSnapshot) {
   ]);
 
   return {
+    admissionId,
     connectionReadiness,
     connectionStatus,
     errorMessage,

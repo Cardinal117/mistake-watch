@@ -13,6 +13,7 @@ import AdvanceUploadedQueueItemReducer from "../advance_uploaded_queue_item_redu
 import ClearQueueReducer from "../clear_queue_reducer";
 import GrantRoomControlReducer from "../grant_room_control_reducer";
 import HeartbeatReducer from "../heartbeat_reducer";
+import IssueRoomAdmissionGrantReducer from "../issue_room_admission_grant_reducer";
 import IssueRoomSeedGrantReducer from "../issue_room_seed_grant_reducer";
 import JoinRoomReducer from "../join_room_reducer";
 import KickMemberReducer from "../kick_member_reducer";
@@ -45,6 +46,7 @@ export type AdvanceUploadedQueueItemParams = __Infer<typeof AdvanceUploadedQueue
 export type ClearQueueParams = __Infer<typeof ClearQueueReducer>;
 export type GrantRoomControlParams = __Infer<typeof GrantRoomControlReducer>;
 export type HeartbeatParams = __Infer<typeof HeartbeatReducer>;
+export type IssueRoomAdmissionGrantParams = __Infer<typeof IssueRoomAdmissionGrantReducer>;
 export type IssueRoomSeedGrantParams = __Infer<typeof IssueRoomSeedGrantReducer>;
 export type JoinRoomParams = __Infer<typeof JoinRoomReducer>;
 export type KickMemberParams = __Infer<typeof KickMemberReducer>;

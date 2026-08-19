@@ -117,6 +117,20 @@ export const RecommendationRoomSession = __t.object("RecommendationRoomSession",
 });
 export type RecommendationRoomSession = __Infer<typeof RecommendationRoomSession>;
 
+export const RoomAdmissionGrant = __t.object("RoomAdmissionGrant", {
+  admissionId: __t.string(),
+  admissionToken: __t.string(),
+  authorizationKind: __t.string(),
+  createdByIdentity: __t.identity(),
+  createdMs: __t.i64(),
+  expiresMs: __t.i64(),
+  identityHex: __t.string(),
+  memberId: __t.string(),
+  role: __t.string(),
+  roomId: __t.string(),
+});
+export type RoomAdmissionGrant = __Infer<typeof RoomAdmissionGrant>;
+
 export const RoomChatMessage = __t.object("RoomChatMessage", {
   avatarKey: __t.option(__t.string()),
   clientMessageId: __t.string(),
@@ -170,6 +184,30 @@ export const RoomParticipant = __t.object("RoomParticipant", {
   avatarKey: __t.option(__t.string()),
 });
 export type RoomParticipant = __Infer<typeof RoomParticipant>;
+
+export const RoomParticipantPresence = __t.object("RoomParticipantPresence", {
+  admissionId: __t.string(),
+  lastSeenMs: __t.i64(),
+  memberId: __t.string(),
+  roomId: __t.string(),
+  status: __t.string(),
+});
+export type RoomParticipantPresence = __Infer<typeof RoomParticipantPresence>;
+
+export const RoomParticipantSession = __t.object("RoomParticipantSession", {
+  admissionId: __t.string(),
+  avatarKey: __t.option(__t.string()),
+  connectionId: __t.option(__t.connectionId()),
+  displayName: __t.string(),
+  identity: __t.identity(),
+  lastSeenMs: __t.i64(),
+  memberId: __t.string(),
+  role: __t.string(),
+  roomId: __t.string(),
+  sessionKey: __t.string(),
+  status: __t.string(),
+});
+export type RoomParticipantSession = __Infer<typeof RoomParticipantSession>;
 
 export const RoomPermission = __t.object("RoomPermission", {
   canAddQueue: __t.bool(),

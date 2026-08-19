@@ -13,8 +13,9 @@ import {
 export default {
   admissionId: __t.string(),
   admissionToken: __t.string(),
-  avatarKey: __t.option(__t.string()),
-  displayName: __t.string(),
+  authorizationKind: __t.string(),
+  expiresMs: __t.i64(),
+  identityHex: __t.string(),
   memberId: __t.string(),
   role: __t.string(),
   roomId: __t.string(),
