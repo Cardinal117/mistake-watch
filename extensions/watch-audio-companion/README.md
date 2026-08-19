@@ -3,10 +3,11 @@
 Private Manifest V3 rhythm companion for trusted Mistake Watch users. Phase 1
 proved that Opera GX can expose audio-only tab PCM to an offscreen AudioWorklet
 while captured audio remains audible. Phase 2 adds a focused first-party beat
-detector without changing the website or sending audio off the device.
+detector. Phase 3 connects that bounded contract to an isolated Mirror Spectrum
+and Siri Ribbon review lab without changing the production website.
 
 This is not a public extension package and does not contain a production website
-bridge.
+bridge or room-wide rhythm synchronization.
 
 ## Boundaries
 
@@ -21,6 +22,8 @@ bridge.
   established pulse when a later candidate appears at half or double time.
 - The extension emits only `RhythmFrameV1`; no raw PCM or FFT arrays leave the
   worklet.
+- The review lab reconstructs bounded display arrays from `RhythmFrameV1`
+  scalars. They are visual approximations, not exported analyser samples.
 - No PCM, FFT data, URL, account data, or playback data is uploaded or stored.
 - Navigation, tab closure, capture termination, a second action click, and
   extension unload stop the capture graph.
@@ -41,12 +44,20 @@ bridge.
 2. Click the extension action once.
 3. Confirm the badge changes from `...` to `ON`, then to `PCM` after a
    non-silent signal is observed.
-4. After a steady rhythmic section, hover the `PCM` badge. A locked estimate
+4. Confirm the private Rhythm Lab opens once and begins in Mirror Spectrum at
+   the 24 FPS cap.
+5. After a steady rhythmic section, hover the `PCM` badge. A locked estimate
    shows BPM and confidence; quiet or ambiguous audio may remain unlocked.
-5. Confirm playback remains audible at the expected level without an echo or
+6. Confirm the lab readout and Mirror Spectrum respond without exposing raw
+   audio data. Switch to Siri Ribbon and repeat.
+7. Confirm playback remains audible at the expected level without an echo or
    doubled signal.
-6. Click the action again. Confirm the badge clears and playback remains under
+8. Use the lab's Stop capture command or click the action again from the Watch
+   tab. Confirm the badge clears and playback remains under
    the ordinary tab path.
+
+The lab includes a deterministic 120 BPM fixture for renderer-only measurement.
+Fixture mode does not start tab capture. It is intentionally not persisted.
 
 An `ERR` badge indicates capture startup failed. Hover over the action for the
 bounded error message and inspect the extension service worker from
@@ -89,5 +100,6 @@ From the repository root:
 ```powershell
 node --test tests/extensions/watch-audio-companion.test.mjs
 node --test tests/extensions/beat-detector.test.mjs
+node --test tests/extensions/rhythm-visualizer.test.mjs
 npx prettier --check "extensions/watch-audio-companion/**/*.{js,json,md,mjs}" "tests/extensions/watch-audio-companion.test.mjs"
 ```

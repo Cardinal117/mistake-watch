@@ -25,6 +25,7 @@ test("manifest keeps the private capture permission surface narrow", async () =>
 
   assert.equal(manifest.manifest_version, 3);
   assert.equal(manifest.minimum_chrome_version, "116");
+  assert.equal(manifest.version, "0.3.0");
   assert.deepEqual(manifest.permissions.toSorted(), [
     "activeTab",
     "offscreen",
@@ -36,6 +37,24 @@ test("manifest keeps the private capture permission surface narrow", async () =>
     manifest.content_security_policy.extension_pages,
     /connect-src 'none'/,
   );
+});
+
+test("extension visualizer remains an internal page without web exposure", async () => {
+  const directory = new URL(
+    "../../extensions/watch-audio-companion/",
+    import.meta.url,
+  );
+  const [markup, controller] = await Promise.all([
+    readFile(new URL("visualizer.html", directory), "utf8"),
+    readFile(new URL("visualizer.mjs", directory), "utf8"),
+  ]);
+
+  assert.match(markup, /id="visualizer"/);
+  assert.match(markup, /Mirror Spectrum/);
+  assert.match(markup, /Siri Ribbon/);
+  assert.match(controller, /MESSAGE_TYPE\.getStatus/);
+  assert.doesNotMatch(markup, /\b(?:href|src)="https?:\/\//);
+  assert.doesNotMatch(markup, /\son\w+\s*=/i);
 });
 
 test("extension source has no network or persistence API", async () => {

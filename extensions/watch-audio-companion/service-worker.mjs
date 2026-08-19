@@ -6,6 +6,7 @@ import {
 } from "./protocol.mjs";
 
 const OFFSCREEN_DOCUMENT = "offscreen.html";
+const VISUALIZER_DOCUMENT = "visualizer.html";
 const badge = Object.freeze({
   active: { color: "#feb700", text: "ON", title: "Audio capture active" },
   error: { color: "#93000a", text: "ERR", title: "Audio capture failed" },
@@ -32,17 +33,29 @@ globalThis.chrome.runtime.onStartup.addListener(() => {
   void setBadge("idle");
 });
 
-globalThis.chrome.runtime.onMessage.addListener((message) => {
-  if (
-    message?.target !== MESSAGE_TARGET.worker ||
-    message.type !== MESSAGE_TYPE.captureState
-  ) {
-    return false;
-  }
+globalThis.chrome.runtime.onMessage.addListener(
+  (message, _sender, sendResponse) => {
+    if (message?.target !== MESSAGE_TARGET.worker) {
+      return false;
+    }
 
-  void updateBadgeFromStatus(message.status);
-  return false;
-});
+    if (message.type === MESSAGE_TYPE.captureState) {
+      void updateBadgeFromStatus(message.status);
+      return false;
+    }
+
+    if (message.type === MESSAGE_TYPE.stopCapture) {
+      stopCapture("visualizer-stopped")
+        .then(() => sendResponse({ ok: true }))
+        .catch((error) =>
+          sendResponse({ ok: false, error: publicErrorMessage(error) }),
+        );
+      return true;
+    }
+
+    return false;
+  },
+);
 
 globalThis.chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.status === "loading") {
@@ -86,6 +99,7 @@ async function toggleCapture(tab) {
 
     assertSuccessfulResponse(response);
     await updateBadgeFromStatus(response.status);
+    await openVisualizerLab();
   } catch (error) {
     await recoverFromToggleError(error);
   }
@@ -176,6 +190,31 @@ async function closeOffscreenDocument() {
   if (await hasOffscreenDocument()) {
     await globalThis.chrome.offscreen.closeDocument();
   }
+}
+
+async function openVisualizerLab() {
+  const documentUrl = globalThis.chrome.runtime.getURL(VISUALIZER_DOCUMENT);
+
+  if (typeof globalThis.chrome.runtime.getContexts === "function") {
+    try {
+      const contexts = await globalThis.chrome.runtime.getContexts({
+        contextTypes: ["TAB"],
+        documentUrls: [documentUrl],
+      });
+      const existingTabId = contexts.find((context) =>
+        Number.isInteger(context.tabId),
+      )?.tabId;
+
+      if (Number.isInteger(existingTabId)) {
+        await globalThis.chrome.tabs.update(existingTabId, { active: true });
+        return;
+      }
+    } catch {
+      // Opera may expose getContexts without supporting every context filter.
+    }
+  }
+
+  await globalThis.chrome.tabs.create({ url: documentUrl });
 }
 
 async function hasOffscreenDocument() {

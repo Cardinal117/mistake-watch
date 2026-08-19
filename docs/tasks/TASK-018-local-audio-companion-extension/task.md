@@ -223,6 +223,37 @@ Phase 2 local evidence recorded on 2026-08-19:
 - `npm test`: 398 passed; typecheck, ESLint, changed-file Prettier, file-length
   policy, `git diff --check`, and the production build passed.
 
+Phase 2 passed its owner-priority Opera GX laptop gate on 2026-08-19 at commit
+`e54ee777e89a94fa96432f6c82abd712fb4d6566`:
+
+- Purpose-built 60, 120, and 160 BPM metronome sources resolved to 60.1, 120.2,
+  and 160.1 BPM. Error remained at or below 0.2 BPM, no half/double mistake
+  occurred, and every estimate stayed unchanged during its 60-second window.
+- Confidence measured 88%, 87%, and 53%. The accurate but lower-confidence
+  160 BPM result remains a Phase 3 presentation and fallback consideration.
+- Aggregate Opera CPU median did not increase between playback-only and active
+  capture plus detector. Aggregate GPU median increased by 4.81 percentage
+  points and must be measured again with each renderer.
+- Audio remained audible without detected echo, clipping, distortion, or
+  sustained speed change. Objective RMS/LUFS parity remains blocked; the brief
+  activation/deactivation dip remains a recorded caveat.
+- Lifecycle, cleanup, privacy, bounded-message, queue, playback, and authority
+  checks passed. The extension and repository were left clean and inactive.
+
+Phase 3 now connects the local contract to an internal extension Rhythm Lab:
+
+- Mirror Spectrum and Siri Ribbon consume only reconstructed bounded display
+  arrays derived from `RhythmFrameV1`; no PCM or FFT arrays leave the worklet.
+- One Canvas, a 1.25 DPR cap, 24/30 FPS controls, hidden/reduced-motion stops,
+  stale-frame fallback, and reusable signal buffers bound renderer cost.
+- A non-persisted 120 BPM fixture separates renderer-only measurement from the
+  combined capture, detector, and renderer path.
+- The lab is an internal extension page, opens after explicit capture, adds no
+  host permission, content script, network surface, storage, website bridge,
+  or room synchronization.
+- Local desktop and 390-pixel visual checks passed for both renderers. Live
+  input without the extension falls back to an inactive static state.
+
 ## Risks
 
 - Opera GX may differ from Chrome in extension APIs, permission surfaces, or
