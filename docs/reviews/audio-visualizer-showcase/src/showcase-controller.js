@@ -57,7 +57,7 @@ let forcedReducedMotion = false;
 let disposed = false;
 const statusView = createStatusView(elements.status);
 
-elements.audio.src = TRACKS[activeTrack].src;
+if (inputType === "live") elements.audio.src = TRACKS[activeTrack].src;
 const audioInput = new WebAudioInput(elements.audio);
 const engine = new VisualizerEngine({
   canvas: elements.canvas,

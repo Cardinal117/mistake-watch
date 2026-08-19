@@ -182,6 +182,11 @@ Normal review:
 Query-controlled benchmark panel:
 `http://127.0.0.1:8765/?benchmark=1&input=tempo&bpm=120&fps=30`
 
+Hosted benchmark deployments should use the same `benchmark=1&input=tempo`
+query. Tempo mode does not request the restricted local review tracks; the live
+audio controls remain a local-only review path when those ignored assets are
+present beside the showcase.
+
 Tempo fixtures at 60, 90, 120, and 160 BPM are generated signals. They do not
 claim to analyse either review track.
 
