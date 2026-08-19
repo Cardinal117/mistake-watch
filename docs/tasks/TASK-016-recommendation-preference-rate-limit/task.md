@@ -1,8 +1,9 @@
 ---
 id: TASK-016
-status: local-verified
+status: completed
 type: compact-task
 related: [TASK-011, MW-BUG-012]
+completed: 2026-08-19
 ---
 
 # Recommendation Preference Rate-Limit Resilience
@@ -84,7 +85,12 @@ preference reads to exhaust recommendation or preference-mutation protection.
   preference-write, and 30/min recommendation-read budgets.
 - Fixed-window, retry timing, and cooldown tests pass; the complete project
   suite passes 373 tests.
-- Typecheck, ESLint, production build, and file-length policy pass. Production
-  multi-device observation remains pending deployment approval.
+- Typecheck, ESLint, production build, and file-length policy pass.
 - Playwright public E2E smoke tests pass 2/2; the deterministic Media Hub test
   remains skipped behind its fixture gate.
+- Commit `6987738` is on `main`; clean-install metadata is recorded in
+  `fe9788b`.
+- Vercel production deployment `dpl_7Z8GWwA5XunM3rBcVfPAZejXyahn` passed health,
+  readiness, and fail-closed route checks with no error-level or `500` logs.
+- Owner two-machine production QA passed: Like behavior remained correct, both
+  signed-in room contexts operated normally, and the console remained clean.

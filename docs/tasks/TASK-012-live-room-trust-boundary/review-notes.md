@@ -5,23 +5,23 @@
 - TASK-012 is the authoritative identifier for live-room trust-boundary and
   lifecycle hardening.
 - TASK-013 is reserved for Account Command Panel Completion.
-- Batch A1 is the only runtime implementation currently approved.
-- Batch A3 reproduction and diagnosis are complete. The narrow A3/B admission
-  correction was approved for local implementation on 2026-08-19.
+- Batch A3 reproduction, correction, release, and production QA are complete.
+- Batch B admission grants are complete and released to Maincloud and Vercel.
 - Same-account devices coexist as independently admitted live sessions. Newest
   does not replace oldest.
-- Git, Maincloud publication, Vercel deployment, and production mutation remain
-  separately gated.
+- TASK-012 remains active for the separately planned A2 and Batches C-D-E; the
+  completed A3/B release does not imply those later security slices are done.
 
-## Confirmed Evidence
+## Pre-Fix Confirmed Evidence
 
-- `touchRoomActivityAction` currently depends on the guest identity cookie.
+- Before Batch A1, `touchRoomActivityAction` depended on the guest identity
+  cookie.
 - Guest-to-account migration moves the durable room member to `user_id`.
 - Unsaved-room cleanup uses `room_members.last_seen_at` and a one-hour idle
   threshold.
 - Core room tables are public in SpacetimeDB.
-- `join_room` accepts a client-supplied unused member ID and grants default guest
-  queue-add permission.
+- Before Batch A3/B, `join_room` accepted a client-supplied unused member ID and
+  granted default guest queue-add permission.
 - Existing member-ID takeover is already rejected.
 - Reducer mutation authority is stronger than admission and read privacy.
 - Owner production QA reports that Account Rooms re-entry can show
@@ -140,8 +140,9 @@
   and focused tests continued; live matrix execution remains open.
 - Focused Spacetime authority/readiness tests: 18 passed.
 - Vercel production logs independently confirmed 21 preference endpoint 429s in
-  the supplied seven-minute window; that remains tracked as `MW-BUG-012` rather
-  than being folded into the authority correction.
+  the supplied seven-minute window. That separate issue was resolved by
+  TASK-016 and archived as `MW-BUG-012` rather than being folded into the
+  authority correction.
 - Focused Spacetime authority and readiness tests: 39 passed.
 - Persistent local Spacetime runtime proof passed with two independently
   admitted sessions for the same durable host. Both coexisted, one aggregate
@@ -154,5 +155,14 @@
   file-length policy passed.
 - Playwright public E2E smoke tests: 2 passed. The deterministic Media Hub
   catalogue test remained skipped behind its fixture gate.
-- Maincloud publication, Vercel deployment, and the production two-browser QA
-  matrix remain unperformed and separately gated.
+- Commit `7cd92a9` is on `main`; release hygiene is recorded in `fe9788b`.
+- Maincloud publication succeeded. Readback confirmed private admission and
+  participant-session tables, a public opaque participant-presence table, and
+  the expected admission/join reducer contracts.
+- Vercel production deployment `dpl_7Z8GWwA5XunM3rBcVfPAZejXyahn` passed health,
+  readiness, unauthenticated admission denial, Account Rooms denial, and
+  recommendation-denial checks without error-level or `500` logs.
+- Owner production QA passed on two machines: both admission requests returned
+  `200`, both signed-in contexts controlled playback, Account Rooms re-entry
+  retained authority, the console remained clean, and a guest received neither
+  host authority nor uploaded-catalogue access.

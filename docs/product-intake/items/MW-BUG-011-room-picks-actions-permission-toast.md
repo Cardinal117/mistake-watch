@@ -22,9 +22,10 @@ already in the live queue`. The owner also suspects Play Next works only for
   the host rather than other permitted users.
 - **Evidence:** Owner production observation during the account-owner rejoin
   authority failure.
-- **Unknowns:** The behavior may be downstream of
-  [[MW-BUG-010-account-owner-rejoin-loses-authority|MW-BUG-010]], an independent
-  permission mapping defect, a true duplicate, or incorrect error translation.
+- **Unknowns:** The original authority failure is now resolved and archived as
+  [[../archive/MW-BUG-010-account-owner-rejoin-loses-authority|MW-BUG-010]]. The
+  remaining behavior may be an independent permission mapping defect, a true
+  duplicate, or incorrect error translation.
 - **Related work:** TASK-011 Room Picks integration and existing room queue
   authority.
 - **Next action:** Verify owner, host, permitted member, unpermitted member, and

@@ -26,6 +26,8 @@
 
 ## Batch A3: Account Re-entry And Active Participant Reconciliation
 
+Status: Passed in production on 2026-08-19.
+
 ### Investigation gate
 
 - Account Rooms and invite entry are tested separately.
@@ -60,6 +62,8 @@
   opaque admission receipt is online.
 
 ## Batch B: Admission
+
+Status: Passed locally and in production on 2026-08-19.
 
 - First-time admission requires a valid server-issued grant.
 - Grants are room-, member-, role-, expiry-, and identity-bound.

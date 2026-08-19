@@ -15,6 +15,29 @@ evidence, commit, and deployment reference where applicable.
 - **Original report:**
   [[archive/MW-BUG-005-cross-device-like-state|Archived item]]
 
+## MW-BUG-010 Account owner can lose host authority after rejoining
+
+- **Final status:** Resolved
+- **Decision date:** 2026-08-19
+- **Task:** TASK-012 A3/B
+- **Evidence:** Commit `7cd92a9`; Maincloud admission-schema publication;
+  deployment `dpl_7Z8GWwA5XunM3rBcVfPAZejXyahn`; 373 local tests; production
+  health/readiness; owner two-machine QA covering concurrent control, Account
+  Rooms re-entry, and guest authority/catalogue denial.
+- **Original report:**
+  [[archive/MW-BUG-010-account-owner-rejoin-loses-authority|Archived item]]
+
+## MW-BUG-012 Recommendation preference reconciliation reaches shared rate limit
+
+- **Final status:** Resolved
+- **Decision date:** 2026-08-19
+- **Task:** TASK-016
+- **Evidence:** Commit `6987738`; clean-install metadata commit `fe9788b`;
+  deployment `dpl_7Z8GWwA5XunM3rBcVfPAZejXyahn`; fixed-window and cooldown tests;
+  owner two-machine QA confirmed correct Like behavior and a clean console.
+- **Original report:**
+  [[archive/MW-BUG-012-recommendation-preference-rate-limit|Archived item]]
+
 ## Archived Entry Shape
 
 ```md

@@ -53,7 +53,8 @@ Safe commit point:
 
 Status: Static diagnosis and controlled production reproduction completed on
 2026-08-18. Narrow runtime correction approved on 2026-08-19 and implemented
-with Batch B's admission protocol.
+with Batch B's admission protocol. Released and owner-QA verified in production
+on 2026-08-19.
 
 Related intake:
 
@@ -100,8 +101,9 @@ Safe review point:
 
 ## Batch B: Participant Admission Grants
 
-Status: Implemented and locally verified on 2026-08-19. Maincloud publication,
-Git, deployment, and production QA remain separately gated.
+Status: Completed and released on 2026-08-19. Maincloud publication, Git
+checkpoints, Vercel deployment, automated release checks, and owner production
+QA passed.
 
 Work:
 
