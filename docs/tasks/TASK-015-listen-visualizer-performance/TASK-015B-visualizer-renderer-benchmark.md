@@ -70,6 +70,12 @@ Reference concepts:
 - Renderers that fail the strict safe-default budget may remain review-only.
   Production opt-in limits require explicit owner approval rather than a
   silent relaxation of TASK-015.
+- Owner direction: visually successful modes that miss the safe-default budget
+  may later be offered as clearly labeled Experimental opt-ins. They must show
+  a fair power/performance warning, remain disabled by default, retain the
+  reduced-motion and pause lifecycle, and never replace Static Artwork as the
+  recommended mode. A renderer with playback, synchronization, stability, or
+  runaway-resource failures remains ineligible even as an experiment.
 
 ## Candidate Notes
 
