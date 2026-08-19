@@ -1,0 +1,101 @@
+@media (max-width: 980px) {
+  .intro,
+  .section-head {
+    align-items: start;
+    flex-direction: column;
+  }
+  .mode-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .theme-panel {
+    grid-template-columns: 1fr;
+  }
+  .theme-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .settings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .benchmark-panel:not([hidden]) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .benchmark-panel > div,
+  .benchmark-readout {
+    grid-column: 1 / -1;
+  }
+  .recommendations {
+    grid-template-columns: 1fr;
+  }
+  .notes {
+    grid-template-columns: 1fr;
+  }
+  .transport {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .track-switcher {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .shell {
+    width: min(100% - 32px, 1440px);
+    padding-top: 24px;
+  }
+  .decision {
+    width: 100%;
+  }
+  .stage {
+    min-height: 600px;
+  }
+  .stage-top {
+    top: 16px;
+    right: 16px;
+    left: 16px;
+    flex-direction: column;
+  }
+  .badges {
+    justify-content: start;
+  }
+  .transport {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+  }
+  .timeline {
+    grid-template-columns: 1fr auto;
+  }
+  .timeline .time:first-child {
+    display: none;
+  }
+  .track-switcher {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .mode-strip {
+    grid-template-columns: 1fr;
+  }
+  .theme-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .settings-head {
+    align-items: start;
+    flex-direction: column;
+  }
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+  .benchmark-panel:not([hidden]) {
+    grid-template-columns: 1fr;
+  }
+  .benchmark-panel > div,
+  .benchmark-readout {
+    grid-column: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
