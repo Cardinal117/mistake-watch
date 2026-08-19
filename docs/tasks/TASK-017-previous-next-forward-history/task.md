@@ -1,6 +1,6 @@
 ---
 id: TASK-017
-status: in-progress
+status: complete
 type: compact-task
 related: [MW-BUG-013, MW-QOL-004, TASK-002, TASK-004]
 created: 2026-08-19
@@ -91,4 +91,8 @@ only queued rows, so they select `C`; `B` disappears from the forward path.
   - Focused queue/player/authority suite: 56 passed.
   - Full `npm test`: 377 passed.
   - Typecheck, ESLint, production build, Prettier, and file-length policy passed.
-- Production publication and two-participant manual QA remain pending.
+- Commit `5792328` was released to production, including deployment
+  `dpl_4UZdgUmuWQfY8APy3mkvd5pPuoy9`.
+- On 2026-08-19, the owner completed two-participant production QA and
+  confirmed that Previous followed by Next preserves the return item without
+  loss.

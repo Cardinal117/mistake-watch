@@ -14,7 +14,6 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 | [MW-BUG-008](items/MW-BUG-008-tv-mode-like-control-missing.md)          | Bug         | P2       | Needs verification | TV mode           | Like control is missing from TV mode                      | TASK-002.5G, 011   |
 | [MW-BUG-009](items/MW-BUG-009-high-browser-resource-usage.md)           | Bug         | P1       | In progress        | Performance       | Room playback consumes excessive browser resources        | TASK-015           |
 | [MW-BUG-011](items/MW-BUG-011-room-picks-actions-permission-toast.md)   | Bug         | P2       | Needs verification | Recommendations   | Room Picks actions may reject permitted members           | TASK-011           |
-| [MW-BUG-013](items/MW-BUG-013-previous-next-loses-return-item.md)       | Bug         | P1       | In progress        | Playback history  | Previous then Next can lose the return item               | TASK-017           |
 | [MW-BUG-014](items/MW-BUG-014-youtube-embed-too-many-requests.md)       | Bug         | P1       | Needs reproduction | YouTube playback  | One user repeatedly receives provider throttling          | TASK-004           |
 | [MW-FEAT-001](items/MW-FEAT-001-owner-enabled-vr.md)                    | Feature     | P3       | Ready for planning | Spatial cinema    | Owner toggle exposes VR mode and headset prompt           | TASK-008           |
 | [MW-FEAT-002](items/MW-FEAT-002-first-visit-privacy-notice.md)          | Feature     | P2       | Ready for planning | Privacy UX        | Add an accurate first-visit privacy notice if required    | Privacy review     |
@@ -39,29 +38,26 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 
 ## Current Focus
 
-1. Release TASK-017's locally verified correction for
-   [[items/MW-BUG-013-previous-next-loses-return-item|MW-BUG-013]], then complete
-   two-participant Previous/Next production QA before closing it.
-2. Collect an affected-versus-working evidence bundle for
+1. Collect an affected-versus-working evidence bundle for
    [[items/MW-BUG-014-youtube-embed-too-many-requests|MW-BUG-014]] before
    changing provider or player behavior.
-3. Plan [[items/MW-QOL-010-direct-play-action-parity|MW-QOL-010]] as a compact
+2. Plan [[items/MW-QOL-010-direct-play-action-parity|MW-QOL-010]] as a compact
    Add Media action-parity task.
-4. TASK-015A2 owner QA passed. Run TASK-015B as a separately measured
+3. TASK-015A2 owner QA passed. Run TASK-015B as a separately measured
    raster/throttling experiment before resolving
    [[items/MW-BUG-009-high-browser-resource-usage|MW-BUG-009]]. Keep
    [[items/MW-QOL-007-configurable-listen-artwork|MW-QOL-007]] as later
    composition work rather than expanding the performance task.
-5. Prepare a research/prototype packet for
+4. Prepare a research/prototype packet for
    [[items/MW-FEAT-005-local-ai-dj-intent-router|MW-FEAT-005]]. Preserve server
    authority and do not connect experimental inference directly to room
    mutations.
-6. Reconcile the released TASK-014 guest-footer refinement and completed owner
+5. Reconcile the released TASK-014 guest-footer refinement and completed owner
    QA into the Account Rooms task records before closing
    [[items/MW-FEAT-003-account-rooms-surface|MW-FEAT-003]].
-7. Schedule [[items/MW-QOL-008-tv-mode-settings-access|MW-QOL-008]] as a compact
+6. Schedule [[items/MW-QOL-008-tv-mode-settings-access|MW-QOL-008]] as a compact
    UI task; keep optional TV-mode motion behind current reliability work.
-8. Run Opera GX capture and lifecycle QA for TASK-018 Phase 1 and
+7. Run Opera GX capture and lifecycle QA for TASK-018 Phase 1 and
    [[items/MW-FEAT-006-local-audio-companion-extension|MW-FEAT-006]] before
    adding the focused beat detector. Keep
    [[items/MW-FEAT-007-native-web-audio-analysis|MW-FEAT-007]] deferred.
