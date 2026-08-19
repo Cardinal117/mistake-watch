@@ -1,17 +1,17 @@
 ---
 id: MW-BUG-008
 type: bug
-status: needs-verification
+status: in-progress
 priority: P2
 area: tv-mode
-related: [TASK-002.5G, TASK-011]
+related: [TASK-002.5G, TASK-011, TASK-020]
 created: 2026-08-18
-updated: 2026-08-18
+updated: 2026-08-27
 ---
 
 # Like control is missing from TV mode
 
-> [!bug] Needs verification - P2
+> [!bug] In progress - P2
 
 - **Expected:** When the active media supports the existing account Like
   action, TV mode should expose an appropriately placed Like control or clearly
@@ -23,7 +23,12 @@ updated: 2026-08-18
   mode scope and whether the shared active-media preference controller is
   already available to the TV layout.
 - **Related work:** TASK-002.5G TV mode and TASK-011 first-party preference UI.
-- **Next action:** Inspect the TV-mode interaction contract and reproduce with a
-  signed-in liked and unliked YouTube item before planning a UI change.
+- **Implementation:** TASK-020 reuses the established Listen preference
+  controller and Like control inside the existing TV presentation.
+- **Automated evidence:** Focused TV, preference, and direct-source tests pass
+  alongside the 516-test suite, typecheck, lint, file-length policy, and
+  production build on the refreshed TASK-020 branch.
+- **Next action:** Complete signed-in/guest browser QA before resolving this
+  item; interaction QA remains a draft-PR gate.
 - **Original report:**
   [[../archive/quick-capture-2026-08-18#Capture 1]]

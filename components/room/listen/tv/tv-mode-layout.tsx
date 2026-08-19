@@ -5,20 +5,20 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type Dispatch,
   type ReactNode,
+  type SetStateAction,
 } from "react";
 import {
   Disc3,
   Headphones,
   Maximize2,
-  Monitor,
   Pause,
   Play,
   Repeat2,
   Shuffle,
   SkipBack,
   SkipForward,
-  UsersRound,
   Volume2,
   VolumeX,
 } from "lucide-react";
@@ -29,8 +29,11 @@ import type { LiveRoomState } from "@/lib/spacetime";
 import { cx } from "@/lib/ui";
 import { DirectMediaPlayer } from "@/components/room/direct-media-player";
 import { YoutubeMediaPlayer } from "@/components/room/youtube-media-player";
-import { YouTubeMetadataLine } from "@/components/room/youtube-metadata-line";
+import { ListenRoomSettingsDialog } from "@/components/room/listen/settings/settings-dialogs";
 import { type ListenTvSettings } from "@/components/room/listen/shared";
+import { ListenTvNowPlayingDetails } from "@/components/room/listen/tv/tv-mode-now-playing";
+import { ListenTvModeTopBar } from "@/components/room/listen/tv/tv-mode-top-bar";
+import type { MediaPreferenceController } from "@/lib/recommendations/use-media-preferences";
 import {
   clampNumber,
   formatSeconds,
@@ -43,17 +46,22 @@ export function ListenTvModeLayout({
   currentPosition,
   durationSeconds,
   liveRoom,
+  mediaPreferences,
+  preferenceItem,
   onExit,
   onNext,
   onPlaybackChange,
   onPrevious,
   onSeek,
+  onSettingsOpenChange,
   onShuffle,
+  onTvSettingsChange,
   onVolumeChange,
   queueAutoplayEnabled,
   queuedItems,
   remainingQueueSeconds,
   room,
+  settingsOpen,
   style,
   tvSettings,
   volume,
@@ -63,23 +71,29 @@ export function ListenTvModeLayout({
   currentPosition: number;
   durationSeconds: number;
   liveRoom: LiveRoomState;
+  mediaPreferences: MediaPreferenceController;
+  preferenceItem: RoomQueueItem | null;
   onExit(): void;
   onNext(): void;
   onPlaybackChange(status: "paused" | "playing"): void;
   onPrevious(): void;
   onSeek(positionSeconds: number): void;
+  onSettingsOpenChange(open: boolean): void;
   onShuffle(): void;
+  onTvSettingsChange: Dispatch<SetStateAction<ListenTvSettings>>;
   onVolumeChange(volume: number): void;
   queueAutoplayEnabled: boolean;
   queuedItems: RoomQueueItem[];
   remainingQueueSeconds: number | null;
   room: RoomSnapshot;
+  settingsOpen: boolean;
   style: CSSProperties;
   tvSettings: ListenTvSettings;
   volume: number;
 }) {
   const session = liveRoom.snapshot.session;
   const shellRef = useRef<HTMLDivElement | null>(null);
+  const settingsButtonRef = useRef<HTMLButtonElement | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
   const controlsTimerRef = useRef<number | null>(null);
   const liveSource = session?.sourceUrl ?? null;
@@ -104,6 +118,8 @@ export function ListenTvModeLayout({
   const onlineCount = liveRoom.participants.filter(
     (participant) => participant.status === "online",
   ).length;
+  const hideIdleUi =
+    tvSettings.hideUiOnIdle && !controlsVisible && !settingsOpen;
 
   useEffect(() => {
     return () => {
@@ -125,6 +141,17 @@ export function ListenTvModeLayout({
     }, 4200);
   }
 
+  function openSettings() {
+    showControlsTemporarily();
+    onSettingsOpenChange(true);
+  }
+
+  function closeSettings() {
+    onSettingsOpenChange(false);
+    showControlsTemporarily();
+    window.requestAnimationFrame(() => settingsButtonRef.current?.focus());
+  }
+
   async function requestTvFullscreen() {
     const target = shellRef.current;
 
@@ -139,8 +166,10 @@ export function ListenTvModeLayout({
     <main
       className={cx(
         "fixed inset-0 z-[100] overflow-hidden bg-black text-on-surface",
-        tvSettings.hideUiOnIdle && !controlsVisible && "cursor-none",
+        hideIdleUi && "cursor-none",
       )}
+      onFocusCapture={showControlsTemporarily}
+      onKeyDown={showControlsTemporarily}
       onMouseMove={showControlsTemporarily}
       onTouchStart={showControlsTemporarily}
       ref={shellRef}
@@ -186,69 +215,31 @@ export function ListenTvModeLayout({
       <div
         className={cx(
           "pointer-events-none relative z-10 grid h-dvh grid-rows-[auto_minmax(0,1fr)_auto] p-5 transition-opacity duration-500 motion-reduce:transition-none sm:p-7 lg:p-10",
-          tvSettings.hideUiOnIdle && !controlsVisible && "opacity-0",
+          hideIdleUi && "opacity-0",
         )}
         style={{
-          opacity:
-            tvSettings.hideUiOnIdle && !controlsVisible ? 0 : visibleUiOpacity,
+          opacity: hideIdleUi ? 0 : visibleUiOpacity,
         }}
       >
-        <div className="flex items-start justify-between gap-4">
-          <div className="pointer-events-auto inline-flex items-center gap-3 rounded-md border border-white/10 bg-black/36 px-4 py-3 shadow-[0_0_32px_rgb(var(--listen-shadow)/0.16)] backdrop-blur-xl">
-            <UsersRound
-              className="h-5 w-5 text-[rgb(var(--listen-primary))]"
-              aria-hidden
-            />
-            <div className="min-w-0">
-              <p className="max-w-[18rem] truncate text-title-sm font-semibold text-on-surface">
-                {session?.roomName ?? room.name}
-              </p>
-              <p className="text-label-sm text-on-surface-variant">
-                {onlineCount} listening
-              </p>
-            </div>
-          </div>
-          <button
-            className="pointer-events-auto inline-flex h-12 items-center gap-3 rounded-md border border-white/10 bg-black/36 px-4 text-label-md font-semibold text-on-surface shadow-[0_0_32px_rgb(var(--listen-shadow)/0.14)] backdrop-blur-xl transition hover:border-[rgb(var(--listen-primary)/0.52)] hover:text-[rgb(var(--listen-primary))]"
-            onClick={onExit}
-            type="button"
-          >
-            <Monitor className="h-5 w-5" aria-hidden />
-            Exit TV Mode
-            <span className="rounded-sm border border-white/10 bg-white/8 px-2 py-1 text-[11px] text-on-surface-variant">
-              T
-            </span>
-          </button>
-        </div>
+        <ListenTvModeTopBar
+          onExit={onExit}
+          onOpenSettings={openSettings}
+          onlineCount={onlineCount}
+          roomName={session?.roomName ?? room.name}
+          settingsButtonRef={settingsButtonRef}
+          settingsOpen={settingsOpen}
+        />
 
         <div className="flex min-h-0 items-end pb-5">
           <div className="pointer-events-auto grid w-full gap-6">
-            <div className="grid max-w-[min(46rem,58vw)] gap-3 transition-opacity duration-500 motion-reduce:transition-none">
-              <p className="technical-label border-0 p-0 text-[rgb(var(--listen-primary))]">
-                Now playing
-              </p>
-              <h1
-                className="text-[clamp(1.75rem,2.65vw,3.1rem)] font-semibold leading-[1.06] tracking-normal drop-shadow-[0_6px_28px_rgb(0_0_0_/_0.55)] [text-shadow:0_0_30px_rgb(var(--listen-shadow)_/_0.24)]"
-                style={{
-                  color:
-                    "color-mix(in srgb, rgb(var(--listen-primary)) 14%, rgb(229 226 227))",
-                }}
-              >
-                {title}
-              </h1>
-              <div className="flex flex-wrap items-center gap-3 text-title-md text-on-surface-variant">
-                <span>{artist}</span>
-                {youtubeSource ? (
-                  <YouTubeMetadataLine
-                    className="[&>span]:border-white/8 [&>span]:bg-black/24 [&>span]:backdrop-blur-md"
-                    compact
-                    showChannel={false}
-                    sourceUrl={liveSource}
-                    tone="dynamic"
-                  />
-                ) : null}
-              </div>
-            </div>
+            <ListenTvNowPlayingDetails
+              artist={artist}
+              mediaPreferences={mediaPreferences}
+              preferenceItem={preferenceItem}
+              sourceUrl={liveSource}
+              title={title}
+              youtubeSource={Boolean(youtubeSource)}
+            />
 
             <div className="grid gap-4 transition-opacity duration-500 motion-reduce:transition-none xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-end">
               <div />
@@ -387,6 +378,12 @@ export function ListenTvModeLayout({
 
         <span className="sr-only">TV mode is active.</span>
       </div>
+      <ListenRoomSettingsDialog
+        onChange={onTvSettingsChange}
+        onClose={closeSettings}
+        open={settingsOpen}
+        settings={tvSettings}
+      />
     </main>
   );
 }

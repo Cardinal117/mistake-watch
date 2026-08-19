@@ -67,6 +67,7 @@ export function ListenModeLayout({
     "room",
   );
   const [tvMode, setTvMode] = useState(false);
+  const [tvSettingsOpen, setTvSettingsOpen] = useState(false);
   const [tvSettings, setTvSettings] = usePersistentListenTvSettings();
   const {
     ambientFallbackEnabled,
@@ -301,13 +302,19 @@ export function ListenModeLayout({
         return;
       }
 
+      if (tvSettingsOpen) {
+        return;
+      }
+
       if (event.key === "Escape" && tvMode) {
+        setTvSettingsOpen(false);
         setTvMode(false);
         return;
       }
 
       if (event.key.toLowerCase() === "t") {
         event.preventDefault();
+        setTvSettingsOpen(false);
         setTvMode((current) => !current);
       }
     }
@@ -315,7 +322,7 @@ export function ListenModeLayout({
     window.addEventListener("keydown", handleKeyDown);
 
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [tvMode]);
+  }, [tvMode, tvSettingsOpen]);
 
   if (tvMode) {
     return (
@@ -325,17 +332,25 @@ export function ListenModeLayout({
         currentPosition={currentPosition}
         durationSeconds={durationSeconds}
         liveRoom={liveRoom}
-        onExit={() => setTvMode(false)}
+        mediaPreferences={mediaPreferences}
+        preferenceItem={activePreferenceItem}
+        onExit={() => {
+          setTvSettingsOpen(false);
+          setTvMode(false);
+        }}
         onNext={playNext}
         onPlaybackChange={setPlayback}
         onPrevious={playPrevious}
         onSeek={seekTo}
+        onSettingsOpenChange={setTvSettingsOpen}
         onShuffle={() => applyQueueShuffle("shuffle")}
+        onTvSettingsChange={setTvSettings}
         onVolumeChange={setLocalVolume}
         queueAutoplayEnabled={session?.queueAutoplayEnabled ?? true}
         queuedItems={queuedItems}
         remainingQueueSeconds={remainingQueueSeconds}
         room={room}
+        settingsOpen={tvSettingsOpen}
         style={listenThemeStyle}
         tvSettings={tvSettings}
         volume={volume}
