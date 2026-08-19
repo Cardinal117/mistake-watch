@@ -43,6 +43,10 @@ test("Like hook reconciles active clients without overriding newer local state",
   assert.match(source, /document\.addEventListener\("visibilitychange"/);
   assert.match(source, /shouldApplyPreferenceSnapshot/);
   assert.match(source, /pendingKeysRef\.current = new Set\(\)/);
+  assert.match(source, /activeRefreshRef/);
+  assert.match(source, /cooldownRef/);
+  assert.match(source, /PreferenceReadError/);
+  assert.match(source, /preferenceRateLimitCooldownMs/);
 });
 
 test("Listen surfaces use the same room preference controller", async () => {

@@ -6,6 +6,8 @@ import type { RoomQueueItem } from "@/lib/rooms";
 import { recommendationMediaKey } from "./media-identity";
 import {
   fetchRoomMediaPreferences,
+  preferenceRateLimitCooldownMs,
+  PreferenceReadError,
   PreferenceMutationError,
   queueItemRecommendationIdentity,
   updateRoomMediaPreference,
@@ -54,6 +56,13 @@ export function useMediaPreferences({
   const requestSequenceRef = useRef(0);
   const lastRefreshStartedAtRef = useRef(0);
   const lastAppliedRoomIdRef = useRef<string | null>(null);
+  const activeRefreshRef = useRef<{ roomId: string; sequence: number } | null>(
+    null,
+  );
+  const cooldownRef = useRef<{ roomId: string; until: number } | null>(null);
+  const rateLimitFailuresRef = useRef<{ count: number; roomId: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     roomIdRef.current = roomId;
@@ -67,6 +76,16 @@ export function useMediaPreferences({
 
     async function refreshPreferences(force = false) {
       const now = Date.now();
+      const activeRefresh = activeRefreshRef.current;
+      const cooldown = cooldownRef.current;
+
+      if (activeRefresh?.roomId === roomId) {
+        return;
+      }
+
+      if (cooldown?.roomId === roomId && now < cooldown.until) {
+        return;
+      }
 
       if (
         !force &&
@@ -79,9 +98,15 @@ export function useMediaPreferences({
       const requestSequence = requestSequenceRef.current + 1;
       const requestMutationGeneration = mutationGenerationRef.current;
       requestSequenceRef.current = requestSequence;
+      activeRefreshRef.current = { roomId, sequence: requestSequence };
 
       try {
         const items = await fetchRoomMediaPreferences(roomId);
+
+        if (rateLimitFailuresRef.current?.roomId === roomId) {
+          rateLimitFailuresRef.current = null;
+          cooldownRef.current = null;
+        }
 
         if (
           disposed ||
@@ -119,8 +144,28 @@ export function useMediaPreferences({
         if (result.changed || roomChanged) {
           setRankingRevision((current) => current + 1);
         }
-      } catch {
+      } catch (error) {
+        if (error instanceof PreferenceReadError && error.status === 429) {
+          const failureCount =
+            rateLimitFailuresRef.current?.roomId === roomId
+              ? rateLimitFailuresRef.current.count + 1
+              : 1;
+          rateLimitFailuresRef.current = { count: failureCount, roomId };
+          cooldownRef.current = {
+            roomId,
+            until:
+              Date.now() +
+              preferenceRateLimitCooldownMs(error.retryAfterMs, failureCount),
+          };
+        }
         // Preference reconciliation is non-blocking for playback and queue use.
+      } finally {
+        if (
+          activeRefreshRef.current?.roomId === roomId &&
+          activeRefreshRef.current.sequence === requestSequence
+        ) {
+          activeRefreshRef.current = null;
+        }
       }
     }
 

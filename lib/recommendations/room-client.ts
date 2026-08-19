@@ -128,10 +128,52 @@ export async function fetchRoomMediaPreferences(roomId: string) {
   };
 
   if (!response.ok) {
-    throw new Error("Preferences are unavailable.");
+    throw new PreferenceReadError(
+      "Preferences are unavailable.",
+      response.status,
+      preferenceRetryAfterMs(response.headers.get("Retry-After")),
+    );
   }
 
   return payload.items ?? [];
+}
+
+export class PreferenceReadError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly retryAfterMs: number | null,
+  ) {
+    super(message);
+    this.name = "PreferenceReadError";
+  }
+}
+
+export function preferenceRetryAfterMs(value: string | null, now = Date.now()) {
+  if (!value) {
+    return null;
+  }
+
+  const seconds = Number(value);
+  const retryMs = Number.isFinite(seconds)
+    ? seconds * 1_000
+    : Date.parse(value) - now;
+
+  return Number.isFinite(retryMs) && retryMs > 0
+    ? Math.min(60_000, Math.max(1_000, Math.ceil(retryMs)))
+    : null;
+}
+
+export function preferenceRateLimitCooldownMs(
+  retryAfterMs: number | null,
+  failureCount: number,
+) {
+  if (retryAfterMs !== null) {
+    return Math.min(60_000, Math.max(1_000, retryAfterMs));
+  }
+
+  const exponent = Math.max(0, Math.min(4, failureCount - 1));
+  return Math.min(60_000, 5_000 * 2 ** exponent);
 }
 
 export async function updateRoomMediaPreference(input: {

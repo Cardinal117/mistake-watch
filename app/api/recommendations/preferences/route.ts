@@ -30,11 +30,14 @@ export function createRecommendationPreferenceRoutes(
       return unavailable("Missing room context.", 400);
     }
 
-    const authorization = await dependencies.authorize(roomId);
+    const authorization = await dependencies.authorize(
+      roomId,
+      "preference-read",
+    );
 
     if (!authorization.ok) {
       return NextResponse.json(authorization.body, {
-        headers: privateHeaders(),
+        headers: privateHeaders(authorization.retryAfterSeconds),
         status: authorization.status,
       });
     }
@@ -63,11 +66,14 @@ export function createRecommendationPreferenceRoutes(
       return unavailable("Invalid preference request.", 400);
     }
 
-    const authorization = await dependencies.authorize(input.roomId);
+    const authorization = await dependencies.authorize(
+      input.roomId,
+      "preference-write",
+    );
 
     if (!authorization.ok) {
       return NextResponse.json(authorization.body, {
-        headers: privateHeaders(),
+        headers: privateHeaders(authorization.retryAfterSeconds),
         status: authorization.status,
       });
     }
@@ -105,9 +111,10 @@ function unavailable(reason: string, status: number) {
   );
 }
 
-function privateHeaders() {
+function privateHeaders(retryAfterSeconds?: number) {
   return {
     "Cache-Control": "private, no-store",
+    ...(retryAfterSeconds ? { "Retry-After": String(retryAfterSeconds) } : {}),
     "X-Content-Type-Options": "nosniff",
   };
 }

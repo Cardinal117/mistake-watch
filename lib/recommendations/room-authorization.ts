@@ -13,10 +13,15 @@ import {
   createSupabaseServerClient,
 } from "@/lib/supabase";
 import { BoundedTtlCache } from "./bounded-cache";
+import {
+  consumeFixedWindowRequest,
+  recommendationRequestLimits,
+  type RecommendationRequestKind,
+  type RequestBudgetState,
+} from "./request-budget";
 
-const REQUEST_LIMIT = 30;
 const REQUEST_WINDOW_MS = 60_000;
-const requestCounts = new BoundedTtlCache<{ count: number }>(
+const requestCounts = new BoundedTtlCache<RequestBudgetState>(
   REQUEST_WINDOW_MS,
   5_000,
 );
@@ -35,11 +40,13 @@ export type RecommendationRoomAccessResult =
   | {
       body: { reason: string; status: "unavailable" };
       ok: false;
+      retryAfterSeconds?: number;
       status: number;
     };
 
 export async function requireRecommendationRoomAccess(
   roomId: string,
+  requestKind: RecommendationRequestKind,
 ): Promise<RecommendationRoomAccessResult> {
   const accountAccess = await resolveAccountAccess(roomId);
   const access = accountAccess ?? (await resolveGuestAccess(roomId));
@@ -51,10 +58,13 @@ export async function requireRecommendationRoomAccess(
     );
   }
 
-  if (!consumeRequest(access.identityKey)) {
+  const budget = consumeRequest(access.identityKey, requestKind);
+
+  if (!budget.allowed) {
     return denied(
       429,
       "Too many recommendation requests for this room member.",
+      budget.retryAfterSeconds,
     );
   }
 
@@ -135,30 +145,31 @@ async function resolveGuestAccess(
   };
 }
 
-function consumeRequest(key: string) {
-  const current = requestCounts.get(key).value;
+function consumeRequest(
+  identityKey: string,
+  requestKind: RecommendationRequestKind,
+) {
+  const key = `${requestKind}:${identityKey}`;
+  const result = consumeFixedWindowRequest({
+    current: requestCounts.get(key).value,
+    limit: recommendationRequestLimits[requestKind],
+    now: Date.now(),
+    windowMs: REQUEST_WINDOW_MS,
+  });
 
-  if (!current) {
-    requestCounts.set(key, { count: 1 });
-    return true;
-  }
-
-  if (current.count >= REQUEST_LIMIT) {
-    return false;
-  }
-
-  current.count += 1;
-  requestCounts.set(key, current);
-  return true;
+  requestCounts.set(key, result.state, result.ttlMs);
+  return result;
 }
 
 function denied(
   status: number,
   reason: string,
+  retryAfterSeconds?: number,
 ): RecommendationRoomAccessResult {
   return {
     body: { reason, status: "unavailable" },
     ok: false,
+    retryAfterSeconds,
     status,
   };
 }

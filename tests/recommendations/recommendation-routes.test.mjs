@@ -94,8 +94,11 @@ test("routes resolve identity server-side and return private no-store responses"
     source("lib/recommendations/room-authorization.ts"),
   ]);
 
-  assert.match(roomRoute, /dependencies\.authorize\(input\.roomId\)/);
-  assert.match(preferenceRoute, /dependencies\.authorize\(input\.roomId\)/);
+  assert.match(roomRoute, /"recommendation-read"/);
+  assert.match(preferenceRoute, /"preference-read"/);
+  assert.match(preferenceRoute, /"preference-write"/);
+  assert.match(roomRoute, /"Retry-After"/);
+  assert.match(preferenceRoute, /"Retry-After"/);
   assert.match(roomRoute, /Cache-Control["']?:?\s*["']private, no-store/);
   assert.match(preferenceRoute, /Cache-Control["']?:?\s*["']private, no-store/);
   assert.match(authorization, /serverClient\.auth\.getUser\(\)/);
