@@ -283,3 +283,27 @@ test("youtube iframe errors report stale-safe failure decisions to room authorit
   assert.match(errorHandler, /allowAutoplayAdvance: false/);
   assert.doesNotMatch(errorHandler, /requestAutoplayAdvance\(\)/);
 });
+
+test("youtube player claims its initial source before the iframe ready callback", () => {
+  const playerCreation = sectionBetween(
+    youtubePlayerSource,
+    "const initialSourceUrl = activeSourceUrlRef.current",
+    "  useEffect(() => {",
+  );
+
+  assert.match(
+    playerCreation,
+    /playerSourceUrlRef\.current = initialSourceUrl;/,
+  );
+  assert.match(playerCreation, /playerVideoIdRef\.current = initialVideoId;/);
+  assert.ok(
+    playerCreation.indexOf("playerSourceUrlRef.current = initialSourceUrl;") <
+      playerCreation.indexOf("new yt.Player"),
+    "the initial source should be claimed before YouTube reports ready",
+  );
+  assert.ok(
+    playerCreation.indexOf("playerVideoIdRef.current = initialVideoId;") <
+      playerCreation.indexOf("new yt.Player"),
+    "the initial video id should be claimed before YouTube reports ready",
+  );
+});
