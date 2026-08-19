@@ -9,10 +9,10 @@ import {
   SETTING_DEFINITIONS,
   TEMPO_FIXTURES,
   THEMES,
-  TRACKS,
 } from "./contracts.js";
 import { VisualizerEngine } from "./visualizer-engine.js";
 import { createStatusView, formatTime, renderModes } from "./view-helpers.js";
+import { bindLocalAudioFile } from "./local-audio-file.js";
 
 const STORAGE_KEY = "mw_visualizer_showcase_settings_v1";
 const query = new URLSearchParams(window.location.search);
@@ -21,6 +21,8 @@ const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 const elements = {
   audio: document.querySelector("#audio"),
+  localAudio: document.querySelector("#local-audio"),
+  localFileName: document.querySelector("#local-file-name"),
   canvas: document.querySelector("#visualizer"),
   play: document.querySelector("#play"),
   seek: document.querySelector("#seek"),
@@ -44,7 +46,6 @@ const elements = {
   benchmarkReadout: document.querySelector("#benchmark-readout"),
 };
 
-let activeTrack = "ezio";
 let activeMode = MODES[query.get("mode")] ? query.get("mode") : "bloom";
 let activeThemeId = THEMES[query.get("theme")] ? query.get("theme") : "signal";
 let activeTheme = THEMES[activeThemeId].theme;
@@ -55,9 +56,9 @@ let tempoBpm = normalizeTempoBpm(query.get("bpm"));
 let benchmarkPlaying = false;
 let forcedReducedMotion = false;
 let disposed = false;
+let disposeLocalAudio = () => {};
 const statusView = createStatusView(elements.status);
 
-if (inputType === "live") elements.audio.src = TRACKS[activeTrack].src;
 const audioInput = new WebAudioInput(elements.audio);
 const engine = new VisualizerEngine({
   canvas: elements.canvas,
@@ -287,6 +288,7 @@ function setInput(nextInput) {
     throw new Error("Deterministic tempo input requires ?benchmark=1");
   }
   inputType = requested;
+  if (requested === "tempo") elements.audio.pause();
   if (nextInput?.bpm !== undefined) tempoBpm = normalizeTempoBpm(nextInput.bpm);
   benchmarkPlaying = false;
   if (elements.benchmarkInput) elements.benchmarkInput.value = inputType;
@@ -376,32 +378,26 @@ function installEvents() {
   });
   elements.audio.addEventListener("error", () =>
     statusView.show(
-      "The selected review track could not be loaded. Keep the assets folder beside index.html.",
+      "The selected local audio file could not be loaded by this browser.",
     ),
   );
+  disposeLocalAudio = bindLocalAudioFile({
+    audio: elements.audio,
+    input: elements.localAudio,
+    name: elements.localFileName,
+    onInvalid: () => statusView.show("Choose a supported audio file."),
+    onSelected: () => {
+      if (inputType !== "live") setInput("live");
+      statusView.show(
+        "Local audio ready. Press play to begin the live analyser.",
+      );
+    },
+  });
   elements.seek.addEventListener("input", () => {
     if (elements.audio.duration) {
       elements.audio.currentTime =
         (Number(elements.seek.value) / 1000) * elements.audio.duration;
     }
-  });
-  document.querySelectorAll("[data-track]").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const wasPlaying = !elements.audio.paused;
-      activeTrack = button.dataset.track;
-      document.querySelectorAll("[data-track]").forEach((candidate) => {
-        candidate.setAttribute("aria-pressed", String(candidate === button));
-      });
-      elements.audio.src = TRACKS[activeTrack].src;
-      elements.audio.load();
-      if (wasPlaying) {
-        await elements.audio
-          .play()
-          .catch(() =>
-            statusView.show("Press play to start the selected track."),
-          );
-      }
-    });
   });
   document.addEventListener("visibilitychange", syncLifecycle);
   reduceMotion.addEventListener("change", syncLifecycle);
@@ -430,6 +426,7 @@ function dispose() {
   disposed = true;
   engine.destroy();
   audioInput.dispose();
+  disposeLocalAudio();
 }
 
 function installPublicApi() {
@@ -495,5 +492,5 @@ setMode(activeMode, { updateUrl: false });
 installEvents();
 configureBenchmarkPanel();
 installPublicApi();
-statusView.show("Press play to start the audio-reactive preview.");
+statusView.show("Choose a local audio file or start a tempo sample.");
 syncLifecycle();

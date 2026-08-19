@@ -11,7 +11,8 @@ scope.
 
 - Nine visual directions: two controls, four laptop candidates, and three
   performance holds.
-- Two owner-supplied review tracks and native audio fallback.
+- Browser-local audio selection and native playback without uploads or
+  persistence; owner-supplied review files remain ignored local assets.
 - Theme switching and the production `ListenTheme` shape.
 - Per-mode brightness, bloom, reactivity, and smoothing settings.
 - Space/arrow keyboard controls.
@@ -49,6 +50,8 @@ or long-frame budgets. Target-laptop OS and Opera measurements remain required.
 - Horizontal overflow and runtime console errors: none found.
 - Space-key playback passed. Arrow-key seek is not assertable through Python's
   non-range local server and is reported as unsupported rather than passed.
+- Local audio selection uses a temporary object URL, switches the harness to
+  live analyser input, and revokes the URL on replacement or teardown.
 - Scoped Prettier, renderer-global scan, and 500-line source limit: passed.
 - In-page performance telemetry is evidence only; target-laptop process
   measurements remain outstanding.

@@ -72,6 +72,13 @@
     display: grid;
     grid-template-columns: 1fr;
   }
+  .track-button {
+    justify-content: center;
+  }
+  .local-file-name {
+    max-width: 100%;
+    text-align: center;
+  }
   .mode-strip {
     grid-template-columns: 1fr;
   }

@@ -24,10 +24,11 @@ work until their render paths are materially reduced.
 
 Use the local HTTP version at `http://127.0.0.1:8765/`. A direct file or Codex
 HTML preview may sandbox scripts or media and is not the supported review path.
-The page now also exposes the browser's native audio controls as a playback
-fallback. The artifact includes browser-friendly, full-length MP3 review copies
-made from the two owner-supplied WAV files. The original WAV files were not
-changed.
+The page exposes a browser-local audio picker and native controls for live
+analyser review. Selected files remain on the device and are represented only
+by a temporary `blob:` URL; nothing is uploaded or persisted. Ignored local MP3
+review copies may still be selected manually. The original owner-supplied WAV
+files were not changed.
 
 The page uses only Canvas and the Web Audio API. It does not add a runtime
 dependency or change the Mistake Watch application. Production integration
@@ -183,9 +184,8 @@ Query-controlled benchmark panel:
 `http://127.0.0.1:8765/?benchmark=1&input=tempo&bpm=120&fps=30`
 
 Hosted benchmark deployments should use the same `benchmark=1&input=tempo`
-query. Tempo mode does not request the restricted local review tracks; the live
-audio controls remain a local-only review path when those ignored assets are
-present beside the showcase.
+query for deterministic comparisons. To inspect real analyser behavior, choose
+an audio file from the device; the browser does not send it to the deployment.
 
 Tempo fixtures at 60, 90, 120, and 160 BPM are generated signals. They do not
 claim to analyse either review track.

@@ -1,8 +1,3 @@
-export const TRACKS = {
-  ezio: { title: "Ezio's Family", src: "./assets/ezios-family.mp3" },
-  aryll: { title: "Aryll's Theme", src: "./assets/arylls-theme.mp3" },
-};
-
 export const MODES = {
   static: {
     stage: "CONTROL",

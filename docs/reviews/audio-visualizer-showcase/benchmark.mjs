@@ -296,8 +296,10 @@ async function validatePageSurface(page) {
       noHorizontalOverflow: root.scrollWidth <= root.clientWidth + 1,
       nativeAudioVisible:
         document.querySelector("#audio").getClientRects().length > 0,
+      localAudioPickerPresent:
+        document.querySelector("#local-audio")?.type === "file",
       keyboardTargetsPresent:
-        document.querySelectorAll("[data-mode], [data-track], #play").length >=
+        document.querySelectorAll("[data-mode], #local-audio, #play").length >=
         8,
       themeApiWorks:
         beforeTheme.primary === afterTheme.primary &&
