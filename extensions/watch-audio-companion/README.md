@@ -1,11 +1,12 @@
 # Mistake Watch Audio Companion
 
-Private Manifest V3 capture spike for trusted Mistake Watch users. It proves
-that Opera GX can expose audio-only tab PCM to an offscreen AudioWorklet while
-the captured audio remains audible.
+Private Manifest V3 rhythm companion for trusted Mistake Watch users. Phase 1
+proved that Opera GX can expose audio-only tab PCM to an offscreen AudioWorklet
+while captured audio remains audible. Phase 2 adds a focused first-party beat
+detector without changing the website or sending audio off the device.
 
-This is not a public extension package and does not contain the TASK-018 beat
-detector or production website bridge.
+This is not a public extension package and does not contain a production website
+bridge.
 
 ## Boundaries
 
@@ -14,8 +15,12 @@ detector or production website bridge.
 - Only the current tab's audio is requested; video is disabled.
 - Captured audio is routed back to the default output so playback remains
   audible.
-- A silent AudioWorklet branch reports bounded RMS, peak, and processed-frame
-  counts inside the extension.
+- A silent AudioWorklet branch derives bounded RMS, peak, onset, band energy,
+  tempo, confidence, interval, and phase values inside the extension.
+- Tempo combines onset intervals with autocorrelation candidates and retains an
+  established pulse when a later candidate appears at half or double time.
+- The extension emits only `RhythmFrameV1`; no raw PCM or FFT arrays leave the
+  worklet.
 - No PCM, FFT data, URL, account data, or playback data is uploaded or stored.
 - Navigation, tab closure, capture termination, a second action click, and
   extension unload stop the capture graph.
@@ -36,9 +41,11 @@ detector or production website bridge.
 2. Click the extension action once.
 3. Confirm the badge changes from `...` to `ON`, then to `PCM` after a
    non-silent signal is observed.
-4. Confirm playback remains audible at the expected level without an echo or
+4. After a steady rhythmic section, hover the `PCM` badge. A locked estimate
+   shows BPM and confidence; quiet or ambiguous audio may remain unlocked.
+5. Confirm playback remains audible at the expected level without an echo or
    doubled signal.
-5. Click the action again. Confirm the badge clears and playback remains under
+6. Click the action again. Confirm the badge clears and playback remains under
    the ordinary tab path.
 
 An `ERR` badge indicates capture startup failed. Hover over the action for the
@@ -61,11 +68,26 @@ After every stop condition, confirm tab audio is normal, the badge is clear,
 and Opera reports no continuing tab capture. Reload the extension before the
 next condition when testing extension disable or reload.
 
+## Phase 1 Laptop Evidence
+
+Opera GX Phase 1 passed on 2026-08-19: PCM, audible output, pause/resume, three
+stop/restart cycles, hidden-tab operation, navigation and tab-close cleanup,
+extension reload cleanup, a clean worker console, no observed extension network
+activity, and intact playback/queue continuity.
+
+A brief audible dip occurs when capture starts or stops. A possible tiny volume
+increase was subjective and unconfirmed. Phase 2 laptop QA must compare the same
+steady song segment before, during, and after capture. Prefer a system-loopback
+recording and report RMS or LUFS delta; target no more than 0.5 dB steady-state
+change and no new clipping. Record the transition dip separately because it is
+not a steady-state gain measurement.
+
 ## Local Verification
 
 From the repository root:
 
 ```powershell
 node --test tests/extensions/watch-audio-companion.test.mjs
+node --test tests/extensions/beat-detector.test.mjs
 npx prettier --check "extensions/watch-audio-companion/**/*.{js,json,md,mjs}" "tests/extensions/watch-audio-companion.test.mjs"
 ```

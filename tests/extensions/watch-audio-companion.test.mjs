@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
@@ -8,8 +8,9 @@ import {
 } from "../../extensions/watch-audio-companion/capture-session.mjs";
 import {
   isAllowedWatchUrl,
-  normalizeProbeStats,
+  normalizeAnalyserTelemetry,
 } from "../../extensions/watch-audio-companion/protocol.mjs";
+import { createRhythmFrameV1 } from "../../extensions/watch-audio-companion/rhythm-contract.mjs";
 
 test("manifest keeps the private capture permission surface narrow", async () => {
   const manifest = JSON.parse(
@@ -37,6 +38,30 @@ test("manifest keeps the private capture permission surface narrow", async () =>
   );
 });
 
+test("extension source has no network or persistence API", async () => {
+  const directory = new URL(
+    "../../extensions/watch-audio-companion/",
+    import.meta.url,
+  );
+  const files = (await readdir(directory)).filter((name) =>
+    /\.(?:js|mjs)$/.test(name),
+  );
+  const source = (
+    await Promise.all(
+      files.map((name) => readFile(new URL(name, directory), "utf8")),
+    )
+  ).join("\n");
+
+  assert.doesNotMatch(
+    source,
+    /\b(?:fetch|WebSocket|XMLHttpRequest|localStorage|sessionStorage|indexedDB)\b|chrome\.storage/,
+  );
+  assert.doesNotMatch(
+    source,
+    /postMessage\(\s*(?:inputs|channels|samples|pcm)\b/i,
+  );
+});
+
 test("approved URL matching excludes unrelated tabs", () => {
   assert.equal(
     isAllowedWatchUrl("https://watch.mistakestudios.com/rooms/1"),
@@ -52,17 +77,27 @@ test("approved URL matching excludes unrelated tabs", () => {
   assert.equal(isAllowedWatchUrl("not-a-url"), false);
 });
 
-test("probe telemetry is finite and bounded", () => {
-  assert.deepEqual(normalizeProbeStats({ frames: 12.9, peak: 3, rms: -1 }), {
-    frames: 12,
-    peak: 1,
-    rms: 0,
-  });
-  assert.deepEqual(normalizeProbeStats({ frames: NaN, peak: Infinity }), {
-    frames: 0,
-    peak: 0,
-    rms: 0,
-  });
+test("analyser telemetry is finite, bounded, and versioned", () => {
+  const rhythm = createTestRhythmFrame();
+
+  assert.deepEqual(
+    normalizeAnalyserTelemetry({ frames: 12.9, peak: 3, rhythm, rms: -1 }),
+    {
+      frames: 12,
+      peak: 1,
+      rhythm,
+      rms: 0,
+    },
+  );
+  assert.deepEqual(
+    normalizeAnalyserTelemetry({ frames: NaN, peak: Infinity }),
+    {
+      frames: 0,
+      peak: 0,
+      rhythm: null,
+      rms: 0,
+    },
+  );
 });
 
 test("tab capture constraints request audio without video", () => {
@@ -90,7 +125,7 @@ test("capture session routes audible audio, probes silently, and cleans up", asy
   assert.equal(active.active, true);
   assert.equal(active.tabId, 42);
   assert.deepEqual(harness.constraints, createTabAudioConstraints("stream-1"));
-  assert.deepEqual(harness.context.modules, ["pcm-probe-worklet.js"]);
+  assert.deepEqual(harness.context.modules, ["rhythm-analyser-worklet.mjs"]);
   assert.equal(harness.source.connections[0], harness.context.destination);
   assert.equal(harness.source.connections[1], harness.probe);
   assert.equal(harness.probe.connections[0], harness.silentOutput);
@@ -101,10 +136,30 @@ test("capture session routes audible audio, probes silently, and cleans up", asy
   );
 
   harness.probe.port.onmessage({
-    data: { frames: 24_000, peak: 0.8, rms: 0.2 },
+    data: {
+      frames: 24_000,
+      peak: 0.8,
+      rhythm: createTestRhythmFrame(),
+      rms: 0.2,
+    },
   });
   assert.equal(session.getStatus().hasSignal, true);
+  assert.equal(session.getStatus().rhythm.bpm, 120);
   assert.equal(states.at(-1).hasSignal, true);
+
+  harness.probe.port.onmessage({
+    data: {
+      frames: 12_000,
+      peak: 0.4,
+      rhythm: createTestRhythmFrame({
+        bpm: 90,
+        sampledAtSeconds: 11,
+        sequence: 1,
+      }),
+      rms: 0.1,
+    },
+  });
+  assert.equal(session.getStatus().rhythm.bpm, 120);
 
   const stopped = await session.stop("test-complete");
   assert.equal(stopped.active, false);
@@ -207,10 +262,27 @@ function createHarness({ includeAudioTrack = true, moduleError } = {}) {
       harness.constraints = constraints;
       return stream;
     },
-    workletModuleUrl: "pcm-probe-worklet.js",
+    workletModuleUrl: "rhythm-analyser-worklet.mjs",
   };
 
   return harness;
+}
+
+function createTestRhythmFrame(overrides = {}) {
+  return createRhythmFrameV1({
+    beatIntervalSeconds: 0.5,
+    beatOffsetSeconds: 0.1,
+    bpm: 120,
+    confidence: 0.8,
+    energy: 0.7,
+    highs: 0.6,
+    mids: 0.5,
+    bass: 0.4,
+    onset: 0.3,
+    sampledAtSeconds: 12,
+    sequence: 2,
+    ...overrides,
+  });
 }
 
 function createNode() {

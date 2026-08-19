@@ -1,3 +1,5 @@
+import { normalizeRhythmFrameV1 } from "./rhythm-contract.mjs";
+
 export const MESSAGE_TARGET = Object.freeze({
   offscreen: "watch-audio-offscreen",
   worker: "watch-audio-worker",
@@ -32,10 +34,11 @@ export function isAllowedWatchUrl(value) {
   }
 }
 
-export function normalizeProbeStats(value) {
+export function normalizeAnalyserTelemetry(value) {
   return {
     frames: toNonNegativeInteger(value?.frames),
     peak: clampUnit(value?.peak),
+    rhythm: normalizeRhythmFrameV1(value?.rhythm),
     rms: clampUnit(value?.rms),
   };
 }

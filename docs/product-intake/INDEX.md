@@ -57,7 +57,8 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
    [[items/MW-FEAT-003-account-rooms-surface|MW-FEAT-003]].
 6. Schedule [[items/MW-QOL-008-tv-mode-settings-access|MW-QOL-008]] as a compact
    UI task; keep optional TV-mode motion behind current reliability work.
-7. Run Opera GX capture and lifecycle QA for TASK-018 Phase 1 and
+7. Run TASK-018 Phase 2 Opera GX accuracy, detector-only resource, and objective
+   steady-state audio-level QA for
    [[items/MW-FEAT-006-local-audio-companion-extension|MW-FEAT-006]] before
-   adding the focused beat detector. Keep
+   connecting a renderer. Keep
    [[items/MW-FEAT-007-native-web-audio-analysis|MW-FEAT-007]] deferred.

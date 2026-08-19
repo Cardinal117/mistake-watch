@@ -209,10 +209,20 @@ async function updateBadgeFromStatus(status) {
   } else if (!status?.active) {
     await setBadge("idle");
   } else if (status.hasSignal) {
-    await setBadge("signal");
+    await setBadge("signal", formatRhythmDetail(status.rhythm));
   } else {
     await setBadge("active");
   }
+}
+
+function formatRhythmDetail(rhythm) {
+  if (!rhythm || rhythm.bpm === null) {
+    return undefined;
+  }
+
+  return `${rhythm.bpm.toFixed(1)} BPM, ${Math.round(
+    rhythm.confidence * 100,
+  )}% confidence`;
 }
 
 async function setBadge(state, detail) {

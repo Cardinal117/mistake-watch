@@ -11,7 +11,7 @@ const session = new CaptureSession({
   createAudioContext: () =>
     new globalThis.AudioContext({ latencyHint: "interactive" }),
   createWorkletNode: (context) =>
-    new globalThis.AudioWorkletNode(context, "mistake-watch-pcm-probe", {
+    new globalThis.AudioWorkletNode(context, "mistake-watch-rhythm-analyser", {
       numberOfInputs: 1,
       numberOfOutputs: 1,
       outputChannelCount: [1],
@@ -21,7 +21,9 @@ const session = new CaptureSession({
   onStateChange: (status) => {
     void notifyWorker(status);
   },
-  workletModuleUrl: globalThis.chrome.runtime.getURL("pcm-probe-worklet.js"),
+  workletModuleUrl: globalThis.chrome.runtime.getURL(
+    "rhythm-analyser-worklet.mjs",
+  ),
 });
 
 globalThis.chrome.runtime.onMessage.addListener(

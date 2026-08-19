@@ -176,9 +176,28 @@ private Manifest V3 extension:
 - The extension has no host permissions, storage permission, content script,
   web-accessible resource, or network-capable extension CSP.
 
-Automated implementation checks pass. Opera GX capture, audible-output, hidden-
-tab, lifecycle, and extension-network inspection remain required before Phase 1
-is accepted. Beat detection and renderer integration have not started.
+Phase 1 was accepted on the owner-priority Opera GX laptop on 2026-08-19. The
+badge repeatedly reached `PCM`; captured audio remained audible without detected
+echo; pause/resume, three stop/restart cycles, hidden-tab operation, navigation,
+tab closure, extension reload, playback, and queue continuity passed. Navigation,
+tab closure, and extension reload cleared capture state. The service-worker
+console remained clean and no extension network activity was observed. Source
+and CSP inspection confirmed that only bounded probe telemetry crossed internal
+extension messaging and no PCM samples were stored or uploaded.
+
+The laptop operator observed a brief audio dip when capture starts or stops and
+a possible tiny steady-state volume increase that could not be confirmed by ear.
+The dip is a non-blocking Phase 1 caveat. Phase 2 laptop QA must objectively
+compare the same steady song segment before, during, and after capture, targeting
+no more than 0.5 dB RMS or LUFS steady-state change and no new clipping. Capture
+transition behavior must be reported separately from steady-state level.
+
+Phase 2 now adds a focused first-party detector inside the existing silent
+AudioWorklet branch. It uses a small time-domain filter bank, positive band-energy
+flux, adaptive onset detection, inter-onset interval consensus, autocorrelation
+candidates, established-pulse half/double folding, and phase estimation. The
+worklet emits only bounded `RhythmFrameV1` values and retains the Phase 1 audible
+audio graph. Renderer and website integration have not started.
 
 Automated evidence recorded on 2026-08-19:
 
@@ -192,6 +211,17 @@ Automated evidence recorded on 2026-08-19:
 - `npm run build`: passed.
 - Source scan found no extension network, storage, content-script, microphone,
   video-capture, broad host, or web-accessible-resource surface.
+
+Phase 2 local evidence recorded on 2026-08-19:
+
+- Deterministic 60, 90, 120, 128, and 160 BPM fixtures lock within 1.5 BPM.
+- Jitter, autocorrelation-candidate, half/double folding, phase-bound, contract-
+  validation, freshness, and out-of-order tests pass.
+- The extension CSP and source remain free of network and persistence APIs.
+- The service worker receives only bounded state transitions rather than every
+  analyser frame; raw PCM and FFT arrays remain inside the worklet.
+- `npm test`: 398 passed; typecheck, ESLint, changed-file Prettier, file-length
+  policy, `git diff --check`, and the production build passed.
 
 ## Risks
 

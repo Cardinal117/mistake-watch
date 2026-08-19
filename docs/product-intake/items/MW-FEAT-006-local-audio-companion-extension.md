@@ -43,9 +43,13 @@ updated: 2026-08-19
 - **Related work:** TASK-015B selects visualizers and establishes rendering
   budgets. TASK-018 owns the isolated extension proof. MW-BUG-009 retains the
   combined resource budget.
-- **Current progress:** TASK-015B is recorded. The isolated TASK-018 Phase 1
-  capture spike is implemented with local automated coverage and no production
-  website, SpacetimeDB, or room-authority changes.
-- **Next action:** Load the unpacked extension in Opera GX and record capture,
-  audible-output, local PCM, hidden-tab, cleanup, and extension-network proof
-  before starting the focused beat detector.
+- **Current progress:** TASK-015B is recorded and TASK-018 Phase 1 passed on the
+  Opera GX laptop. Phase 2 implements the bounded first-party detector and
+  deterministic tempo/contract coverage without changing the production
+  website, SpacetimeDB, or room authority.
+- **Audio caveat:** Capture activation and deactivation cause a brief dip. A
+  possible tiny volume increase was not confirmed; Phase 2 laptop QA requires a
+  before/during/after steady-state output-level comparison.
+- **Next action:** Reload version 0.2.0 in Opera GX, verify bounded BPM/confidence
+  output and objective steady-state audio level, then measure detector-only cost
+  before beginning renderer integration.

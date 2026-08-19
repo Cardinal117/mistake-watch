@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Mistake Watch Audio Companion",
   "description": "Private local audio timing companion for trusted Mistake Watch users.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "minimum_chrome_version": "116",
   "incognito": "not_allowed",
   "permissions": ["activeTab", "offscreen", "tabCapture"],
