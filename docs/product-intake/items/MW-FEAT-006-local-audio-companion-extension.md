@@ -47,13 +47,15 @@ updated: 2026-08-20
   the Opera GX laptop. Phase 3A proved that Mirror Spectrum and Siri Ribbon are
   functionally sound and inexpensive at 24 FPS without changing the production
   website, SpacetimeDB, or room authority. Mirror remains the safer default;
-  Siri stays at 24 FPS because its 30 FPS GPU increase reproduced.
+  Siri stays at 24 FPS because its 30 FPS GPU increase reproduced. The `0.3.1`
+  cleanup retest passed three start/stop cycles and navigation cleanup with an
+  empty service-worker console, so Phase 3A is promoted.
 - **Audio caveat:** Capture activation and deactivation cause a brief dip. A
   possible tiny volume increase was not confirmed; Phase 2 laptop QA requires a
   before/during/after steady-state output-level comparison.
-- **Phase 3A blocker:** The benign missing-receiver cleanup warning now has a
-  test-first local fix. The automated gate passes while unexpected errors remain
-  visible, but the Opera GX clean-console retest is still required.
-- **Next action:** Reload extension version `0.3.1` and run three capture
-  start/stop cycles. Promote Phase 3A only if the service-worker console remains
-  clean and capture, audio, badge, Lab, playback, and queue cleanup still pass.
+- **Next action:** Begin test-first Phase 3B inside the private extension Lab:
+  integrate Dot Waves, Signal Bloom, and Constellation through the existing
+  bounded rhythm contract, then run separate renderer and combined Opera GX
+  measurements. Keep all three opt-in and retain their honest beta, high-power,
+  or extreme-power labels. Do not begin the production website or SpacetimeDB
+  bridge under this phase.

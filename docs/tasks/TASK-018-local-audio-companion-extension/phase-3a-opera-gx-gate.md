@@ -1,24 +1,25 @@
 # TASK-018 Phase 3A Opera GX Gate
 
 Date: 2026-08-20
-Verdict: **Revise Phase 3A**
+Verdict: **Promote Phase 3A**
 Branch: `task/task-018-phase3-renderers`
 Exact tested head: `35454a35e7072d35ae9c5dc6ffc56a0e3f67d735`
-Extension: tested `0.3.0`; cleanup revision `0.3.1`
+Cleanup retest head: `de34d89d379e4ebf7933dd09e44187f86857f596`
+Extension: initial gate `0.3.0`; promoted revision `0.3.1`
 
 ## Decision
 
 The renderer bridge is functionally sound and inexpensive at 24 FPS. Mirror
 Spectrum is the safer default and Siri Ribbon remains an accepted optional
-experimental mode at 24 FPS. Phase 3A is not complete because repeated capture
-cleanup produced a reproducible service-worker warning:
+experimental mode at 24 FPS. The initial `0.3.0` gate required revision because
+repeated capture cleanup produced a reproducible service-worker warning:
 
 > Mistake Watch capture cleanup failed: Error: Could not establish connection.
 > Receiving end does not exist.
 
-The warning did not break capture, audio, playback, queue state, or cleanup. It
-still fails the explicit clean-console gate and must be corrected with a
-test-first idempotent-teardown change before promotion.
+The warning did not break capture, audio, playback, queue state, or cleanup. The
+test-first `0.3.1` correction passed the exact Opera GX retest and Phase 3A is
+therefore promoted.
 
 ## Three-Run Median Evidence
 
@@ -69,8 +70,7 @@ measurements. Each cell is median / mean / p95 / peak.
 
 ## Revision Implementation Evidence
 
-The local revision was implemented test-first on 2026-08-20. Phase 3A remains
-in **Revise** until the Opera GX manual gate passes.
+The local revision was implemented test-first on 2026-08-20.
 
 - **Baseline:** The production worker still logged the known missing-receiver
   warning; no cleanup fix was present.
@@ -89,7 +89,32 @@ failed: Error: Could not establish connection. Receiving end does not exist.`
   used and the unchanged production build command then passed.
 - **Dependency note:** `npm ci` continues to report six high-severity advisories.
   No unrelated automatic audit fix was applied.
-- **Manual gate:** Pull the exact revision commit, reload extension version
-  `0.3.1`, run three capture start/stop
-  cycles, and confirm the service-worker console stays clean with capture, audio,
-  badge, Lab, playback, and queue cleanup intact.
+- **Manual gate:** Passed on the exact revision commit with extension version
+  `0.3.1`.
+
+## Cleanup Retest And Promotion
+
+The owner-priority Opera GX laptop tested exact commit
+`de34d89d379e4ebf7933dd09e44187f86857f596` from a clean detached checkout.
+All 28 extension tests and the focused lifecycle regression passed.
+
+| Cycle | PCM  | Lab response                       | Stop and cleanup               | Console |
+| ----: | ---- | ---------------------------------- | ------------------------------ | ------- |
+|     1 | Pass | Responded without refresh; one Lab | Badge cleared; capture stopped | Empty   |
+|     2 | Pass | Normal; no duplicate Lab           | Badge cleared; capture stopped | Empty   |
+|     3 | Pass | Normal; no duplicate Lab           | Badge cleared; capture stopped | Empty   |
+
+Navigation away from the captured room also stopped capture, cleared the badge,
+left the Lab inactive, and kept the service-worker console empty. Returning to
+the room preserved playback, volume, queue count, played count, and next-item
+state. Audio remained audible without detected echo, doubling, distortion, or a
+sustained volume change.
+
+An invalid launch from a non-approved tab correctly produced the existing
+`Open a Mistake Watch tab before enabling capture` errors before the controlled
+gate. This is non-gating defensive behavior. Valid activation from the room tab
+updated the Lab without refresh, and the controlled console remained clean.
+
+**Promotion decision:** Phase 3A passes. Phase 3B may begin inside the private
+extension Lab. Production website integration remains a separately approved
+follow-up.

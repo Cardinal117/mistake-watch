@@ -254,7 +254,7 @@ Phase 3 now connects the local contract to an internal extension Rhythm Lab:
 - Local desktop and 390-pixel visual checks passed for both renderers. Live
   input without the extension falls back to an inactive static state.
 
-Phase 3A received a **Revise** verdict on the owner-priority Opera GX laptop at
+Phase 3A initially received a **Revise** verdict on the owner-priority Opera GX laptop at
 commit `35454a35e7072d35ae9c5dc6ffc56a0e3f67d735`. Mirror Spectrum and Siri
 Ribbon both passed the 24 FPS functional, lifecycle, privacy, audio, and
 aggregate resource checks. Mirror remains the safer default because Siri's 30
@@ -263,14 +263,54 @@ race when the offscreen receiver disappears between the existence check and
 `getStatus()`. The cleanup completed, but the warning violates the clean-console
 gate. See [Phase 3A Opera GX gate](phase-3a-opera-gx-gate.md).
 
-The missing-receiver revision is now implemented test-first. The new lifecycle
+The missing-receiver revision was implemented test-first. The new lifecycle
 test failed against the original warning path, then passed after the worker made
 only that known terminal condition idempotent while preserving warnings for
 unexpected failures. All 28 extension tests, all 406 repository tests,
 typecheck, ESLint, formatting, file-length policy, and the production build pass.
-Production integration and Phase 3B remain blocked until three Opera GX
-start/stop cycles pass with a clean service-worker console. See the linked gate
-record for exact red/green evidence.
+
+Phase 3A was promoted after the Opera GX cleanup retest at exact commit
+`de34d89d379e4ebf7933dd09e44187f86857f596`. Three capture start/stop cycles,
+navigation cleanup, PCM state, Lab response, badge reset, audio continuity,
+playback, and queue preservation passed with an empty service-worker console.
+The formerly blocking missing-receiver warning did not recur. See the linked
+gate record for the exact red/green and manual evidence.
+
+### Phase 3B Entry Gate
+
+Phase 3B remains an isolated private-extension Lab increment. It adds Dot Waves,
+Signal Bloom, and Constellation through the existing `RhythmFrameV1` adapter and
+renderer engine. It does not add a website bridge, SpacetimeDB publication,
+room-wide rhythm synchronization, new capture permissions, persistence, or
+network access.
+
+Testing mode: **test-first**, because the renderer registry, animation lifecycle,
+and bounded signal consumption are reusable stateful contracts.
+
+1. Before renderer implementation, extend the renderer contract tests and
+   observe failure because `dot-waves`, `signal-bloom`, and `constellation` are
+   unsupported. The tests must require nonblank bounded output at desktop and
+   compact dimensions from deterministic `RhythmFrameV1` input.
+2. Add an engine lifecycle test before changing mode switching. It must prove
+   repeated renderer changes retain one animation loop and dispose the previous
+   renderer state.
+3. Add Dot Waves first. Its deterministic draw distribution must keep the
+   strongest reactive region centered rather than weighted toward an edge.
+4. Add Signal Bloom second and Constellation last, one green checkpoint at a
+   time. Constellation retains its experimental extreme-power warning and a
+   strict particle and connection budget.
+5. Run desktop and 390-pixel fixture QA, stale/low-confidence fallback checks,
+   reduced-motion and hidden-state stops, duplicate-loop checks, and the full
+   repository gate.
+6. Run separate Opera GX laptop measurements for renderer-only and combined
+   detector plus renderer cost. Results preserve the existing classifications:
+   Dot Waves beta very-high power, Signal Bloom experimental high power, and
+   Constellation experimental extreme power unless new evidence justifies a
+   change.
+
+Phase 3B is specified but not started. Static Artwork remains the production-
+safe default, and production integration still requires a separate approved
+task after the private prototype decision.
 
 ## Risks
 
