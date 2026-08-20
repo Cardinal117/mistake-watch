@@ -139,6 +139,12 @@ async function stopIfCapturedTab(tabId, reason) {
       await stopCapture(reason);
     }
   } catch (error) {
+    if (isMissingOffscreenReceiverError(error)) {
+      await closeOffscreenDocument();
+      await setBadge("idle");
+      return;
+    }
+
     console.warn("Mistake Watch capture cleanup failed:", error);
   }
 }
@@ -240,6 +246,12 @@ function assertSuccessfulResponse(response) {
   if (!response?.ok) {
     throw new Error(response?.error || "The offscreen capture command failed.");
   }
+}
+
+function isMissingOffscreenReceiverError(error) {
+  return /Could not establish connection\. Receiving end does not exist\.?$/.test(
+    error instanceof Error ? error.message : String(error),
+  );
 }
 
 async function updateBadgeFromStatus(status) {

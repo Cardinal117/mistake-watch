@@ -6,7 +6,7 @@ priority: P2
 area: listen-visuals
 related: [TASK-015, TASK-018, MW-BUG-009]
 created: 2026-08-19
-updated: 2026-08-19
+updated: 2026-08-20
 ---
 
 # Private local audio companion extension
@@ -44,12 +44,16 @@ updated: 2026-08-19
   budgets. TASK-018 owns the isolated extension proof. MW-BUG-009 retains the
   combined resource budget.
 - **Current progress:** TASK-015B is recorded. TASK-018 Phases 1 and 2 passed on
-  the Opera GX laptop. Phase 3 connects the bounded contract to internal Mirror
-  Spectrum and Siri Ribbon review modes without changing the production
-  website, SpacetimeDB, or room authority.
+  the Opera GX laptop. Phase 3A proved that Mirror Spectrum and Siri Ribbon are
+  functionally sound and inexpensive at 24 FPS without changing the production
+  website, SpacetimeDB, or room authority. Mirror remains the safer default;
+  Siri stays at 24 FPS because its 30 FPS GPU increase reproduced.
 - **Audio caveat:** Capture activation and deactivation cause a brief dip. A
   possible tiny volume increase was not confirmed; Phase 2 laptop QA requires a
   before/during/after steady-state output-level comparison.
-- **Next action:** Reload version 0.3.0 in Opera GX and measure renderer-only and
-  combined capture, detector, and renderer cost for Mirror Spectrum and Siri
-  Ribbon. Keep the GPU delta and blocked objective RMS/LUFS comparison explicit.
+- **Phase 3A blocker:** The benign missing-receiver cleanup warning now has a
+  test-first local fix. The automated gate passes while unexpected errors remain
+  visible, but the Opera GX clean-console retest is still required.
+- **Next action:** Reload extension version `0.3.1` and run three capture
+  start/stop cycles. Promote Phase 3A only if the service-worker console remains
+  clean and capture, audio, badge, Lab, playback, and queue cleanup still pass.

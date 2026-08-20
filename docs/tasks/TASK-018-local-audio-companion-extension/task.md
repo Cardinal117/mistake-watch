@@ -4,7 +4,7 @@ status: in-progress
 type: compact-task
 related: [MW-FEAT-006, MW-FEAT-007, TASK-015, MW-BUG-009]
 created: 2026-08-19
-updated: 2026-08-19
+updated: 2026-08-20
 ---
 
 # Private Local Audio Companion Extension Prototype
@@ -253,6 +253,24 @@ Phase 3 now connects the local contract to an internal extension Rhythm Lab:
   or room synchronization.
 - Local desktop and 390-pixel visual checks passed for both renderers. Live
   input without the extension falls back to an inactive static state.
+
+Phase 3A received a **Revise** verdict on the owner-priority Opera GX laptop at
+commit `35454a35e7072d35ae9c5dc6ffc56a0e3f67d735`. Mirror Spectrum and Siri
+Ribbon both passed the 24 FPS functional, lifecycle, privacy, audio, and
+aggregate resource checks. Mirror remains the safer default because Siri's 30
+FPS GPU increase reproduced. Repeated capture cleanup exposed one service-worker
+race when the offscreen receiver disappears between the existence check and
+`getStatus()`. The cleanup completed, but the warning violates the clean-console
+gate. See [Phase 3A Opera GX gate](phase-3a-opera-gx-gate.md).
+
+The missing-receiver revision is now implemented test-first. The new lifecycle
+test failed against the original warning path, then passed after the worker made
+only that known terminal condition idempotent while preserving warnings for
+unexpected failures. All 28 extension tests, all 406 repository tests,
+typecheck, ESLint, formatting, file-length policy, and the production build pass.
+Production integration and Phase 3B remain blocked until three Opera GX
+start/stop cycles pass with a clean service-worker console. See the linked gate
+record for exact red/green evidence.
 
 ## Risks
 
