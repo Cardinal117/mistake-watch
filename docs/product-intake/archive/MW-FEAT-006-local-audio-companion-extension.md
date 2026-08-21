@@ -1,17 +1,17 @@
 ---
 id: MW-FEAT-006
 type: feature
-status: in-progress
+status: resolved
 priority: P2
 area: listen-visuals
 related: [TASK-015, TASK-018, MW-BUG-009]
 created: 2026-08-19
-updated: 2026-08-20
+updated: 2026-08-21
 ---
 
 # Private local audio companion extension
 
-> [!idea] Planned after TASK-015B - P2
+> [!success] Resolved through TASK-018 - P2
 
 - **Requested:** Build an optional Chromium companion extension that captures
   the active Mistake Watch tab after an explicit user action, analyses audio
@@ -72,8 +72,10 @@ updated: 2026-08-20
   native-timer receiver error before capture reached `PCM`. Version `0.5.1`
   preserves the browser timer receiver through explicit wrappers, with a
   test-first regression matching the laptop failure.
-- **Next action:** Run one compact Opera GX gate on `0.5.1`: prove capture first,
-  then visually compare
-  Mirror Spectrum and Signal Bloom with the showcase, measure each for 60
-  seconds plus paused idle, then perform one start/stop/restart/navigation
-  cleanup cycle. Smoke-check the other renderers only.
+- **Resolution:** Owner laptop QA promoted Phase 3C at exact commit `b60bc69`.
+  Capture, local analysis, Mirror Spectrum, Signal Bloom, narrow Constellation,
+  paused idle, restart, navigation cleanup, audio continuity, and privacy checks
+  passed on Opera GX. The private extension prototype is complete.
+- **Follow-up:** Create a separate task for the extension-to-site bridge and
+  host-authoritative stable rhythm publication. Do not add that production
+  boundary to completed TASK-018.

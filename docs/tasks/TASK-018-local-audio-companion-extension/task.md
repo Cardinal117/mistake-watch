@@ -1,10 +1,10 @@
 ---
 id: TASK-018
-status: in-progress
+status: completed
 type: compact-task
 related: [MW-FEAT-006, MW-FEAT-007, TASK-015, MW-BUG-009]
 created: 2026-08-19
-updated: 2026-08-20
+updated: 2026-08-21
 ---
 
 # Private Local Audio Companion Extension Prototype
@@ -404,8 +404,8 @@ Implementation evidence:
   analyser sampler, and live adapter path were absent.
 - Red: the focused 30-test command exited 1 with three intended failures:
   missing visual normalizer, missing `acceptVisual`, and zero capture analysers.
-- Green: the same focused command passes 32/32. The complete repository suite
-  passes 422/422; typecheck, ESLint, formatting, file-length policy, production
+- Green: the same focused command passes 32/32. The final repository suite
+  passes 423/423; typecheck, ESLint, formatting, file-length policy, production
   build, and the browser-real five-mode startup check pass.
 - The `0.4.1` Opera GX rerun confirmed the startup repair but found that paused
   playback left each renderer loop active and that Constellation clipped in a
@@ -413,15 +413,20 @@ Implementation evidence:
   The `0.5.0` correction freezes rendering after 700 ms of sustained analyser
   silence, wakes on fresh audio, and keeps Constellation circles inside an inset
   boundary; the focused renderer suite then passed 20/20.
-- Private extension version `0.5.0` now carries the bounded 24 FPS bridge. The
-  final Opera GX visual response and 60-second resource comparison remain the
-  only promotion gate.
+- Private extension version `0.5.1` now carries the bounded 24 FPS bridge and
+  the browser-timer receiver repair.
 - The exact `0.5.0` laptop checkpoint passed its focused tests but capture
   failed before `PCM` with `TypeError: Illegal invocation`. A new browser-timer
   receiver regression reproduced the failure before production changes. Patch
   version `0.5.1` now invokes the default timers through `globalThis`; the
   focused test changed from the intended failure to 13/13 passing. See
   [Phase 3C Opera GX gate](phase-3c-opera-gx-gate.md).
+- Owner laptop QA promoted Phase 3C at exact commit `b60bc69`. Capture reached
+  `PCM`; Mirror Spectrum and Signal Bloom were responsive and paused with
+  `running: false`; paused GPU fell to 0.00% and 0.28% median respectively;
+  Constellation stayed bounded at 320px; cleanup, audio, console, network,
+  queue, and authority checks passed. TASK-018 is complete. Production website
+  integration remains a separate task.
 
 ## Risks
 

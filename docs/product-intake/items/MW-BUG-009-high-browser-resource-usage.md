@@ -4,9 +4,9 @@ type: bug
 status: in-progress
 priority: P1
 area: performance
-related: [TASK-002.5I, TASK-010]
+related: [TASK-002.5I, TASK-010, TASK-015, TASK-018]
 created: 2026-08-18
-updated: 2026-08-19
+updated: 2026-08-21
 ---
 
 # Room playback consumes excessive browser resources
@@ -50,10 +50,15 @@ updated: 2026-08-19
   Siri Ribbon, Dot Waves, Signal Bloom, and Constellation may continue only as
   clearly labeled high-power experiments; their failed measurements remain
   recorded. Silk Nebula and Obsidian Grid remain held.
-- **Next action:** Keep the normal default remediation in place. TASK-018 may
-  now prove the private Opera GX capture and focused rhythm path without
-  relabeling any experimental renderer as efficient. Renderer optimization
-  remains future work.
+- **TASK-018 outcome:** The private `0.5.1` extension prototype passed owner
+  Opera GX QA at commit `b60bc69`. Mirror Spectrum and Signal Bloom stopped
+  their renderer loops while paused, with paused GPU medians of 0.00% and 0.28%.
+  Signal Bloom's paused aggregate CPU remained high but included unrelated
+  Opera processes, DevTools, and automation, so exact per-tab attribution is a
+  future performance check rather than a TASK-018 blocker.
+- **Next action:** Keep the normal Static Artwork default remediation in place.
+  Scope extension-to-site integration separately, preserve all experimental
+  power labels, and treat renderer optimization as future MW-BUG-009 work.
 - **Task:** [[../../tasks/TASK-015-listen-visualizer-performance/task|TASK-015]]
 - **Original report:**
   [[../archive/quick-capture-2026-08-18#Capture 3]]
