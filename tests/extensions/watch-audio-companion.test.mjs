@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import test from "node:test";
 
+import * as protocol from "../../extensions/watch-audio-companion/protocol.mjs";
+
 import {
   CaptureSession,
   createTabAudioConstraints,
@@ -25,7 +27,7 @@ test("manifest keeps the private capture permission surface narrow", async () =>
 
   assert.equal(manifest.manifest_version, 3);
   assert.equal(manifest.minimum_chrome_version, "116");
-  assert.equal(manifest.version, "0.4.1");
+  assert.equal(manifest.version, "0.5.0");
   assert.deepEqual(manifest.permissions.toSorted(), [
     "activeTab",
     "offscreen",
@@ -119,6 +121,30 @@ test("analyser telemetry is finite, bounded, and versioned", () => {
   );
 });
 
+test("local visual telemetry is fixed-size, byte-bounded, and internal", () => {
+  assert.equal(typeof protocol.normalizeVisualFrameV1, "function");
+  assert.equal(protocol.MESSAGE_TARGET.visualizer, "watch-audio-visualizer");
+  assert.equal(protocol.MESSAGE_TYPE.visualFrame, "visual-frame");
+
+  const frame = protocol.normalizeVisualFrameV1({
+    sampledAtSeconds: 12.5,
+    sequence: 7.9,
+    spectrum: Array.from({ length: 48 }, (_, index) => index * 9 - 10),
+    version: 1,
+    waveform: Array.from({ length: 96 }, (_, index) => index * 4 - 20),
+  });
+
+  assert.equal(frame.sequence, 7);
+  assert.equal(frame.spectrum.length, 48);
+  assert.equal(frame.waveform.length, 96);
+  assert.ok(frame.spectrum.every((value) => value >= 0 && value <= 255));
+  assert.ok(frame.waveform.every((value) => value >= 0 && value <= 255));
+  assert.equal(
+    protocol.normalizeVisualFrameV1({ ...frame, spectrum: [1, 2, 3] }),
+    null,
+  );
+});
+
 test("tab capture constraints request audio without video", () => {
   assert.deepEqual(createTabAudioConstraints("stream-1"), {
     audio: {
@@ -193,6 +219,33 @@ test("capture session routes audible audio, probes silently, and cleans up", asy
   assert.equal(harness.track.stopCalls, 1);
 });
 
+test("capture session pushes one bounded visual stream and releases its sampler", async () => {
+  const harness = createHarness();
+  const visualFrames = [];
+  const session = new CaptureSession({
+    ...harness.dependencies,
+    onVisualFrame: (frame) => visualFrames.push(frame),
+  });
+
+  await session.start({ streamId: "stream-1", tabId: 42 });
+
+  assert.equal(harness.context.createAnalyserCalls, 1);
+  assert.equal(harness.analyser.fftSize, 1024);
+  assert.equal(harness.analyser.smoothingTimeConstant, 0.72);
+  assert.equal(harness.source.connections.includes(harness.analyser), true);
+  assert.equal(harness.scheduled.size, 1);
+  assert.ok(harness.scheduled.values().next().value.delay >= 41);
+
+  harness.tickVisualSampler();
+  assert.equal(visualFrames.length, 1);
+  assert.equal(visualFrames[0].spectrum.length, 48);
+  assert.equal(visualFrames[0].waveform.length, 96);
+
+  await session.stop("visual-test-complete");
+  assert.equal(harness.scheduled.size, 0);
+  assert.equal(harness.analyser.disconnectCalls, 1);
+});
+
 test("capture session rejects duplicate active starts", async () => {
   const harness = createHarness();
   const session = new CaptureSession(harness.dependencies);
@@ -241,7 +294,25 @@ function createHarness({ includeAudioTrack = true, moduleError } = {}) {
   };
   const source = createNode();
   const probe = { ...createNode(), port: { onmessage: null } };
+  const analyser = {
+    ...createNode(),
+    fftSize: 0,
+    frequencyBinCount: 512,
+    smoothingTimeConstant: 0,
+    getByteFrequencyData(values) {
+      values.forEach((_, index) => {
+        values[index] = index % 256;
+      });
+    },
+    getByteTimeDomainData(values) {
+      values.forEach((_, index) => {
+        values[index] = 96 + (index % 64);
+      });
+    },
+  };
   const silentOutput = { ...createNode(), gain: { value: 1 } };
+  const scheduled = new Map();
+  let nextTimerId = 1;
   const context = {
     audioWorklet: {
       addModule: async (url) => {
@@ -256,6 +327,11 @@ function createHarness({ includeAudioTrack = true, moduleError } = {}) {
       context.state = "closed";
     },
     closeCalls: 0,
+    createAnalyser: () => {
+      context.createAnalyserCalls += 1;
+      return analyser;
+    },
+    createAnalyserCalls: 0,
     createGain: () => silentOutput,
     createMediaStreamSource: () => source,
     destination: { id: "destination" },
@@ -266,20 +342,34 @@ function createHarness({ includeAudioTrack = true, moduleError } = {}) {
     state: "suspended",
   };
   const harness = {
+    analyser,
     constraints: null,
     context,
     probe,
     silentOutput,
     source,
+    scheduled,
     track,
+    tickVisualSampler() {
+      for (const entry of scheduled.values()) {
+        entry.callback();
+      }
+    },
   };
 
   harness.dependencies = {
     createAudioContext: () => context,
     createWorkletNode: () => probe,
+    clearScheduledInterval: (id) => scheduled.delete(id),
     getUserMedia: async (constraints) => {
       harness.constraints = constraints;
       return stream;
+    },
+    nowSeconds: () => 12.5,
+    scheduleInterval: (callback, delay) => {
+      const id = nextTimerId++;
+      scheduled.set(id, { callback, delay });
+      return id;
     },
     workletModuleUrl: "rhythm-analyser-worklet.mjs",
   };

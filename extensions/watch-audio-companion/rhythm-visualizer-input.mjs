@@ -1,6 +1,14 @@
 import { normalizeRhythmFrameV1 } from "./rhythm-contract.mjs";
+import {
+  VISUAL_SPECTRUM_BANDS,
+  VISUAL_WAVEFORM_POINTS,
+  normalizeVisualFrameV1,
+} from "./visual-frame-contract.mjs";
 
 const STALE_AFTER_MS = 1_500;
+const VISUAL_STALE_AFTER_MS = 250;
+const VISUAL_SILENCE_GRACE_MS = 700;
+const VISUAL_ACTIVITY_THRESHOLD = 0.025;
 const SPECTRUM_SIZE = 96;
 const WAVEFORM_SIZE = 192;
 
@@ -8,6 +16,8 @@ export class RhythmVisualizerInput {
   constructor() {
     this.spectrum = new Float32Array(SPECTRUM_SIZE);
     this.waveform = new Float32Array(WAVEFORM_SIZE);
+    this.liveSpectrum = new Float32Array(VISUAL_SPECTRUM_BANDS);
+    this.liveWaveform = new Float32Array(VISUAL_WAVEFORM_POINTS);
     this.reset();
   }
 
@@ -23,17 +33,62 @@ export class RhythmVisualizerInput {
     return true;
   }
 
+  acceptVisual(candidate, receivedAtMs) {
+    const frame = normalizeVisualFrameV1(candidate);
+    if (!frame || frame.sequence <= this.visualSequence) {
+      return false;
+    }
+
+    this.visualReceivedAtMs = finiteNow(receivedAtMs);
+    this.visualSequence = frame.sequence;
+    let activity = 0;
+    for (let index = 0; index < this.liveSpectrum.length; index += 1) {
+      this.liveSpectrum[index] = frame.spectrum[index] / 255;
+      activity = Math.max(activity, this.liveSpectrum[index]);
+    }
+    for (let index = 0; index < this.liveWaveform.length; index += 1) {
+      this.liveWaveform[index] = (frame.waveform[index] - 128) / 128;
+      activity = Math.max(activity, Math.abs(this.liveWaveform[index]));
+    }
+    if (activity >= VISUAL_ACTIVITY_THRESHOLD) {
+      this.lastVisualActivityAtMs = this.visualReceivedAtMs;
+    }
+    return true;
+  }
+
+  shouldAnimate(nowMs) {
+    const now = finiteNow(nowMs);
+    if (this.visualSequence >= 0) {
+      return now - this.lastVisualActivityAtMs <= VISUAL_SILENCE_GRACE_MS;
+    }
+
+    const input = this.sample(now);
+    return input.active && input.energy >= VISUAL_ACTIVITY_THRESHOLD;
+  }
+
   sample(nowMs) {
     const now = finiteNow(nowMs);
-    if (!this.frame || now - this.receivedAtMs > STALE_AFTER_MS) {
+    const hasRhythm = this.frame && now - this.receivedAtMs <= STALE_AFTER_MS;
+    const hasVisual =
+      this.visualSequence >= 0 &&
+      now - this.visualReceivedAtMs <= VISUAL_STALE_AFTER_MS;
+    if (!hasRhythm && !hasVisual) {
       return this.createIdleInput();
     }
 
-    const frame = this.frame;
-    const phase = calculatePhase(frame, now - this.receivedAtMs);
-    const pulse = frame.bpm === null ? frame.onset : Math.exp(-phase * 8);
-    fillSpectrum(this.spectrum, frame, phase, pulse);
-    fillWaveform(this.waveform, frame, phase, pulse);
+    const frame = hasRhythm ? this.frame : deriveRhythm(this.liveSpectrum);
+    const phase = hasRhythm
+      ? calculatePhase(frame, now - this.receivedAtMs)
+      : 0;
+    let spectrum = this.liveSpectrum;
+    let waveform = this.liveWaveform;
+    if (!hasVisual) {
+      const pulse = frame.bpm === null ? frame.onset : Math.exp(-phase * 8);
+      fillSpectrum(this.spectrum, frame, phase, pulse);
+      fillWaveform(this.waveform, frame, phase, pulse);
+      spectrum = this.spectrum;
+      waveform = this.waveform;
+    }
 
     return {
       active: true,
@@ -41,13 +96,13 @@ export class RhythmVisualizerInput {
       confidence: frame.confidence,
       energy: frame.energy,
       highs: frame.highs,
-      kind: "rhythm",
+      kind: hasVisual ? "analysis" : "rhythm",
       mids: frame.mids,
       onset: frame.onset,
       phase,
-      spectrum: this.spectrum,
+      spectrum,
       tempoBpm: frame.confidence >= 0.5 ? frame.bpm : null,
-      waveform: this.waveform,
+      waveform,
     };
   }
 
@@ -55,8 +110,13 @@ export class RhythmVisualizerInput {
     this.frame = null;
     this.receivedAtMs = 0;
     this.sequence = -1;
+    this.visualReceivedAtMs = 0;
+    this.visualSequence = -1;
+    this.lastVisualActivityAtMs = Number.NEGATIVE_INFINITY;
     this.spectrum.fill(0);
     this.waveform.fill(0);
+    this.liveSpectrum.fill(0);
+    this.liveWaveform.fill(0);
   }
 
   createIdleInput() {
@@ -77,6 +137,31 @@ export class RhythmVisualizerInput {
       waveform: this.waveform,
     };
   }
+}
+
+function deriveRhythm(spectrum) {
+  const bass = averageRange(spectrum, 0, 0.28);
+  const mids = averageRange(spectrum, 0.28, 0.66);
+  const highs = averageRange(spectrum, 0.66, 1);
+  return {
+    bass,
+    bpm: null,
+    confidence: 0,
+    energy: clamp(bass * 0.45 + mids * 0.35 + highs * 0.2),
+    highs,
+    mids,
+    onset: 0,
+  };
+}
+
+function averageRange(values, startRatio, endRatio) {
+  const start = Math.floor(values.length * startRatio);
+  const end = Math.max(start + 1, Math.floor(values.length * endRatio));
+  let total = 0;
+  for (let index = start; index < end; index += 1) {
+    total += values[index];
+  }
+  return total / (end - start);
 }
 
 export function createFixtureFrame(bpm, sampledAtSeconds, sequence) {

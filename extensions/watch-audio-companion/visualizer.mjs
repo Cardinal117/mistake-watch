@@ -59,6 +59,7 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden) void refresh();
 });
 globalThis.addEventListener("pagehide", dispose);
+globalThis.chrome?.runtime?.onMessage?.addListener(handleRuntimeMessage);
 
 state.pollId = globalThis.setInterval(() => void refresh(), POLL_INTERVAL_MS);
 void refresh();
@@ -134,15 +135,29 @@ async function refresh() {
   syncLifecycle();
 }
 
+function handleRuntimeMessage(message) {
+  if (
+    state.input === "live" &&
+    message?.target === MESSAGE_TARGET.visualizer &&
+    message.type === MESSAGE_TYPE.visualFrame
+  ) {
+    inputAdapter.acceptVisual(message.frame, performance.now());
+    syncLifecycle();
+  }
+  return false;
+}
+
 function sampleInput(time) {
   return inputAdapter.sample(time);
 }
 
 function syncLifecycle() {
+  const motionActive =
+    state.input === "fixture" || inputAdapter.shouldAnimate(performance.now());
   const shouldRun =
     !document.hidden &&
     !state.reducedMotion.matches &&
-    (state.input === "fixture" || state.lastActive);
+    (state.input === "fixture" || (state.lastActive && motionActive));
   if (shouldRun) engine.start();
   else engine.stop(document.hidden ? "hidden" : "inactive");
 }
@@ -207,5 +222,6 @@ function sendMessage(message) {
 
 function dispose() {
   globalThis.clearInterval(state.pollId);
+  globalThis.chrome?.runtime?.onMessage?.removeListener(handleRuntimeMessage);
   engine.destroy();
 }

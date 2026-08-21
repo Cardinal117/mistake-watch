@@ -59,8 +59,16 @@ updated: 2026-08-20
   Mirror renderer crashed during Lab startup. A test-first `0.4.1` repair now
   gives every renderer the complete lifecycle contract; the real startup path,
   focused tests, full suite, and local browser checks pass.
-- **Next action:** Rerun separate renderer-only and combined Opera GX laptop
-  measurements for the three new modes, including paused, hidden, mode-switch,
-  cleanup, audio, and queue continuity checks. Keep all three opt-in and retain
-  their honest beta, high-power, or extreme-power labels. Do not begin the
-  production website or SpacetimeDB bridge under this phase.
+- **Phase 3C progress:** Private extension version `0.5.0` replaces the delayed
+  scalar display approximation with a direct, transient 24 FPS local stream of
+  48 frequency bands and a 96-point waveform envelope. Mirror Spectrum and
+  Signal Bloom consume native analyser detail with showcase-aligned defaults.
+  The behavior was implemented test-first. The `0.4.1` laptop rerun also exposed
+  paused animation-loop waste and narrow Constellation clipping; focused failing
+  regressions now pass after adding sustained-silence idle and inset rendering.
+  Full repository gates and the browser-real Lab startup pass. No website or
+  room bridge was added.
+- **Next action:** Run one compact Opera GX gate on `0.5.0`: visually compare
+  Mirror Spectrum and Signal Bloom with the showcase, measure each for 60
+  seconds plus paused idle, then perform one start/stop/restart/navigation
+  cleanup cycle. Smoke-check the other renderers only.

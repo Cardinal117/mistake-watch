@@ -72,18 +72,20 @@ export function createConstellationRenderer() {
 
 function createParticles(count, width, height) {
   const random = seededRandom(117 + count);
+  const inset = calculateInset(width, height);
   return Array.from({ length: count }, (_, id) => ({
     bin: Math.floor(random() * 150),
     id,
     value: 0,
     vx: (random() - 0.5) * 18,
     vy: (random() - 0.5) * 18,
-    x: random() * width,
-    y: random() * height,
+    x: inset + random() * Math.max(1, width - inset * 2),
+    y: inset + random() * Math.max(1, height - inset * 2),
   }));
 }
 
 function updateParticles(particles, state) {
+  const inset = calculateInset(state.width, state.height);
   for (const particle of particles) {
     const value = react(
       state.input.spectrum[particle.bin % state.input.spectrum.length] ?? 0,
@@ -102,12 +104,29 @@ function updateParticles(particles, state) {
         Math.cos(state.time * 0.0003 + particle.id) * value * 28 +
         (dy / distance) * beatPush) *
       state.dt;
-    if (particle.x < 0) particle.x = state.width;
-    if (particle.x > state.width) particle.x = 0;
-    if (particle.y < 0) particle.y = state.height;
-    if (particle.y > state.height) particle.y = 0;
+    if (particle.x < inset || particle.x > state.width - inset) {
+      particle.vx *= -1;
+      particle.x = clamp(particle.x, inset, state.width - inset);
+    }
+    if (particle.y < inset || particle.y > state.height - inset) {
+      particle.vy *= -1;
+      particle.y = clamp(particle.y, inset, state.height - inset);
+    }
     particle.value = value;
   }
+}
+
+function calculateInset(width, height) {
+  return Math.min(
+    30,
+    width * 0.25,
+    height * 0.25,
+    Math.max(20, Math.min(width, height) * 0.1),
+  );
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
 }
 
 function drawPulse(context, centerX, centerY, width, height, input, pulse) {

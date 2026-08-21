@@ -31,6 +31,63 @@ test("rhythm input maps bounded scalar frames into reusable display arrays", () 
   assert.ok(waveform.every((value) => value >= -1 && value <= 1));
 });
 
+test("live visual frames replace the synthetic display arrays without polling", () => {
+  const adapter = new RhythmVisualizerInput();
+  adapter.accept(createFrame(), 1_000);
+
+  assert.equal(typeof adapter.acceptVisual, "function");
+  assert.equal(
+    adapter.acceptVisual(
+      {
+        sampledAtSeconds: 10,
+        sequence: 3,
+        spectrum: Array.from({ length: 48 }, (_, index) => index * 5),
+        version: 1,
+        waveform: Array.from({ length: 96 }, (_, index) => 128 + (index % 32)),
+      },
+      1_010,
+    ),
+    true,
+  );
+
+  const input = adapter.sample(1_020);
+  assert.equal(input.kind, "analysis");
+  assert.equal(input.spectrum.length, 48);
+  assert.equal(input.waveform.length, 96);
+  assert.equal(input.spectrum[0], 0);
+  assert.ok(input.spectrum.at(-1) > 0.9);
+  assert.equal(input.waveform[0], 0);
+  assert.ok(input.waveform.at(-1) > 0);
+
+  assert.equal(
+    adapter.acceptVisual(
+      {
+        sampledAtSeconds: 10,
+        sequence: 3,
+        spectrum: new Array(48).fill(255),
+        version: 1,
+        waveform: new Array(96).fill(128),
+      },
+      1_030,
+    ),
+    false,
+  );
+});
+
+test("live visual activity idles after sustained silence and wakes on audio", () => {
+  const adapter = new RhythmVisualizerInput();
+
+  adapter.acceptVisual(createVisualFrame({ level: 210, sequence: 1 }), 1_000);
+  assert.equal(adapter.shouldAnimate(1_000), true);
+
+  adapter.acceptVisual(createVisualFrame({ level: 0, sequence: 2 }), 1_100);
+  assert.equal(adapter.shouldAnimate(1_500), true);
+  assert.equal(adapter.shouldAnimate(1_801), false);
+
+  adapter.acceptVisual(createVisualFrame({ level: 180, sequence: 3 }), 1_900);
+  assert.equal(adapter.shouldAnimate(1_900), true);
+});
+
 test("rhythm input rejects ordering regressions and becomes idle when stale", () => {
   const adapter = new RhythmVisualizerInput();
 
@@ -122,6 +179,33 @@ test("Dot Waves keeps its strongest reactive field centered", () => {
   assert.ok(center.length > 0);
   assert.ok(edges.length > 0);
   assert.ok(averageRadius(center) > averageRadius(edges) * 1.3);
+});
+
+test("Constellation keeps energized circles inside a compact viewport", () => {
+  const width = 320;
+  const height = 240;
+  const context = createCanvasContext();
+  const renderer = createVisualizerRenderer("constellation");
+
+  renderer.init();
+  renderer.resize({ compact: true, height, width });
+  renderer.render({
+    compact: true,
+    context,
+    delta: 32,
+    height,
+    input: createUniformInput(),
+    time: 1_100,
+    width,
+  });
+
+  assert.ok(context.arcs.length > 0);
+  for (const { radius, x, y } of context.arcs) {
+    assert.ok(x - radius >= 0, `left edge clipped at ${x - radius}`);
+    assert.ok(x + radius <= width, `right edge clipped at ${x + radius}`);
+    assert.ok(y - radius >= 0, `top edge clipped at ${y - radius}`);
+    assert.ok(y + radius <= height, `bottom edge clipped at ${y + radius}`);
+  }
 });
 
 test("visualizer engine starts with the real default renderer contract", () => {
@@ -236,6 +320,16 @@ function createFrame(overrides = {}) {
     sequence: 1,
     ...overrides,
   });
+}
+
+function createVisualFrame({ level, sequence }) {
+  return {
+    sampledAtSeconds: sequence,
+    sequence,
+    spectrum: new Array(48).fill(level),
+    version: 1,
+    waveform: new Array(96).fill(128),
+  };
 }
 
 function createCanvasContext() {

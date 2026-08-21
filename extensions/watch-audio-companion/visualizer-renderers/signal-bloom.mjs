@@ -4,12 +4,14 @@ import {
   color,
   createRenderer,
   react,
+  settingsFor,
 } from "../visualizer-renderer-shared.mjs";
 
 export function createSignalBloomRenderer() {
+  const settings = settingsFor("signal-bloom");
   return createRenderer("signal-bloom", {
     render({ context, width, height, input, time, compact }) {
-      clearCanvas(context, width, height, input, 0.9);
+      clearCanvas(context, width, height, input, 2);
       const sampleCount = compact ? 64 : 96;
       const radius = Math.min(width, height) * 0.18;
 
@@ -17,21 +19,21 @@ export function createSignalBloomRenderer() {
       context.translate(width * 0.5, height * 0.52);
       context.rotate(time * 0.000035);
       context.lineCap = "round";
-      context.shadowColor = color("shadow", 0.8);
+      context.shadowColor = color("shadow", 0.8, settings);
 
       for (let index = 0; index < sampleCount; index += 1) {
         const ratio = index / sampleCount;
-        const bin = Math.floor(ratio * input.spectrum.length * 0.48);
-        const value = react(input.spectrum[bin] ?? 0);
+        const value = react(sampleSpectrum(input.spectrum, ratio), settings);
         const angle = ratio * Math.PI * 2;
         const length = 10 + value * radius * 0.82;
         const inner = radius * (0.88 + Math.sin(index * 0.73) * 0.025);
         context.strokeStyle = color(
           index % 5 === 0 ? "secondary" : "primary",
           0.24 + value * 0.7,
+          settings,
         );
         context.lineWidth = 1 + value * 2;
-        context.shadowBlur = bloom(2 + value * 16);
+        context.shadowBlur = bloom(2 + value * 16, settings);
         context.beginPath();
         context.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
         context.lineTo(
@@ -42,8 +44,8 @@ export function createSignalBloomRenderer() {
       }
 
       context.rotate(-time * 0.00007);
-      context.shadowBlur = bloom(7);
-      context.strokeStyle = color("wave", 0.35 + input.mids * 0.58);
+      context.shadowBlur = bloom(7, settings);
+      context.strokeStyle = color("wave", 0.35 + input.mids * 0.58, settings);
       context.lineWidth = 2;
       context.beginPath();
       for (let index = 0; index <= sampleCount; index += 1) {
@@ -62,8 +64,8 @@ export function createSignalBloomRenderer() {
 
       context.shadowBlur = 0;
       const core = context.createRadialGradient(0, 0, 0, 0, 0, radius * 0.7);
-      core.addColorStop(0, color("primary", 0.3 + input.bass * 0.45));
-      core.addColorStop(0.5, color("shadow", 0.18));
+      core.addColorStop(0, color("primary", 0.3 + input.bass * 0.45, settings));
+      core.addColorStop(0.5, color("shadow", 0.18, settings));
       core.addColorStop(1, "transparent");
       context.fillStyle = core;
       context.beginPath();
@@ -72,4 +74,12 @@ export function createSignalBloomRenderer() {
       context.restore();
     },
   });
+}
+
+function sampleSpectrum(spectrum, ratio) {
+  const position = ratio * Math.max(0, spectrum.length - 1);
+  const lower = Math.floor(position);
+  const upper = Math.min(spectrum.length - 1, lower + 1);
+  const mix = position - lower;
+  return (spectrum[lower] ?? 0) * (1 - mix) + (spectrum[upper] ?? 0) * mix;
 }

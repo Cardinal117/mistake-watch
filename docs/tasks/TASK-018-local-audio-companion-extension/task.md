@@ -342,6 +342,81 @@ renderer-only and combined-load evidence. Static Artwork remains the production-
 safe default, and production integration still requires a separate approved
 task after the private prototype decision.
 
+### Phase 3C: Local Visual-Fidelity Bridge
+
+Phase 3C is a compact correction to the private Rhythm Lab prototype. The
+scalar `RhythmFrameV1` input proved capture, tempo, lifecycle, and renderer
+plumbing, but it cannot reproduce the approved showcase visuals: three broad
+energy bands were expanded into an artificial spectrum and a 250 ms status poll
+could add visible response delay.
+
+Scope:
+
+- Add one versioned, bounded, extension-local visual frame containing 48
+  frequency bands and a 96-point waveform envelope.
+- Sample the existing captured stream with a native `AnalyserNode` at no more
+  than 24 FPS and push frames directly from the offscreen document to Rhythm
+  Lab.
+- Keep `RhythmFrameV1` and its lower cadence unchanged for BPM, phase,
+  confidence, and readouts.
+- Make Mirror Spectrum and Signal Bloom consume the real local visual frame and
+  use the approved showcase geometry and default intensity settings.
+- Retain the deterministic scalar fixture as a fallback for automated renderer
+  checks.
+
+Exclusions:
+
+- No website content script or extension-to-site bridge.
+- No SpacetimeDB publication, room synchronization, Supabase, or production
+  player change.
+- No network request, persistence, captured-audio upload, dependency, or public
+  extension packaging.
+- No additional renderer, settings UI, broad renderer retuning, or repeated
+  full lifecycle matrix per renderer.
+
+Testing mode is **test-first** for the visual-frame contract, capture sampling,
+ordering, and cleanup. Visual parity remains a focused browser comparison
+rather than a brittle pixel test.
+
+Acceptance:
+
+1. Visual frames are versioned, sequence ordered, finite, fixed-size, and
+   bounded to byte arrays before extension messaging.
+2. Detailed frames stay transient and local; they are absent from capture
+   status, storage, network paths, and the future room contract.
+3. Capture owns one analyser and one 24 FPS sampler, both released on every stop
+   and failed start.
+4. Rhythm Lab receives live visual frames through direct runtime messages; its
+   status polling is not the visual update path.
+5. Mirror Spectrum no longer creates three synthetic competing regions and
+   Signal Bloom uses the same approved drawing behavior and intensity defaults
+   as the showcase.
+6. One browser lifecycle regression covers start, live rendering, stop,
+   restart, navigation cleanup, and a clean console.
+7. One short Opera GX laptop gate compares Mirror Spectrum and Signal Bloom for
+   visual response, subjective alignment, 60-second resource use, and paused
+   idle behavior. Other renderers receive only a smoke check.
+
+Implementation evidence:
+
+- Baseline: clean `task/task-018-phase3-renderers` at
+  `9647c5b634f50ccb280eb50d390b030f97ccf1cd`; the visual-frame contract,
+  analyser sampler, and live adapter path were absent.
+- Red: the focused 30-test command exited 1 with three intended failures:
+  missing visual normalizer, missing `acceptVisual`, and zero capture analysers.
+- Green: the same focused command passes 32/32. The complete repository suite
+  passes 422/422; typecheck, ESLint, formatting, file-length policy, production
+  build, and the browser-real five-mode startup check pass.
+- The `0.4.1` Opera GX rerun confirmed the startup repair but found that paused
+  playback left each renderer loop active and that Constellation clipped in a
+  narrow viewport. Two focused tests were added first and failed as intended.
+  The `0.5.0` correction freezes rendering after 700 ms of sustained analyser
+  silence, wakes on fresh audio, and keeps Constellation circles inside an inset
+  boundary; the focused renderer suite then passed 20/20.
+- Private extension version `0.5.0` now carries the bounded 24 FPS bridge. The
+  final Opera GX visual response and 60-second resource comparison remain the
+  only promotion gate.
+
 ## Risks
 
 - Opera GX may differ from Chrome in extension APIs, permission surfaces, or

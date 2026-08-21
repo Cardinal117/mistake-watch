@@ -1,7 +1,9 @@
 import { normalizeRhythmFrameV1 } from "./rhythm-contract.mjs";
+export { normalizeVisualFrameV1 } from "./visual-frame-contract.mjs";
 
 export const MESSAGE_TARGET = Object.freeze({
   offscreen: "watch-audio-offscreen",
+  visualizer: "watch-audio-visualizer",
   worker: "watch-audio-worker",
 });
 
@@ -10,6 +12,7 @@ export const MESSAGE_TYPE = Object.freeze({
   getStatus: "get-status",
   startCapture: "start-capture",
   stopCapture: "stop-capture",
+  visualFrame: "visual-frame",
 });
 
 const allowedProductionOrigins = new Set([

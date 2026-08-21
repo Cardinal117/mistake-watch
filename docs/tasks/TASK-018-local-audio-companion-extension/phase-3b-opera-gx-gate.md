@@ -2,7 +2,7 @@
 
 Date prepared: 2026-08-20
 Date updated: 2026-08-21
-Status: **Revise repaired locally; awaiting `0.4.1` laptop rerun**
+Status: **Revise confirmed; corrective scope included in pending `0.5.0` gate**
 Branch: `task/task-018-phase3-renderers`
 Extension: `0.4.1`
 
@@ -60,8 +60,29 @@ from this failed run is valid.
   constructs the Lab through its default Mirror renderer, switches through all
   five modes, and fails on page or console errors. It passes 1/1.
 
-The controlled Opera GX measurements and full lifecycle/privacy matrix must now
-be rerun against the exact `0.4.1` repair commit before promotion.
+## `0.4.1` Laptop Rerun
+
+The startup repair passed on the Opera GX laptop at exact commit
+`9647c5b634f50ccb280eb50d390b030f97ccf1cd`. Badge activation, one-Lab startup,
+all five renderer switches, three capture cycles, hidden-tab behavior, and
+navigation cleanup worked without the former lifecycle exception.
+
+The rerun still returned **Revise Phase 3B** because capture remaining active
+also kept the canvas animation loop active while playback was paused. Aggregate
+Opera GPU stayed at 4.41% for Dot Waves, 6.40% for Signal Bloom, and 43.27% for
+Constellation during the paused samples. Constellation also clipped its
+energized field at the narrow viewport boundary.
+
+Computer control stopped after the captured-tab closure action, so tab-close
+read-back, extension-reload cleanup, final diagnostics, and exact room-state
+restoration were not completed. No repository write occurred on the laptop.
+
+The pending `0.5.0` correction was written test-first. It freezes the renderer
+after 700 ms of sustained silent analyser frames without stopping capture or
+the detector, resumes on the next audible frame, and constrains Constellation
+circles to an inset viewport. The focused regression changed from two intended
+failures to 20/20 passing tests. These local results require one compact laptop
+rerun before promotion.
 
 ## Scope
 

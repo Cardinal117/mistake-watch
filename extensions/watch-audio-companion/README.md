@@ -4,7 +4,8 @@ Private Manifest V3 rhythm companion for trusted Mistake Watch users. Phase 1
 proved that Opera GX can expose audio-only tab PCM to an offscreen AudioWorklet
 while captured audio remains audible. Phase 2 adds a focused first-party beat
 detector. Phase 3 connects that bounded contract to an isolated five-renderer
-review Lab without changing the production website.
+review Lab without changing the production website. Phase 3C replaces the
+scalar display approximation with a compact, direct local visual stream.
 
 This is not a public extension package and does not contain a production website
 bridge or room-wide rhythm synchronization.
@@ -20,11 +21,14 @@ bridge or room-wide rhythm synchronization.
   tempo, confidence, interval, and phase values inside the extension.
 - Tempo combines onset intervals with autocorrelation candidates and retains an
   established pulse when a later candidate appears at half or double time.
-- The extension emits only `RhythmFrameV1`; no raw PCM or FFT arrays leave the
-  worklet.
-- The review lab reconstructs bounded display arrays from `RhythmFrameV1`
-  scalars. They are visual approximations, not exported analyser samples.
-- No PCM, FFT data, URL, account data, or playback data is uploaded or stored.
+- The AudioWorklet emits only `RhythmFrameV1`; no raw PCM leaves the worklet.
+- A native offscreen `AnalyserNode` separately reduces the captured signal to
+  48 frequency bytes and a 96-point waveform envelope at no more than 24 FPS.
+- Detailed visual frames are pushed directly to the internal Rhythm Lab. They
+  are transient, sequence ordered, and never enter capture status, storage,
+  network requests, the website, or room synchronization.
+- No PCM, visual frame, URL, account data, or playback data is uploaded or
+  stored.
 - Navigation, tab closure, capture termination, a second action click, and
   extension unload stop the capture graph.
 - No website, room, queue, SpacetimeDB, Supabase, or player code is involved.
@@ -48,9 +52,9 @@ bridge or room-wide rhythm synchronization.
    the 24 FPS cap.
 5. After a steady rhythmic section, hover the `PCM` badge. A locked estimate
    shows BPM and confidence; quiet or ambiguous audio may remain unlocked.
-6. Confirm the Lab readout and Mirror Spectrum respond without exposing raw
-   audio data. Repeat with Siri Ribbon, Dot Waves, Signal Bloom, and
-   Constellation.
+6. Confirm Mirror Spectrum and Signal Bloom react promptly with distributed
+   musical detail rather than three broad synthetic regions. Smoke-check the
+   remaining modes without repeating the complete lifecycle matrix per mode.
 7. Confirm playback remains audible at the expected level without an echo or
    doubled signal.
 8. Use the lab's Stop capture command or click the action again from the Watch
@@ -117,6 +121,12 @@ Mirror Spectrum and Siri Ribbon renderers after the initial `0.4.0` Opera GX
 gate exposed a startup crash. Local deterministic desktop and 390-pixel checks are nonblank,
 overflow-free, and console-clean. The Opera GX renderer-only and combined-load
 gate remains required before Phase 3B promotion.
+
+Phase 3C version `0.5.0` adds the local visual-fidelity bridge. Mirror Spectrum
+and Signal Bloom now consume native analyser detail through direct internal
+messages while the BPM detector and privacy boundary remain unchanged. This
+phase requires one focused Opera GX visual, lifecycle, and short resource gate;
+it does not authorize a website or SpacetimeDB bridge.
 
 ## Local Verification
 

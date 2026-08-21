@@ -6,6 +6,7 @@ import {
 } from "./protocol.mjs";
 
 let operation = Promise.resolve();
+let visualMessageInFlight = false;
 
 const session = new CaptureSession({
   createAudioContext: () =>
@@ -20,6 +21,9 @@ const session = new CaptureSession({
     globalThis.navigator.mediaDevices.getUserMedia(constraints),
   onStateChange: (status) => {
     void notifyWorker(status);
+  },
+  onVisualFrame: (frame) => {
+    void notifyVisualizer(frame);
   },
   workletModuleUrl: globalThis.chrome.runtime.getURL(
     "rhythm-analyser-worklet.mjs",
@@ -70,5 +74,24 @@ async function notifyWorker(status) {
     });
   } catch {
     // The service worker may be suspended between state transitions.
+  }
+}
+
+async function notifyVisualizer(frame) {
+  if (visualMessageInFlight) {
+    return;
+  }
+
+  visualMessageInFlight = true;
+  try {
+    await globalThis.chrome.runtime.sendMessage({
+      frame,
+      target: MESSAGE_TARGET.visualizer,
+      type: MESSAGE_TYPE.visualFrame,
+    });
+  } catch {
+    // Capture may start before Rhythm Lab opens or continue after it closes.
+  } finally {
+    visualMessageInFlight = false;
   }
 }
