@@ -53,11 +53,13 @@ updated: 2026-08-20
 - **Audio caveat:** Capture activation and deactivation cause a brief dip. A
   possible tiny volume increase was not confirmed; Phase 2 laptop QA requires a
   before/during/after steady-state output-level comparison.
-- **Phase 3B progress:** Private extension version `0.4.0` now integrates Dot
+- **Phase 3B progress:** Private extension version `0.4.1` now integrates Dot
   Waves, Signal Bloom, and bounded Constellation through the existing rhythm
-  contract. Focused renderer and extension tests pass, and deterministic desktop
-  and 390-pixel Lab checks are nonblank, overflow-free, and console-clean.
-- **Next action:** Run separate renderer-only and combined Opera GX laptop
+  contract. The initial `0.4.0` laptop gate returned Revise after the legacy
+  Mirror renderer crashed during Lab startup. A test-first `0.4.1` repair now
+  gives every renderer the complete lifecycle contract; the real startup path,
+  focused tests, full suite, and local browser checks pass.
+- **Next action:** Rerun separate renderer-only and combined Opera GX laptop
   measurements for the three new modes, including paused, hidden, mode-switch,
   cleanup, audio, and queue continuity checks. Keep all three opt-in and retain
   their honest beta, high-power, or extreme-power labels. Do not begin the

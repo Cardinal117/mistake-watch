@@ -124,6 +124,43 @@ test("Dot Waves keeps its strongest reactive field centered", () => {
   assert.ok(averageRadius(center) > averageRadius(edges) * 1.3);
 });
 
+test("visualizer engine starts with the real default renderer contract", () => {
+  const originalResizeObserver = globalThis.ResizeObserver;
+  const originalRequestAnimationFrame = globalThis.requestAnimationFrame;
+  const originalCancelAnimationFrame = globalThis.cancelAnimationFrame;
+
+  globalThis.ResizeObserver = class {
+    observe() {}
+    disconnect() {}
+  };
+  globalThis.requestAnimationFrame = () => 1;
+  globalThis.cancelAnimationFrame = () => {};
+
+  try {
+    const engine = new VisualizerEngine({
+      canvas: createCanvas(),
+      getInput: () => createUniformInput(),
+    });
+
+    assert.equal(engine.snapshot().mode, "spectrum");
+    for (const mode of [
+      "ribbon",
+      "dot-waves",
+      "signal-bloom",
+      "constellation",
+      "spectrum",
+    ]) {
+      engine.setMode(mode);
+      assert.equal(engine.snapshot().mode, mode);
+    }
+    engine.destroy();
+  } finally {
+    restoreGlobal("ResizeObserver", originalResizeObserver);
+    restoreGlobal("requestAnimationFrame", originalRequestAnimationFrame);
+    restoreGlobal("cancelAnimationFrame", originalCancelAnimationFrame);
+  }
+});
+
 test("visualizer mode changes dispose renderer state without duplicating the frame loop", () => {
   const originalResizeObserver = globalThis.ResizeObserver;
   const originalRequestAnimationFrame = globalThis.requestAnimationFrame;

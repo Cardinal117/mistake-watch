@@ -112,7 +112,9 @@ with a clean service-worker console, audible output, and unchanged playback and
 queue state.
 
 Phase 3B adds bounded Dot Waves, Signal Bloom, and Constellation modes in version
-`0.4.0`. Local deterministic desktop and 390-pixel checks are nonblank,
+`0.4.1`. The patch release restores the lifecycle contract for the default
+Mirror Spectrum and Siri Ribbon renderers after the initial `0.4.0` Opera GX
+gate exposed a startup crash. Local deterministic desktop and 390-pixel checks are nonblank,
 overflow-free, and console-clean. The Opera GX renderer-only and combined-load
 gate remains required before Phase 3B promotion.
 

@@ -308,7 +308,7 @@ and bounded signal consumption are reusable stateful contracts.
    Constellation experimental extreme power unless new evidence justifies a
    change.
 
-Phase 3B is locally implemented in private extension version `0.4.0` and awaits
+Phase 3B is locally implemented in private extension version `0.4.1` and awaits
 the Opera GX laptop gate:
 
 - The renderer and lifecycle contracts were written first and failed because
@@ -322,13 +322,22 @@ the Opera GX laptop gate:
   retaining one animation loop. Mode metadata keeps the beta, high-power, and
   extreme-power labels visible in the Lab.
 - The focused renderer suite passes 16/16 and the complete extension suite
-  passes 38/38. The complete repository suite passes 416/416, and TypeScript,
+  initially passed 38/38. The initial `0.4.0` Opera GX gate then exposed a real
+  startup crash because the legacy Mirror Spectrum renderer did not implement
+  the lifecycle contract required by the engine.
+- A new real-default startup regression reproduced the exact failure before the
+  repair. Mirror Spectrum and Siri Ribbon now use the shared lifecycle factory.
+  The focused suite passes 17/17, the extension suite passes 39/39, and the
+  complete repository suite passes 417/417. TypeScript,
   ESLint, file-length policy, production build, Prettier, and diff checks pass.
+  A browser-real Playwright startup regression also passes 1/1 against the
+  extension entrypoint and all five renderer modes.
   Deterministic fixture QA passed at desktop and 390 pixels for all three modes
   with visible nonblank output, correct labels, no overflow, and no console
   warning or error.
 
-See [Phase 3B Opera GX gate](phase-3b-opera-gx-gate.md) for the remaining
+See [Phase 3B Opera GX gate](phase-3b-opera-gx-gate.md) for the recorded Revise
+verdict and remaining `0.4.1`
 renderer-only and combined-load evidence. Static Artwork remains the production-
 safe default, and production integration still requires a separate approved
 task after the private prototype decision.

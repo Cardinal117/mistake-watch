@@ -1,11 +1,12 @@
 # TASK-018 Phase 3B Opera GX Gate
 
 Date prepared: 2026-08-20
-Status: **Awaiting laptop QA**
+Date updated: 2026-08-21
+Status: **Revise repaired locally; awaiting `0.4.1` laptop rerun**
 Branch: `task/task-018-phase3-renderers`
-Extension: `0.4.0`
+Extension: `0.4.1`
 
-## Local Implementation Evidence
+## Initial Local Evidence
 
 - Test-first baseline: 16 focused renderer tests ran with eight intentional
   failures before implementation. The failures covered unsupported modes,
@@ -22,6 +23,45 @@ Extension: `0.4.0`
 These checks establish local implementation readiness only. The controlled
 Opera GX resource, audio, and lifecycle evidence below remains required before
 Phase 3B promotion.
+
+## Initial Laptop Verdict
+
+The owner-priority Opera GX laptop returned **Revise Phase 3B** for exact commit
+`af9fb33a291aa19ba3c1842c79b0ec09685384c9`. Extension `0.4.0` reached `PCM`,
+but Rhythm Lab crashed during construction with:
+
+```text
+TypeError: this.renderer.init is not a function
+```
+
+The real engine unconditionally used the renderer lifecycle contract, while the
+legacy Mirror Spectrum and Siri Ribbon factories returned only `id` and
+`render`. The injected lifecycle test double masked that mismatch, and the
+per-renderer tests used optional lifecycle calls. No renderer performance data
+from this failed run is valid.
+
+## `0.4.1` Repair Evidence
+
+- A real-default startup regression was written first and failed with the same
+  `renderer.init` exception before production code changed.
+- Mirror Spectrum and Siri Ribbon now use the common renderer factory and
+  receive no-op `init`, `resize`, and `dispose` methods.
+- The real engine starts on Mirror Spectrum, switches through all five modes,
+  returns to Mirror Spectrum, and destroys cleanly.
+- Focused renderer suite: 17/17 passed.
+- Complete extension suite: 39/39 passed.
+- Complete repository suite: 417/417 passed.
+- TypeScript, ESLint, file-length policy, production build, Prettier, and
+  `git diff --check`: passed.
+- Browser-real local startup loaded Dot Waves at 24 FPS on the deterministic
+  fixture with a visible 1280 x 720 canvas. Switching through every mode and
+  back to Mirror Spectrum produced no console warning or error.
+- A dedicated Playwright startup regression serves the real extension entrypoint,
+  constructs the Lab through its default Mirror renderer, switches through all
+  five modes, and fails on page or console errors. It passes 1/1.
+
+The controlled Opera GX measurements and full lifecycle/privacy matrix must now
+be rerun against the exact `0.4.1` repair commit before promotion.
 
 ## Scope
 

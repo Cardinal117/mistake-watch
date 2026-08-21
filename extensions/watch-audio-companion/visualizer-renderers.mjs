@@ -51,8 +51,7 @@ export function normalizeVisualizerMode(mode) {
 }
 
 function createMirrorRenderer() {
-  return {
-    id: "spectrum",
+  return createRenderer("spectrum", {
     render({ context, width, height, input, compact }) {
       clearCanvas(context, width, height, input);
       const sideCount = Math.min(
@@ -99,12 +98,11 @@ function createMirrorRenderer() {
       context.lineTo(width * 0.92, centerY);
       context.stroke();
     },
-  };
+  });
 }
 
 function createSiriRibbonRenderer() {
-  return {
-    id: "ribbon",
+  return createRenderer("ribbon", {
     render({ context, width, height, input, time, compact }) {
       clearCanvas(context, width, height, input);
       const pointCount = compact ? 40 : 58;
@@ -164,7 +162,7 @@ function createSiriRibbonRenderer() {
 
       context.restore();
     },
-  };
+  });
 }
 
 function drawMirroredBar(context, x, centerY, width, height) {
