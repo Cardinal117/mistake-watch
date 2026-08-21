@@ -129,7 +129,7 @@ test("website client acknowledges valid frames even when a visual listener fails
   ]);
 });
 
-test("website client reconnects once and releases listeners on cleanup", () => {
+test("website client restores its logical bridge after worker termination", () => {
   const harness = createClientHarness();
   const client = createAudioCompanionClient(harness.dependencies);
   const unsubscribe = client.subscribeState(() => {});
@@ -137,9 +137,19 @@ test("website client reconnects once and releases listeners on cleanup", () => {
   client.connect();
   const first = harness.connections[0].port;
   first.disconnect();
+
+  assert.equal(client.getSnapshot().status, "disconnected");
+  assert.equal(harness.connections.length, 1);
+  assert.equal(harness.activeTimeouts, 1);
+
   client.connect();
+  assert.equal(harness.connections.length, 1);
+  assert.equal(harness.activeTimeouts, 1);
+
+  harness.runLatestTimeout();
   const second = harness.connections[1].port;
 
+  assert.equal(harness.connections.length, 2);
   assert.equal(first.messageListenerCount, 0);
   assert.equal(first.disconnectListenerCount, 0);
   assert.equal(second.messageListenerCount, 1);
@@ -151,6 +161,18 @@ test("website client reconnects once and releases listeners on cleanup", () => {
   assert.equal(second.messageListenerCount, 0);
   assert.equal(second.disconnectListenerCount, 0);
   assert.equal(harness.activeTimeouts, 0);
+});
+
+test("website client never reconnects after explicit cleanup", () => {
+  const harness = createClientHarness();
+  const client = createAudioCompanionClient(harness.dependencies);
+
+  client.connect();
+  client.disconnect();
+
+  assert.equal(harness.connections.length, 1);
+  assert.equal(harness.activeTimeouts, 0);
+  assert.equal(client.getSnapshot().status, "unavailable");
 });
 
 function createClientHarness() {

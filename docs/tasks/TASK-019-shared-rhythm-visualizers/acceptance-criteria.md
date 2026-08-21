@@ -4,16 +4,19 @@
 
 - Capture still requires the extension toolbar user gesture.
 - Only exact approved Mistake Watch origins can open the external port.
-- Approved top-level room pages may hold a dormant port and receive only an
-  inactive state. Rhythm and detailed visual data are delivered only to the
-  captured top-level tab.
+- Approved top-level room pages maintain one logical dormant bridge and receive
+  only an inactive state. Rhythm and detailed visual data are delivered only to
+  the captured top-level tab. If Manifest V3 retires the idle service worker,
+  the website restores the bridge with bounded event-driven retries.
 - No PCM, audio track, media stream, cookie, token, invite, email, participant
   data, URL, detailed visual frame, onset, or energy value enters network or
   persistent storage.
 - Detailed `VisualFrameV1` values never enter SpacetimeDB or HTTP responses.
-- Stop releases capture authorization, queued visual data, timers, capture
-  resources, and renderer loops while leaving an approved page port dormant.
-  Navigation, tab close, page unload, and extension reload release the port.
+- Stop releases capture authorization, queued visual data, capture resources,
+  and renderer loops while leaving the approved page logically dormant.
+  Navigation, tab close, page unload, and explicit client cleanup release the
+  connection and cancel reconnect timers. Extension restart uses the same
+  bounded recovery path; extension removal exhausts it safely.
 
 ## Realtime Authority
 
@@ -44,7 +47,9 @@
 ## Performance
 
 - Static Artwork remains within its established safe baseline.
-- Bridge idle state performs no polling and no animation work.
+- Bridge idle state performs no polling, heartbeat, or animation work. Recovery
+  attempts occur only after a real disconnect, use bounded backoff, and stop on
+  explicit cleanup.
 - Shared rhythm publication is low cadence and cannot form a retry storm.
 - Visual frames are capped at 24 FPS with drop-under-backpressure behavior.
 - Experimental modes retain their measured labels; promotion does not imply

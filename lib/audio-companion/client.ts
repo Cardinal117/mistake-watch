@@ -4,6 +4,7 @@ const BRIDGE_NAME = "mistake-watch-audio-v1";
 const BRIDGE_VERSION = 1;
 const RHYTHM_STALE_AFTER_MS = 2_000;
 const LOCK_CONFIDENCE = 0.5;
+const RECONNECT_DELAYS_MS = [250, 1_000, 5_000] as const;
 
 export type AudioCompanionStatus =
   | "unavailable"
@@ -77,6 +78,9 @@ export function createAudioCompanionClient(
   const stateListeners = new Set<() => void>();
   const visualListeners = new Set<(frame: VisualFrameV1) => void>();
   let port: ExternalPort | null = null;
+  let reconnectAttempt = 0;
+  let reconnectTimer: TimerHandle | null = null;
+  let shouldStayConnected = false;
   let staleTimer: TimerHandle | null = null;
   let lastRhythmSequence = -1;
   let lastVisualSequence = -1;
@@ -88,6 +92,7 @@ export function createAudioCompanionClient(
   const handleDisconnect = () => {
     releasePort(false);
     updateSnapshot("disconnected", null);
+    scheduleReconnect();
   };
   const handleMessage = (message: unknown) => {
     const envelope = asRecord(message);
@@ -98,6 +103,7 @@ export function createAudioCompanionClient(
     if (envelope.type === "capture-state") {
       const status = asRecord(envelope.status);
       if (!status) return;
+      reconnectAttempt = 0;
       if (status.active !== true) {
         clearStaleTimer();
         lastRhythmSequence = -1;
@@ -142,9 +148,17 @@ export function createAudioCompanionClient(
       } catch {
         releasePort(true);
         updateSnapshot("disconnected", null);
+        scheduleReconnect();
       }
     }
   };
+
+  function clearReconnectTimer() {
+    if (reconnectTimer !== null) {
+      clearScheduledTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+  }
 
   function clearStaleTimer() {
     if (staleTimer !== null) {
@@ -154,7 +168,15 @@ export function createAudioCompanionClient(
   }
 
   function connect() {
-    if (port || !runtime) return;
+    if (!runtime) return;
+    if (!shouldStayConnected) reconnectAttempt = 0;
+    shouldStayConnected = true;
+    if (port || reconnectTimer !== null) return;
+    openPort();
+  }
+
+  function openPort() {
+    if (!runtime) return;
     try {
       port = runtime.connect(AUDIO_COMPANION_EXTENSION_ID, {
         name: BRIDGE_NAME,
@@ -164,12 +186,34 @@ export function createAudioCompanionClient(
     } catch {
       releasePort(false);
       updateSnapshot("unavailable", null);
+      scheduleReconnect();
     }
   }
 
   function disconnect() {
+    shouldStayConnected = false;
+    reconnectAttempt = 0;
+    clearReconnectTimer();
     releasePort(true);
     updateSnapshot("unavailable", null);
+  }
+
+  function scheduleReconnect() {
+    if (
+      !shouldStayConnected ||
+      !runtime ||
+      port ||
+      reconnectTimer !== null ||
+      reconnectAttempt >= RECONNECT_DELAYS_MS.length
+    ) {
+      return;
+    }
+    const delay = RECONNECT_DELAYS_MS[reconnectAttempt];
+    reconnectAttempt += 1;
+    reconnectTimer = scheduleTimeout(() => {
+      reconnectTimer = null;
+      if (shouldStayConnected && !port) openPort();
+    }, delay);
   }
 
   function releasePort(shouldDisconnect: boolean) {

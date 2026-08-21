@@ -16,7 +16,9 @@
 - Add a stable private extension ID using the manifest public `key` mechanism.
 - Add `externally_connectable.matches` only for the two production aliases and
   localhost/127.0.0.1 development origins.
-- The website opens one named long-lived port to the known extension ID.
+- The website maintains one named logical bridge to the known extension ID.
+  A physical port may be recreated after Manifest V3 retires an idle service
+  worker; this recovery is event-driven and bounded rather than polled.
 - The service worker accepts `onConnectExternal` candidates only from approved
   top-level room pages. A candidate remains dormant until its `sender.tab.id`
   matches the captured tab; only that authorized port receives rhythm or
@@ -27,9 +29,11 @@
   replayed on connect. Detailed visual frames are pushed at no more than the
   existing 24 FPS and dropped under backpressure.
 - Stop clears authorization, queued visual data, and acknowledgement timers but
-  leaves an approved page port dormant so a later toolbar capture can activate
-  it without polling. Navigation, tab close, page unload, extension reload, or
-  port disconnect releases the connection.
+  leaves the approved page logically dormant so a later toolbar capture can
+  activate it without polling. An unexpected worker-side disconnect schedules
+  bounded client recovery. Navigation, tab close, page unload, or explicit
+  client cleanup releases the connection and cancels recovery. Extension
+  restart uses the same recovery path; extension removal exhausts it safely.
 - The offscreen document forwards detailed visual frames to the service worker
   only while an authorized website consumer exists.
 
@@ -39,6 +43,7 @@ manifest public key for a consistent development extension ID:
 
 - https://developer.chrome.com/docs/extensions/reference/manifest/externally-connectable
 - https://developer.chrome.com/docs/extensions/develop/concepts/messaging
+- https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/lifecycle
 - https://developer.chrome.com/docs/extensions/reference/manifest/key
 
 ## Shared Contract

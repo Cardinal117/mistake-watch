@@ -33,8 +33,11 @@ synchronization.
 - No PCM, visual frame, URL, account data, or playback data is uploaded or
   stored.
 - Capture termination or a second action click stops the capture graph and
-  returns an approved website port to a dormant inactive state. Navigation,
-  tab closure, page unload, and extension unload also release that port.
+  leaves an approved website page logically dormant. Manifest V3 may retire
+  the inactive service worker and its physical port; the website client
+  restores that bridge with bounded event-driven retries. Navigation, tab
+  closure, page unload, and explicit client cleanup release the connection.
+  Extension restart uses the same bounded recovery path.
 - The website cannot start capture through the bridge. No room, queue,
   SpacetimeDB, Supabase, or player authority is involved.
 

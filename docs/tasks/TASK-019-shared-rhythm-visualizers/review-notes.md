@@ -62,3 +62,33 @@
   dormant state, navigation cleanup, and no extension network/storage output.
 - **Scope:** No SpacetimeDB, Supabase, room authority, queue, recommendation,
   upload, renderer, commit, push, or deployment change is included in Batch A.
+
+### Batch A Opera GX Revision - 2026-08-21
+
+- **Gate verdict:** Revise at `e30d89c`. Active bounded rhythm/visual delivery,
+  ACK backpressure, privacy, audio continuity, and navigation cleanup passed.
+- **Finding:** After capture stopped, Opera GX retired the inactive Manifest V3
+  service worker and disconnected the physical external port. Restarting
+  capture could not resume delivery through that retired port.
+- **Platform correction:** Chrome 114 and later do not extend a service-worker
+  lifetime merely because a port is open. The product contract is therefore a
+  durable logical bridge, not an immortal physical port.
+- **Test-first record:** The website-client recovery test failed before the fix
+  because an unexpected disconnect scheduled zero reconnect attempts. It now
+  requires one bounded replacement connection and verifies explicit cleanup
+  creates none.
+- **Implementation:** Unexpected disconnect schedules recovery after 250 ms,
+  1 second, and 5 seconds at most. A valid capture state resets the attempt
+  budget. Explicit disconnect cancels recovery. There is no idle heartbeat or
+  polling loop.
+- **Pending gate:** Repeat only stop, at least 35 seconds dormant, restart,
+  navigation cleanup, and console/network/storage checks using the logical
+  bridge probe. Do not repeat renderer or detector qualification.
+- **Local verification:** The corrected client test passes 6/6, the extension
+  suite passes 62/62, and the full repository passes 440/440. TypeScript,
+  ESLint, production build, changed-file Prettier, `git diff --check`, and the
+  file-length policy pass with 15 pre-existing warnings. The browser-real
+  approved-origin bridge smoke test passes 1/1.
+- **Separate observation:** The laptop saw a natural-transition page error that
+  read `title` from `undefined`. It is outside this bridge correction and needs
+  separate product-intake reproduction rather than being swept into TASK-019.

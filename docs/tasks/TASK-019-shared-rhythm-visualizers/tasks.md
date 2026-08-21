@@ -4,8 +4,10 @@
 
 Testing mode: **test-first**.
 
-Status: implementation and local Chromium bridge gate passed; exact-SHA Opera
-GX bridge proof remains before Batch B.
+Status: implementation and local Chromium bridge gate passed. The first
+exact-SHA Opera GX gate found idle service-worker port retirement; bounded
+event-driven client recovery is implemented and requires one focused rerun
+before Batch B.
 
 1. Add failing tests for exact-origin external ports, captured-tab matching,
    version normalization, no remote capture start, frame bounds, backpressure,
@@ -14,7 +16,8 @@ GX bridge proof remains before Batch B.
 3. Implement the service-worker port registry and bounded status/rhythm/visual
    delivery to the captured tab only.
 4. Add a small website client that reports unavailable, inactive, detecting,
-   locked, stale, and disconnected states without polling.
+   locked, stale, and disconnected states without polling, and restores the
+   logical bridge after unexpected Manifest V3 worker termination.
 
 Checkpoint: local extension tests, browser-real bridge startup, privacy scan,
 and exact-SHA Opera GX bridge proof. No SpacetimeDB change yet.
