@@ -1,11 +1,14 @@
 # Mistake Watch Audio Companion
 
-Private Manifest V3 capture spike for trusted Mistake Watch users. It proves
-that Opera GX can expose audio-only tab PCM to an offscreen AudioWorklet while
-the captured audio remains audible.
+Private Manifest V3 rhythm companion for trusted Mistake Watch users. Phase 1
+proved that Opera GX can expose audio-only tab PCM to an offscreen AudioWorklet
+while captured audio remains audible. Phase 2 adds a focused first-party beat
+detector. Phase 3 connects that bounded contract to an isolated five-renderer
+review Lab without changing the production website. Phase 3C replaces the
+scalar display approximation with a compact, direct local visual stream.
 
-This is not a public extension package and does not contain the TASK-018 beat
-detector or production website bridge.
+This is not a public extension package and does not contain a production website
+bridge or room-wide rhythm synchronization.
 
 ## Boundaries
 
@@ -14,9 +17,18 @@ detector or production website bridge.
 - Only the current tab's audio is requested; video is disabled.
 - Captured audio is routed back to the default output so playback remains
   audible.
-- A silent AudioWorklet branch reports bounded RMS, peak, and processed-frame
-  counts inside the extension.
-- No PCM, FFT data, URL, account data, or playback data is uploaded or stored.
+- A silent AudioWorklet branch derives bounded RMS, peak, onset, band energy,
+  tempo, confidence, interval, and phase values inside the extension.
+- Tempo combines onset intervals with autocorrelation candidates and retains an
+  established pulse when a later candidate appears at half or double time.
+- The AudioWorklet emits only `RhythmFrameV1`; no raw PCM leaves the worklet.
+- A native offscreen `AnalyserNode` separately reduces the captured signal to
+  48 frequency bytes and a 96-point waveform envelope at no more than 24 FPS.
+- Detailed visual frames are pushed directly to the internal Rhythm Lab. They
+  are transient, sequence ordered, and never enter capture status, storage,
+  network requests, the website, or room synchronization.
+- No PCM, visual frame, URL, account data, or playback data is uploaded or
+  stored.
 - Navigation, tab closure, capture termination, a second action click, and
   extension unload stop the capture graph.
 - No website, room, queue, SpacetimeDB, Supabase, or player code is involved.
@@ -36,10 +48,31 @@ detector or production website bridge.
 2. Click the extension action once.
 3. Confirm the badge changes from `...` to `ON`, then to `PCM` after a
    non-silent signal is observed.
-4. Confirm playback remains audible at the expected level without an echo or
+4. Confirm the private Rhythm Lab opens once and begins in Mirror Spectrum at
+   the 24 FPS cap.
+5. After a steady rhythmic section, hover the `PCM` badge. A locked estimate
+   shows BPM and confidence; quiet or ambiguous audio may remain unlocked.
+6. Confirm Mirror Spectrum and Signal Bloom react promptly with distributed
+   musical detail rather than three broad synthetic regions. Smoke-check the
+   remaining modes without repeating the complete lifecycle matrix per mode.
+7. Confirm playback remains audible at the expected level without an echo or
    doubled signal.
-5. Click the action again. Confirm the badge clears and playback remains under
+8. Use the lab's Stop capture command or click the action again from the Watch
+   tab. Confirm the badge clears and playback remains under
    the ordinary tab path.
+
+The lab includes a deterministic 120 BPM fixture for renderer-only measurement.
+Fixture mode does not start tab capture. It is intentionally not persisted.
+
+Power classifications remain visible in the Lab and are not performance-pass
+claims:
+
+- Mirror Spectrum and Dot Waves: beta, very high power.
+- Siri Ribbon and Signal Bloom: experimental, high power.
+- Constellation: experimental, extreme power.
+
+All modes default to 24 FPS. Static Artwork remains the production-safe website
+default.
 
 An `ERR` badge indicates capture startup failed. Hover over the action for the
 bounded error message and inspect the extension service worker from
@@ -61,11 +94,47 @@ After every stop condition, confirm tab audio is normal, the badge is clear,
 and Opera reports no continuing tab capture. Reload the extension before the
 next condition when testing extension disable or reload.
 
+## Phase 1 Laptop Evidence
+
+Opera GX Phase 1 passed on 2026-08-19: PCM, audible output, pause/resume, three
+stop/restart cycles, hidden-tab operation, navigation and tab-close cleanup,
+extension reload cleanup, a clean worker console, no observed extension network
+activity, and intact playback/queue continuity.
+
+A brief audible dip occurs when capture starts or stops. A possible tiny volume
+increase was subjective and unconfirmed. Phase 2 laptop QA must compare the same
+steady song segment before, during, and after capture. Prefer a system-loopback
+recording and report RMS or LUFS delta; target no more than 0.5 dB steady-state
+change and no new clipping. Record the transition dip separately because it is
+not a steady-state gain measurement.
+
+## Phase 3 Evidence
+
+Phase 3A passed on Opera GX with Mirror Spectrum and Siri Ribbon at 24 FPS. The
+`0.3.1` cleanup retest completed three start/stop cycles and navigation teardown
+with a clean service-worker console, audible output, and unchanged playback and
+queue state.
+
+Phase 3B adds bounded Dot Waves, Signal Bloom, and Constellation modes in version
+`0.4.1`. The patch release restores the lifecycle contract for the default
+Mirror Spectrum and Siri Ribbon renderers after the initial `0.4.0` Opera GX
+gate exposed a startup crash. Local deterministic desktop and 390-pixel checks are nonblank,
+overflow-free, and console-clean. The Opera GX renderer-only and combined-load
+gate remains required before Phase 3B promotion.
+
+Phase 3C version `0.5.1` adds the local visual-fidelity bridge. Mirror Spectrum
+and Signal Bloom now consume native analyser detail through direct internal
+messages while the BPM detector and privacy boundary remain unchanged. This
+phase requires one focused Opera GX visual, lifecycle, and short resource gate;
+it does not authorize a website or SpacetimeDB bridge.
+
 ## Local Verification
 
 From the repository root:
 
 ```powershell
 node --test tests/extensions/watch-audio-companion.test.mjs
+node --test tests/extensions/beat-detector.test.mjs
+node --test tests/extensions/rhythm-visualizer.test.mjs
 npx prettier --check "extensions/watch-audio-companion/**/*.{js,json,md,mjs}" "tests/extensions/watch-audio-companion.test.mjs"
 ```

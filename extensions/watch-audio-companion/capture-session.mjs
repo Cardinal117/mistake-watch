@@ -1,20 +1,32 @@
-import { normalizeProbeStats } from "./protocol.mjs";
+import { normalizeAnalyserTelemetry } from "./protocol.mjs";
+import { isFreshRhythmFrame } from "./rhythm-contract.mjs";
+import { createVisualFrameV1 } from "./visual-frame-contract.mjs";
 
 const SIGNAL_THRESHOLD = 0.0001;
+const VISUAL_FRAME_INTERVAL_MS = 1_000 / 24;
 
 export class CaptureSession {
   constructor({
     createAudioContext,
     createWorkletNode,
+    clearScheduledInterval = (timerId) => globalThis.clearInterval(timerId),
     getUserMedia,
+    nowSeconds = () => globalThis.performance.now() / 1_000,
     onStateChange = () => {},
+    onVisualFrame = () => {},
+    scheduleInterval = (callback, delay) =>
+      globalThis.setInterval(callback, delay),
     workletModuleUrl,
   }) {
     this.dependencies = {
       createAudioContext,
       createWorkletNode,
+      clearScheduledInterval,
       getUserMedia,
+      nowSeconds,
       onStateChange,
+      onVisualFrame,
+      scheduleInterval,
       workletModuleUrl,
     };
     this.resources = null;
@@ -59,15 +71,25 @@ export class CaptureSession {
 
       const source = context.createMediaStreamSource(stream);
       const probe = this.dependencies.createWorkletNode(context);
+      const analyser = context.createAnalyser();
       const silentOutput = context.createGain();
+      analyser.fftSize = 1024;
+      analyser.smoothingTimeConstant = 0.72;
       this.resources.source = source;
       this.resources.probe = probe;
+      this.resources.analyser = analyser;
+      this.resources.frequencyBytes = new Uint8Array(
+        analyser.frequencyBinCount,
+      );
       this.resources.silentOutput = silentOutput;
+      this.resources.waveformBytes = new Uint8Array(analyser.fftSize);
       silentOutput.gain.value = 0;
 
       source.connect(context.destination);
       source.connect(probe);
+      source.connect(analyser);
       probe.connect(silentOutput);
+      analyser.connect(silentOutput);
       silentOutput.connect(context.destination);
 
       const endedHandler = () => {
@@ -95,9 +117,11 @@ export class CaptureSession {
         peak: 0,
         phase: "active",
         reason: "capture-started",
+        rhythm: null,
         rms: 0,
         tabId,
       });
+      this.startVisualSampler();
 
       return this.getStatus();
     } catch (error) {
@@ -136,6 +160,11 @@ export class CaptureSession {
       resources.probe.port.onmessage = null;
     }
 
+    if (resources.visualTimer !== null) {
+      this.dependencies.clearScheduledInterval(resources.visualTimer);
+      resources.visualTimer = null;
+    }
+
     for (const track of resources.tracks) {
       if (resources.endedHandler) {
         track.removeEventListener("ended", resources.endedHandler);
@@ -145,6 +174,7 @@ export class CaptureSession {
 
     disconnectSafely(resources.source);
     disconnectSafely(resources.probe);
+    disconnectSafely(resources.analyser);
     disconnectSafely(resources.silentOutput);
 
     await closeContextSafely(resources.context);
@@ -155,20 +185,58 @@ export class CaptureSession {
       return;
     }
 
-    const probe = normalizeProbeStats(value);
+    const probe = normalizeAnalyserTelemetry(value);
     const hadSignal = this.status.hasSignal;
     const hasSignal = hadSignal || probe.rms > SIGNAL_THRESHOLD;
+    const previousRhythm = this.status.rhythm;
+    const nextRhythm = selectFreshRhythm(probe.rhythm, previousRhythm);
 
     this.status = {
       ...this.status,
       frames: this.status.frames + probe.frames,
       hasSignal,
       peak: probe.peak,
+      rhythm: nextRhythm,
       rms: probe.rms,
     };
 
-    if (hasSignal !== hadSignal) {
+    if (
+      hasSignal !== hadSignal ||
+      hasMaterialRhythmChange(previousRhythm, nextRhythm)
+    ) {
       this.dependencies.onStateChange(this.getStatus());
+    }
+  }
+
+  startVisualSampler() {
+    if (!this.resources?.analyser || this.resources.visualTimer !== null) {
+      return;
+    }
+
+    this.resources.visualTimer = this.dependencies.scheduleInterval(
+      () => this.sampleVisualFrame(),
+      VISUAL_FRAME_INTERVAL_MS,
+    );
+  }
+
+  sampleVisualFrame() {
+    const resources = this.resources;
+    if (!this.status.active || !resources?.analyser) {
+      return;
+    }
+
+    resources.analyser.getByteFrequencyData(resources.frequencyBytes);
+    resources.analyser.getByteTimeDomainData(resources.waveformBytes);
+    resources.visualSequence += 1;
+    const frame = createVisualFrameV1({
+      frequencyBytes: resources.frequencyBytes,
+      sampledAtSeconds: this.dependencies.nowSeconds(),
+      sequence: resources.visualSequence,
+      waveformBytes: resources.waveformBytes,
+    });
+
+    if (frame) {
+      this.dependencies.onVisualFrame(frame);
     }
   }
 
@@ -199,20 +267,60 @@ function createIdleStatus(reason) {
     peak: 0,
     phase: "idle",
     reason,
+    rhythm: null,
     rms: 0,
     tabId: null,
   };
 }
 
+function selectFreshRhythm(candidate, previous) {
+  if (!candidate) {
+    return previous;
+  }
+
+  return isFreshRhythmFrame(candidate, previous, candidate.sampledAtSeconds)
+    ? candidate
+    : previous;
+}
+
+function hasMaterialRhythmChange(previous, next) {
+  if (!next) {
+    return false;
+  }
+
+  if (!previous || (previous.bpm === null) !== (next.bpm === null)) {
+    return true;
+  }
+
+  return (
+    next.bpm !== null &&
+    (Math.abs(next.bpm - previous.bpm) >= 2 ||
+      confidenceTier(next.confidence) !== confidenceTier(previous.confidence))
+  );
+}
+
+function confidenceTier(value) {
+  if (value >= 0.8) {
+    return 2;
+  }
+
+  return value >= 0.5 ? 1 : 0;
+}
+
 function createResources({ stream, tracks }) {
   return {
+    analyser: null,
     context: null,
     endedHandler: null,
+    frequencyBytes: null,
     probe: null,
     silentOutput: null,
     source: null,
     stream,
     tracks,
+    visualSequence: 0,
+    visualTimer: null,
+    waveformBytes: null,
   };
 }
 

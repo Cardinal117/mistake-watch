@@ -11,6 +11,7 @@ dist
 .env.*.local
 !.env.example
 coverage
+/test-results/
 *.tsbuildinfo
 spacetime.local.json
 spacetime/dist

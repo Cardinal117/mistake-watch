@@ -6,12 +6,13 @@ import {
 } from "./protocol.mjs";
 
 let operation = Promise.resolve();
+let visualMessageInFlight = false;
 
 const session = new CaptureSession({
   createAudioContext: () =>
     new globalThis.AudioContext({ latencyHint: "interactive" }),
   createWorkletNode: (context) =>
-    new globalThis.AudioWorkletNode(context, "mistake-watch-pcm-probe", {
+    new globalThis.AudioWorkletNode(context, "mistake-watch-rhythm-analyser", {
       numberOfInputs: 1,
       numberOfOutputs: 1,
       outputChannelCount: [1],
@@ -21,7 +22,12 @@ const session = new CaptureSession({
   onStateChange: (status) => {
     void notifyWorker(status);
   },
-  workletModuleUrl: globalThis.chrome.runtime.getURL("pcm-probe-worklet.js"),
+  onVisualFrame: (frame) => {
+    void notifyVisualizer(frame);
+  },
+  workletModuleUrl: globalThis.chrome.runtime.getURL(
+    "rhythm-analyser-worklet.mjs",
+  ),
 });
 
 globalThis.chrome.runtime.onMessage.addListener(
@@ -68,5 +74,24 @@ async function notifyWorker(status) {
     });
   } catch {
     // The service worker may be suspended between state transitions.
+  }
+}
+
+async function notifyVisualizer(frame) {
+  if (visualMessageInFlight) {
+    return;
+  }
+
+  visualMessageInFlight = true;
+  try {
+    await globalThis.chrome.runtime.sendMessage({
+      frame,
+      target: MESSAGE_TARGET.visualizer,
+      type: MESSAGE_TYPE.visualFrame,
+    });
+  } catch {
+    // Capture may start before Rhythm Lab opens or continue after it closes.
+  } finally {
+    visualMessageInFlight = false;
   }
 }

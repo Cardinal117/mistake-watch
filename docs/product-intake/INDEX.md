@@ -20,7 +20,6 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 | [MW-FEAT-003](items/MW-FEAT-003-account-rooms-surface.md)               | Feature     | P1       | In progress        | Account rooms     | Replace placeholder Rooms tab with durable room data      | TASK-014           |
 | [MW-FEAT-004](items/MW-FEAT-004-create-room-from-account-rooms.md)      | Feature     | P2       | Ready for planning | Account rooms     | Create a room directly from Account Rooms                 | TASK-014C          |
 | [MW-FEAT-005](items/MW-FEAT-005-local-ai-dj-intent-router.md)           | Feature     | P1       | Ready for planning | AI DJ             | Route local intent into bounded tools and escalation      | TASK-002.10B, 011  |
-| [MW-FEAT-006](items/MW-FEAT-006-local-audio-companion-extension.md)     | Feature     | P2       | In progress        | Listen visuals    | Analyse user-approved tab audio locally for visuals       | TASK-015, 018      |
 | [MW-FEAT-007](items/MW-FEAT-007-native-web-audio-analysis.md)           | Feature     | P3       | Ready for planning | Media analysis    | Analyse accessible media locally through Web Audio        | TASK-015, 018      |
 | [MW-QOL-001](items/MW-QOL-001-simplify-listen-youtube-embed.md)         | QoL         | P2       | Planned            | Listen player     | Reduce duplicate iframe controls and add copy-link        | Add/Discover       |
 | [MW-QOL-002](items/MW-QOL-002-drag-drop-queue.md)                       | QoL         | P2       | Ready for planning | Queue             | Reorder queue items directly instead of repeated clicks   | Queue UX           |
@@ -57,7 +56,3 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
    [[items/MW-FEAT-003-account-rooms-surface|MW-FEAT-003]].
 6. Schedule [[items/MW-QOL-008-tv-mode-settings-access|MW-QOL-008]] as a compact
    UI task; keep optional TV-mode motion behind current reliability work.
-7. Run Opera GX capture and lifecycle QA for TASK-018 Phase 1 and
-   [[items/MW-FEAT-006-local-audio-companion-extension|MW-FEAT-006]] before
-   adding the focused beat detector. Keep
-   [[items/MW-FEAT-007-native-web-audio-analysis|MW-FEAT-007]] deferred.

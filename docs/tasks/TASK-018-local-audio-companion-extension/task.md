@@ -1,10 +1,10 @@
 ---
 id: TASK-018
-status: in-progress
+status: completed
 type: compact-task
 related: [MW-FEAT-006, MW-FEAT-007, TASK-015, MW-BUG-009]
 created: 2026-08-19
-updated: 2026-08-19
+updated: 2026-08-21
 ---
 
 # Private Local Audio Companion Extension Prototype
@@ -176,9 +176,28 @@ private Manifest V3 extension:
 - The extension has no host permissions, storage permission, content script,
   web-accessible resource, or network-capable extension CSP.
 
-Automated implementation checks pass. Opera GX capture, audible-output, hidden-
-tab, lifecycle, and extension-network inspection remain required before Phase 1
-is accepted. Beat detection and renderer integration have not started.
+Phase 1 was accepted on the owner-priority Opera GX laptop on 2026-08-19. The
+badge repeatedly reached `PCM`; captured audio remained audible without detected
+echo; pause/resume, three stop/restart cycles, hidden-tab operation, navigation,
+tab closure, extension reload, playback, and queue continuity passed. Navigation,
+tab closure, and extension reload cleared capture state. The service-worker
+console remained clean and no extension network activity was observed. Source
+and CSP inspection confirmed that only bounded probe telemetry crossed internal
+extension messaging and no PCM samples were stored or uploaded.
+
+The laptop operator observed a brief audio dip when capture starts or stops and
+a possible tiny steady-state volume increase that could not be confirmed by ear.
+The dip is a non-blocking Phase 1 caveat. Phase 2 laptop QA must objectively
+compare the same steady song segment before, during, and after capture, targeting
+no more than 0.5 dB RMS or LUFS steady-state change and no new clipping. Capture
+transition behavior must be reported separately from steady-state level.
+
+Phase 2 now adds a focused first-party detector inside the existing silent
+AudioWorklet branch. It uses a small time-domain filter bank, positive band-energy
+flux, adaptive onset detection, inter-onset interval consensus, autocorrelation
+candidates, established-pulse half/double folding, and phase estimation. The
+worklet emits only bounded `RhythmFrameV1` values and retains the Phase 1 audible
+audio graph. Renderer and website integration have not started.
 
 Automated evidence recorded on 2026-08-19:
 
@@ -192,6 +211,222 @@ Automated evidence recorded on 2026-08-19:
 - `npm run build`: passed.
 - Source scan found no extension network, storage, content-script, microphone,
   video-capture, broad host, or web-accessible-resource surface.
+
+Phase 2 local evidence recorded on 2026-08-19:
+
+- Deterministic 60, 90, 120, 128, and 160 BPM fixtures lock within 1.5 BPM.
+- Jitter, autocorrelation-candidate, half/double folding, phase-bound, contract-
+  validation, freshness, and out-of-order tests pass.
+- The extension CSP and source remain free of network and persistence APIs.
+- The service worker receives only bounded state transitions rather than every
+  analyser frame; raw PCM and FFT arrays remain inside the worklet.
+- `npm test`: 398 passed; typecheck, ESLint, changed-file Prettier, file-length
+  policy, `git diff --check`, and the production build passed.
+
+Phase 2 passed its owner-priority Opera GX laptop gate on 2026-08-19 at commit
+`e54ee777e89a94fa96432f6c82abd712fb4d6566`:
+
+- Purpose-built 60, 120, and 160 BPM metronome sources resolved to 60.1, 120.2,
+  and 160.1 BPM. Error remained at or below 0.2 BPM, no half/double mistake
+  occurred, and every estimate stayed unchanged during its 60-second window.
+- Confidence measured 88%, 87%, and 53%. The accurate but lower-confidence
+  160 BPM result remains a Phase 3 presentation and fallback consideration.
+- Aggregate Opera CPU median did not increase between playback-only and active
+  capture plus detector. Aggregate GPU median increased by 4.81 percentage
+  points and must be measured again with each renderer.
+- Audio remained audible without detected echo, clipping, distortion, or
+  sustained speed change. Objective RMS/LUFS parity remains blocked; the brief
+  activation/deactivation dip remains a recorded caveat.
+- Lifecycle, cleanup, privacy, bounded-message, queue, playback, and authority
+  checks passed. The extension and repository were left clean and inactive.
+
+Phase 3 now connects the local contract to an internal extension Rhythm Lab:
+
+- Mirror Spectrum and Siri Ribbon consume only reconstructed bounded display
+  arrays derived from `RhythmFrameV1`; no PCM or FFT arrays leave the worklet.
+- One Canvas, a 1.25 DPR cap, 24/30 FPS controls, hidden/reduced-motion stops,
+  stale-frame fallback, and reusable signal buffers bound renderer cost.
+- A non-persisted 120 BPM fixture separates renderer-only measurement from the
+  combined capture, detector, and renderer path.
+- The lab is an internal extension page, opens after explicit capture, adds no
+  host permission, content script, network surface, storage, website bridge,
+  or room synchronization.
+- Local desktop and 390-pixel visual checks passed for both renderers. Live
+  input without the extension falls back to an inactive static state.
+
+Phase 3A initially received a **Revise** verdict on the owner-priority Opera GX laptop at
+commit `35454a35e7072d35ae9c5dc6ffc56a0e3f67d735`. Mirror Spectrum and Siri
+Ribbon both passed the 24 FPS functional, lifecycle, privacy, audio, and
+aggregate resource checks. Mirror remains the safer default because Siri's 30
+FPS GPU increase reproduced. Repeated capture cleanup exposed one service-worker
+race when the offscreen receiver disappears between the existence check and
+`getStatus()`. The cleanup completed, but the warning violates the clean-console
+gate. See [Phase 3A Opera GX gate](phase-3a-opera-gx-gate.md).
+
+The missing-receiver revision was implemented test-first. The new lifecycle
+test failed against the original warning path, then passed after the worker made
+only that known terminal condition idempotent while preserving warnings for
+unexpected failures. All 28 extension tests, all 406 repository tests,
+typecheck, ESLint, formatting, file-length policy, and the production build pass.
+
+Phase 3A was promoted after the Opera GX cleanup retest at exact commit
+`de34d89d379e4ebf7933dd09e44187f86857f596`. Three capture start/stop cycles,
+navigation cleanup, PCM state, Lab response, badge reset, audio continuity,
+playback, and queue preservation passed with an empty service-worker console.
+The formerly blocking missing-receiver warning did not recur. See the linked
+gate record for the exact red/green and manual evidence.
+
+### Phase 3B Entry Gate
+
+Phase 3B remains an isolated private-extension Lab increment. It adds Dot Waves,
+Signal Bloom, and Constellation through the existing `RhythmFrameV1` adapter and
+renderer engine. It does not add a website bridge, SpacetimeDB publication,
+room-wide rhythm synchronization, new capture permissions, persistence, or
+network access.
+
+Testing mode: **test-first**, because the renderer registry, animation lifecycle,
+and bounded signal consumption are reusable stateful contracts.
+
+1. Before renderer implementation, extend the renderer contract tests and
+   observe failure because `dot-waves`, `signal-bloom`, and `constellation` are
+   unsupported. The tests must require nonblank bounded output at desktop and
+   compact dimensions from deterministic `RhythmFrameV1` input.
+2. Add an engine lifecycle test before changing mode switching. It must prove
+   repeated renderer changes retain one animation loop and dispose the previous
+   renderer state.
+3. Add Dot Waves first. Its deterministic draw distribution must keep the
+   strongest reactive region centered rather than weighted toward an edge.
+4. Add Signal Bloom second and Constellation last, one green checkpoint at a
+   time. Constellation retains its experimental extreme-power warning and a
+   strict particle and connection budget.
+5. Run desktop and 390-pixel fixture QA, stale/low-confidence fallback checks,
+   reduced-motion and hidden-state stops, duplicate-loop checks, and the full
+   repository gate.
+6. Run separate Opera GX laptop measurements for renderer-only and combined
+   detector plus renderer cost. Results preserve the existing classifications:
+   Dot Waves beta very-high power, Signal Bloom experimental high power, and
+   Constellation experimental extreme power unless new evidence justifies a
+   change.
+
+Phase 3B is locally implemented in private extension version `0.4.1` and awaits
+the Opera GX laptop gate:
+
+- The renderer and lifecycle contracts were written first and failed because
+  the three modes were unsupported, Dot Waves had no centered field, and mode
+  changes did not dispose state. Eight focused failures recorded that baseline.
+- Dot Waves, Signal Bloom, and Constellation now consume the existing bounded
+  display input through separate renderer modules. Dot Waves weights its
+  strongest reactive region toward the center. Constellation is capped at 48/30
+  particles and 96/48 connections for desktop/compact layouts.
+- The engine initializes, resizes, disposes, and replaces renderer state while
+  retaining one animation loop. Mode metadata keeps the beta, high-power, and
+  extreme-power labels visible in the Lab.
+- The focused renderer suite passes 16/16 and the complete extension suite
+  initially passed 38/38. The initial `0.4.0` Opera GX gate then exposed a real
+  startup crash because the legacy Mirror Spectrum renderer did not implement
+  the lifecycle contract required by the engine.
+- A new real-default startup regression reproduced the exact failure before the
+  repair. Mirror Spectrum and Siri Ribbon now use the shared lifecycle factory.
+  The focused suite passes 17/17, the extension suite passes 39/39, and the
+  complete repository suite passes 417/417. TypeScript,
+  ESLint, file-length policy, production build, Prettier, and diff checks pass.
+  A browser-real Playwright startup regression also passes 1/1 against the
+  extension entrypoint and all five renderer modes.
+  Deterministic fixture QA passed at desktop and 390 pixels for all three modes
+  with visible nonblank output, correct labels, no overflow, and no console
+  warning or error.
+
+See [Phase 3B Opera GX gate](phase-3b-opera-gx-gate.md) for the recorded Revise
+verdict and remaining `0.4.1`
+renderer-only and combined-load evidence. Static Artwork remains the production-
+safe default, and production integration still requires a separate approved
+task after the private prototype decision.
+
+### Phase 3C: Local Visual-Fidelity Bridge
+
+Phase 3C is a compact correction to the private Rhythm Lab prototype. The
+scalar `RhythmFrameV1` input proved capture, tempo, lifecycle, and renderer
+plumbing, but it cannot reproduce the approved showcase visuals: three broad
+energy bands were expanded into an artificial spectrum and a 250 ms status poll
+could add visible response delay.
+
+Scope:
+
+- Add one versioned, bounded, extension-local visual frame containing 48
+  frequency bands and a 96-point waveform envelope.
+- Sample the existing captured stream with a native `AnalyserNode` at no more
+  than 24 FPS and push frames directly from the offscreen document to Rhythm
+  Lab.
+- Keep `RhythmFrameV1` and its lower cadence unchanged for BPM, phase,
+  confidence, and readouts.
+- Make Mirror Spectrum and Signal Bloom consume the real local visual frame and
+  use the approved showcase geometry and default intensity settings.
+- Retain the deterministic scalar fixture as a fallback for automated renderer
+  checks.
+
+Exclusions:
+
+- No website content script or extension-to-site bridge.
+- No SpacetimeDB publication, room synchronization, Supabase, or production
+  player change.
+- No network request, persistence, captured-audio upload, dependency, or public
+  extension packaging.
+- No additional renderer, settings UI, broad renderer retuning, or repeated
+  full lifecycle matrix per renderer.
+
+Testing mode is **test-first** for the visual-frame contract, capture sampling,
+ordering, and cleanup. Visual parity remains a focused browser comparison
+rather than a brittle pixel test.
+
+Acceptance:
+
+1. Visual frames are versioned, sequence ordered, finite, fixed-size, and
+   bounded to byte arrays before extension messaging.
+2. Detailed frames stay transient and local; they are absent from capture
+   status, storage, network paths, and the future room contract.
+3. Capture owns one analyser and one 24 FPS sampler, both released on every stop
+   and failed start.
+4. Rhythm Lab receives live visual frames through direct runtime messages; its
+   status polling is not the visual update path.
+5. Mirror Spectrum no longer creates three synthetic competing regions and
+   Signal Bloom uses the same approved drawing behavior and intensity defaults
+   as the showcase.
+6. One browser lifecycle regression covers start, live rendering, stop,
+   restart, navigation cleanup, and a clean console.
+7. One short Opera GX laptop gate compares Mirror Spectrum and Signal Bloom for
+   visual response, subjective alignment, 60-second resource use, and paused
+   idle behavior. Other renderers receive only a smoke check.
+
+Implementation evidence:
+
+- Baseline: clean `task/task-018-phase3-renderers` at
+  `9647c5b634f50ccb280eb50d390b030f97ccf1cd`; the visual-frame contract,
+  analyser sampler, and live adapter path were absent.
+- Red: the focused 30-test command exited 1 with three intended failures:
+  missing visual normalizer, missing `acceptVisual`, and zero capture analysers.
+- Green: the same focused command passes 32/32. The final repository suite
+  passes 423/423; typecheck, ESLint, formatting, file-length policy, production
+  build, and the browser-real five-mode startup check pass.
+- The `0.4.1` Opera GX rerun confirmed the startup repair but found that paused
+  playback left each renderer loop active and that Constellation clipped in a
+  narrow viewport. Two focused tests were added first and failed as intended.
+  The `0.5.0` correction freezes rendering after 700 ms of sustained analyser
+  silence, wakes on fresh audio, and keeps Constellation circles inside an inset
+  boundary; the focused renderer suite then passed 20/20.
+- Private extension version `0.5.1` now carries the bounded 24 FPS bridge and
+  the browser-timer receiver repair.
+- The exact `0.5.0` laptop checkpoint passed its focused tests but capture
+  failed before `PCM` with `TypeError: Illegal invocation`. A new browser-timer
+  receiver regression reproduced the failure before production changes. Patch
+  version `0.5.1` now invokes the default timers through `globalThis`; the
+  focused test changed from the intended failure to 13/13 passing. See
+  [Phase 3C Opera GX gate](phase-3c-opera-gx-gate.md).
+- Owner laptop QA promoted Phase 3C at exact commit `b60bc69`. Capture reached
+  `PCM`; Mirror Spectrum and Signal Bloom were responsive and paused with
+  `running: false`; paused GPU fell to 0.00% and 0.28% median respectively;
+  Constellation stayed bounded at 320px; cleanup, audio, console, network,
+  queue, and authority checks passed. TASK-018 is complete. Production website
+  integration remains a separate task.
 
 ## Risks
 

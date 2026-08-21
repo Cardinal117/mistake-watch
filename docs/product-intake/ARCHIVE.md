@@ -4,6 +4,18 @@ Move an entry here only after it is resolved, deliberately not planned, or
 superseded. Preserve its ID, original-report link, decision reason, verification
 evidence, commit, and deployment reference where applicable.
 
+## MW-FEAT-006 Private local audio companion extension
+
+- **Final status:** Resolved
+- **Decision date:** 2026-08-21
+- **Task:** TASK-018
+- **Evidence:** Private extension `0.5.1`; commit `b60bc69`; 423 local tests;
+  focused extension tests 33/33; Opera GX owner QA promoted capture, analyser,
+  visual fidelity, paused idle, bounded Constellation, lifecycle, audio, and
+  privacy behavior.
+- **Original report:**
+  [[archive/MW-FEAT-006-local-audio-companion-extension|Archived item]]
+
 ## MW-BUG-005 Like state remains stale on another active device
 
 - **Final status:** Resolved
