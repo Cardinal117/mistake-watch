@@ -68,7 +68,12 @@ updated: 2026-08-20
   regressions now pass after adding sustained-silence idle and inset rendering.
   Full repository gates and the browser-real Lab startup pass. No website or
   room bridge was added.
-- **Next action:** Run one compact Opera GX gate on `0.5.0`: visually compare
+- **Phase 3C repair:** The exact `0.5.0` laptop checkpoint exposed a Chromium
+  native-timer receiver error before capture reached `PCM`. Version `0.5.1`
+  preserves the browser timer receiver through explicit wrappers, with a
+  test-first regression matching the laptop failure.
+- **Next action:** Run one compact Opera GX gate on `0.5.1`: prove capture first,
+  then visually compare
   Mirror Spectrum and Signal Bloom with the showcase, measure each for 60
   seconds plus paused idle, then perform one start/stop/restart/navigation
   cleanup cycle. Smoke-check the other renderers only.

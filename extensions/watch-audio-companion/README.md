@@ -122,7 +122,7 @@ gate exposed a startup crash. Local deterministic desktop and 390-pixel checks a
 overflow-free, and console-clean. The Opera GX renderer-only and combined-load
 gate remains required before Phase 3B promotion.
 
-Phase 3C version `0.5.0` adds the local visual-fidelity bridge. Mirror Spectrum
+Phase 3C version `0.5.1` adds the local visual-fidelity bridge. Mirror Spectrum
 and Signal Bloom now consume native analyser detail through direct internal
 messages while the BPM detector and privacy boundary remain unchanged. This
 phase requires one focused Opera GX visual, lifecycle, and short resource gate;

@@ -27,7 +27,7 @@ test("manifest keeps the private capture permission surface narrow", async () =>
 
   assert.equal(manifest.manifest_version, 3);
   assert.equal(manifest.minimum_chrome_version, "116");
-  assert.equal(manifest.version, "0.5.0");
+  assert.equal(manifest.version, "0.5.1");
   assert.deepEqual(manifest.permissions.toSorted(), [
     "activeTab",
     "offscreen",
@@ -244,6 +244,43 @@ test("capture session pushes one bounded visual stream and releases its sampler"
   await session.stop("visual-test-complete");
   assert.equal(harness.scheduled.size, 0);
   assert.equal(harness.analyser.disconnectCalls, 1);
+});
+
+test("default browser timers retain the global receiver during capture", async () => {
+  const originalSetInterval = globalThis.setInterval;
+  const originalClearInterval = globalThis.clearInterval;
+  const harness = createHarness();
+  let timerActive = false;
+
+  globalThis.setInterval = function setBrowserInterval() {
+    if (this !== globalThis) throw new TypeError("Illegal invocation");
+    timerActive = true;
+    return 117;
+  };
+  globalThis.clearInterval = function clearBrowserInterval(id) {
+    if (this !== globalThis) throw new TypeError("Illegal invocation");
+    assert.equal(id, 117);
+    timerActive = false;
+  };
+
+  const {
+    clearScheduledInterval: _clearScheduledInterval,
+    scheduleInterval: _scheduleInterval,
+    ...browserDependencies
+  } = harness.dependencies;
+
+  try {
+    const session = new CaptureSession(browserDependencies);
+    const status = await session.start({ streamId: "stream-1", tabId: 42 });
+
+    assert.equal(status.active, true);
+    assert.equal(timerActive, true);
+    await session.stop("browser-timer-test-complete");
+    assert.equal(timerActive, false);
+  } finally {
+    globalThis.setInterval = originalSetInterval;
+    globalThis.clearInterval = originalClearInterval;
+  }
 });
 
 test("capture session rejects duplicate active starts", async () => {

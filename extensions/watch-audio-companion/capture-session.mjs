@@ -9,12 +9,13 @@ export class CaptureSession {
   constructor({
     createAudioContext,
     createWorkletNode,
-    clearScheduledInterval = globalThis.clearInterval,
+    clearScheduledInterval = (timerId) => globalThis.clearInterval(timerId),
     getUserMedia,
     nowSeconds = () => globalThis.performance.now() / 1_000,
     onStateChange = () => {},
     onVisualFrame = () => {},
-    scheduleInterval = globalThis.setInterval,
+    scheduleInterval = (callback, delay) =>
+      globalThis.setInterval(callback, delay),
     workletModuleUrl,
   }) {
     this.dependencies = {

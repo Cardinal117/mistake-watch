@@ -416,6 +416,12 @@ Implementation evidence:
 - Private extension version `0.5.0` now carries the bounded 24 FPS bridge. The
   final Opera GX visual response and 60-second resource comparison remain the
   only promotion gate.
+- The exact `0.5.0` laptop checkpoint passed its focused tests but capture
+  failed before `PCM` with `TypeError: Illegal invocation`. A new browser-timer
+  receiver regression reproduced the failure before production changes. Patch
+  version `0.5.1` now invokes the default timers through `globalThis`; the
+  focused test changed from the intended failure to 13/13 passing. See
+  [Phase 3C Opera GX gate](phase-3c-opera-gx-gate.md).
 
 ## Risks
 
