@@ -2,10 +2,19 @@
   "manifest_version": 3,
   "name": "Mistake Watch Audio Companion",
   "description": "Private local audio timing companion for trusted Mistake Watch users.",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "minimum_chrome_version": "116",
   "incognito": "not_allowed",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn0zdeXBX2fi5U+GD3Vyb0Eyq+DT57tX01dy2r6OuHHzfvJwEvX1VEP3MoaGPIRb+vkqwEvvSUWAGoiXN+emlZ/T7EdVrO93576aYcd5QBPBhBUFykUTpLXH4Sd8FndJeP7W1i0IsmOvJsVsfER9lQKgeLIhFCUk5XOKK8l7i8k65BIBaFCsxnSOmqxFLnE7BI1EzBGIeu0QZhR7Lfo8A+fK4Sfw2Y2v1sxaEuudt8PMb20vJXj+07/LjLl2l9lhz2mB8l7XNHl7dEHK+7Mrmn1Xjf7cc2CspGdh+TWphDlLmDikLRkf54V9ArJ5Ki31o8JcTnB2qJcsbeYT2aLIvXQIDAQAB",
   "permissions": ["activeTab", "offscreen", "tabCapture"],
+  "externally_connectable": {
+    "matches": [
+      "https://watch.mistakestudios.com/rooms/*",
+      "https://mistake-watch.vercel.app/rooms/*",
+      "http://127.0.0.1:5371/*",
+      "http://localhost:5371/*"
+    ]
+  },
   "background": {
     "service_worker": "service-worker.mjs",
     "type": "module"

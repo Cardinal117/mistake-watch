@@ -6,9 +6,11 @@ while captured audio remains audible. Phase 2 adds a focused first-party beat
 detector. Phase 3 connects that bounded contract to an isolated five-renderer
 review Lab without changing the production website. Phase 3C replaces the
 scalar display approximation with a compact, direct local visual stream.
+TASK-019 Batch A adds a private exact-origin bridge and a website client library
+without adding room-wide synchronization or production renderer wiring.
 
-This is not a public extension package and does not contain a production website
-bridge or room-wide rhythm synchronization.
+This is not a public extension package and does not contain room-wide rhythm
+synchronization.
 
 ## Boundaries
 
@@ -24,14 +26,17 @@ bridge or room-wide rhythm synchronization.
 - The AudioWorklet emits only `RhythmFrameV1`; no raw PCM leaves the worklet.
 - A native offscreen `AnalyserNode` separately reduces the captured signal to
   48 frequency bytes and a 96-point waveform envelope at no more than 24 FPS.
-- Detailed visual frames are pushed directly to the internal Rhythm Lab. They
-  are transient, sequence ordered, and never enter capture status, storage,
-  network requests, the website, or room synchronization.
+- Detailed visual frames are pushed directly to the internal Rhythm Lab and,
+  while authorized, the same captured top-level Mistake Watch tab. They are
+  transient, sequence ordered, ACK bounded, and never enter storage, network
+  requests, or room synchronization.
 - No PCM, visual frame, URL, account data, or playback data is uploaded or
   stored.
-- Navigation, tab closure, capture termination, a second action click, and
-  extension unload stop the capture graph.
-- No website, room, queue, SpacetimeDB, Supabase, or player code is involved.
+- Capture termination or a second action click stops the capture graph and
+  returns an approved website port to a dormant inactive state. Navigation,
+  tab closure, page unload, and extension unload also release that port.
+- The website cannot start capture through the bridge. No room, queue,
+  SpacetimeDB, Supabase, or player authority is involved.
 
 ## Load In Opera GX
 
@@ -128,6 +133,20 @@ messages while the BPM detector and privacy boundary remain unchanged. This
 phase requires one focused Opera GX visual, lifecycle, and short resource gate;
 it does not authorize a website or SpacetimeDB bridge.
 
+## TASK-019 Batch A
+
+Version `0.6.0` adds a stable private extension ID and named long-lived website
+port. Only approved production aliases and development port `5371` can connect
+from a top-level `/rooms/*` page. An approved page may receive an inactive state
+while dormant, but rhythm and detailed visual data are authorized only when its
+tab is the captured tab. The website cannot send a capture command.
+
+Visual delivery allows one frame in flight, keeps only the newest pending
+frame, and recovers after a missing ACK. The offscreen document forwards visual
+frames to the worker only while an authorized website consumer exists. Batch A
+does not mount production Listen renderers and does not publish anything to
+SpacetimeDB.
+
 ## Local Verification
 
 From the repository root:
@@ -136,5 +155,7 @@ From the repository root:
 node --test tests/extensions/watch-audio-companion.test.mjs
 node --test tests/extensions/beat-detector.test.mjs
 node --test tests/extensions/rhythm-visualizer.test.mjs
+node --test tests/extensions/audio-companion-client.test.mjs tests/extensions/external-bridge.test.mjs tests/extensions/external-bridge-backpressure.test.mjs
+npx playwright test tests/e2e/extension-external-bridge.spec.ts --workers=1
 npx prettier --check "extensions/watch-audio-companion/**/*.{js,json,md,mjs}" "tests/extensions/watch-audio-companion.test.mjs"
 ```

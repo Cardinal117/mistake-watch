@@ -21,6 +21,7 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 | [MW-FEAT-004](items/MW-FEAT-004-create-room-from-account-rooms.md)      | Feature     | P2       | Ready for planning | Account rooms     | Create a room directly from Account Rooms                 | TASK-014C          |
 | [MW-FEAT-005](items/MW-FEAT-005-local-ai-dj-intent-router.md)           | Feature     | P1       | Ready for planning | AI DJ             | Route local intent into bounded tools and escalation      | TASK-002.10B, 011  |
 | [MW-FEAT-007](items/MW-FEAT-007-native-web-audio-analysis.md)           | Feature     | P3       | Ready for planning | Media analysis    | Analyse accessible media locally through Web Audio        | TASK-015, 018      |
+| [MW-FEAT-008](items/MW-FEAT-008-shared-rhythm-visualizers.md)           | Feature     | P1       | In progress        | Listen visuals    | Connect private rhythm analysis to shared Listen visuals  | TASK-018, 019      |
 | [MW-QOL-001](items/MW-QOL-001-simplify-listen-youtube-embed.md)         | QoL         | P2       | Planned            | Listen player     | Reduce duplicate iframe controls and add copy-link        | Add/Discover       |
 | [MW-QOL-002](items/MW-QOL-002-drag-drop-queue.md)                       | QoL         | P2       | Ready for planning | Queue             | Reorder queue items directly instead of repeated clicks   | Queue UX           |
 | [MW-QOL-003](items/MW-QOL-003-media-session-room-authority.md)          | QoL         | P2       | Needs verification | Media Session     | Verify device controls use room-authoritative actions     | TASK-006           |
@@ -42,11 +43,10 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
    changing provider or player behavior.
 2. Plan [[items/MW-QOL-010-direct-play-action-parity|MW-QOL-010]] as a compact
    Add Media action-parity task.
-3. TASK-015A2 owner QA passed. Run TASK-015B as a separately measured
-   raster/throttling experiment before resolving
-   [[items/MW-BUG-009-high-browser-resource-usage|MW-BUG-009]]. Keep
-   [[items/MW-QOL-007-configurable-listen-artwork|MW-QOL-007]] as later
-   composition work rather than expanding the performance task.
+3. Complete the exact-SHA Opera GX Batch A bridge gate for
+   [[items/MW-FEAT-008-shared-rhythm-visualizers|MW-FEAT-008]] before starting
+   TASK-019 Batch B. Keep Static Artwork as the default and retain MW-BUG-009
+   power labels.
 4. Prepare a research/prototype packet for
    [[items/MW-FEAT-005-local-ai-dj-intent-router|MW-FEAT-005]]. Preserve server
    authority and do not connect experimental inference directly to room

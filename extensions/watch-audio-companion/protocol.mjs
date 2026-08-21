@@ -8,6 +8,7 @@ export const MESSAGE_TARGET = Object.freeze({
 });
 
 export const MESSAGE_TYPE = Object.freeze({
+  bridgeVisuals: "bridge-visuals",
   captureState: "capture-state",
   getStatus: "get-status",
   startCapture: "start-capture",

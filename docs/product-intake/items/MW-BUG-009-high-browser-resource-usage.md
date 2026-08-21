@@ -4,7 +4,7 @@ type: bug
 status: in-progress
 priority: P1
 area: performance
-related: [TASK-002.5I, TASK-010, TASK-015, TASK-018]
+related: [TASK-002.5I, TASK-010, TASK-015, TASK-018, TASK-019]
 created: 2026-08-18
 updated: 2026-08-21
 ---
@@ -57,8 +57,9 @@ updated: 2026-08-21
   Opera processes, DevTools, and automation, so exact per-tab attribution is a
   future performance check rather than a TASK-018 blocker.
 - **Next action:** Keep the normal Static Artwork default remediation in place.
-  Scope extension-to-site integration separately, preserve all experimental
-  power labels, and treat renderer optimization as future MW-BUG-009 work.
+  TASK-019 scopes extension-to-site integration separately, preserves all
+  experimental power labels, and leaves renderer optimization as future
+  MW-BUG-009 work.
 - **Task:** [[../../tasks/TASK-015-listen-visualizer-performance/task|TASK-015]]
 - **Original report:**
   [[../archive/quick-capture-2026-08-18#Capture 3]]

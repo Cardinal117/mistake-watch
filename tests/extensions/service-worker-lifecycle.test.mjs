@@ -80,6 +80,7 @@ function createServiceWorkerHarness() {
     runtime: {
       getContexts: async () => [{ contextType: "OFFSCREEN_DOCUMENT" }],
       getURL: (path) => `chrome-extension://test/${path}`,
+      onConnectExternal: createEvent(),
       onInstalled: createEvent(),
       onMessage: createEvent(),
       onStartup: createEvent(),

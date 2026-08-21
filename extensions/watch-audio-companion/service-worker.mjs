@@ -4,6 +4,7 @@ import {
   isAllowedWatchUrl,
   publicErrorMessage,
 } from "./protocol.mjs";
+import { createExternalBridgeController } from "./external-bridge.mjs";
 
 const OFFSCREEN_DOCUMENT = "offscreen.html";
 const VISUALIZER_DOCUMENT = "visualizer.html";
@@ -20,6 +21,15 @@ const badge = Object.freeze({
 });
 
 let creatingOffscreenDocument = null;
+let bridgeVisualForwardingOperation = Promise.resolve();
+const externalBridge = createExternalBridgeController({
+  getStatus,
+  onVisualDemandChange: (enabled) => {
+    bridgeVisualForwardingOperation = bridgeVisualForwardingOperation
+      .catch(() => undefined)
+      .then(() => setBridgeVisualForwarding(enabled));
+  },
+});
 
 globalThis.chrome.action.onClicked.addListener((tab) => {
   void toggleCapture(tab);
@@ -33,6 +43,10 @@ globalThis.chrome.runtime.onStartup.addListener(() => {
   void setBadge("idle");
 });
 
+globalThis.chrome.runtime.onConnectExternal.addListener((port) => {
+  void externalBridge.connect(port);
+});
+
 globalThis.chrome.runtime.onMessage.addListener(
   (message, _sender, sendResponse) => {
     if (message?.target !== MESSAGE_TARGET.worker) {
@@ -40,7 +54,13 @@ globalThis.chrome.runtime.onMessage.addListener(
     }
 
     if (message.type === MESSAGE_TYPE.captureState) {
+      externalBridge.publishStatus(message.status);
       void updateBadgeFromStatus(message.status);
+      return false;
+    }
+
+    if (message.type === MESSAGE_TYPE.visualFrame) {
+      externalBridge.publishVisualFrame(message.frame);
       return false;
     }
 
@@ -59,11 +79,13 @@ globalThis.chrome.runtime.onMessage.addListener(
 
 globalThis.chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.status === "loading") {
+    externalBridge.disconnectTab(tabId);
     void stopIfCapturedTab(tabId, "tab-navigated");
   }
 });
 
 globalThis.chrome.tabs.onRemoved.addListener((tabId) => {
+  externalBridge.disconnectTab(tabId);
   void stopIfCapturedTab(tabId, "tab-closed");
 });
 
@@ -240,6 +262,21 @@ async function hasOffscreenDocument() {
 
 async function sendToOffscreen(message) {
   return globalThis.chrome.runtime.sendMessage(message);
+}
+
+async function setBridgeVisualForwarding(enabled) {
+  try {
+    if (!(await hasOffscreenDocument())) return;
+    await sendToOffscreen({
+      enabled,
+      target: MESSAGE_TARGET.offscreen,
+      type: MESSAGE_TYPE.bridgeVisuals,
+    });
+  } catch (error) {
+    if (!isMissingOffscreenReceiverError(error)) {
+      console.warn("Mistake Watch bridge visual routing failed:", error);
+    }
+  }
 }
 
 function assertSuccessfulResponse(response) {

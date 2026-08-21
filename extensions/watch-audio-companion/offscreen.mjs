@@ -6,6 +6,7 @@ import {
 } from "./protocol.mjs";
 
 let operation = Promise.resolve();
+let bridgeVisualsEnabled = false;
 let visualMessageInFlight = false;
 
 const session = new CaptureSession({
@@ -23,7 +24,7 @@ const session = new CaptureSession({
     void notifyWorker(status);
   },
   onVisualFrame: (frame) => {
-    void notifyVisualizer(frame);
+    void notifyVisualConsumers(frame);
   },
   workletModuleUrl: globalThis.chrome.runtime.getURL(
     "rhythm-analyser-worklet.mjs",
@@ -49,11 +50,15 @@ globalThis.chrome.runtime.onMessage.addListener(
 );
 
 globalThis.addEventListener("pagehide", () => {
+  bridgeVisualsEnabled = false;
   void session.stop("offscreen-unloaded");
 });
 
 async function handleMessage(message) {
   switch (message.type) {
+    case MESSAGE_TYPE.bridgeVisuals:
+      bridgeVisualsEnabled = message.enabled === true;
+      return session.getStatus();
     case MESSAGE_TYPE.getStatus:
       return session.getStatus();
     case MESSAGE_TYPE.startCapture:
@@ -77,20 +82,30 @@ async function notifyWorker(status) {
   }
 }
 
-async function notifyVisualizer(frame) {
+async function notifyVisualConsumers(frame) {
   if (visualMessageInFlight) {
     return;
   }
 
   visualMessageInFlight = true;
   try {
-    await globalThis.chrome.runtime.sendMessage({
-      frame,
-      target: MESSAGE_TARGET.visualizer,
-      type: MESSAGE_TYPE.visualFrame,
-    });
-  } catch {
-    // Capture may start before Rhythm Lab opens or continue after it closes.
+    const messages = [
+      globalThis.chrome.runtime.sendMessage({
+        frame,
+        target: MESSAGE_TARGET.visualizer,
+        type: MESSAGE_TYPE.visualFrame,
+      }),
+    ];
+    if (bridgeVisualsEnabled) {
+      messages.push(
+        globalThis.chrome.runtime.sendMessage({
+          frame,
+          target: MESSAGE_TARGET.worker,
+          type: MESSAGE_TYPE.visualFrame,
+        }),
+      );
+    }
+    await Promise.allSettled(messages);
   } finally {
     visualMessageInFlight = false;
   }
