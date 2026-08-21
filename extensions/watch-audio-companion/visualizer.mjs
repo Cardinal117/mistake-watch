@@ -4,6 +4,10 @@ import {
   createFixtureFrame,
 } from "./rhythm-visualizer-input.mjs";
 import { VisualizerEngine } from "./visualizer-engine.mjs";
+import {
+  VISUALIZER_MODE_DETAILS,
+  normalizeVisualizerMode,
+} from "./visualizer-renderers.mjs";
 
 const POLL_INTERVAL_MS = 250;
 const inputAdapter = new RhythmVisualizerInput();
@@ -21,6 +25,7 @@ const elements = {
   fps: document.querySelector("#fps"),
   input: document.querySelector("#input"),
   mode: document.querySelector("#mode"),
+  powerNotice: document.querySelector("#power-notice"),
   status: document.querySelector("#status"),
   stop: document.querySelector("#stop-capture"),
 };
@@ -70,7 +75,7 @@ globalThis.rhythmVisualizerLab = Object.freeze({
     elements.input.dispatchEvent(new Event("change"));
   },
   setMode: (mode) => {
-    elements.mode.value = mode === "ribbon" ? "ribbon" : "spectrum";
+    elements.mode.value = normalizeVisualizerMode(mode);
     elements.mode.dispatchEvent(new Event("change"));
   },
   snapshot: () => ({
@@ -175,8 +180,10 @@ function setStatus(value, detail) {
 }
 
 function updateModeLabel() {
-  document.querySelector("#mode-title").textContent =
-    elements.mode.value === "ribbon" ? "Siri Ribbon" : "Mirror Spectrum";
+  const details =
+    VISUALIZER_MODE_DETAILS[normalizeVisualizerMode(elements.mode.value)];
+  document.querySelector("#mode-title").textContent = details.label;
+  elements.powerNotice.textContent = `${details.power}. Static Artwork remains the safe default in Mistake Watch.`;
 }
 
 function syncControlState() {
@@ -186,7 +193,7 @@ function syncControlState() {
 function applyQuery() {
   const query = new URLSearchParams(location.search);
   elements.input.value = query.get("input") === "fixture" ? "fixture" : "live";
-  elements.mode.value = query.get("mode") === "ribbon" ? "ribbon" : "spectrum";
+  elements.mode.value = normalizeVisualizerMode(query.get("mode"));
   elements.fps.value = query.get("fps") === "30" ? "30" : "24";
   state.input = elements.input.value;
 }

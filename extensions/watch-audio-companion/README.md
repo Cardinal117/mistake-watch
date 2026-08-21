@@ -3,8 +3,8 @@
 Private Manifest V3 rhythm companion for trusted Mistake Watch users. Phase 1
 proved that Opera GX can expose audio-only tab PCM to an offscreen AudioWorklet
 while captured audio remains audible. Phase 2 adds a focused first-party beat
-detector. Phase 3 connects that bounded contract to an isolated Mirror Spectrum
-and Siri Ribbon review lab without changing the production website.
+detector. Phase 3 connects that bounded contract to an isolated five-renderer
+review Lab without changing the production website.
 
 This is not a public extension package and does not contain a production website
 bridge or room-wide rhythm synchronization.
@@ -48,8 +48,9 @@ bridge or room-wide rhythm synchronization.
    the 24 FPS cap.
 5. After a steady rhythmic section, hover the `PCM` badge. A locked estimate
    shows BPM and confidence; quiet or ambiguous audio may remain unlocked.
-6. Confirm the lab readout and Mirror Spectrum respond without exposing raw
-   audio data. Switch to Siri Ribbon and repeat.
+6. Confirm the Lab readout and Mirror Spectrum respond without exposing raw
+   audio data. Repeat with Siri Ribbon, Dot Waves, Signal Bloom, and
+   Constellation.
 7. Confirm playback remains audible at the expected level without an echo or
    doubled signal.
 8. Use the lab's Stop capture command or click the action again from the Watch
@@ -58,6 +59,16 @@ bridge or room-wide rhythm synchronization.
 
 The lab includes a deterministic 120 BPM fixture for renderer-only measurement.
 Fixture mode does not start tab capture. It is intentionally not persisted.
+
+Power classifications remain visible in the Lab and are not performance-pass
+claims:
+
+- Mirror Spectrum and Dot Waves: beta, very high power.
+- Siri Ribbon and Signal Bloom: experimental, high power.
+- Constellation: experimental, extreme power.
+
+All modes default to 24 FPS. Static Artwork remains the production-safe website
+default.
 
 An `ERR` badge indicates capture startup failed. Hover over the action for the
 bounded error message and inspect the extension service worker from
@@ -92,6 +103,18 @@ steady song segment before, during, and after capture. Prefer a system-loopback
 recording and report RMS or LUFS delta; target no more than 0.5 dB steady-state
 change and no new clipping. Record the transition dip separately because it is
 not a steady-state gain measurement.
+
+## Phase 3 Evidence
+
+Phase 3A passed on Opera GX with Mirror Spectrum and Siri Ribbon at 24 FPS. The
+`0.3.1` cleanup retest completed three start/stop cycles and navigation teardown
+with a clean service-worker console, audible output, and unchanged playback and
+queue state.
+
+Phase 3B adds bounded Dot Waves, Signal Bloom, and Constellation modes in version
+`0.4.0`. Local deterministic desktop and 390-pixel checks are nonblank,
+overflow-free, and console-clean. The Opera GX renderer-only and combined-load
+gate remains required before Phase 3B promotion.
 
 ## Local Verification
 

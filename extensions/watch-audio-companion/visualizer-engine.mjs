@@ -1,29 +1,45 @@
-import { createVisualizerRenderer } from "./visualizer-renderers.mjs";
+import {
+  createVisualizerRenderer,
+  normalizeVisualizerMode,
+} from "./visualizer-renderers.mjs";
 
 const DPR_CAP = 1.25;
 
 export class VisualizerEngine {
-  constructor({ canvas, getInput, mode = "spectrum", fps = 24 }) {
+  constructor({
+    canvas,
+    getInput,
+    mode = "spectrum",
+    fps = 24,
+    rendererFactory = createVisualizerRenderer,
+  }) {
     this.canvas = canvas;
     this.context = canvas.getContext("2d", { alpha: false });
     this.getInput = getInput;
-    this.mode = mode;
+    this.rendererFactory = rendererFactory;
     this.fps = normalizeFps(fps);
-    this.renderer = createVisualizerRenderer(mode);
+    this.renderer = this.rendererFactory(normalizeVisualizerMode(mode));
+    this.mode = this.renderer.id;
     this.running = false;
     this.destroyed = false;
     this.rafId = null;
     this.lastRenderedAt = null;
     this.frameCount = 0;
+    this.renderer.init();
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
     this.resize();
   }
 
   setMode(mode) {
-    if (mode === this.mode) return;
-    this.mode = mode === "ribbon" ? "ribbon" : "spectrum";
-    this.renderer = createVisualizerRenderer(this.mode);
+    const nextMode = normalizeVisualizerMode(mode);
+    if (nextMode === this.mode) return;
+    const nextRenderer = this.rendererFactory(nextMode);
+    this.renderer.dispose();
+    this.renderer = nextRenderer;
+    this.mode = nextRenderer.id;
+    this.renderer.init();
+    this.resizeRenderer();
     this.drawStatic();
   }
 
@@ -71,6 +87,7 @@ export class VisualizerEngine {
     this.width = width;
     this.height = height;
     this.dpr = dpr;
+    this.resizeRenderer();
     this.drawStatic();
   }
 
@@ -132,7 +149,18 @@ export class VisualizerEngine {
     if (this.destroyed) return;
     this.stop("destroyed");
     this.destroyed = true;
+    this.renderer.dispose();
     this.resizeObserver.disconnect();
+  }
+
+  resizeRenderer() {
+    if (!this.width || !this.height) return;
+    this.renderer.resize({
+      compact: this.width < 640,
+      dpr: this.dpr,
+      height: this.height,
+      width: this.width,
+    });
   }
 }
 

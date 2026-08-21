@@ -1,20 +1,53 @@
-const SETTINGS = Object.freeze({
-  brightness: 100,
-  bloom: 35,
-  reactivity: 110,
-});
+import {
+  clearCanvas,
+  color,
+  createRenderer,
+  react,
+} from "./visualizer-renderer-shared.mjs";
+import { createConstellationRenderer } from "./visualizer-renderers/constellation.mjs";
+import { createDotWavesRenderer } from "./visualizer-renderers/dot-waves.mjs";
+import { createSignalBloomRenderer } from "./visualizer-renderers/signal-bloom.mjs";
 
-const THEME = Object.freeze({
-  primary: "0 219 233",
-  secondary: "255 186 32",
-  shadow: "0 105 112",
-  wave: "219 252 255",
+export const VISUALIZER_MODE_DETAILS = Object.freeze({
+  spectrum: Object.freeze({
+    label: "Mirror Spectrum",
+    power: "Beta / very high power",
+  }),
+  ribbon: Object.freeze({
+    label: "Siri Ribbon",
+    power: "Experimental / high power",
+  }),
+  "dot-waves": Object.freeze({
+    label: "Dot Waves",
+    power: "Beta / very high power",
+  }),
+  "signal-bloom": Object.freeze({
+    label: "Signal Bloom",
+    power: "Experimental / high power",
+  }),
+  constellation: Object.freeze({
+    label: "Constellation",
+    power: "Experimental / extreme power",
+  }),
 });
 
 export function createVisualizerRenderer(mode) {
-  return mode === "ribbon"
-    ? createSiriRibbonRenderer()
-    : createMirrorRenderer();
+  switch (normalizeVisualizerMode(mode)) {
+    case "ribbon":
+      return createSiriRibbonRenderer();
+    case "dot-waves":
+      return createDotWavesRenderer();
+    case "signal-bloom":
+      return createSignalBloomRenderer();
+    case "constellation":
+      return createConstellationRenderer();
+    default:
+      return createMirrorRenderer();
+  }
+}
+
+export function normalizeVisualizerMode(mode) {
+  return Object.hasOwn(VISUALIZER_MODE_DETAILS, mode) ? mode : "spectrum";
 }
 
 function createMirrorRenderer() {
@@ -134,42 +167,7 @@ function createSiriRibbonRenderer() {
   };
 }
 
-function clearCanvas(context, width, height, input) {
-  context.save();
-  context.shadowBlur = 0;
-  context.globalCompositeOperation = "source-over";
-  context.fillStyle = "#0a0a0b";
-  context.fillRect(0, 0, width, height);
-  const wash = context.createRadialGradient(
-    width * 0.5,
-    height * 0.52,
-    0,
-    width * 0.5,
-    height * 0.52,
-    Math.max(width, height) * 0.72,
-  );
-  wash.addColorStop(0, color("primary", 0.025 + input.energy * 0.045));
-  wash.addColorStop(0.68, color("secondary", 0.012 + input.bass * 0.02));
-  wash.addColorStop(1, "transparent");
-  context.fillStyle = wash;
-  context.fillRect(0, 0, width, height);
-  context.restore();
-}
-
 function drawMirroredBar(context, x, centerY, width, height) {
   context.fillRect(x, centerY - height, width, Math.max(1, height - 2));
   context.fillRect(x, centerY + 2, width, height);
-}
-
-function react(value) {
-  return clamp(value * (SETTINGS.reactivity / 100));
-}
-
-function color(channel, alpha) {
-  const brightness = SETTINGS.brightness / 100;
-  return `rgb(${THEME[channel]} / ${clamp(alpha * brightness)})`;
-}
-
-function clamp(value, min = 0, max = 1) {
-  return Math.min(max, Math.max(min, value));
 }

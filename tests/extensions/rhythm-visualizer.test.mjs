@@ -6,6 +6,7 @@ import {
   RhythmVisualizerInput,
   createFixtureFrame,
 } from "../../extensions/watch-audio-companion/rhythm-visualizer-input.mjs";
+import { VisualizerEngine } from "../../extensions/watch-audio-companion/visualizer-engine.mjs";
 import { createVisualizerRenderer } from "../../extensions/watch-audio-companion/visualizer-renderers.mjs";
 
 test("rhythm input maps bounded scalar frames into reusable display arrays", () => {
@@ -63,28 +64,125 @@ test("deterministic fixture remains a valid bounded rhythm frame", () => {
   assert.equal(input.confidence, 0.92);
 });
 
-for (const mode of ["spectrum", "ribbon"]) {
-  test(`${mode} renderer draws a bounded rhythm input`, () => {
-    const adapter = new RhythmVisualizerInput();
-    adapter.accept(createFrame(), 1_000);
-    const context = createCanvasContext();
-    const renderer = createVisualizerRenderer(mode);
+for (const mode of [
+  "spectrum",
+  "ribbon",
+  "dot-waves",
+  "signal-bloom",
+  "constellation",
+]) {
+  for (const compact of [false, true]) {
+    test(`${mode} renderer draws bounded ${compact ? "compact" : "desktop"} output`, () => {
+      const adapter = new RhythmVisualizerInput();
+      adapter.accept(createFrame(), 1_000);
+      const context = createCanvasContext();
+      const renderer = createVisualizerRenderer(mode);
 
-    renderer.render({
-      compact: false,
-      context,
-      height: 480,
-      input: adapter.sample(1_100),
-      time: 1_100,
-      width: 960,
+      renderer.init?.();
+      renderer.resize?.({
+        compact,
+        height: compact ? 390 : 480,
+        width: compact ? 360 : 960,
+      });
+      renderer.render({
+        compact,
+        context,
+        delta: 16.67,
+        height: compact ? 390 : 480,
+        input: adapter.sample(1_100),
+        time: 1_100,
+        width: compact ? 360 : 960,
+      });
+
+      assert.equal(renderer.id, mode);
+      assert.ok(context.calls.fillRect > 0);
+      assert.ok(context.calls.gradients > 0);
+      assert.ok(context.calls.fill + context.calls.stroke > 0);
+      renderer.dispose?.();
+    });
+  }
+}
+
+test("Dot Waves keeps its strongest reactive field centered", () => {
+  const context = createCanvasContext();
+  const renderer = createVisualizerRenderer("dot-waves");
+
+  renderer.render({
+    compact: false,
+    context,
+    delta: 16.67,
+    height: 480,
+    input: createUniformInput(),
+    time: 1_100,
+    width: 960,
+  });
+
+  const center = context.arcs.filter(({ x }) => x >= 336 && x <= 624);
+  const edges = context.arcs.filter(({ x }) => x < 192 || x > 768);
+  assert.ok(center.length > 0);
+  assert.ok(edges.length > 0);
+  assert.ok(averageRadius(center) > averageRadius(edges) * 1.3);
+});
+
+test("visualizer mode changes dispose renderer state without duplicating the frame loop", () => {
+  const originalResizeObserver = globalThis.ResizeObserver;
+  const originalRequestAnimationFrame = globalThis.requestAnimationFrame;
+  const originalCancelAnimationFrame = globalThis.cancelAnimationFrame;
+  const scheduled = new Map();
+  const events = [];
+  let nextFrameId = 1;
+
+  globalThis.ResizeObserver = class {
+    observe() {}
+    disconnect() {}
+  };
+  globalThis.requestAnimationFrame = (callback) => {
+    const id = nextFrameId++;
+    scheduled.set(id, callback);
+    return id;
+  };
+  globalThis.cancelAnimationFrame = (id) => scheduled.delete(id);
+
+  try {
+    const engine = new VisualizerEngine({
+      canvas: createCanvas(),
+      getInput: () => createUniformInput(),
+      mode: "spectrum",
+      rendererFactory: (mode) => createLifecycleRenderer(mode, events),
     });
 
-    assert.equal(renderer.id, mode);
-    assert.ok(context.calls.fillRect > 0);
-    assert.ok(context.calls.stroke > 0);
-    assert.ok(context.calls.gradients > 0);
-  });
-}
+    engine.start();
+    assert.equal(scheduled.size, 1);
+
+    engine.setMode("dot-waves");
+    engine.setMode("signal-bloom");
+    engine.setMode("constellation");
+
+    assert.equal(engine.snapshot().mode, "constellation");
+    assert.equal(scheduled.size, 1);
+    assert.deepEqual(events, [
+      "init:spectrum",
+      "resize:spectrum",
+      "dispose:spectrum",
+      "init:dot-waves",
+      "resize:dot-waves",
+      "dispose:dot-waves",
+      "init:signal-bloom",
+      "resize:signal-bloom",
+      "dispose:signal-bloom",
+      "init:constellation",
+      "resize:constellation",
+    ]);
+
+    engine.destroy();
+    assert.equal(scheduled.size, 0);
+    assert.equal(events.at(-1), "dispose:constellation");
+  } finally {
+    restoreGlobal("ResizeObserver", originalResizeObserver);
+    restoreGlobal("requestAnimationFrame", originalRequestAnimationFrame);
+    restoreGlobal("cancelAnimationFrame", originalCancelAnimationFrame);
+  }
+});
 
 function createFrame(overrides = {}) {
   return createRhythmFrameV1({
@@ -104,11 +202,17 @@ function createFrame(overrides = {}) {
 }
 
 function createCanvasContext() {
-  const calls = { fillRect: 0, gradients: 0, stroke: 0 };
+  const arcs = [];
+  const calls = { fill: 0, fillRect: 0, gradients: 0, stroke: 0 };
   const gradient = { addColorStop() {} };
   return {
+    arcs,
     calls,
+    arc(x, y, radius) {
+      arcs.push({ radius, x, y });
+    },
     beginPath() {},
+    closePath() {},
     createLinearGradient() {
       calls.gradients += 1;
       return gradient;
@@ -117,15 +221,66 @@ function createCanvasContext() {
       calls.gradients += 1;
       return gradient;
     },
+    fill() {
+      calls.fill += 1;
+    },
     fillRect() {
       calls.fillRect += 1;
     },
     lineTo() {},
     moveTo() {},
+    rotate() {},
     restore() {},
     save() {},
+    setTransform() {},
     stroke() {
       calls.stroke += 1;
     },
+    translate() {},
   };
+}
+
+function createUniformInput() {
+  return {
+    active: true,
+    bass: 0.8,
+    confidence: 0.84,
+    energy: 0.7,
+    highs: 0.55,
+    mids: 0.6,
+    onset: 0.65,
+    phase: 0.4,
+    spectrum: new Float32Array(96).fill(0.7),
+    tempoBpm: 120,
+    waveform: new Float32Array(192).fill(0.3),
+  };
+}
+
+function averageRadius(arcs) {
+  return arcs.reduce((total, { radius }) => total + radius, 0) / arcs.length;
+}
+
+function createCanvas() {
+  const context = createCanvasContext();
+  return {
+    getBoundingClientRect: () => ({ height: 480, width: 960 }),
+    getContext: () => context,
+    height: 0,
+    width: 0,
+  };
+}
+
+function createLifecycleRenderer(mode, events) {
+  return {
+    id: mode,
+    dispose: () => events.push(`dispose:${mode}`),
+    init: () => events.push(`init:${mode}`),
+    render() {},
+    resize: () => events.push(`resize:${mode}`),
+  };
+}
+
+function restoreGlobal(key, value) {
+  if (value === undefined) delete globalThis[key];
+  else globalThis[key] = value;
 }

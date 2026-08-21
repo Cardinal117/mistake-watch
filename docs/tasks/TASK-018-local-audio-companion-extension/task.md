@@ -308,7 +308,28 @@ and bounded signal consumption are reusable stateful contracts.
    Constellation experimental extreme power unless new evidence justifies a
    change.
 
-Phase 3B is specified but not started. Static Artwork remains the production-
+Phase 3B is locally implemented in private extension version `0.4.0` and awaits
+the Opera GX laptop gate:
+
+- The renderer and lifecycle contracts were written first and failed because
+  the three modes were unsupported, Dot Waves had no centered field, and mode
+  changes did not dispose state. Eight focused failures recorded that baseline.
+- Dot Waves, Signal Bloom, and Constellation now consume the existing bounded
+  display input through separate renderer modules. Dot Waves weights its
+  strongest reactive region toward the center. Constellation is capped at 48/30
+  particles and 96/48 connections for desktop/compact layouts.
+- The engine initializes, resizes, disposes, and replaces renderer state while
+  retaining one animation loop. Mode metadata keeps the beta, high-power, and
+  extreme-power labels visible in the Lab.
+- The focused renderer suite passes 16/16 and the complete extension suite
+  passes 38/38. The complete repository suite passes 416/416, and TypeScript,
+  ESLint, file-length policy, production build, Prettier, and diff checks pass.
+  Deterministic fixture QA passed at desktop and 390 pixels for all three modes
+  with visible nonblank output, correct labels, no overflow, and no console
+  warning or error.
+
+See [Phase 3B Opera GX gate](phase-3b-opera-gx-gate.md) for the remaining
+renderer-only and combined-load evidence. Static Artwork remains the production-
 safe default, and production integration still requires a separate approved
 task after the private prototype decision.
 
