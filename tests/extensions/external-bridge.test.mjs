@@ -21,7 +21,7 @@ test("manifest exposes one stable exact-origin private bridge", async () => {
     ),
   );
 
-  assert.equal(manifest.version, "0.6.0");
+  assert.equal(manifest.version, "0.6.1");
   assert.match(manifest.key, /^[A-Za-z0-9+/]+={0,2}$/);
   assert.equal(
     extensionIdFromPublicKey(manifest.key),
@@ -54,12 +54,13 @@ test("external bridge serves only the captured approved top-level tab", async ()
   await harness.flush();
 
   assert.equal(approved.disconnected, false);
-  assert.equal(approved.messages[0].type, "capture-state");
-  assert.equal(approved.messages[0].version, 1);
-  assert.equal(approved.messages[0].status.active, true);
-  assert.equal("tabId" in approved.messages[0].status, false);
-  assert.equal(approved.messages[1].type, "rhythm-frame");
-  assert.equal(approved.messages[1].frame.bpm, 120);
+  assert.equal(approved.messages[0].status.active, false);
+  assert.equal(approved.messages[1].type, "capture-state");
+  assert.equal(approved.messages[1].version, 1);
+  assert.equal(approved.messages[1].status.active, true);
+  assert.equal("tabId" in approved.messages[1].status, false);
+  assert.equal(approved.messages[2].type, "rhythm-frame");
+  assert.equal(approved.messages[2].frame.bpm, 120);
 
   const wrongTab = harness.connect({
     tabId: 43,
@@ -258,8 +259,8 @@ test("external bridge does not retain a page that disconnects during status look
   await connecting;
   controller.publishVisualFrame(createVisualFrame({ sequence: 8 }));
 
-  assert.equal(port.postAttempts, 0);
-  assert.deepEqual(port.messages, []);
+  assert.equal(port.postAttempts, 1);
+  assert.equal(port.messages[0].status.active, false);
 });
 
 async function createBridgeHarness() {

@@ -138,11 +138,17 @@ it does not authorize a website or SpacetimeDB bridge.
 
 ## TASK-019 Batch A
 
-Version `0.6.0` adds a stable private extension ID and named long-lived website
+Version `0.6.1` adds a stable private extension ID and named logical website
 port. Only approved production aliases and development port `5371` can connect
 from a top-level `/rooms/*` page. An approved page may receive an inactive state
 while dormant, but rhythm and detailed visual data are authorized only when its
 tab is the captured tab. The website cannot send a capture command.
+
+The extension posts the bounded inactive state before querying the optional
+offscreen capture status. This keeps a newly created Opera GX port usable when
+the Manifest V3 worker starts without an offscreen document. If Opera retires
+the physical port later, the website recreates it with bounded event-driven
+backoff; no heartbeat or polling loop is used.
 
 Visual delivery allows one frame in flight, keeps only the newest pending
 frame, and recovers after a missing ACK. The offscreen document forwards visual

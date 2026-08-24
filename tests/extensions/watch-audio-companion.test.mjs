@@ -27,7 +27,7 @@ test("manifest keeps the private capture permission surface narrow", async () =>
 
   assert.equal(manifest.manifest_version, 3);
   assert.equal(manifest.minimum_chrome_version, "116");
-  assert.equal(manifest.version, "0.6.0");
+  assert.equal(manifest.version, "0.6.1");
   assert.deepEqual(manifest.permissions.toSorted(), [
     "activeTab",
     "offscreen",

@@ -61,6 +61,7 @@ export function createExternalBridgeController({
       handleMessage: null,
       pendingVisualFrame: null,
       port,
+      statusRevision: 0,
       tabId,
       visualSequence: null,
     };
@@ -85,6 +86,7 @@ export function createExternalBridgeController({
   }
 
   function applyStatus(record, status) {
+    record.statusRevision += 1;
     const authorized = status?.active === true && status.tabId === record.tabId;
     if (!authorized) {
       record.authorized = false;
@@ -169,6 +171,11 @@ export function createExternalBridgeController({
       const record = createRecord(port, sender.tabId);
       records.set(sender.tabId, record);
 
+      // Establish the dormant bridge before optional offscreen status work.
+      applyStatus(record, null);
+      const initialStatusRevision = record.statusRevision;
+      if (record.disconnected || records.get(sender.tabId) !== record) return;
+
       let status = null;
       try {
         status = await getStatus();
@@ -176,7 +183,13 @@ export function createExternalBridgeController({
         // No offscreen document means capture is inactive, not unauthorized.
       }
       if (record.disconnected || records.get(sender.tabId) !== record) return;
-      applyStatus(record, status);
+      if (
+        record.statusRevision === initialStatusRevision &&
+        status?.active === true &&
+        status.tabId === record.tabId
+      ) {
+        applyStatus(record, status);
+      }
     },
 
     disconnectTab(tabId) {

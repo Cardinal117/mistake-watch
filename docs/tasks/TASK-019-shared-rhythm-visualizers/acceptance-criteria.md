@@ -5,9 +5,10 @@
 - Capture still requires the extension toolbar user gesture.
 - Only exact approved Mistake Watch origins can open the external port.
 - Approved top-level room pages maintain one logical dormant bridge and receive
-  only an inactive state. Rhythm and detailed visual data are delivered only to
-  the captured top-level tab. If Manifest V3 retires the idle service worker,
-  the website restores the bridge with bounded event-driven retries.
+  an immediate inactive state before optional offscreen status lookup. Rhythm
+  and detailed visual data are delivered only to the captured top-level tab. If
+  Manifest V3 retires the idle service worker, the website restores the bridge
+  with bounded event-driven retries.
 - No PCM, audio track, media stream, cookie, token, invite, email, participant
   data, URL, detailed visual frame, onset, or energy value enters network or
   persistent storage.

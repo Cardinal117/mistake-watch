@@ -6,8 +6,10 @@ Testing mode: **test-first**.
 
 Status: implementation and local Chromium bridge gate passed. The first
 exact-SHA Opera GX gate found idle service-worker port retirement; bounded
-event-driven client recovery is implemented and requires one focused rerun
-before Batch B.
+event-driven client recovery is implemented. The second gate found that Opera
+could retire a newly started worker while its optional status lookup was still
+pending; extension `0.6.1` now establishes the inactive bridge synchronously
+and requires one focused rerun before Batch B.
 
 1. Add failing tests for exact-origin external ports, captured-tab matching,
    version normalization, no remote capture start, frame bounds, backpressure,

@@ -131,7 +131,7 @@ mismatch even if explicit cleanup is delayed.
 ## Release Order
 
 1. Merge TASK-018 through a reviewed PR.
-2. Ship private extension `0.6.0` for exact-SHA Opera GX bridge QA.
+2. Ship private extension `0.6.1` for exact-SHA Opera GX bridge QA.
 3. Publish the compatible SpacetimeDB schema/reducers and regenerate bindings.
 4. Deploy the website integration to Vercel production.
 5. Run host, participant, guest, no-extension, and resource QA before closing.
