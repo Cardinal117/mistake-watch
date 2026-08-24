@@ -14,7 +14,11 @@ const rootDir = path.resolve(
 
 const tempDir = await mkdtemp(path.join(tmpdir(), "mistake-watch-spacetime-"));
 
-async function transpileSource(sourcePath, outputName, transform = (source) => source) {
+async function transpileSource(
+  sourcePath,
+  outputName,
+  transform = (source) => source,
+) {
   const source = transform(await readFile(sourcePath, "utf8"));
   const js = ts.transpileModule(source, {
     compilerOptions: {
@@ -86,4 +90,30 @@ test("empty and merged snapshots preserve chat message state", () => {
 
   assert.equal(merged.chatMessages[0].roomId, "room-1");
   assert.equal(merged.chatMessages[0].text, "Ready");
+});
+
+test("merged snapshots can explicitly clear a room rhythm profile", () => {
+  const withProfile = mergeLiveRoomSnapshot(emptyLiveRoomSnapshot, {
+    roomRhythmProfile: {
+      algorithmVersion: "first-party-beat-v1",
+      beatIntervalSeconds: 0.5,
+      bpm: 120,
+      confidence: 0.9,
+      expiresMs: 20_000,
+      mediaBeatOffsetSeconds: 0.1,
+      mediaId: "abc123XYZ00",
+      playbackOccurrenceId: "occurrence-1",
+      publishedMs: 10_000,
+      revision: 1,
+      roomId: "room-1",
+      sourceType: "youtube",
+    },
+  });
+
+  assert.equal(withProfile.roomRhythmProfile?.revision, 1);
+  assert.equal(
+    mergeLiveRoomSnapshot(withProfile, { roomRhythmProfile: null })
+      .roomRhythmProfile,
+    null,
+  );
 });

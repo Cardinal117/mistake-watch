@@ -139,5 +139,6 @@ export function getRoomSubscriptions(roomId: string) {
     `SELECT * FROM live_queue_item WHERE room_id = '${safeRoomId}'`,
     `SELECT * FROM room_chat_message WHERE room_id = '${safeRoomId}'`,
     `SELECT * FROM room_error WHERE room_id = '${safeRoomId}'`,
+    `SELECT * FROM room_rhythm_profile WHERE room_id = '${safeRoomId}'`,
   ];
 }

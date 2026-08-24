@@ -222,6 +222,22 @@ export const RoomPermission = __t.object("RoomPermission", {
 });
 export type RoomPermission = __Infer<typeof RoomPermission>;
 
+export const RoomRhythmProfile = __t.object("RoomRhythmProfile", {
+  algorithmVersion: __t.string(),
+  beatIntervalSeconds: __t.f64(),
+  bpm: __t.f64(),
+  confidence: __t.f64(),
+  expiresMs: __t.i64(),
+  mediaBeatOffsetSeconds: __t.f64(),
+  mediaId: __t.string(),
+  playbackOccurrenceId: __t.string(),
+  publishedMs: __t.i64(),
+  revision: __t.u32(),
+  roomId: __t.string(),
+  sourceType: __t.string(),
+});
+export type RoomRhythmProfile = __Infer<typeof RoomRhythmProfile>;
+
 export const RoomSeedGrant = __t.object("RoomSeedGrant", {
   createdByIdentity: __t.identity(),
   createdMs: __t.i64(),

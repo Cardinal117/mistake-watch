@@ -49,23 +49,23 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     hasCurrentLiveAuthority &&
     Boolean(
       currentMember?.role === "host" ||
-        (currentLiveParticipant?.status === "online" &&
-          currentLivePermission?.canControlPlayback),
+      (currentLiveParticipant?.status === "online" &&
+        currentLivePermission?.canControlPlayback),
     );
   const canAddQueue =
     hasCurrentLiveAuthority &&
     Boolean(
       currentMember?.role === "host" ||
-        (currentLiveParticipant?.status === "online" &&
-          currentLivePermission?.canAddQueue),
+      (currentLiveParticipant?.status === "online" &&
+        currentLivePermission?.canAddQueue),
     );
   const canManageQueue =
     hasCurrentLiveAuthority &&
     Boolean(
       currentMember?.role === "host" ||
-        (currentLiveParticipant?.status === "online" &&
-          (currentLivePermission?.canAddQueue ||
-            currentLivePermission?.canManageQueue)),
+      (currentLiveParticipant?.status === "online" &&
+        (currentLivePermission?.canAddQueue ||
+          currentLivePermission?.canManageQueue)),
     );
 
   const currentMemberKick = currentMember
@@ -461,6 +461,39 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     });
   }
 
+  function publishRoomRhythmProfile(input: {
+    algorithmVersion: string;
+    beatIntervalSeconds: number;
+    bpm: number;
+    confidence: number;
+    mediaBeatOffsetSeconds: number;
+    mediaId: string;
+    playbackOccurrenceId: string;
+    revision: number;
+    ttlMs: number;
+  }) {
+    if (!currentMember || !canManageAuthority || !reducers) return;
+
+    void reducers.publishRoomRhythmProfile({
+      actorMemberId: currentMember.id,
+      roomId: room.id,
+      ...input,
+    });
+  }
+
+  function clearRoomRhythmProfile(input: {
+    expectedPlaybackOccurrenceId: string;
+    expectedRevision: number;
+  }) {
+    if (!currentMember || !canManageAuthority || !reducers) return;
+
+    void reducers.clearRoomRhythmProfile({
+      actorMemberId: currentMember.id,
+      roomId: room.id,
+      ...input,
+    });
+  }
+
   async function sendChatMessage(input: {
     clientMessageId: string;
     text: string;
@@ -605,6 +638,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     canManageQueue,
     canControlPlayback,
     clearQueue,
+    clearRoomRhythmProfile,
     connectionStatus,
     connectionReadiness,
     errorMessage,
@@ -615,6 +649,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     participants,
     playQueueItemNow,
     playQueueItem,
+    publishRoomRhythmProfile,
     removalNotice,
     retryConnection,
     removeIdleMember,

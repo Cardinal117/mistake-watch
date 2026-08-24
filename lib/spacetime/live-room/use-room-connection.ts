@@ -148,6 +148,9 @@ export function useRoomConnection(room: RoomSnapshot) {
       liveDb.room_permission.removeOnInsert(handleRowChange);
       liveDb.room_permission.removeOnUpdate(handleRowChange);
       liveDb.room_permission.removeOnDelete(handleRowChange);
+      liveDb.room_rhythm_profile.removeOnInsert(handleRowChange);
+      liveDb.room_rhythm_profile.removeOnUpdate(handleRowChange);
+      liveDb.room_rhythm_profile.removeOnDelete(handleRowChange);
       liveDb.room_session.removeOnInsert(handleSessionChange);
       liveDb.room_session.removeOnUpdate(handleSessionChange);
       liveDb.room_session.removeOnDelete(handleSessionChange);
@@ -240,6 +243,9 @@ export function useRoomConnection(room: RoomSnapshot) {
         liveDb.room_permission.onInsert(handleRowChange);
         liveDb.room_permission.onUpdate(handleRowChange);
         liveDb.room_permission.onDelete(handleRowChange);
+        liveDb.room_rhythm_profile.onInsert(handleRowChange);
+        liveDb.room_rhythm_profile.onUpdate(handleRowChange);
+        liveDb.room_rhythm_profile.onDelete(handleRowChange);
         liveDb.room_session.onInsert(handleSessionChange);
         liveDb.room_session.onUpdate(handleSessionChange);
         liveDb.room_session.onDelete(handleSessionChange);

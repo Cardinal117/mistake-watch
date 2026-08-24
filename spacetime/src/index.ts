@@ -79,6 +79,10 @@ export {
   leave_room,
   on_disconnect,
 } from "./room-participation";
+export {
+  clear_room_rhythm_profile,
+  publish_room_rhythm_profile,
+} from "./room-rhythm";
 
 export default spacetimedb;
 

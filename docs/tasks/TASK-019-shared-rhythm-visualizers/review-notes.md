@@ -152,3 +152,45 @@
   with that installed Node runtime's `--experimental-strip-types` support.
 - **Outcome:** Batch A is complete. Batch B may begin with its existing
   test-first host-authority and shared-state boundary.
+
+### Batch B Local Completion - 2026-08-24
+
+- **Test-first record:** The initial authority, phase, wiring, and snapshot
+  tests failed before the room-rhythm modules, generated bindings, subscription,
+  and host publisher existed. A later provider-identity regression test also
+  failed before the server parser was tightened to exact 11-character YouTube
+  IDs and approved YouTube hosts.
+- **Shared contract:** Added one public `room_rhythm_profile` row per room with
+  only source type, opaque YouTube media ID, playback occurrence, BPM, interval,
+  media-time beat offset, confidence, algorithm version, revision, and
+  server-authored publish/expiry timestamps. No URL, detailed frame, energy,
+  onset, account, participant, extension, or audio field enters shared state.
+- **Authority:** Only the admitted current host whose Spacetime identity matches
+  the participant can publish or clear. The reducer rejects inactive playback,
+  non-YouTube sources, wrong room/media/occurrence, malformed or non-finite
+  values, inconsistent BPM/interval pairs, low confidence, invalid TTL,
+  out-of-order revision, excessive cadence, and stale clear requests.
+- **Publication:** The Listen host publishes only while connected, authoritative,
+  and playing the exact YouTube occurrence. Two sequential stable detector
+  observations are required. Refresh is bounded to six seconds with a 12-second
+  server expiry, and source changes are occurrence-safe.
+- **Phase:** Capture-relative beat timing is mapped once to media time. Future
+  participant renderers can reconstruct phase from the canonical playback clock
+  without receiving PCM, spectrum, waveform, energy, or onset data.
+- **Generated client:** Spacetime bindings, room-scoped subscription, snapshot
+  mapping, listeners, and publish/clear client commands are wired. Explicit
+  deletion clears the client snapshot instead of retaining a stale row.
+- **Runtime proof:** An isolated local database admitted separate host and guest
+  identities. A host publication appeared in both subscribed client caches, a
+  guest replacement was denied, the exact revision remained unchanged, and a
+  host stale-safe clear removed the row from both clients. The temporary
+  database was deleted afterward.
+- **Verification:** Focused Batch B checks pass 24/24. The complete repository
+  suite passes 463/463 when run serially after the workstation restart. The
+  default concurrent run had exhausted system RAM before assertions executed.
+  TypeScript, ESLint, production build, Spacetime module build, changed-file
+  Prettier, `git diff --check`, and file-length policy pass. File length reports
+  zero violations and 15 pre-existing warnings.
+- **Release boundary:** No Maincloud publish, Vercel deploy, Supabase change,
+  production room mutation, renderer integration, commit, or push was performed
+  for Batch B. Batch C remains the next implementation slice.

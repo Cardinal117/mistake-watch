@@ -1,6 +1,7 @@
 import { getDeterministicAvatarKey, isAvatarKey } from "@/lib/identity/avatars";
 import type { QueueMode } from "@/lib/queue/model";
 import type { RoomParticipant, RoomSnapshot } from "@/lib/rooms";
+import type { RoomRhythmProfile } from "../generated/types";
 import type { LiveRoomSnapshot } from "../types";
 import type { LiveDb } from "./client-types";
 
@@ -66,6 +67,7 @@ export function buildFallbackSnapshot(room: RoomSnapshot): LiveRoomSnapshot {
       thumbnailUrl: item.thumbnailUrl ?? null,
       title: item.title,
     })),
+    roomRhythmProfile: null,
     session: {
       activeQueueItemId: null,
       controllerIdentity: null,
@@ -148,15 +150,15 @@ export function readLiveSnapshot(liveDb: LiveDb): LiveRoomSnapshot {
       roomId: participant.roomId,
       status: participant.status === "online" ? "online" : "idle",
     })),
-    participantPresences: [
-      ...liveDb.room_participant_presence.iter(),
-    ].map((presence) => ({
-      admissionId: presence.admissionId,
-      lastSeenMs: toNumber(presence.lastSeenMs),
-      memberId: presence.memberId,
-      roomId: presence.roomId,
-      status: presence.status === "online" ? "online" : "idle",
-    })),
+    participantPresences: [...liveDb.room_participant_presence.iter()].map(
+      (presence) => ({
+        admissionId: presence.admissionId,
+        lastSeenMs: toNumber(presence.lastSeenMs),
+        memberId: presence.memberId,
+        roomId: presence.roomId,
+        status: presence.status === "online" ? "online" : "idle",
+      }),
+    ),
     permissions: [...liveDb.room_permission.iter()].map((permission) => ({
       canAddQueue: permission.canAddQueue,
       canControlBrowser: permission.canControlBrowser,
@@ -225,6 +227,9 @@ export function readLiveSnapshot(liveDb: LiveDb): LiveRoomSnapshot {
             : "queued",
         title: item.title ?? null,
       })),
+    roomRhythmProfile: mapRoomRhythmProfile(
+      [...liveDb.room_rhythm_profile.iter()][0] ?? null,
+    ),
     session: session
       ? {
           activeQueueItemId: session.activeQueueItemId ?? null,
@@ -256,6 +261,25 @@ export function readLiveSnapshot(liveDb: LiveDb): LiveRoomSnapshot {
           supabaseRoomId: session.supabaseRoomId,
         }
       : null,
+  };
+}
+
+function mapRoomRhythmProfile(profile: RoomRhythmProfile | null) {
+  if (!profile || profile.sourceType !== "youtube") return null;
+
+  return {
+    algorithmVersion: profile.algorithmVersion,
+    beatIntervalSeconds: profile.beatIntervalSeconds,
+    bpm: profile.bpm,
+    confidence: profile.confidence,
+    expiresMs: toNumber(profile.expiresMs),
+    mediaBeatOffsetSeconds: profile.mediaBeatOffsetSeconds,
+    mediaId: profile.mediaId,
+    playbackOccurrenceId: profile.playbackOccurrenceId,
+    publishedMs: toNumber(profile.publishedMs),
+    revision: profile.revision,
+    roomId: profile.roomId,
+    sourceType: "youtube" as const,
   };
 }
 

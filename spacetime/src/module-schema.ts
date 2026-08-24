@@ -8,6 +8,7 @@ import {
   recommendationProcessedAction,
   recommendationRoomSession,
 } from "./recommendation-events";
+import { roomRhythmProfile } from "./room-rhythm-table";
 import {
   liveQueueItem,
   roomChatMessage,
@@ -32,6 +33,7 @@ export const spacetimedb = schema({
   recommendation_playback_occurrence: recommendationPlaybackOccurrence,
   recommendation_processed_action: recommendationProcessedAction,
   recommendation_room_session: recommendationRoomSession,
+  room_rhythm_profile: roomRhythmProfile,
   room_chat_message: roomChatMessage,
   room_admission_grant: roomAdmissionGrant,
   room_error: roomError,

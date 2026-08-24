@@ -28,6 +28,7 @@ import { ListenVisualization } from "@/components/room/listen/theme/listen-visua
 import { useListenAmbientPreference } from "@/components/room/listen/theme/use-listen-ambient-preference";
 import { useListenVisualizationPreference } from "@/components/room/listen/theme/use-listen-visualization-preference";
 import { getListenPresentationVariables } from "@/lib/player/listen-visualization";
+import { useRoomRhythmPublication } from "@/lib/audio-companion/use-room-rhythm-publication";
 import {
   useListenQueueItems,
   useDesktopListenShell,
@@ -125,6 +126,11 @@ export function ListenModeLayout({
 
     return () => window.clearInterval(timer);
   }, []);
+
+  useRoomRhythmPublication({
+    liveRoom,
+    mediaPositionSeconds: currentPosition,
+  });
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {

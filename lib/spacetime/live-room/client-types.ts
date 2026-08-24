@@ -9,6 +9,7 @@ import type {
   RoomParticipant as GeneratedRoomParticipant,
   RoomParticipantPresence as GeneratedRoomParticipantPresence,
   RoomPermission as GeneratedRoomPermission,
+  RoomRhythmProfile as GeneratedRoomRhythmProfile,
   RoomSession as GeneratedRoomSession,
 } from "../generated/types";
 import type { LiveRoomSnapshot } from "../types";
@@ -40,6 +41,7 @@ export type LiveDb = {
   room_participant: ClientTable<GeneratedRoomParticipant>;
   room_participant_presence: ClientTable<GeneratedRoomParticipantPresence>;
   room_permission: ClientTable<GeneratedRoomPermission>;
+  room_rhythm_profile: ClientTable<GeneratedRoomRhythmProfile>;
   room_session: ClientTable<GeneratedRoomSession>;
 };
 
@@ -81,6 +83,12 @@ export type LiveReducers = {
     roomId: string;
   }): Promise<void>;
   clearQueue(params: { actorMemberId: string; roomId: string }): Promise<void>;
+  clearRoomRhythmProfile(params: {
+    actorMemberId: string;
+    expectedPlaybackOccurrenceId: string;
+    expectedRevision: number;
+    roomId: string;
+  }): Promise<void>;
   grantRoomControl(params: {
     actorMemberId: string;
     roomId: string;
@@ -128,6 +136,19 @@ export type LiveReducers = {
     queueItemId: string;
     resolvedSourceUrl: string;
     roomId: string;
+  }): Promise<void>;
+  publishRoomRhythmProfile(params: {
+    actorMemberId: string;
+    algorithmVersion: string;
+    beatIntervalSeconds: number;
+    bpm: number;
+    confidence: number;
+    mediaBeatOffsetSeconds: number;
+    mediaId: string;
+    playbackOccurrenceId: string;
+    revision: number;
+    roomId: string;
+    ttlMs: number;
   }): Promise<void>;
   removeQueueItem(params: {
     actorMemberId: string;
@@ -238,6 +259,10 @@ export type LiveRoomState = {
   canManageQueue: boolean;
   canControlPlayback: boolean;
   clearQueue(): void;
+  clearRoomRhythmProfile(input: {
+    expectedPlaybackOccurrenceId: string;
+    expectedRevision: number;
+  }): void;
   advanceToNextQueueItem(input?: { autoplay?: boolean }): void;
   connectionStatus: SpacetimeConnectionStatus;
   connectionReadiness: RoomConnectionReadiness;
@@ -257,6 +282,17 @@ export type LiveRoomState = {
   participants: RoomParticipant[];
   playQueueItemNow(queueItemId: string): void;
   playQueueItem(queueItemId: string): void;
+  publishRoomRhythmProfile(input: {
+    algorithmVersion: string;
+    beatIntervalSeconds: number;
+    bpm: number;
+    confidence: number;
+    mediaBeatOffsetSeconds: number;
+    mediaId: string;
+    playbackOccurrenceId: string;
+    revision: number;
+    ttlMs: number;
+  }): void;
   removalNotice: string | null;
   retryConnection(): void;
   removeIdleMember(memberId: string): void;

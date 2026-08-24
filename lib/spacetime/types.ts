@@ -121,6 +121,21 @@ export type LiveChatMessage = {
   text: string;
 };
 
+export type LiveRoomRhythmProfile = {
+  algorithmVersion: string;
+  beatIntervalSeconds: number;
+  bpm: number;
+  confidence: number;
+  expiresMs: number;
+  mediaBeatOffsetSeconds: number;
+  mediaId: string;
+  playbackOccurrenceId: string;
+  publishedMs: number;
+  revision: number;
+  roomId: string;
+  sourceType: "youtube";
+};
+
 export type LiveRoomSnapshot = {
   session: LiveRoomSession | null;
   participants: LiveParticipant[];
@@ -130,6 +145,7 @@ export type LiveRoomSnapshot = {
   chatMessages: LiveChatMessage[];
   errors: LiveRoomError[];
   kicks: LiveRoomKick[];
+  roomRhythmProfile: LiveRoomRhythmProfile | null;
   connection: {
     connected: boolean;
     lastError?: string;

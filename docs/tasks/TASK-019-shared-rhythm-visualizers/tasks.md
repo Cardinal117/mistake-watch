@@ -26,6 +26,12 @@ and exact-SHA Opera GX bridge proof. No SpacetimeDB change yet.
 Testing mode: **test-first** because this changes realtime authority and shared
 state.
 
+Status: **complete locally**. The bounded public profile, host-only reducers,
+generated client, room subscription, snapshot mapping, stable detector gate,
+and deterministic media-clock phase mapping pass focused, full-suite, build,
+and isolated two-client SpacetimeDB verification. Production publication is
+reserved for Batch D's approved release order.
+
 1. Add failing contract and reducer tests for host acceptance, guest denial,
    sender mismatch, wrong media/occurrence, bounds, rate limit, revision,
    expiry, clear, and stale-row behavior.
