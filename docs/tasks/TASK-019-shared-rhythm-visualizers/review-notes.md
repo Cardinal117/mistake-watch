@@ -122,3 +122,33 @@
   TypeScript, ESLint, production build, and the file-length policy pass with 15
   pre-existing warnings. Changed-file Prettier and `git diff --check` pass. The
   browser-real approved-origin probe receives the immediate inactive state.
+
+### Batch A Promotion - 2026-08-24
+
+- **Gate verdict:** Promote at exact SHA `3920005`, extension `0.6.1`. The
+  detached laptop checkout remained clean and `git diff --check` passed.
+- **Tested browser:** Opera One Stable `134.0.5954.66`, Chromium
+  `150.0.7871.230`. This is the installed Opera build used for the gate, not an
+  Opera GX-branded build; the result qualifies the Chromium extension lifecycle
+  but does not claim separate Opera GX branding coverage.
+- **Inactive contract:** The first connection immediately received exactly
+  `active:false`, `hasSignal:false`, and `phase:idle`. No rhythm or visual frame
+  arrived while inactive, and the valid state reset the reconnect budget.
+- **Active contract:** Capture reached PCM. The original logical probe received
+  active state, rhythm, and bounded visual frames without a page refresh. All
+  7,372 observed visual frames were acknowledged.
+- **Dormant recovery:** After stop and more than 40 seconds inactive, only one
+  replacement connection occurred. Restart resumed delivery without refresh,
+  retry exhaustion, a rapid reconnect loop, disconnected-port errors, or
+  duplicate capture, Lab, or analysis sessions.
+- **Privacy and cleanup:** Extension Network panels and storage remained empty.
+  No PCM, URL, token, account, or room-secret payload was observed. Navigation
+  stopped capture, cleared the badge, and left the Lab inactive.
+- **Continuity:** Playback advanced naturally. The tested room retained its
+  track, volume, participant state, and `1 / 181` queue position. Computer-use
+  automation could not independently assess subjective echo or distortion.
+- **Runner note:** The laptop's literal Node invocation passed 58/59 because its
+  default runner rejected direct `.ts` loading. The same suite passed 64/64
+  with that installed Node runtime's `--experimental-strip-types` support.
+- **Outcome:** Batch A is complete. Batch B may begin with its existing
+  test-first host-authority and shared-state boundary.
