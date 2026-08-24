@@ -15,6 +15,7 @@ import {
 } from "@/lib/player/listen-visualization";
 import type { ListenTheme } from "@/components/room/listen/shared";
 import { cx } from "@/lib/ui";
+import { useAudioCompanion } from "@/lib/audio-companion/use-audio-companion";
 
 const FALLBACK_PREVIEW_ARTWORK = "/brand/logo-concept-01-signal-aperture.png";
 const previewFallbackTheme = {
@@ -30,6 +31,7 @@ export function PersonalizationSection({
   artworkUrl?: string | null;
 }) {
   const { mode, setMode } = useListenVisualizationPreference();
+  const audioCompanion = useAudioCompanion();
   const {
     backgroundDimming,
     setBackgroundDimming,
@@ -87,6 +89,12 @@ export function PersonalizationSection({
           Saved on this browser
         </p>
       </div>
+      <p
+        className="mt-2 text-label-sm text-on-surface-variant"
+        data-audio-companion-status={audioCompanion.snapshot.status}
+      >
+        Audio companion: {companionStatusLabel(audioCompanion.snapshot.status)}
+      </p>
 
       <div
         aria-label="Listen visualization"
@@ -133,7 +141,14 @@ export function PersonalizationSection({
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_30%,rgb(var(--listen-primary)_/_0.18),transparent_46%)]" />
                   </>
                 ) : null}
-                <ListenVisualization active={previewing} mode={option.id} />
+                <ListenVisualization
+                  active={previewing}
+                  companion={audioCompanion}
+                  intensity={visualIntensity}
+                  mode={option.id}
+                  preview={previewing}
+                  theme={previewArtworkTheme}
+                />
                 {option.motionLayers > 0 ? (
                   <button
                     aria-label={`${previewing ? "Stop" : "Play"} ${option.label} preview`}
@@ -184,7 +199,9 @@ export function PersonalizationSection({
                           ? "border-primary-fixed-dim/45 text-primary-fixed-dim"
                           : option.powerProfile === "lowest"
                             ? "border-white/12 text-on-surface-variant"
-                            : "border-secondary-fixed-dim/35 text-secondary-fixed-dim",
+                            : option.powerProfile === "beta"
+                              ? "border-primary-fixed-dim/35 text-primary-fixed-dim"
+                              : "border-secondary-fixed-dim/35 text-secondary-fixed-dim",
                       )}
                     >
                       {option.powerLabel}
@@ -193,6 +210,13 @@ export function PersonalizationSection({
                   <span className="mt-1 block text-label-sm text-on-surface-variant">
                     {option.description}
                   </span>
+                  {option.inputSource !== "none" ? (
+                    <span className="technical-label mt-2 block text-on-surface-variant">
+                      {option.inputSource === "local-detail"
+                        ? "Local companion detail"
+                        : "Shared room rhythm"}
+                    </span>
+                  ) : null}
                 </span>
               </label>
             </article>
@@ -220,6 +244,23 @@ export function PersonalizationSection({
       </div>
     </section>
   );
+}
+
+function companionStatusLabel(status: string) {
+  switch (status) {
+    case "inactive":
+      return "installed, capture inactive";
+    case "detecting":
+      return "detecting rhythm";
+    case "locked":
+      return "rhythm locked";
+    case "stale":
+      return "signal stale";
+    case "disconnected":
+      return "reconnecting";
+    default:
+      return "not available";
+  }
 }
 
 function AmbientRangeControl({

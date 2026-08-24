@@ -4,7 +4,6 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
-
 import ts from "typescript";
 
 const rootDir = path.resolve(
@@ -49,13 +48,22 @@ test("Static Artwork is the safe default visualization", () => {
     [
       "static-artwork",
       "off",
-      "dynamic-horizon",
-      "signal-ribbon",
-      "minimal-pulse",
+      "mirror-spectrum",
+      "siri-ribbon",
+      "dot-waves",
+      "signal-bloom",
+      "constellation",
     ],
   );
-  assert.equal(getListenVisualizationMode("dynamic-horizon").motionLayers, 3);
-  assert.ok(listenVisualizationModes.every((mode) => mode.motionLayers <= 3));
+  assert.equal(
+    getListenVisualizationMode("mirror-spectrum").inputSource,
+    "local-detail",
+  );
+  assert.equal(
+    getListenVisualizationMode("siri-ribbon").inputSource,
+    "shared-rhythm",
+  );
+  assert.ok(listenVisualizationModes.every((mode) => mode.motionLayers <= 1));
   assert.equal(
     getListenVisualizationMode("static-artwork").powerProfile,
     "recommended",
@@ -63,12 +71,12 @@ test("Static Artwork is the safe default visualization", () => {
   assert.ok(
     listenVisualizationModes
       .filter((mode) => mode.motionLayers > 0)
-      .every((mode) => mode.powerProfile === "higher"),
+      .every((mode) => ["beta", "experimental"].includes(mode.powerProfile)),
   );
 });
 
 test("unknown stored visualization values fail closed to the default", () => {
-  assert.equal(isListenVisualizationMode("signal-ribbon"), true);
+  assert.equal(isListenVisualizationMode("siri-ribbon"), true);
   assert.equal(isListenVisualizationMode("legacy-bars"), false);
   assert.equal(
     normalizeListenVisualizationMode("legacy-bars"),
@@ -100,10 +108,6 @@ test("ambient presentation levels are bounded and deterministic", () => {
   assert.ok(
     strong["--listen-artwork-opacity"] > subdued["--listen-artwork-opacity"],
   );
-  assert.ok(
-    strong["--listen-horizon-front-opacity"] >
-      subdued["--listen-horizon-front-opacity"],
-  );
   assert.ok(strong["--listen-dim-bottom"] > subdued["--listen-dim-bottom"]);
   assert.ok(
     strong["--listen-panel-dim-start"] > subdued["--listen-panel-dim-start"],
@@ -119,7 +123,7 @@ test("ambient presentation levels are bounded and deterministic", () => {
   assert.ok(strong["--listen-rail-dim-top"] <= 0.65);
 });
 
-test("the Listen renderer removes the 96-bar glow implementation", async () => {
+test("the Listen renderer uses the bounded canvas host", async () => {
   const [component, theme, layout, css] = await Promise.all([
     readFile(
       path.join(
@@ -139,16 +143,23 @@ test("the Listen renderer removes the 96-bar glow implementation", async () => {
     readFile(path.join(rootDir, "app/globals.css"), "utf8"),
   ]);
 
-  assert.equal(
-    component.match(/listen-horizon-layer listen-horizon-layer--/g)?.length,
-    3,
-  );
+  assert.match(component, /<canvas/);
+  assert.match(component, /ListenCanvasEngine/);
+  assert.match(component, /DPR_CAP = 1\.25/);
   assert.doesNotMatch(theme, /Array\.from\(\{ length: 96 \}\)/);
   assert.doesNotMatch(theme, /listen-center-wave-bar|boxShadow/);
   assert.doesNotMatch(layout, /ListenCenterWaveform/);
   assert.match(layout, /useListenVisualizationPreference/);
-  assert.match(layout, /visualizationMode !== "off"/);
-  assert.match(layout, /mode=\{visualizationMode\}/);
+  assert.match(layout, /effectiveVisualizationMode !== "off"/);
+  assert.match(layout, /effectiveVisualizationMode/);
+  assert.match(
+    layout,
+    /<ListenAmbientBackdrop[\s\S]*mode=\{effectiveVisualizationMode\}/,
+  );
+  assert.match(
+    layout,
+    /roomRhythmProfile=\{liveRoom\.snapshot\.roomRhythmProfile\}/,
+  );
   assert.match(theme, /mode === "static-artwork"/);
   assert.match(theme, /blur-\[8px\] saturate-125/);
   assert.match(theme, /blur-3xl saturate-150/);
@@ -158,21 +169,7 @@ test("the Listen renderer removes the 96-bar glow implementation", async () => {
   );
   assert.doesNotMatch(css, /to\s*\{\s*opacity:\s*0\.38/);
   assert.doesNotMatch(css, /listen-center-wave-bar|listen-center-wave\s*\{/);
-  assert.match(css, /translate3d\(-50%, 0, 0\)/);
-  assert.match(css, /animation-play-state: paused/);
-});
-
-test("visual motion uses local masks without animated filters or shadows", async () => {
-  const css = await readFile(path.join(rootDir, "app/globals.css"), "utf8");
-  const start = css.indexOf(".listen-visualization {");
-  const end = css.indexOf(".animation-paused {", start);
-  const visualizationCss = css.slice(start, end);
-
-  assert.ok(start >= 0 && end > start);
-  assert.match(visualizationCss, /listen-wave-mask\.svg/);
-  assert.match(visualizationCss, /listen-ribbon-mask\.svg/);
-  assert.doesNotMatch(visualizationCss, /box-shadow|filter:|backdrop-filter/);
-  assert.doesNotMatch(visualizationCss, /clip-path|animation[^;]+color/);
+  assert.doesNotMatch(css, /listen-horizon-drift|listen-minimal-pulse/);
 });
 
 test("personalization provides bounded previews and ambient controls", async () => {
@@ -222,25 +219,4 @@ test("personalization provides bounded previews and ambient controls", async () 
   assert.match(ambientPreference, /mw_listen_background_dimming_v1/);
   assert.match(ambientPreference, /addEventListener\("storage"/);
   assert.match(ambientPreference, /normalizeListenAmbientLevel/);
-});
-
-test("wave assets retain source attribution and local delivery", async () => {
-  const [license, wave, ribbon] = await Promise.all([
-    readFile(
-      path.join(rootDir, "public/visuals/LICENSE.listen-waves.md"),
-      "utf8",
-    ),
-    readFile(path.join(rootDir, "public/visuals/listen-wave-mask.svg"), "utf8"),
-    readFile(
-      path.join(rootDir, "public/visuals/listen-ribbon-mask.svg"),
-      "utf8",
-    ),
-  ]);
-
-  assert.match(license, /Jhey Tompkins/);
-  assert.match(license, /MIT/);
-  assert.match(license, /codepen\.io\/jh3y\/pen\/poEvKxo/);
-  assert.match(wave, /viewBox="0 0 1440 320"/);
-  assert.match(ribbon, /stroke="white"/);
-  assert.doesNotMatch(`${wave}${ribbon}`, /(?:href|src)="https?:\/\//);
 });

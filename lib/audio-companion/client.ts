@@ -3,6 +3,7 @@ export const AUDIO_COMPANION_EXTENSION_ID = "gjhgbhjblbbpcpallbnpakijoheemgdb";
 const BRIDGE_NAME = "mistake-watch-audio-v1";
 const BRIDGE_VERSION = 1;
 const RHYTHM_STALE_AFTER_MS = 2_000;
+const VISUAL_DETAIL_STALE_AFTER_MS = 700;
 const LOCK_CONFIDENCE = 0.5;
 const RECONNECT_DELAYS_MS = [250, 1_000, 5_000] as const;
 
@@ -38,9 +39,14 @@ export type VisualFrameV1 = Readonly<{
 }>;
 
 export type AudioCompanionSnapshot = Readonly<{
+  hasVisualDetail: boolean;
   rhythm: RhythmFrameV1 | null;
   status: AudioCompanionStatus;
 }>;
+
+export type AudioCompanionClient = ReturnType<
+  typeof createAudioCompanionClient
+>;
 
 type ListenerEvent<T extends (...args: never[]) => void> = {
   addListener(listener: T): void;
@@ -62,6 +68,7 @@ type TimerHandle = ReturnType<typeof globalThis.setTimeout>;
 
 type ClientDependencies = {
   clearTimeout?: (timer: TimerHandle) => void;
+  now?: () => number;
   runtime?: ExternalRuntime | null;
   setTimeout?: (callback: () => void, delay: number) => TimerHandle;
 };
@@ -75,6 +82,7 @@ export function createAudioCompanionClient(
   const scheduleTimeout =
     dependencies.setTimeout ??
     ((callback, delay) => globalThis.setTimeout(callback, delay));
+  const now = dependencies.now ?? (() => Date.now());
   const stateListeners = new Set<() => void>();
   const visualListeners = new Set<(frame: VisualFrameV1) => void>();
   let port: ExternalPort | null = null;
@@ -83,15 +91,18 @@ export function createAudioCompanionClient(
   let shouldStayConnected = false;
   let staleTimer: TimerHandle | null = null;
   let lastRhythmSequence = -1;
+  let lastVisualFrameAt = 0;
   let lastVisualSequence = -1;
+  let visualFreshnessTimer: TimerHandle | null = null;
   let snapshot: AudioCompanionSnapshot = Object.freeze({
+    hasVisualDetail: false,
     rhythm: null,
     status: "unavailable",
   });
 
   const handleDisconnect = () => {
     releasePort(false);
-    updateSnapshot("disconnected", null);
+    updateSnapshot("disconnected", null, false);
     scheduleReconnect();
   };
   const handleMessage = (message: unknown) => {
@@ -106,12 +117,14 @@ export function createAudioCompanionClient(
       reconnectAttempt = 0;
       if (status.active !== true) {
         clearStaleTimer();
+        clearVisualFreshness();
         lastRhythmSequence = -1;
-        updateSnapshot("inactive", null);
+        updateSnapshot("inactive", null, false);
       } else if (status.hasSignal !== true) {
         clearStaleTimer();
+        clearVisualFreshness();
         lastRhythmSequence = -1;
-        updateSnapshot("detecting", null);
+        updateSnapshot("detecting", null, false);
       } else if (snapshot.status !== "locked" && snapshot.status !== "stale") {
         updateSnapshot("detecting", snapshot.rhythm);
       }
@@ -131,6 +144,11 @@ export function createAudioCompanionClient(
       const frame = normalizeVisualFrame(envelope.frame);
       if (!frame || frame.sequence <= lastVisualSequence || !port) return;
       lastVisualSequence = frame.sequence;
+      lastVisualFrameAt = now();
+      scheduleVisualFreshnessCheck();
+      if (!snapshot.hasVisualDetail) {
+        updateSnapshot(snapshot.status, snapshot.rhythm, true);
+      }
       if (snapshot.status === "locked") scheduleStaleState();
       for (const listener of visualListeners) {
         try {
@@ -147,7 +165,7 @@ export function createAudioCompanionClient(
         });
       } catch {
         releasePort(true);
-        updateSnapshot("disconnected", null);
+        updateSnapshot("disconnected", null, false);
         scheduleReconnect();
       }
     }
@@ -165,6 +183,14 @@ export function createAudioCompanionClient(
       clearScheduledTimeout(staleTimer);
       staleTimer = null;
     }
+  }
+
+  function clearVisualFreshness() {
+    if (visualFreshnessTimer !== null) {
+      clearScheduledTimeout(visualFreshnessTimer);
+      visualFreshnessTimer = null;
+    }
+    lastVisualFrameAt = 0;
   }
 
   function connect() {
@@ -185,7 +211,7 @@ export function createAudioCompanionClient(
       port.onMessage.addListener(handleMessage);
     } catch {
       releasePort(false);
-      updateSnapshot("unavailable", null);
+      updateSnapshot("unavailable", null, false);
       scheduleReconnect();
     }
   }
@@ -195,7 +221,7 @@ export function createAudioCompanionClient(
     reconnectAttempt = 0;
     clearReconnectTimer();
     releasePort(true);
-    updateSnapshot("unavailable", null);
+    updateSnapshot("unavailable", null, false);
   }
 
   function scheduleReconnect() {
@@ -220,6 +246,7 @@ export function createAudioCompanionClient(
     const current = port;
     port = null;
     clearStaleTimer();
+    clearVisualFreshness();
     lastRhythmSequence = -1;
     lastVisualSequence = -1;
     if (!current) return;
@@ -236,22 +263,54 @@ export function createAudioCompanionClient(
     }, RHYTHM_STALE_AFTER_MS);
   }
 
+  function scheduleVisualFreshnessCheck() {
+    if (visualFreshnessTimer !== null) return;
+    visualFreshnessTimer = scheduleTimeout(
+      checkVisualFreshness,
+      VISUAL_DETAIL_STALE_AFTER_MS,
+    );
+  }
+
+  function checkVisualFreshness() {
+    visualFreshnessTimer = null;
+    const remaining =
+      VISUAL_DETAIL_STALE_AFTER_MS - Math.max(0, now() - lastVisualFrameAt);
+    if (remaining > 0) {
+      visualFreshnessTimer = scheduleTimeout(checkVisualFreshness, remaining);
+      return;
+    }
+    if (snapshot.hasVisualDetail) {
+      updateSnapshot(snapshot.status, snapshot.rhythm, false);
+    }
+  }
+
   function subscribeState(listener: () => void) {
     stateListeners.add(listener);
-    return () => stateListeners.delete(listener);
+    return () => {
+      stateListeners.delete(listener);
+    };
   }
 
   function subscribeVisual(listener: (frame: VisualFrameV1) => void) {
     visualListeners.add(listener);
-    return () => visualListeners.delete(listener);
+    return () => {
+      visualListeners.delete(listener);
+    };
   }
 
   function updateSnapshot(
     status: AudioCompanionStatus,
     rhythm: RhythmFrameV1 | null,
+    hasVisualDetail = snapshot.hasVisualDetail,
   ) {
-    if (snapshot.status === status && snapshot.rhythm === rhythm) return;
-    snapshot = Object.freeze({ rhythm, status });
+    if (
+      snapshot.status === status &&
+      snapshot.rhythm === rhythm &&
+      snapshot.hasVisualDetail === hasVisualDetail
+    ) {
+      return;
+    }
+    snapshot = Object.freeze({ hasVisualDetail, rhythm, status });
     for (const listener of stateListeners) listener();
   }
 

@@ -2,6 +2,7 @@ export const listenVisualizationModes = [
   {
     description: "Song artwork and color without continuous motion.",
     id: "static-artwork",
+    inputSource: "none",
     label: "Static Artwork",
     motionLayers: 0,
     powerLabel: "Recommended",
@@ -10,34 +11,56 @@ export const listenVisualizationModes = [
   {
     description: "A neutral room background without ambient visuals.",
     id: "off",
+    inputSource: "none",
     label: "Off",
     motionLayers: 0,
     powerLabel: "Lowest power",
     powerProfile: "lowest",
   },
   {
-    description: "Artwork-reactive waves with layered depth.",
-    id: "dynamic-horizon",
-    label: "Dynamic Horizon",
-    motionLayers: 3,
-    powerLabel: "Higher power",
-    powerProfile: "higher",
+    description: "Mirrored frequency detail from the local audio companion.",
+    id: "mirror-spectrum",
+    inputSource: "local-detail",
+    label: "Mirror Spectrum",
+    motionLayers: 1,
+    powerLabel: "Beta / very high power",
+    powerProfile: "beta",
   },
   {
-    description: "A focused signal line with restrained movement.",
-    id: "signal-ribbon",
-    label: "Signal Ribbon",
+    description: "A tempo-locked ribbon shared across room participants.",
+    id: "siri-ribbon",
+    inputSource: "shared-rhythm",
+    label: "Siri Ribbon",
     motionLayers: 1,
-    powerLabel: "Higher power",
-    powerProfile: "higher",
+    powerLabel: "Experimental / high power",
+    powerProfile: "experimental",
   },
   {
-    description: "A restrained pulse for quieter sessions.",
-    id: "minimal-pulse",
-    label: "Minimal Pulse",
+    description: "A centered tempo field shared across room participants.",
+    id: "dot-waves",
+    inputSource: "shared-rhythm",
+    label: "Dot Waves",
     motionLayers: 1,
-    powerLabel: "Higher power",
-    powerProfile: "higher",
+    powerLabel: "Beta / very high power",
+    powerProfile: "beta",
+  },
+  {
+    description: "A radial local-audio bloom with waveform detail.",
+    id: "signal-bloom",
+    inputSource: "local-detail",
+    label: "Signal Bloom",
+    motionLayers: 1,
+    powerLabel: "Experimental / high power",
+    powerProfile: "experimental",
+  },
+  {
+    description: "A bounded beat-driven particle field shared by the room.",
+    id: "constellation",
+    inputSource: "shared-rhythm",
+    label: "Constellation",
+    motionLayers: 1,
+    powerLabel: "Experimental / extreme power",
+    powerProfile: "experimental",
   },
 ] as const;
 
@@ -125,22 +148,6 @@ export function getListenPresentationVariables(
     "--listen-rail-dim-top": roundPresentationValue(0.3 + dimming * 0.4),
     "--listen-room-dim-end": roundPresentationValue(0.4 + dimming * 0.4),
     "--listen-room-dim-middle": roundPresentationValue(0.2 + dimming * 0.4),
-    "--listen-horizon-back-opacity": roundPresentationValue(
-      0.08 + intensity * 0.18,
-    ),
-    "--listen-horizon-front-opacity": roundPresentationValue(
-      0.14 + intensity * 0.28,
-    ),
-    "--listen-horizon-middle-opacity": roundPresentationValue(
-      0.1 + intensity * 0.24,
-    ),
-    "--listen-pulse-high-opacity": roundPresentationValue(
-      0.55 + intensity * 0.4,
-    ),
-    "--listen-pulse-low-opacity": roundPresentationValue(
-      0.18 + intensity * 0.32,
-    ),
-    "--listen-ribbon-opacity": roundPresentationValue(0.28 + intensity * 0.38),
   } as const;
 }
 

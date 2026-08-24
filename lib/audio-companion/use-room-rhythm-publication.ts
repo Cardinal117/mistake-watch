@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 
 import { parseYouTubeVideoId } from "@/lib/player/source";
 import type { LiveRoomState } from "@/lib/spacetime";
-import { useAudioCompanion } from "./use-audio-companion";
+import type { AudioCompanionSnapshot } from "./client";
 import {
   observeStableRoomRhythm,
   ROOM_RHYTHM_ALGORITHM_VERSION,
@@ -17,11 +17,11 @@ import {
 export const ROOM_RHYTHM_REFRESH_MS = 6_000;
 
 export function useRoomRhythmPublication(input: {
+  companion: AudioCompanionSnapshot;
   liveRoom: LiveRoomState;
   mediaPositionSeconds: number;
 }) {
-  const { liveRoom, mediaPositionSeconds } = input;
-  const { snapshot: companion } = useAudioCompanion();
+  const { companion, liveRoom, mediaPositionSeconds } = input;
   const stabilityRef = useRef<StableRoomRhythmState | null>(null);
   const lastProcessedSequenceRef = useRef(-1);
   const lastPublishAttemptMsRef = useRef(0);

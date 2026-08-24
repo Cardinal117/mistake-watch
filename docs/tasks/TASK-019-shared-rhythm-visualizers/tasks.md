@@ -50,6 +50,12 @@ local sync, and proof that no detailed frame enters room state.
 Testing mode: test-first for capability/fallback state and characterization-
 first for promoted renderer behavior.
 
+Status: **complete locally**. The bounded canvas host, five promoted renderers,
+capability-aware fallback, Personalization previews, and local/shared input
+adapters pass automated, desktop, and narrow-browser verification. Exact
+extension, laptop, Maincloud, and production release evidence remains reserved
+for Batch D.
+
 1. Establish characterization coverage for the promoted renderer contract.
 2. Add the canvas host adapter without driving React state at frame cadence.
 3. Add Mirror Spectrum, Siri Ribbon, Dot Waves, Signal Bloom, and Constellation

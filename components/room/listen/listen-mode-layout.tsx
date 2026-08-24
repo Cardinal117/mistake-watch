@@ -3,7 +3,10 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
 import { dispatchPlayerVolume } from "@/lib/player/local-controls";
-import { getYouTubeThumbnailUrl } from "@/lib/player/source";
+import {
+  getYouTubeThumbnailUrl,
+  parseYouTubeVideoId,
+} from "@/lib/player/source";
 import { expectedPositionAt } from "@/lib/player";
 import { shuffleUpcomingQueue, smartShuffleQueue } from "@/lib/queue/model";
 import { deriveQueueState } from "@/lib/queue/derived";
@@ -28,7 +31,13 @@ import { ListenVisualization } from "@/components/room/listen/theme/listen-visua
 import { useListenAmbientPreference } from "@/components/room/listen/theme/use-listen-ambient-preference";
 import { useListenVisualizationPreference } from "@/components/room/listen/theme/use-listen-visualization-preference";
 import { getListenPresentationVariables } from "@/lib/player/listen-visualization";
+import { resolveListenVisualizationCapability } from "@/lib/player/listen-visualizer-input";
+import {
+  isUsableRoomRhythmProfile,
+  ROOM_RHYTHM_ALGORITHM_VERSION,
+} from "@/lib/audio-companion/room-rhythm";
 import { useRoomRhythmPublication } from "@/lib/audio-companion/use-room-rhythm-publication";
+import { useAudioCompanion } from "@/lib/audio-companion/use-audio-companion";
 import {
   useListenQueueItems,
   useDesktopListenShell,
@@ -53,7 +62,7 @@ export function ListenModeLayout({
   liveRoom,
   room,
 }: ListenModeLayoutProps) {
-  const [clockMs, setClockMs] = useState(0);
+  const [clockMs, setClockMs] = useState(() => Date.now());
   const [mobileToolsTab, setMobileToolsTab] = useState<"members" | "room">(
     "room",
   );
@@ -61,6 +70,7 @@ export function ListenModeLayout({
   const [tvSettings, setTvSettings] = usePersistentListenTvSettings();
   const { backgroundDimming, visualIntensity } = useListenAmbientPreference();
   const { mode: visualizationMode } = useListenVisualizationPreference();
+  const audioCompanion = useAudioCompanion();
   const [volume, setVolume] = useState(DEFAULT_LISTEN_VOLUME);
   const [queueDrawerOpen, setQueueDrawerOpen] = useState(false);
   const mediaPreferences = useMediaPreferences({
@@ -113,6 +123,25 @@ export function ListenModeLayout({
     currentLiveQueueItem?.durationSeconds ??
     session?.sourceDurationSeconds ??
     0;
+  const activeMediaId = parseYouTubeVideoId(session?.sourceUrl ?? "");
+  const hasSharedRhythm = Boolean(
+    activeMediaId &&
+    session?.playbackOccurrenceId &&
+    isUsableRoomRhythmProfile(liveRoom.snapshot.roomRhythmProfile, {
+      algorithmVersion: ROOM_RHYTHM_ALGORITHM_VERSION,
+      mediaId: activeMediaId,
+      nowMs: clockMs,
+      playbackOccurrenceId: session.playbackOccurrenceId,
+    }),
+  );
+  const effectiveVisualizationMode = resolveListenVisualizationCapability(
+    visualizationMode,
+    {
+      hasLocalDetail: audioCompanion.snapshot.hasVisualDetail,
+      hasSharedRhythm,
+      preview: false,
+    },
+  ).effectiveMode;
   const canControl = liveRoom.canControlPlayback;
   const canManageQueue = liveRoom.canManageQueue;
   const isConnected = liveRoom.connectionStatus === "connected";
@@ -128,6 +157,7 @@ export function ListenModeLayout({
   }, []);
 
   useRoomRhythmPublication({
+    companion: audioCompanion.snapshot,
     liveRoom,
     mediaPositionSeconds: currentPosition,
   });
@@ -280,13 +310,13 @@ export function ListenModeLayout({
       )}
       style={listenThemeStyle}
     >
-      {desktopShell && visualizationMode !== "off" ? (
+      {desktopShell && effectiveVisualizationMode !== "off" ? (
         <ListenAmbientBackdrop
           artworkUrl={activeArtworkUrl}
-          mode={visualizationMode}
+          mode={effectiveVisualizationMode}
         />
       ) : null}
-      {visualizationMode !== "off" ? (
+      {effectiveVisualizationMode !== "off" ? (
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 transition-opacity duration-1000"
@@ -299,7 +329,15 @@ export function ListenModeLayout({
       {desktopShell ? (
         <ListenVisualization
           active={session?.status === "playing"}
+          activeMediaId={activeMediaId}
+          companion={audioCompanion}
+          intensity={visualIntensity}
+          mediaPositionSeconds={currentPosition}
           mode={visualizationMode}
+          nowMs={clockMs}
+          playbackOccurrenceId={session?.playbackOccurrenceId}
+          roomRhythmProfile={liveRoom.snapshot.roomRhythmProfile}
+          theme={listenTheme}
         />
       ) : null}
       <div

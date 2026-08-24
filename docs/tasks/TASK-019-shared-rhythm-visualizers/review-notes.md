@@ -194,3 +194,42 @@
 - **Release boundary:** No Maincloud publish, Vercel deploy, Supabase change,
   production room mutation, renderer integration, commit, or push was performed
   for Batch B. Batch C remains the next implementation slice.
+
+### Batch C Local Completion - 2026-08-24
+
+- **Test-first record:** Capability fallback, browser animation-frame binding,
+  visual-detail expiry, fixed-buffer reuse, and effective ambient fallback were
+  each captured by failing tests before their corrections. Existing renderer
+  behavior was promoted behind direct lifecycle characterization.
+- **Visualization surface:** Personalization now offers Static Artwork, Off,
+  Mirror Spectrum, Siri Ribbon, Dot Waves, Signal Bloom, and Constellation with
+  explicit capability and power labels. Static Artwork remains the safe default.
+- **Input boundary:** Mirror Spectrum and Signal Bloom consume bounded local
+  companion detail only. Siri Ribbon, Dot Waves, and Constellation reconstruct
+  deterministic input from the shared room rhythm profile. Detailed frames are
+  never published into room state.
+- **Capability fallback:** Missing or stale local detail and missing, mismatched,
+  or expired shared rhythm fail closed to Static Artwork. The canvas and ambient
+  backdrop use the same effective mode, so unavailable selections cannot leave
+  contradictory visual state.
+- **Runtime lifecycle:** The canvas host caps DPR at 1.25 and rendering at 24 FPS,
+  owns one animation loop, pauses for hidden, paused, or reduced-motion states,
+  reuses fixed input buffers, and disposes observers, renderers, subscriptions,
+  and frames on mode changes or unmount.
+- **Browser finding:** Local visual QA exposed an unbound browser
+  `requestAnimationFrame` receiver. A regression test was added first, then the
+  engine was corrected to call the global methods through their browser receiver.
+- **Independent review:** A read-only reviewer identified stale local-detail
+  capability, missing direct renderer characterization, ambient fallback drift,
+  and per-frame array allocation. All four findings were corrected and covered
+  before the final gate.
+- **Browser QA:** The isolated app passed desktop and 375px Personalization QA.
+  All seven options were present, all five canvas previews were nonblank, controls
+  remained bounded, and the narrow page had no horizontal overflow.
+- **Verification:** Focused correction checks pass 29/29 and the complete serial
+  repository suite passes 471/471. TypeScript, ESLint, production build,
+  changed-file Prettier, `git diff --check`, and file-length policy pass. File
+  length reports zero violations and 15 pre-existing warnings.
+- **Release boundary:** No commit, push, Maincloud publish, Supabase mutation,
+  Vercel deployment, production room mutation, or Batch D laptop gate was
+  performed for Batch C.

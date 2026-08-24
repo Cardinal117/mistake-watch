@@ -1,23 +1,214 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+import type {
+  AudioCompanionClient,
+  AudioCompanionSnapshot,
+  VisualFrameV1,
+} from "@/lib/audio-companion/client";
+import {
+  isUsableRoomRhythmProfile,
+  ROOM_RHYTHM_ALGORITHM_VERSION,
+} from "@/lib/audio-companion/room-rhythm";
+import { ListenCanvasEngine } from "@/lib/player/listen-canvas-engine";
+import type { ListenCanvasTheme } from "@/lib/player/listen-canvas-renderer-shared";
+import { createListenCanvasRenderer } from "@/lib/player/listen-canvas-renderers";
+import {
+  createIdleVisualizerInput,
+  createListenVisualizerInputBuffers,
+  createLocalDetailVisualizerInput,
+  createPreviewVisualizerInput,
+  createSharedRhythmVisualizerInput,
+  resolveListenVisualizationCapability,
+} from "@/lib/player/listen-visualizer-input";
 import type { ListenVisualizationMode } from "@/lib/player/listen-visualization";
+import type { LiveRoomRhythmProfile } from "@/lib/spacetime/types";
 import { cx } from "@/lib/ui";
+
+const DPR_CAP = 1.25;
 
 type ListenVisualizationProps = {
   active: boolean;
+  activeMediaId?: string | null;
   className?: string;
+  companion: {
+    client: AudioCompanionClient;
+    snapshot: AudioCompanionSnapshot;
+  };
+  intensity?: number;
+  mediaPositionSeconds?: number;
   mode: ListenVisualizationMode;
+  nowMs?: number;
+  playbackOccurrenceId?: string | null;
+  preview?: boolean;
+  roomRhythmProfile?: LiveRoomRhythmProfile | null;
+  theme: ListenCanvasTheme;
 };
 
-// Adapted from Jhey Tompkins' public MIT-licensed CodePen pattern:
-// https://codepen.io/jh3y/pen/poEvKxo
-export function ListenVisualization({
-  active,
-  className,
-  mode,
-}: ListenVisualizationProps) {
-  const motionAllowed = useVisualizationMotion(active);
+export function ListenVisualization(props: ListenVisualizationProps) {
+  const {
+    active,
+    activeMediaId,
+    className,
+    companion,
+    intensity = 75,
+    mediaPositionSeconds = 0,
+    mode,
+    nowMs = 0,
+    playbackOccurrenceId,
+    preview = false,
+    roomRhythmProfile = null,
+    theme,
+  } = props;
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const visualFrameRef = useRef<VisualFrameV1 | null>(null);
+  const visualReceivedAtRef = useRef(0);
+  const latestRef = useRef({
+    active,
+    companion: companion.snapshot,
+    intensity,
+    mediaPositionSeconds,
+    positionSampledAt: 0,
+    preview,
+    profile: roomRhythmProfile,
+    theme,
+  });
+  const motionAllowed = useVisualizationMotion(active || preview);
+  const hasSharedRhythm = Boolean(
+    activeMediaId &&
+    playbackOccurrenceId &&
+    isUsableRoomRhythmProfile(roomRhythmProfile, {
+      algorithmVersion: ROOM_RHYTHM_ALGORITHM_VERSION,
+      mediaId: activeMediaId,
+      nowMs,
+      playbackOccurrenceId,
+    }),
+  );
+  const capability = useMemo(
+    () =>
+      resolveListenVisualizationCapability(mode, {
+        hasLocalDetail: companion.snapshot.hasVisualDetail,
+        hasSharedRhythm,
+        preview,
+      }),
+    [companion.snapshot.hasVisualDetail, hasSharedRhythm, mode, preview],
+  );
+
+  useEffect(() => {
+    latestRef.current = {
+      active,
+      companion: companion.snapshot,
+      intensity,
+      mediaPositionSeconds,
+      positionSampledAt: performance.now(),
+      preview,
+      profile: roomRhythmProfile,
+      theme,
+    };
+  }, [
+    active,
+    companion.snapshot,
+    intensity,
+    mediaPositionSeconds,
+    preview,
+    roomRhythmProfile,
+    theme,
+  ]);
+
+  useEffect(() => {
+    visualFrameRef.current = null;
+    visualReceivedAtRef.current = 0;
+    if (capability.source !== "local-detail" || !motionAllowed) return;
+    const unsubscribe = companion.client.subscribeVisual((frame) => {
+      visualFrameRef.current = frame;
+      visualReceivedAtRef.current = performance.now();
+    });
+    return () => {
+      unsubscribe();
+      visualFrameRef.current = null;
+      visualReceivedAtRef.current = 0;
+    };
+  }, [capability.source, companion.client, motionAllowed]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (
+      !canvas ||
+      capability.source === "fallback" ||
+      capability.source === "none"
+    ) {
+      return;
+    }
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    const renderer = createListenCanvasRenderer(capability.effectiveMode);
+    const inputBuffers = createListenVisualizerInputBuffers();
+    renderer.init();
+    const engine = new ListenCanvasEngine({
+      fps: 24,
+      getInput: (timestamp) => {
+        const latest = latestRef.current;
+        if (latest.preview) {
+          return createPreviewVisualizerInput(timestamp / 1_000, inputBuffers);
+        }
+        if (capability.source === "local-detail") {
+          const visual = visualFrameRef.current;
+          if (!visual || timestamp - visualReceivedAtRef.current > 700) {
+            return createIdleVisualizerInput();
+          }
+          return createLocalDetailVisualizerInput(
+            latest.companion.rhythm ?? {
+              bass: 0,
+              bpm: null,
+              confidence: 0,
+              energy: 0,
+              highs: 0,
+              mids: 0,
+              onset: 0,
+            },
+            visual,
+            inputBuffers,
+          );
+        }
+        if (latest.profile) {
+          const elapsed = latest.active
+            ? Math.max(0, timestamp - latest.positionSampledAt) / 1_000
+            : 0;
+          return createSharedRhythmVisualizerInput(
+            latest.profile,
+            latest.mediaPositionSeconds + elapsed,
+            inputBuffers,
+          );
+        }
+        return createIdleVisualizerInput();
+      },
+      onDispose: renderer.dispose,
+      render: (input, timeMs, deltaMs) => {
+        const latest = latestRef.current;
+        renderer.render({
+          compact: canvas.clientWidth < 640,
+          context,
+          deltaMs,
+          height: canvas.clientHeight,
+          input,
+          intensity: latest.intensity / 100,
+          theme: latest.theme,
+          timeMs,
+          width: canvas.clientWidth,
+        });
+      },
+    });
+    const resize = () => resizeCanvas(canvas, context, renderer);
+    const observer = new ResizeObserver(resize);
+    observer.observe(canvas);
+    resize();
+    if (motionAllowed) engine.start();
+    return () => {
+      observer.disconnect();
+      engine.dispose();
+    };
+  }, [capability.effectiveMode, capability.source, motionAllowed]);
 
   return (
     <div
@@ -26,53 +217,45 @@ export function ListenVisualization({
         "listen-visualization pointer-events-none absolute inset-0 overflow-hidden",
         className,
       )}
+      data-companion-status={companion.snapshot.status}
       data-listen-visualization={mode}
-      data-motion={motionAllowed ? "running" : "paused"}
+      data-rendered-visualization={capability.effectiveMode}
+      data-visualization-fallback={capability.reason ?? undefined}
     >
-      {mode === "dynamic-horizon" ? (
-        <>
-          <div className="listen-horizon-layer listen-horizon-layer--back" />
-          <div className="listen-horizon-layer listen-horizon-layer--middle" />
-          <div className="listen-horizon-layer listen-horizon-layer--front" />
-        </>
-      ) : null}
-      {mode === "signal-ribbon" ? (
-        <div className="listen-signal-ribbon" />
-      ) : null}
-      {mode === "minimal-pulse" ? (
-        <div className="listen-minimal-pulse" />
+      {capability.source !== "fallback" && capability.source !== "none" ? (
+        <canvas className="h-full w-full" ref={canvasRef} />
       ) : null}
     </div>
   );
 }
 
-function useVisualizationMotion(active: boolean) {
-  const [documentVisible, setDocumentVisible] = useState(() =>
-    typeof document === "undefined" ? true : !document.hidden,
-  );
-  const [reducedMotion, setReducedMotion] = useState(false);
+function resizeCanvas(
+  canvas: HTMLCanvasElement,
+  context: CanvasRenderingContext2D,
+  renderer: ReturnType<typeof createListenCanvasRenderer>,
+) {
+  const width = Math.max(1, Math.round(canvas.clientWidth));
+  const height = Math.max(1, Math.round(canvas.clientHeight));
+  const dpr = Math.min(DPR_CAP, Math.max(1, window.devicePixelRatio || 1));
+  canvas.width = Math.round(width * dpr);
+  canvas.height = Math.round(height * dpr);
+  context.setTransform(dpr, 0, 0, dpr, 0, 0);
+  renderer.resize({ compact: width < 640, height, width });
+}
 
+function useVisualizationMotion(active: boolean) {
+  const [allowed, setAllowed] = useState(false);
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-
-    function handleMotionChange() {
-      setReducedMotion(query.matches);
-    }
-
-    function handleVisibilityChange() {
-      setDocumentVisible(!document.hidden);
-    }
-
-    handleMotionChange();
-    handleVisibilityChange();
-    query.addEventListener("change", handleMotionChange);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
+    const update = () =>
+      setAllowed(active && !document.hidden && !query.matches);
+    update();
+    query.addEventListener("change", update);
+    document.addEventListener("visibilitychange", update);
     return () => {
-      query.removeEventListener("change", handleMotionChange);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      query.removeEventListener("change", update);
+      document.removeEventListener("visibilitychange", update);
     };
-  }, []);
-
-  return active && documentVisible && !reducedMotion;
+  }, [active]);
+  return allowed;
 }

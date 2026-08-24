@@ -15,6 +15,7 @@ test("website client connects to the stable private extension without polling", 
     "gjhgbhjblbbpcpallbnpakijoheemgdb",
   );
   assert.deepEqual(client.getSnapshot(), {
+    hasVisualDetail: false,
     rhythm: null,
     status: "unavailable",
   });
@@ -59,6 +60,7 @@ test("website client reports inactive detecting locked stale and disconnected", 
 
   port.emitMessage(createCaptureState({ active: true, hasSignal: false }));
   assert.deepEqual(client.getSnapshot(), {
+    hasVisualDetail: false,
     rhythm: null,
     status: "detecting",
   });
@@ -106,6 +108,14 @@ test("website client validates visual frames and acknowledges only accepted data
   assert.deepEqual(port.sent, [
     { sequence: 4, type: "visual-ack", version: 1 },
   ]);
+  assert.equal(client.getSnapshot().hasVisualDetail, true);
+
+  port.emitMessage({
+    status: { active: false, hasSignal: false },
+    type: "capture-state",
+    version: 1,
+  });
+  assert.equal(client.getSnapshot().hasVisualDetail, false);
 });
 
 test("website client acknowledges valid frames even when a visual listener fails", () => {
@@ -127,6 +137,35 @@ test("website client acknowledges valid frames even when a visual listener fails
   assert.deepEqual(port.sent, [
     { sequence: 7, type: "visual-ack", version: 1 },
   ]);
+});
+
+test("website client expires visual detail without resetting a timer per frame", () => {
+  const harness = createClientHarness();
+  const client = createAudioCompanionClient(harness.dependencies);
+  client.connect();
+  const port = harness.connections[0].port;
+
+  port.emitMessage({
+    frame: createVisualFrame({ sequence: 1 }),
+    type: "visual-frame",
+    version: 1,
+  });
+  const freshnessTimer = harness.latestTimeoutId;
+  harness.advanceTime(650);
+  port.emitMessage({
+    frame: createVisualFrame({ sequence: 2 }),
+    type: "visual-frame",
+    version: 1,
+  });
+
+  assert.equal(client.getSnapshot().hasVisualDetail, true);
+  assert.equal(harness.latestTimeoutId, freshnessTimer);
+  harness.runTimeout(freshnessTimer);
+  assert.equal(client.getSnapshot().hasVisualDetail, true);
+
+  harness.advanceTime(701);
+  harness.runLatestTimeout();
+  assert.equal(client.getSnapshot().hasVisualDetail, false);
 });
 
 test("website client restores its logical bridge after worker termination", () => {
@@ -180,6 +219,7 @@ function createClientHarness() {
   const timeouts = new Map();
   let nextTimeoutId = 1;
   let intervalCalls = 0;
+  let nowMs = 0;
 
   return {
     get activeTimeouts() {
@@ -200,15 +240,19 @@ function createClientHarness() {
           return port;
         },
       },
+      now: () => nowMs,
       setInterval() {
         intervalCalls += 1;
       },
-      setTimeout(callback) {
+      setTimeout(callback, delay) {
         const id = nextTimeoutId;
         nextTimeoutId += 1;
-        timeouts.set(id, callback);
+        timeouts.set(id, { callback, delay });
         return id;
       },
+    },
+    advanceTime(milliseconds) {
+      nowMs += milliseconds;
     },
     get intervalCalls() {
       return intervalCalls;
@@ -217,9 +261,13 @@ function createClientHarness() {
       return [...timeouts.keys()].at(-1) ?? null;
     },
     runLatestTimeout() {
-      const [id, callback] = [...timeouts.entries()].at(-1);
+      const [id] = [...timeouts.entries()].at(-1);
+      this.runTimeout(id);
+    },
+    runTimeout(id) {
+      const timer = timeouts.get(id);
       timeouts.delete(id);
-      callback();
+      timer.callback();
     },
   };
 }
