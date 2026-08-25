@@ -1,7 +1,7 @@
 ---
 id: MW-FEAT-008
 type: feature
-status: in-progress
+status: resolved
 priority: P1
 area: listen-visuals
 related: [TASK-018, TASK-019, MW-FEAT-006, MW-BUG-009]
@@ -11,7 +11,7 @@ updated: 2026-08-25
 
 # Shared rhythm visualizers
 
-> [!feature] In progress through TASK-019 - P1
+> [!success] Resolved through TASK-019 - P1
 
 - **Requested:** Put the promoted companion visualizers inside the Mistake
   Watch Listen room and let trusted users opt into song-reactive rendering.
@@ -27,10 +27,13 @@ updated: 2026-08-25
   extension. Do not disguise synthetic data as live frequency analysis.
 - **Safety:** Static Artwork remains the default. Experimental modes retain
   honest high-power labels and stop while paused, hidden, or inactive.
-- **Production revision:** The first TASK-019 gate exposed a missing steady-
-  rhythm refresh and an Opera Personalization focus trap. Extension `0.6.2`
-  and the corresponding website correction pass local gates and await one
-  focused exact-SHA production rerun.
+- **Production result:** Extension `0.6.2` and website SHA `75f33ef` passed the
+  focused production rerun. Shared Siri Ribbon remained active beyond 35
+  seconds, reached an extension-free participant, returned safely to Static
+  Artwork after capture stopped, and preserved Personalization containment.
+- **Release:** Vercel deployment `dpl_A1TzXCpKJtJ6ySHD7QF5HYtW28En` serves both
+  production aliases. Static Artwork remains the default and experimental
+  visualizers retain their power labels.
 - **Task:** [[../../tasks/TASK-019-shared-rhythm-visualizers/proposal|TASK-019]]
 - **Origin:** Follow-up from
-  [[../archive/MW-FEAT-006-local-audio-companion-extension|MW-FEAT-006]].
+  [[MW-FEAT-006-local-audio-companion-extension|MW-FEAT-006]].

@@ -71,11 +71,11 @@ instrumentation, and focused screenshot comparison with the approved showcase.
 
 ## Batch D: Release Gate
 
-Status: **revision in progress**. The first exact-SHA production gate confirmed
-local-detail rendering but exposed expired shared rhythm and an Opera-specific
-Personalization focus/scroll trap. Both corrections now pass local automated,
-browser, build, and isolated realtime checks; extension `0.6.2` and a new exact
-website SHA still require release and laptop QA.
+Status: **complete**. Extension `0.6.2` and production SHA `75f33ef` passed the
+focused release rerun. Shared Siri Ribbon remained active beyond 35 seconds,
+an extension-free participant received the synchronized visualization, capture
+stop returned both clients to Static Artwork, and Personalization containment
+passed desktop and narrow-layout checks.
 
 1. Run the full repository gate and changed-file formatting/file-length checks.
 2. Load the exact extension SHA on the Opera GX laptop.
@@ -85,5 +85,6 @@ website SHA still require release and laptop QA.
 5. Record CPU/GPU for Static Artwork, one shared-tempo mode, Mirror Spectrum,
    and Signal Bloom. Do not repeat the entire TASK-018 lifecycle matrix.
 
-Checkpoint: owner promote/revise/reject verdict. Commit, PR, merge, SpacetimeDB
-publish, and Vercel deployment each remain explicit release actions.
+Checkpoint: **promoted 2026-08-25**. Commit `75f33ef`; Vercel deployment
+`dpl_A1TzXCpKJtJ6ySHD7QF5HYtW28En`; owner production QA passed. Branch merge
+remains a separate repository lifecycle action.

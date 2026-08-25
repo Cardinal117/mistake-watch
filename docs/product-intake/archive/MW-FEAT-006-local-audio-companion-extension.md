@@ -76,7 +76,7 @@ updated: 2026-08-21
   Capture, local analysis, Mirror Spectrum, Signal Bloom, narrow Constellation,
   paused idle, restart, navigation cleanup, audio continuity, and privacy checks
   passed on Opera GX. The private extension prototype is complete.
-- **Follow-up:** [[../items/MW-FEAT-008-shared-rhythm-visualizers|MW-FEAT-008]]
+- **Follow-up:** [[MW-FEAT-008-shared-rhythm-visualizers|MW-FEAT-008]]
   and [[../../tasks/TASK-019-shared-rhythm-visualizers/proposal|TASK-019]] own
   the separate extension-to-site bridge and host-authoritative stable rhythm
   publication. Do not add that boundary to completed TASK-018.

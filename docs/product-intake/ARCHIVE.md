@@ -16,6 +16,19 @@ evidence, commit, and deployment reference where applicable.
 - **Original report:**
   [[archive/MW-FEAT-006-local-audio-companion-extension|Archived item]]
 
+## MW-FEAT-008 Shared rhythm visualizers
+
+- **Final status:** Resolved
+- **Decision date:** 2026-08-25
+- **Task:** TASK-019
+- **Evidence:** Extension `0.6.2`; commit `75f33ef`; deployment
+  `dpl_A1TzXCpKJtJ6ySHD7QF5HYtW28En`; 474 local tests; production host and
+  extension-free participant QA promoted sustained shared Siri Ribbon,
+  synchronized behavior, bounded Static Artwork fallback, and stable desktop
+  and narrow Personalization interaction.
+- **Original report:**
+  [[archive/MW-FEAT-008-shared-rhythm-visualizers|Archived item]]
+
 ## MW-BUG-005 Like state remains stale on another active device
 
 - **Final status:** Resolved

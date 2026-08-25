@@ -21,7 +21,6 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 | [MW-FEAT-004](items/MW-FEAT-004-create-room-from-account-rooms.md)      | Feature     | P2       | Ready for planning | Account rooms     | Create a room directly from Account Rooms                 | TASK-014C          |
 | [MW-FEAT-005](items/MW-FEAT-005-local-ai-dj-intent-router.md)           | Feature     | P1       | Ready for planning | AI DJ             | Route local intent into bounded tools and escalation      | TASK-002.10B, 011  |
 | [MW-FEAT-007](items/MW-FEAT-007-native-web-audio-analysis.md)           | Feature     | P3       | Ready for planning | Media analysis    | Analyse accessible media locally through Web Audio        | TASK-015, 018      |
-| [MW-FEAT-008](items/MW-FEAT-008-shared-rhythm-visualizers.md)           | Feature     | P1       | In progress        | Listen visuals    | Connect private rhythm analysis to shared Listen visuals  | TASK-018, 019      |
 | [MW-QOL-001](items/MW-QOL-001-simplify-listen-youtube-embed.md)         | QoL         | P2       | Planned            | Listen player     | Reduce duplicate iframe controls and add copy-link        | Add/Discover       |
 | [MW-QOL-002](items/MW-QOL-002-drag-drop-queue.md)                       | QoL         | P2       | Ready for planning | Queue             | Reorder queue items directly instead of repeated clicks   | Queue UX           |
 | [MW-QOL-003](items/MW-QOL-003-media-session-room-authority.md)          | QoL         | P2       | Needs verification | Media Session     | Verify device controls use room-authoritative actions     | TASK-006           |
@@ -43,17 +42,12 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
    changing provider or player behavior.
 2. Plan [[items/MW-QOL-010-direct-play-action-parity|MW-QOL-010]] as a compact
    Add Media action-parity task.
-3. Release the focused TASK-019 Batch D correction for
-   [[items/MW-FEAT-008-shared-rhythm-visualizers|MW-FEAT-008]], then rerun only
-   shared-mode activation, participant phase, Personalization containment,
-   privacy, and continuity QA. Keep Static Artwork as the default and retain
-   MW-BUG-009 power labels.
-4. Prepare a research/prototype packet for
+3. Prepare a research/prototype packet for
    [[items/MW-FEAT-005-local-ai-dj-intent-router|MW-FEAT-005]]. Preserve server
    authority and do not connect experimental inference directly to room
    mutations.
-5. Reconcile the released TASK-014 guest-footer refinement and completed owner
+4. Reconcile the released TASK-014 guest-footer refinement and completed owner
    QA into the Account Rooms task records before closing
    [[items/MW-FEAT-003-account-rooms-surface|MW-FEAT-003]].
-6. Schedule [[items/MW-QOL-008-tv-mode-settings-access|MW-QOL-008]] as a compact
+5. Schedule [[items/MW-QOL-008-tv-mode-settings-access|MW-QOL-008]] as a compact
    UI task; keep optional TV-mode motion behind current reliability work.

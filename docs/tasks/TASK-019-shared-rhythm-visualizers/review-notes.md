@@ -276,3 +276,22 @@
   the website SHA, and repeat only shared Siri/Dot/Constellation activation,
   second-participant phase, modal close/focus, privacy, and short continuity QA.
   Do not repeat detector accuracy or the full extension lifecycle matrix.
+
+### Batch D Production Promotion - 2026-08-25
+
+- **Gate verdict:** Promote at exact SHA `75f33ef`, extension `0.6.2`, and
+  deployment `dpl_A1TzXCpKJtJ6ySHD7QF5HYtW28En`.
+- **Shared rendering:** Siri Ribbon remained mounted and rhythm-locked for more
+  than 35 seconds. An extension-free participant received the shared
+  visualization, and host/participant timing appeared aligned.
+- **Bounded fallback:** Stopping capture returned both clients to Static Artwork
+  after approximately two to three seconds. This is accepted propagation and
+  expiry behavior and does not reproduce the previous publication failure.
+- **Personalization:** Dot Waves, Signal Bloom, and Constellation selection kept
+  the panel stable and dismissible on desktop and narrow layouts.
+- **Diagnostics:** No new product console errors were observed before browser
+  control became unavailable. Capture was stopped and shared rhythm expired
+  safely after the test.
+- **Final state:** The laptop repository remained clean at the exact SHA. The
+  TASK-019 production gate is complete; merge to `main` remains a separately
+  controlled repository action.
