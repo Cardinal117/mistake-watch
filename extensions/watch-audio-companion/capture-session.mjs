@@ -3,6 +3,7 @@ import { isFreshRhythmFrame } from "./rhythm-contract.mjs";
 import { createVisualFrameV1 } from "./visual-frame-contract.mjs";
 
 const SIGNAL_THRESHOLD = 0.0001;
+const RHYTHM_FRAME_INTERVAL_SECONDS = 1;
 const VISUAL_FRAME_INTERVAL_MS = 1_000 / 24;
 
 export class CaptureSession {
@@ -12,6 +13,7 @@ export class CaptureSession {
     clearScheduledInterval = (timerId) => globalThis.clearInterval(timerId),
     getUserMedia,
     nowSeconds = () => globalThis.performance.now() / 1_000,
+    onRhythmFrame = () => {},
     onStateChange = () => {},
     onVisualFrame = () => {},
     scheduleInterval = (callback, delay) =>
@@ -24,12 +26,14 @@ export class CaptureSession {
       clearScheduledInterval,
       getUserMedia,
       nowSeconds,
+      onRhythmFrame,
       onStateChange,
       onVisualFrame,
       scheduleInterval,
       workletModuleUrl,
     };
     this.resources = null;
+    this.lastRhythmFrameSeconds = null;
     this.status = createIdleStatus("not-started");
   }
 
@@ -51,6 +55,7 @@ export class CaptureSession {
       phase: "starting",
       tabId,
     });
+    this.lastRhythmFrameSeconds = null;
 
     try {
       const stream = await this.dependencies.getUserMedia(
@@ -190,6 +195,7 @@ export class CaptureSession {
     const hasSignal = hadSignal || probe.rms > SIGNAL_THRESHOLD;
     const previousRhythm = this.status.rhythm;
     const nextRhythm = selectFreshRhythm(probe.rhythm, previousRhythm);
+    const acceptedNewRhythm = nextRhythm !== previousRhythm;
 
     this.status = {
       ...this.status,
@@ -206,6 +212,19 @@ export class CaptureSession {
     ) {
       this.dependencies.onStateChange(this.getStatus());
     }
+
+    if (acceptedNewRhythm && this.shouldDeliverRhythmFrame(nextRhythm)) {
+      this.lastRhythmFrameSeconds = nextRhythm.sampledAtSeconds;
+      this.dependencies.onRhythmFrame(nextRhythm);
+    }
+  }
+
+  shouldDeliverRhythmFrame(frame) {
+    return (
+      this.lastRhythmFrameSeconds === null ||
+      frame.sampledAtSeconds - this.lastRhythmFrameSeconds >=
+        RHYTHM_FRAME_INTERVAL_SECONDS
+    );
   }
 
   startVisualSampler() {
@@ -242,6 +261,9 @@ export class CaptureSession {
 
   setStatus(status) {
     this.status = status;
+    if (!status.active) {
+      this.lastRhythmFrameSeconds = null;
+    }
     this.dependencies.onStateChange(this.getStatus());
   }
 }

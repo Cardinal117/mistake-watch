@@ -156,6 +156,12 @@ frames to the worker only while an authorized website consumer exists. Batch A
 does not mount production Listen renderers and does not publish anything to
 SpacetimeDB.
 
+Version `0.6.2` adds one bounded active-capture rhythm heartbeat per second.
+This keeps a locked detector fresh for the website without sending detailed
+visual frames, PCM, URLs, or account data. Dormant capture remains heartbeat-
+free, and the website separately limits initial room publication retries to two
+seconds and accepted-profile refreshes to six seconds.
+
 ## Local Verification
 
 From the repository root:

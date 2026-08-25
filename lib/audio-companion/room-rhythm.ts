@@ -1,7 +1,9 @@
 import type { RhythmFrameV1 } from "./client";
 
 export const ROOM_RHYTHM_ALGORITHM_VERSION = "first-party-beat-v1";
+export const ROOM_RHYTHM_INITIAL_RETRY_MS = 2_000;
 export const ROOM_RHYTHM_PUBLICATION_TTL_MS = 12_000;
+export const ROOM_RHYTHM_REFRESH_MS = 6_000;
 export const ROOM_RHYTHM_MIN_CONFIDENCE = 0.5;
 
 export type SharedRoomRhythmProfile = Readonly<{
@@ -145,6 +147,21 @@ export function observeStableRoomRhythm(
     }),
     state,
   };
+}
+
+export function isRoomRhythmPublicationDue(input: {
+  hasPublishedProfile: boolean;
+  lastAttemptMs: number | null;
+  nowMs: number;
+}) {
+  if (input.lastAttemptMs === null) {
+    return true;
+  }
+
+  const interval = input.hasPublishedProfile
+    ? ROOM_RHYTHM_REFRESH_MS
+    : ROOM_RHYTHM_INITIAL_RETRY_MS;
+  return input.nowMs - input.lastAttemptMs >= interval;
 }
 
 export function isUsableRoomRhythmProfile(

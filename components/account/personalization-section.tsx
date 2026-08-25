@@ -167,10 +167,10 @@ export function PersonalizationSection({
                   </button>
                 ) : null}
               </div>
-              <label className="flex cursor-pointer items-start gap-3 p-4">
+              <label className="relative flex cursor-pointer items-start gap-3 p-4">
                 <input
                   checked={selected}
-                  className="sr-only"
+                  className="peer absolute left-4 top-4 h-5 w-5 opacity-0"
                   name="listen-visualization"
                   onChange={() => selectMode(option.id)}
                   type="radio"
@@ -179,7 +179,7 @@ export function PersonalizationSection({
                 <span
                   aria-hidden
                   className={cx(
-                    "mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border",
+                    "mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border peer-focus-visible:ring-2 peer-focus-visible:ring-primary-fixed-dim peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface",
                     selected
                       ? "border-primary-fixed-dim bg-primary-fixed-dim text-on-primary-fixed"
                       : "border-outline-variant bg-surface-container",

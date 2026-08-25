@@ -97,6 +97,49 @@ test("publication requires two consistent locked observations", () => {
   });
 });
 
+test("publication attempts are immediate initially and bounded after acceptance", () => {
+  assert.equal(
+    rhythm.isRoomRhythmPublicationDue({
+      hasPublishedProfile: false,
+      lastAttemptMs: null,
+      nowMs: 1_000,
+    }),
+    true,
+  );
+  assert.equal(
+    rhythm.isRoomRhythmPublicationDue({
+      hasPublishedProfile: false,
+      lastAttemptMs: 1_000,
+      nowMs: 2_999,
+    }),
+    false,
+  );
+  assert.equal(
+    rhythm.isRoomRhythmPublicationDue({
+      hasPublishedProfile: false,
+      lastAttemptMs: 1_000,
+      nowMs: 3_000,
+    }),
+    true,
+  );
+  assert.equal(
+    rhythm.isRoomRhythmPublicationDue({
+      hasPublishedProfile: true,
+      lastAttemptMs: 3_000,
+      nowMs: 8_999,
+    }),
+    false,
+  );
+  assert.equal(
+    rhythm.isRoomRhythmPublicationDue({
+      hasPublishedProfile: true,
+      lastAttemptMs: 3_000,
+      nowMs: 9_000,
+    }),
+    true,
+  );
+});
+
 test("low confidence and changed occurrences reset stability", () => {
   const first = rhythm.observeStableRoomRhythm(null, {
     context: context(),

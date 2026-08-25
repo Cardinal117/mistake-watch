@@ -20,6 +20,9 @@ const session = new CaptureSession({
     }),
   getUserMedia: (constraints) =>
     globalThis.navigator.mediaDevices.getUserMedia(constraints),
+  onRhythmFrame: (frame) => {
+    void notifyRhythmConsumer(frame);
+  },
   onStateChange: (status) => {
     void notifyWorker(status);
   },
@@ -79,6 +82,18 @@ async function notifyWorker(status) {
     });
   } catch {
     // The service worker may be suspended between state transitions.
+  }
+}
+
+async function notifyRhythmConsumer(frame) {
+  try {
+    await globalThis.chrome.runtime.sendMessage({
+      frame,
+      target: MESSAGE_TARGET.worker,
+      type: MESSAGE_TYPE.rhythmFrame,
+    });
+  } catch {
+    // The service worker may be suspended between bounded rhythm updates.
   }
 }
 

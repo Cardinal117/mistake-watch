@@ -59,6 +59,11 @@ globalThis.chrome.runtime.onMessage.addListener(
       return false;
     }
 
+    if (message.type === MESSAGE_TYPE.rhythmFrame) {
+      externalBridge.publishRhythmFrame(message.frame);
+      return false;
+    }
+
     if (message.type === MESSAGE_TYPE.visualFrame) {
       externalBridge.publishVisualFrame(message.frame);
       return false;

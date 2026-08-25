@@ -6,7 +6,7 @@ priority: P1
 area: listen-visuals
 related: [TASK-018, TASK-019, MW-FEAT-006, MW-BUG-009]
 created: 2026-08-21
-updated: 2026-08-21
+updated: 2026-08-25
 ---
 
 # Shared rhythm visualizers
@@ -27,6 +27,10 @@ updated: 2026-08-21
   extension. Do not disguise synthetic data as live frequency analysis.
 - **Safety:** Static Artwork remains the default. Experimental modes retain
   honest high-power labels and stop while paused, hidden, or inactive.
+- **Production revision:** The first TASK-019 gate exposed a missing steady-
+  rhythm refresh and an Opera Personalization focus trap. Extension `0.6.2`
+  and the corresponding website correction pass local gates and await one
+  focused exact-SHA production rerun.
 - **Task:** [[../../tasks/TASK-019-shared-rhythm-visualizers/proposal|TASK-019]]
 - **Origin:** Follow-up from
   [[../archive/MW-FEAT-006-local-audio-companion-extension|MW-FEAT-006]].

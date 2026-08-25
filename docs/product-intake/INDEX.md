@@ -43,10 +43,11 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
    changing provider or player behavior.
 2. Plan [[items/MW-QOL-010-direct-play-action-parity|MW-QOL-010]] as a compact
    Add Media action-parity task.
-3. Complete the exact-SHA Opera GX Batch A bridge gate for
-   [[items/MW-FEAT-008-shared-rhythm-visualizers|MW-FEAT-008]] before starting
-   TASK-019 Batch B. Keep Static Artwork as the default and retain MW-BUG-009
-   power labels.
+3. Release the focused TASK-019 Batch D correction for
+   [[items/MW-FEAT-008-shared-rhythm-visualizers|MW-FEAT-008]], then rerun only
+   shared-mode activation, participant phase, Personalization containment,
+   privacy, and continuity QA. Keep Static Artwork as the default and retain
+   MW-BUG-009 power labels.
 4. Prepare a research/prototype packet for
    [[items/MW-FEAT-005-local-ai-dj-intent-router|MW-FEAT-005]]. Preserve server
    authority and do not connect experimental inference directly to room

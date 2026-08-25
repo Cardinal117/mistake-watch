@@ -87,7 +87,7 @@ export function AccountCommandPanel({
       className="fixed inset-0 z-[160] grid place-items-center bg-surface-container-lowest/62 px-4 py-4 backdrop-blur-md sm:px-6"
       role="dialog"
     >
-      <section className="grid h-[calc(100dvh-2rem)] min-h-0 w-full max-w-5xl overflow-hidden rounded-lg border border-white/10 bg-surface/78 shadow-screen-glow backdrop-blur-xl md:h-[min(760px,calc(100dvh-2rem))] md:grid-cols-[15rem_minmax(0,1fr)]">
+      <section className="grid h-[calc(100dvh-2rem)] min-h-0 w-full max-w-5xl overflow-clip rounded-lg border border-white/10 bg-surface/78 shadow-screen-glow backdrop-blur-xl md:h-[min(760px,calc(100dvh-2rem))] md:grid-cols-[15rem_minmax(0,1fr)]">
         <aside className="border-b border-white/10 bg-surface-container-lowest/45 p-4 md:border-b-0 md:border-r">
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">

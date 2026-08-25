@@ -233,3 +233,46 @@
 - **Release boundary:** No commit, push, Maincloud publish, Supabase mutation,
   Vercel deployment, production room mutation, or Batch D laptop gate was
   performed for Batch C.
+
+### Batch D Production Revision - 2026-08-25
+
+- **Gate verdict:** Revise at deployed SHA `1afa8cb`, extension `0.6.1`.
+  Mirror Spectrum and Signal Bloom passed their local-detail behavior, but Siri
+  Ribbon remained on Static Artwork after the host reached PCM and rhythm lock.
+  The room mounted no shared-mode canvas, so participant phase alignment was
+  blocked rather than passed.
+- **Production evidence:** Duno briefly contained the correct host-published
+  `room_rhythm_profile`, but its 12-second expiry was not refreshed. This
+  excluded reducer authority, media identity, and initial publication as the
+  primary failure.
+- **Root cause:** The worklet continued producing rhythm every 250 ms, while
+  `CaptureSession` notified the website only when BPM changed by at least two or
+  confidence crossed a tier. A steady locked song therefore crossed the
+  website's two-second freshness boundary before the six-second room-profile
+  refresh became due.
+- **Test-first correction:** Three focused tests failed before implementation:
+  steady detector cadence produced no bounded rhythm frames, the authorized
+  external tab received no rhythm heartbeat, and no pure publication-rate gate
+  existed. They now require one active-capture heartbeat per second, exact-tab
+  delivery, a two-second failed-initial retry, and a six-second accepted-profile
+  refresh.
+- **Privacy and load:** The heartbeat carries only normalized `RhythmFrameV1`.
+  It does not add PCM, waveform, spectrum, URL, token, account, participant, or
+  room-secret data. Dormant capture remains heartbeat-free, and SpacetimeDB
+  reducer calls remain independently bounded.
+- **Personalization defect:** Opera GX could scroll the modal's clipped outer
+  grid when a visually hidden radio received focus, displacing the header and
+  close action until page reload. The radio now occupies its visible control
+  position with an explicit keyboard focus ring, while the outer panel uses
+  non-scrollable clipping and only the content region owns vertical scrolling.
+- **Local verification:** The focused red/green suite passes 36/36. The full
+  repository passes 474/474, TypeScript, ESLint, changed-file Prettier,
+  production build, and file-length policy pass with zero violations and 15
+  pre-existing warnings. The isolated SpacetimeDB proof passes host publish,
+  two-client sync, guest denial, and stale-safe clear. Local browser QA confirms
+  Constellation selection retains an accessible close action; Rhythm Lab startup
+  and renderer switching pass.
+- **Next gate:** Commit an exact checkpoint, publish extension `0.6.2`, deploy
+  the website SHA, and repeat only shared Siri/Dot/Constellation activation,
+  second-participant phase, modal close/focus, privacy, and short continuity QA.
+  Do not repeat detector accuracy or the full extension lifecycle matrix.

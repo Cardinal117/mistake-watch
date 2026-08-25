@@ -21,7 +21,7 @@ test("manifest exposes one stable exact-origin private bridge", async () => {
     ),
   );
 
-  assert.equal(manifest.version, "0.6.1");
+  assert.equal(manifest.version, "0.6.2");
   assert.match(manifest.key, /^[A-Za-z0-9+/]+={0,2}$/);
   assert.equal(
     extensionIdFromPublicKey(manifest.key),
@@ -131,6 +131,29 @@ test("inactive approved pages remain dormant and activate without reconnect poll
   assert.equal(port.messages.at(-2).type, "rhythm-frame");
   assert.equal(port.messages.at(-1).type, "visual-frame");
   assert.equal(harness.sentRuntimeMessages.at(-1).enabled, true);
+});
+
+test("steady rhythm heartbeats reach only the authorized captured tab", async () => {
+  const harness = await createBridgeHarness();
+  const url = "https://watch.mistakestudios.com/rooms/room-1";
+  const approved = harness.connect({ tabId: 42, url });
+  const otherTab = harness.connect({ tabId: 43, url });
+  await harness.flush();
+  approved.messages.length = 0;
+  otherTab.messages.length = 0;
+
+  await harness.emitWorkerMessage({
+    frame: createRhythmFrame({ sampledAtSeconds: 18, sequence: 12 }),
+    target: "watch-audio-worker",
+    type: "rhythm-frame",
+  });
+
+  assert.deepEqual(
+    approved.messages.map(({ type }) => type),
+    ["rhythm-frame"],
+  );
+  assert.equal(approved.messages[0].frame.sequence, 12);
+  assert.deepEqual(otherTab.messages, []);
 });
 
 test("external bridge ignores capture commands and normalizes frame versions", async () => {
@@ -435,7 +458,7 @@ function createListenerEvent() {
   };
 }
 
-function createRhythmFrame() {
+function createRhythmFrame(overrides = {}) {
   return {
     bass: 0.4,
     beatIntervalSeconds: 0.5,
@@ -449,6 +472,7 @@ function createRhythmFrame() {
     sampledAtSeconds: 12,
     sequence: 4,
     version: 1,
+    ...overrides,
   };
 }
 

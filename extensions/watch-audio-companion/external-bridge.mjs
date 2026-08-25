@@ -203,6 +203,19 @@ export function createExternalBridgeController({
       for (const record of records.values()) applyStatus(record, status);
     },
 
+    publishRhythmFrame(value) {
+      const frame = normalizeRhythmFrameV1(value);
+      if (!frame) return;
+      for (const record of records.values()) {
+        if (!record.authorized) continue;
+        postRecordSafely(record, {
+          frame,
+          type: EXTERNAL_MESSAGE_TYPE.rhythmFrame,
+          version: EXTERNAL_BRIDGE_VERSION,
+        });
+      }
+    },
+
     publishVisualFrame(value) {
       const frame = normalizeVisualFrameV1(value);
       if (!frame) return;

@@ -71,6 +71,12 @@ instrumentation, and focused screenshot comparison with the approved showcase.
 
 ## Batch D: Release Gate
 
+Status: **revision in progress**. The first exact-SHA production gate confirmed
+local-detail rendering but exposed expired shared rhythm and an Opera-specific
+Personalization focus/scroll trap. Both corrections now pass local automated,
+browser, build, and isolated realtime checks; extension `0.6.2` and a new exact
+website SHA still require release and laptop QA.
+
 1. Run the full repository gate and changed-file formatting/file-length checks.
 2. Load the exact extension SHA on the Opera GX laptop.
 3. Publish SpacetimeDB before the website deployment.

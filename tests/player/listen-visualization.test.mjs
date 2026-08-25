@@ -203,6 +203,12 @@ test("personalization provides bounded previews and ambient controls", async () 
   assert.match(panel, /<PersonalizationSection artworkUrl=/);
   assert.match(personalization, /role="radiogroup"/);
   assert.match(personalization, /type="radio"/);
+  assert.doesNotMatch(
+    personalization,
+    /className="sr-only"[\s\S]{0,160}name="listen-visualization"/,
+  );
+  assert.match(personalization, /peer-focus-visible:ring-2/);
+  assert.match(panel, /overflow-clip/);
   assert.match(personalization, /type="range"/);
   assert.match(personalization, /LISTEN_VISUAL_INTENSITY/);
   assert.match(personalization, /LISTEN_BACKGROUND_DIMMING/);

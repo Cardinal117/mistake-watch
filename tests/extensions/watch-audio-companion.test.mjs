@@ -27,7 +27,7 @@ test("manifest keeps the private capture permission surface narrow", async () =>
 
   assert.equal(manifest.manifest_version, 3);
   assert.equal(manifest.minimum_chrome_version, "116");
-  assert.equal(manifest.version, "0.6.1");
+  assert.equal(manifest.version, "0.6.2");
   assert.deepEqual(manifest.permissions.toSorted(), [
     "activeTab",
     "offscreen",
@@ -244,6 +244,40 @@ test("capture session pushes one bounded visual stream and releases its sampler"
   await session.stop("visual-test-complete");
   assert.equal(harness.scheduled.size, 0);
   assert.equal(harness.analyser.disconnectCalls, 1);
+});
+
+test("capture session keeps steady locked rhythm fresh at a bounded cadence", async () => {
+  const harness = createHarness();
+  const rhythmFrames = [];
+  const states = [];
+  const session = new CaptureSession({
+    ...harness.dependencies,
+    onRhythmFrame: (frame) => rhythmFrames.push(frame),
+    onStateChange: (status) => states.push(status),
+  });
+
+  await session.start({ streamId: "stream-1", tabId: 42 });
+  const stateCountAfterStart = states.length;
+
+  for (const index of [0, 1, 2, 3, 4, 5]) {
+    const sequence = index + 2;
+    const sampledAtSeconds = 12 + index * 0.25;
+    harness.probe.port.onmessage({
+      data: {
+        frames: 12_000,
+        peak: 0.5,
+        rhythm: createTestRhythmFrame({ sampledAtSeconds, sequence }),
+        rms: 0.2,
+      },
+    });
+  }
+
+  assert.deepEqual(
+    rhythmFrames.map(({ sequence }) => sequence),
+    [2, 6],
+  );
+  assert.equal(states.length, stateCountAfterStart + 1);
+  await session.stop("heartbeat-cycle-complete");
 });
 
 test("default browser timers retain the global receiver during capture", async () => {
