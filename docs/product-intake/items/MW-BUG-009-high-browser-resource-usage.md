@@ -6,7 +6,7 @@ priority: P1
 area: performance
 related: [TASK-002.5I, TASK-010, TASK-015, TASK-018, TASK-019]
 created: 2026-08-18
-updated: 2026-08-21
+updated: 2026-08-25
 ---
 
 # Room playback consumes excessive browser resources
@@ -56,10 +56,14 @@ updated: 2026-08-21
   Signal Bloom's paused aggregate CPU remained high but included unrelated
   Opera processes, DevTools, and automation, so exact per-tab attribution is a
   future performance check rather than a TASK-018 blocker.
-- **Next action:** Keep the normal Static Artwork default remediation in place.
-  TASK-019 scopes extension-to-site integration separately, preserves all
-  experimental power labels, and leaves renderer optimization as future
-  MW-BUG-009 work.
+- **TASK-015C local result:** Siri Ribbon now uses two bounded five-lobe Bezier
+  ribbons with role-selective attack and release dynamics. Blur, additive
+  compositing, travelling sampled lines, and full-height raster work were
+  removed. The full 476-test suite, typecheck, lint, file-length policy,
+  formatting, production build, and desktop/narrow browser checks passed.
+- **Next action:** Keep Static Artwork as the safe default and run the
+  controlled affected-laptop current-versus-v2 comparison. Siri Ribbon retains
+  its experimental label until that evidence meets the existing budget.
 - **Task:** [[../../tasks/TASK-015-listen-visualizer-performance/task|TASK-015]]
 - **Original report:**
   [[../archive/quick-capture-2026-08-18#Capture 3]]

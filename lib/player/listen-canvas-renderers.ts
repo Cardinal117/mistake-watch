@@ -11,6 +11,18 @@ import {
   createDotWavesRenderer,
   createSignalBloomRenderer,
 } from "./listen-canvas-renderers-experimental";
+import {
+  createSiriRibbonDynamics,
+  getSiriRibbonLobeTargets,
+  SIRI_RIBBON_LOBE_COUNT,
+  updateSiriRibbonDynamics,
+} from "./listen-siri-ribbon";
+
+export {
+  createSiriRibbonDynamics,
+  getSiriRibbonLobeTargets,
+  updateSiriRibbonDynamics,
+} from "./listen-siri-ribbon";
 
 export function createListenCanvasRenderer(
   mode: ListenVisualizationMode,
@@ -80,73 +92,163 @@ function createMirrorSpectrumRenderer() {
 }
 
 function createSiriRibbonRenderer() {
+  const dynamics = createSiriRibbonDynamics();
+  const xPositions = new Float32Array(SIRI_RIBBON_LOBE_COUNT + 1);
+  let geometryCompact = false;
+  let geometryWidth = -1;
+
   return createRenderer("siri-ribbon", {
+    resize({ compact, width }) {
+      updateSiriGeometry(xPositions, width, compact);
+      geometryCompact = compact;
+      geometryWidth = width;
+    },
     render(frame) {
-      clearCanvas(frame, 0.6);
+      clearCanvas(frame);
       const {
         compact,
         context,
+        deltaMs,
         height,
         input,
         intensity,
         theme,
-        timeMs,
         width,
       } = frame;
-      const pointCount = compact ? 44 : 64;
-      const centerY = height * 0.54;
-      const inset = width * (compact ? 0.06 : 0.1);
-      const drawableWidth = width - inset * 2;
-      const tempoRate = input.tempoBpm ? input.tempoBpm / 120 : 1;
-      const travel = timeMs * 0.0012 * tempoRate;
+      if (width !== geometryWidth || compact !== geometryCompact) {
+        updateSiriGeometry(xPositions, width, compact);
+        geometryCompact = compact;
+        geometryWidth = width;
+      }
+      const targets = getSiriRibbonLobeTargets(input, dynamics.targets);
+      const levels = updateSiriRibbonDynamics(dynamics, targets, deltaMs);
+      const centerY = height * 0.5;
+      const amplitude = height * (compact ? 0.34 : 0.38);
+
       context.save();
-      context.globalCompositeOperation = "lighter";
+      context.globalCompositeOperation = "source-over";
       context.lineCap = "round";
       context.lineJoin = "round";
+      context.shadowBlur = 0;
 
-      for (let curve = 0; curve < 3; curve += 1) {
-        const offset = curve - 1;
-        context.beginPath();
-        for (let point = 0; point <= pointCount; point += 1) {
-          const ratio = point / pointCount;
-          const spectrum =
-            input.spectrum[Math.floor(ratio * input.spectrum.length * 0.42)] ??
-            0;
-          const waveform = Math.abs(
-            input.waveform[Math.floor(ratio * (input.waveform.length - 1))] ??
-              0,
-          );
-          const envelope = Math.pow(Math.sin(Math.PI * ratio), 0.7);
-          const carrier = Math.sin(
-            ratio * Math.PI * (4.5 + curve * 0.65) +
-              travel * (1.1 + curve * 0.16) +
-              curve * 1.7,
-          );
-          const amplitude =
-            envelope *
-            height *
-            (0.035 + spectrum * 0.13 + waveform * 0.07 + input.bass * 0.04);
-          const x = inset + ratio * drawableWidth;
-          const y = centerY + offset * 6 + carrier * amplitude;
-          if (point === 0) context.moveTo(x, y);
-          else context.lineTo(x, y);
-        }
-        const channel =
-          curve === 2 ? "secondary" : curve === 1 ? "wave" : "primary";
-        context.strokeStyle = color(
-          theme,
-          channel,
-          0.28 + input.mids * 0.46,
-          intensity,
-        );
-        context.shadowColor = color(theme, "shadow", 0.6, intensity);
-        context.shadowBlur = Math.min(8, 2 + input.bass * 6);
-        context.lineWidth = 1 + (curve === 1 ? 1.2 : 0.35);
-        context.stroke();
-      }
+      drawSiriRibbonPath(
+        context,
+        xPositions,
+        centerY + 2,
+        levels,
+        amplitude,
+        SECONDARY_LOBE_ORDER,
+      );
+      context.fillStyle = color(
+        theme,
+        "secondary",
+        0.1 + input.energy * 0.16,
+        intensity,
+      );
+      context.fill();
+
+      drawSiriRibbonPath(
+        context,
+        xPositions,
+        centerY,
+        levels,
+        amplitude * 0.82,
+      );
+      context.fillStyle = color(
+        theme,
+        "primary",
+        0.18 + input.energy * 0.22,
+        intensity,
+      );
+      context.strokeStyle = color(
+        theme,
+        "wave",
+        0.4 + input.onset * 0.28,
+        intensity,
+      );
+      context.lineWidth = compact ? 1.1 : 1.35;
+      context.fill();
+      context.stroke();
       context.restore();
     },
   });
+}
+
+const SECONDARY_LOBE_ORDER = [1, 4, 2, 0, 3] as const;
+
+function updateSiriGeometry(
+  output: Float32Array,
+  width: number,
+  compact: boolean,
+) {
+  const inset = width * (compact ? 0.055 : 0.09);
+  const step = (width - inset * 2) / (output.length - 1);
+  for (let index = 0; index < output.length; index += 1) {
+    output[index] = inset + step * index;
+  }
+}
+
+function drawSiriRibbonPath(
+  context: CanvasRenderingContext2D,
+  xPositions: Float32Array,
+  centerY: number,
+  levels: Float32Array,
+  amplitude: number,
+  order?: readonly number[],
+) {
+  context.beginPath();
+  context.moveTo(xPositions[0], centerY);
+
+  for (let index = 0; index < SIRI_RIBBON_LOBE_COUNT; index += 1) {
+    const left = xPositions[index];
+    const right = xPositions[index + 1];
+    const middle = (left + right) / 2;
+    const control = (right - left) * 0.22;
+    const level = levels[order?.[index] ?? index] ?? 0;
+    const y = centerY - level * amplitude;
+    context.bezierCurveTo(
+      left + control,
+      centerY,
+      middle - control,
+      y,
+      middle,
+      y,
+    );
+    context.bezierCurveTo(
+      middle + control,
+      y,
+      right - control,
+      centerY,
+      right,
+      centerY,
+    );
+  }
+
+  for (let index = SIRI_RIBBON_LOBE_COUNT - 1; index >= 0; index -= 1) {
+    const left = xPositions[index];
+    const right = xPositions[index + 1];
+    const middle = (left + right) / 2;
+    const control = (right - left) * 0.22;
+    const level = levels[order?.[index] ?? index] ?? 0;
+    const y = centerY + level * amplitude;
+    context.bezierCurveTo(
+      right - control,
+      centerY,
+      middle + control,
+      y,
+      middle,
+      y,
+    );
+    context.bezierCurveTo(
+      middle - control,
+      y,
+      left + control,
+      centerY,
+      left,
+      centerY,
+    );
+  }
+  context.closePath();
 }
 
 function drawMirroredBar(

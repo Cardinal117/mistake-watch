@@ -35,6 +35,7 @@ async function importTypeScript(relativePath) {
 async function importRendererModule() {
   const files = [
     "listen-canvas-renderer-shared.ts",
+    "listen-siri-ribbon.ts",
     "listen-canvas-renderers-experimental.ts",
     "listen-canvas-renderers.ts",
   ];
@@ -436,6 +437,9 @@ function createCanvasContext(width, height) {
     beginPath() {
       operations.push(["beginPath"]);
     },
+    bezierCurveTo(...points) {
+      operations.push(["bezierCurveTo", ...points]);
+    },
     clearRect() {},
     closePath() {
       operations.push(["closePath"]);
@@ -448,6 +452,7 @@ function createCanvasContext(width, height) {
     },
     fill() {
       calls.fill += 1;
+      operations.push(["fill"]);
     },
     fillRect(x, y, drawWidth, drawHeight) {
       calls.fillRect += 1;
@@ -465,6 +470,7 @@ function createCanvasContext(width, height) {
     setTransform() {},
     stroke() {
       calls.stroke += 1;
+      operations.push(["stroke"]);
     },
     translate() {},
   };

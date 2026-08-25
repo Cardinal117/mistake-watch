@@ -5,6 +5,10 @@ visualizations from the
 [Awesome Audio Visualization](https://github.com/willianjusten/awesome-audio-visualization)
 collection.
 
+Use [EVALUATION-METHOD.md](./EVALUATION-METHOD.md) for the repeatable research,
+signal-mapping, controlled-experiment, and device-evidence process applied to
+Siri Ribbon and future renderer optimization.
+
 ## Visual shortlist for laptop benchmarking
 
 1. **Signal Bloom** - advance as the strongest Signal Aperture brand fit and

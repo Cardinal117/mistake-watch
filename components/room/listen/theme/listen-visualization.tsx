@@ -94,6 +94,7 @@ export function ListenVisualization(props: ListenVisualizationProps) {
       }),
     [companion.snapshot.hasVisualDetail, hasSharedRhythm, mode, preview],
   );
+  const boundedRibbon = capability.effectiveMode === "siri-ribbon";
 
   useEffect(() => {
     latestRef.current = {
@@ -214,7 +215,8 @@ export function ListenVisualization(props: ListenVisualizationProps) {
     <div
       aria-hidden
       className={cx(
-        "listen-visualization pointer-events-none absolute inset-0 overflow-hidden",
+        "listen-visualization pointer-events-none absolute overflow-hidden",
+        boundedRibbon ? "inset-x-0 top-[22%] h-[56%]" : "inset-0",
         className,
       )}
       data-companion-status={companion.snapshot.status}

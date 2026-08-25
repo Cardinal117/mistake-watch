@@ -1,8 +1,8 @@
 # TASK-015: Listen Visualizer Performance
 
-Status: Completed - TASK-015B benchmark and owner classification recorded
+Status: In progress - TASK-015C Siri Ribbon optimization approved
 Documentation level: Compact task
-Updated: 2026-08-19
+Updated: 2026-08-25
 Related intake: MW-BUG-009
 
 ## Objective
@@ -94,6 +94,10 @@ motion behavior, and the established Mistake Watch visual language.
   [[TASK-015B-visualizer-renderer-benchmark|the isolated renderer benchmark]]
   to compare the owner showcase and bounded canvas adaptations before changing
   the production visualization menu.
+- **TASK-015C - Siri Ribbon optimization:** use
+  [[TASK-015C-siri-ribbon-perceptual-optimization|the reusable perceptual and
+rendering method]] to restore five meaningful lobes, remove expensive paint
+  behavior, and preserve the current shared rhythm contract.
 - Keep GetSongBPM and tempo-aware motion blocked until an animated renderer
   has an approved input path. TASK-018 now owns the private local-audio proof;
   no external BPM provider is planned.
