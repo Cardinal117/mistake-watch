@@ -101,9 +101,12 @@ export function ListenQueueDrawer({
   const [drawerView, setDrawerView] = useState<"history" | "queue">("queue");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const drawerOpenMeasureRef = useRef<QueuePerformanceMeasure | null>(null);
+  const drawerToggleRef = useRef<HTMLButtonElement | null>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
   const rowsViewportRef = useRef<HTMLDivElement | null>(null);
   const savedScrollTopRef = useRef(0);
   const hasOpenedDrawerRef = useRef(false);
+  const wasOpenRef = useRef(open);
   const denseQueueRows = useDenseListenQueueRows();
   const [virtualViewport, setVirtualViewport] = useState({
     height: 0,
@@ -174,9 +177,10 @@ export function ListenQueueDrawer({
     () => visibleItems.slice(virtualWindow.startIndex, virtualWindow.endIndex),
     [visibleItems, virtualWindow.endIndex, virtualWindow.startIndex],
   );
+  const expandedDrawerHeight = `min(${drawerHeight}dvh, calc(100dvh - max(1rem, env(safe-area-inset-top)) - max(0.5rem, env(safe-area-inset-bottom))))`;
   const drawerStyle = {
-    height: open ? `${drawerHeight}vh` : collapsedDrawerHeight,
-    maxHeight: open ? `${drawerHeight}vh` : collapsedDrawerHeight,
+    height: open ? expandedDrawerHeight : collapsedDrawerHeight,
+    maxHeight: open ? expandedDrawerHeight : collapsedDrawerHeight,
   } as CSSProperties;
   const measureQueueAction = useQueueActionPerformance(queueState);
 
@@ -297,6 +301,56 @@ export function ListenQueueDrawer({
     drawerOpenMeasureRef.current = null;
   }, [drawerView, open, virtualWindow.mountedItemCount]);
 
+  useEffect(() => {
+    const wasOpen = wasOpenRef.current;
+
+    if (open && !wasOpen) {
+      restoreFocusRef.current =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : drawerToggleRef.current;
+    }
+
+    if (!open && wasOpen) {
+      const focusTarget = restoreFocusRef.current ?? drawerToggleRef.current;
+      const frame = window.requestAnimationFrame(() => {
+        if (focusTarget?.isConnected) {
+          focusTarget.focus();
+        } else {
+          drawerToggleRef.current?.focus();
+        }
+      });
+
+      restoreFocusRef.current = null;
+      wasOpenRef.current = open;
+
+      return () => window.cancelAnimationFrame(frame);
+    }
+
+    wasOpenRef.current = open;
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape" || event.defaultPrevented) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      setSettingsOpen(false);
+      onOpenChange(false);
+    }
+
+    document.addEventListener("keydown", closeOnEscape);
+
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [onOpenChange, open]);
+
   function toggleDrawer() {
     if (!open) {
       drawerOpenMeasureRef.current = startQueuePerformanceMeasure(
@@ -353,8 +407,8 @@ export function ListenQueueDrawer({
       className={cx(
         "fixed z-50 flex flex-col overflow-hidden border border-white/10 backdrop-blur-xl transition-[height,max-height,border-color,background-color,box-shadow,left,right,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
         desktopShell
-          ? "bottom-[var(--listen-shell-inset)] left-[calc(var(--listen-workspace-left)+var(--listen-workspace-inset))] right-[calc(var(--listen-shell-inset)+var(--listen-workspace-inset))] rounded-lg shadow-[0_-18px_48px_rgb(0_0_0_/_0.32)]"
-          : "bottom-0 left-3 right-3 rounded-t-md border-b-0 shadow-[0_-18px_48px_rgb(0_0_0_/_0.32)]",
+          ? "bottom-[max(var(--listen-shell-inset),env(safe-area-inset-bottom))] left-[calc(var(--listen-workspace-left)+var(--listen-workspace-inset))] right-[max(calc(var(--listen-shell-inset)+var(--listen-workspace-inset)),env(safe-area-inset-right))] rounded-lg shadow-[0_-18px_48px_rgb(0_0_0_/_0.32)]"
+          : "bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-[max(0.75rem,env(safe-area-inset-left))] right-[max(0.75rem,env(safe-area-inset-right))] rounded-lg shadow-[0_-18px_48px_rgb(0_0_0_/_0.32)]",
         open
           ? "border-[rgb(var(--listen-primary)/0.28)] bg-surface/94"
           : "max-h-12 border-white/10 bg-surface/66",
@@ -365,10 +419,11 @@ export function ListenQueueDrawer({
         aria-expanded={open}
         aria-label={open ? "Collapse queue drawer" : "Open queue drawer"}
         className={cx(
-          "group mx-auto grid min-h-11 w-full shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 py-2 text-[rgb(var(--listen-primary))] transition hover:bg-[rgb(var(--listen-primary)/0.08)] sm:px-4",
+          "group mx-auto grid min-h-11 w-full shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 py-2 text-[rgb(var(--listen-primary))] outline-none transition hover:bg-[rgb(var(--listen-primary)/0.08)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[rgb(var(--listen-primary)/0.72)] sm:px-4",
           open ? "border-b border-white/10" : "h-full",
         )}
         onClick={toggleDrawer}
+        ref={drawerToggleRef}
         type="button"
       >
         <span className="grid min-w-0 gap-1 text-left">
@@ -389,11 +444,10 @@ export function ListenQueueDrawer({
             </span>
           ) : null}
         </span>
-        <span className="flex h-7 min-w-16 items-center justify-center gap-2 rounded-sm border border-[rgb(var(--listen-primary)/0.25)] bg-surface-container-low/90 px-3 shadow-[0_0_18px_rgb(var(--listen-shadow)/0.1)]">
-          <span className="block h-1 w-8 rounded-full bg-[rgb(var(--listen-primary)/0.8)]" />
+        <span className="flex h-8 min-w-20 items-center justify-center rounded-full border border-[rgb(var(--listen-primary)/0.28)] bg-surface-container-low/76 px-4 text-[rgb(var(--listen-primary))] shadow-[inset_0_1px_0_rgb(255_255_255/0.05),0_0_18px_rgb(var(--listen-shadow)/0.1)] transition-colors group-hover:border-[rgb(var(--listen-primary)/0.48)] group-hover:bg-[rgb(var(--listen-primary)/0.09)]">
           <ChevronUp
             className={cx(
-              "h-3.5 w-3.5 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              "h-4 w-4 stroke-[2.25] transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
               open && "rotate-180",
             )}
             aria-hidden

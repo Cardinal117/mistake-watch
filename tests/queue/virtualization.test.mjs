@@ -200,3 +200,12 @@ test("listen drawer keeps its intended default height without a stored preferenc
     /if \(stored === null\) \{\s*return DEFAULT_LISTEN_DRAWER_HEIGHT;/,
   );
 });
+
+test("collapsed listen drawer uses one centered accent disclosure icon", () => {
+  assert.match(listenDrawerSource, /<ChevronUp/);
+  assert.match(listenDrawerSource, /text-\[rgb\(var\(--listen-primary\)\)\]/);
+  assert.doesNotMatch(
+    listenDrawerSource,
+    /h-1 w-8 rounded-full bg-\[rgb\(var\(--listen-primary\)/,
+  );
+});
