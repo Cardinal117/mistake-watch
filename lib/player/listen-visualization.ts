@@ -86,6 +86,9 @@ export type ListenVisualizerStagePresentation = Readonly<{
 export const DEFAULT_LISTEN_VISUALIZATION_MODE: ListenVisualizationMode =
   "static-artwork";
 
+export const DEFAULT_LISTEN_AMBIENT_FALLBACK_ENABLED = false;
+export const DEFAULT_LISTEN_VISUALIZER_ARTWORK_ENABLED = true;
+
 export const LISTEN_VISUAL_INTENSITY = {
   default: 75,
   max: 100,
@@ -126,11 +129,11 @@ export function normalizeListenStageView(value: unknown): ListenStageView {
 }
 
 export function getListenVisualizerStagePresentation({
-  ambientPrototypeEnabled,
+  ambientFallbackEnabled,
   capability,
   selectedMode,
 }: {
-  ambientPrototypeEnabled: boolean;
+  ambientFallbackEnabled: boolean;
   capability: ListenVisualizationCapability;
   selectedMode: ListenVisualizationMode;
 }): ListenVisualizerStagePresentation {
@@ -142,13 +145,13 @@ export function getListenVisualizerStagePresentation({
         ? "local companion detail"
         : "a fresh shared rhythm signal";
 
-    if (ambientPrototypeEnabled) {
+    if (ambientFallbackEnabled) {
       return {
         activeMode: "ambient-waveform",
         fallbackActive: true,
-        message: `${selected.label} needs ${requirement}. Showing the development-only Ambient Waveform prototype.`,
+        message: `${selected.label} needs ${requirement}. Showing Ambient Waveform.`,
         rendererLabel: "Ambient Waveform",
-        statusLabel: "Prototype fallback",
+        statusLabel: "Ambient fallback",
       };
     }
 
@@ -187,6 +190,24 @@ export function getListenVisualizerStagePresentation({
       status?.statusLabel ??
       (selectedMode === "off" ? "Visualization off" : "Artwork mode"),
   };
+}
+
+export function normalizeListenBooleanPreference(
+  value: unknown,
+  fallback: boolean,
+) {
+  if (value === true || value === "true") return true;
+  if (value === false || value === "false") return false;
+  return fallback;
+}
+
+export function shouldShowListenStageArtwork(
+  activeMode: ListenVisualizerStagePresentation["activeMode"],
+  showArtworkWithVisualizer: boolean,
+) {
+  if (activeMode === "off") return false;
+  if (activeMode === "static-artwork") return true;
+  return showArtworkWithVisualizer;
 }
 
 export function createAmbientWaveformSamples(
@@ -261,10 +282,10 @@ export function getListenPresentationVariables(
   return {
     "--listen-artwork-opacity": roundPresentationValue(0.25 + intensity * 0.6),
     "--listen-background-presence": roundPresentationValue(
-      0.85 + vibrancy * 0.15,
+      0.5 + vibrancy * 0.5,
     ),
     "--listen-background-saturation": roundPresentationValue(
-      0.95 + vibrancy * 0.7,
+      0.78 + vibrancy * 1.12,
     ),
     "--listen-dim-bottom": roundPresentationValue(0.45 + dimming * 0.5),
     "--listen-dim-edge": roundPresentationValue(0.42 + dimming * 0.5),

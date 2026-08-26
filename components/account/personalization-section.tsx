@@ -36,11 +36,15 @@ export function PersonalizationSection({
   const { mode, setMode } = useListenVisualizationPreference();
   const audioCompanion = useAudioCompanion();
   const {
+    ambientFallbackEnabled,
     backgroundDimming,
     backgroundVibrancy,
+    setAmbientFallbackEnabled,
     setBackgroundDimming,
     setBackgroundVibrancy,
+    setVisualizerArtworkEnabled,
     setVisualIntensity,
+    visualizerArtworkEnabled,
     visualIntensity,
   } = useListenAmbientPreference();
   const [previewMode, setPreviewMode] =
@@ -106,6 +110,21 @@ export function PersonalizationSection({
       >
         Audio companion: {companionStatusLabel(audioCompanion.snapshot.status)}
       </p>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <AmbientToggleControl
+          checked={ambientFallbackEnabled}
+          description="Use a deterministic, non-reactive waveform when a selected visualizer has no usable signal."
+          label="Ambient fallback"
+          onChange={setAmbientFallbackEnabled}
+        />
+        <AmbientToggleControl
+          checked={visualizerArtworkEnabled}
+          description="Keep the current media artwork behind moving visualizers and Ambient fallback."
+          label="Show artwork with visualizers"
+          onChange={setVisualizerArtworkEnabled}
+        />
+      </div>
 
       <div
         aria-label="Listen visualization"
@@ -262,6 +281,52 @@ export function PersonalizationSection({
         />
       </div>
     </section>
+  );
+}
+
+function AmbientToggleControl({
+  checked,
+  description,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  description: string;
+  label: string;
+  onChange(value: boolean): void;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 rounded-md border border-white/10 bg-surface-container-lowest/42 p-3.5">
+      <div className="min-w-0">
+        <p className="text-body-md font-semibold text-on-surface">{label}</p>
+        <p className="mt-1 text-label-sm text-on-surface-variant">
+          {description}
+        </p>
+      </div>
+      <button
+        aria-checked={checked}
+        aria-label={`${label}: ${checked ? "on" : "off"}`}
+        className={cx(
+          "relative mt-0.5 h-6 w-11 shrink-0 overflow-hidden rounded-full border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-fixed-dim focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
+          checked
+            ? "border-primary-fixed-dim/65 bg-primary-fixed-dim/22"
+            : "border-white/14 bg-surface-container-high",
+        )}
+        onClick={() => onChange(!checked)}
+        role="switch"
+        type="button"
+      >
+        <span
+          aria-hidden
+          className={cx(
+            "absolute left-0.5 top-0.5 h-[18px] w-[18px] rounded-full transition-transform",
+            checked
+              ? "translate-x-5 bg-primary-fixed-dim shadow-[0_0_12px_rgb(0_219_233/0.35)]"
+              : "translate-x-0 bg-on-surface-variant",
+          )}
+        />
+      </button>
+    </div>
   );
 }
 

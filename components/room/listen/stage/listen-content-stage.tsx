@@ -28,6 +28,7 @@ export function ListenContentStage({
   active,
   activeArtworkUrl,
   activeMediaId,
+  ambientFallbackEnabled,
   artist,
   canAddQueue,
   canLoadSource,
@@ -49,10 +50,12 @@ export function ListenContentStage({
   theme,
   title,
   visualizationMode,
+  visualizerArtworkEnabled,
 }: {
   active: boolean;
   activeArtworkUrl?: string | null;
   activeMediaId?: string | null;
+  ambientFallbackEnabled: boolean;
   artist: string;
   canAddQueue: boolean;
   canLoadSource: boolean;
@@ -77,6 +80,7 @@ export function ListenContentStage({
   theme: ListenCanvasTheme;
   title: string;
   visualizationMode: ListenVisualizationMode;
+  visualizerArtworkEnabled: boolean;
 }) {
   const [view, setView] = useState<ListenStageView>("discover");
 
@@ -142,6 +146,7 @@ export function ListenContentStage({
             active={active}
             activeArtworkUrl={activeArtworkUrl}
             activeMediaId={activeMediaId}
+            ambientFallbackEnabled={ambientFallbackEnabled}
             artist={artist}
             companion={companion}
             currentItem={currentItem}
@@ -155,6 +160,7 @@ export function ListenContentStage({
             theme={theme}
             title={title}
             visualizationMode={visualizationMode}
+            visualizerArtworkEnabled={visualizerArtworkEnabled}
             embedded
           />
         </div>

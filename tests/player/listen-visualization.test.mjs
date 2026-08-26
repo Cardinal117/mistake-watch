@@ -27,6 +27,8 @@ await writeFile(contractModulePath, contractJs);
 
 const {
   DEFAULT_LISTEN_VISUALIZATION_MODE,
+  DEFAULT_LISTEN_AMBIENT_FALLBACK_ENABLED,
+  DEFAULT_LISTEN_VISUALIZER_ARTWORK_ENABLED,
   LISTEN_BACKGROUND_DIMMING,
   LISTEN_BACKGROUND_VIBRANCY,
   LISTEN_VISUAL_INTENSITY,
@@ -37,8 +39,10 @@ const {
   isListenVisualizationMode,
   listenVisualizationModes,
   normalizeListenAmbientLevel,
+  normalizeListenBooleanPreference,
   normalizeListenStageView,
   normalizeListenVisualizationMode,
+  shouldShowListenStageArtwork,
 } = await import(pathToFileURL(contractModulePath));
 
 test.after(async () => {
@@ -102,7 +106,7 @@ test("Visualizer stage reports compatible and fallback states honestly", () => {
 
   assert.deepEqual(
     getListenVisualizerStagePresentation({
-      ambientPrototypeEnabled: false,
+      ambientFallbackEnabled: false,
       capability: {
         effectiveMode: "siri-ribbon",
         reason: null,
@@ -121,7 +125,7 @@ test("Visualizer stage reports compatible and fallback states honestly", () => {
 
   assert.deepEqual(
     getListenVisualizerStagePresentation({
-      ambientPrototypeEnabled: false,
+      ambientFallbackEnabled: false,
       capability: {
         effectiveMode: "static-artwork",
         reason: "companion-required",
@@ -141,7 +145,7 @@ test("Visualizer stage reports compatible and fallback states honestly", () => {
 
   assert.deepEqual(
     getListenVisualizerStagePresentation({
-      ambientPrototypeEnabled: true,
+      ambientFallbackEnabled: true,
       capability: {
         effectiveMode: "static-artwork",
         reason: "shared-rhythm-unavailable",
@@ -153,11 +157,30 @@ test("Visualizer stage reports compatible and fallback states honestly", () => {
       activeMode: "ambient-waveform",
       fallbackActive: true,
       message:
-        "Dot Waves needs a fresh shared rhythm signal. Showing the development-only Ambient Waveform prototype.",
+        "Dot Waves needs a fresh shared rhythm signal. Showing Ambient Waveform.",
       rendererLabel: "Ambient Waveform",
-      statusLabel: "Prototype fallback",
+      statusLabel: "Ambient fallback",
     },
   );
+});
+
+test("optional fallback and artwork preferences fail closed to safe defaults", () => {
+  assert.equal(DEFAULT_LISTEN_AMBIENT_FALLBACK_ENABLED, false);
+  assert.equal(DEFAULT_LISTEN_VISUALIZER_ARTWORK_ENABLED, true);
+  assert.equal(normalizeListenBooleanPreference("true", false), true);
+  assert.equal(normalizeListenBooleanPreference("false", true), false);
+  assert.equal(normalizeListenBooleanPreference(true, false), true);
+  assert.equal(normalizeListenBooleanPreference(null, false), false);
+  assert.equal(normalizeListenBooleanPreference("unexpected", true), true);
+});
+
+test("visualizer artwork preference never hides explicit Static Artwork", () => {
+  assert.equal(shouldShowListenStageArtwork("static-artwork", false), true);
+  assert.equal(shouldShowListenStageArtwork("off", true), false);
+  assert.equal(shouldShowListenStageArtwork("ambient-waveform", false), false);
+  assert.equal(shouldShowListenStageArtwork("ambient-waveform", true), true);
+  assert.equal(shouldShowListenStageArtwork("siri-ribbon", false), false);
+  assert.equal(shouldShowListenStageArtwork("siri-ribbon", true), true);
 });
 
 test("Ambient Waveform samples are mirrored, deterministic, and bounded", () => {
@@ -221,7 +244,17 @@ test("ambient presentation levels are bounded and deterministic", () => {
     strong["--listen-background-presence"] >
       subdued["--listen-background-presence"],
   );
-  assert.ok(strong["--listen-background-saturation"] <= 1.65);
+  assert.ok(
+    strong["--listen-background-saturation"] -
+      subdued["--listen-background-saturation"] >=
+      0.75,
+  );
+  assert.ok(
+    strong["--listen-background-presence"] -
+      subdued["--listen-background-presence"] >=
+      0.35,
+  );
+  assert.ok(strong["--listen-background-saturation"] <= 1.9);
   assert.ok(strong["--listen-background-presence"] <= 1);
 });
 
@@ -332,6 +365,16 @@ test("personalization provides bounded previews and ambient controls", async () 
   assert.match(ambientPreference, /mw_listen_visual_intensity_v1/);
   assert.match(ambientPreference, /mw_listen_background_dimming_v1/);
   assert.match(ambientPreference, /mw_listen_background_vibrancy_v1/);
+  assert.match(ambientPreference, /mw_listen_ambient_fallback_enabled_v1/);
+  assert.match(ambientPreference, /mw_listen_visualizer_artwork_enabled_v1/);
   assert.match(ambientPreference, /addEventListener\("storage"/);
   assert.match(ambientPreference, /normalizeListenAmbientLevel/);
+  assert.match(ambientPreference, /normalizeListenBooleanPreference/);
+  assert.match(personalization, /role="switch"/);
+  assert.match(personalization, /Ambient fallback/);
+  assert.match(personalization, /Show artwork with visualizers/);
+  assert.match(personalization, /overflow-hidden/);
+  assert.match(personalization, /absolute left-0\.5 top-0\.5/);
+  assert.match(personalization, /translate-x-5 bg-primary-fixed-dim/);
+  assert.match(personalization, /translate-x-0 bg-on-surface-variant/);
 });

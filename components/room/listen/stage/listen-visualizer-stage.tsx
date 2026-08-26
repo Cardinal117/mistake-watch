@@ -11,6 +11,7 @@ import {
 import type { ListenCanvasTheme } from "@/lib/player/listen-canvas-renderer-shared";
 import {
   getListenVisualizerStagePresentation,
+  shouldShowListenStageArtwork,
   type ListenVisualizationMode,
 } from "@/lib/player/listen-visualization";
 import { resolveListenVisualizationCapability } from "@/lib/player/listen-visualizer-input";
@@ -24,13 +25,11 @@ import { AmbientWaveformPrototype } from "@/components/room/listen/theme/ambient
 import { ListenVisualization } from "@/components/room/listen/theme/listen-visualization";
 import { VisualizerStatusInfo } from "@/components/room/listen/stage/visualizer-status-info";
 
-const AMBIENT_WAVEFORM_PROTOTYPE_ENABLED =
-  process.env.NEXT_PUBLIC_ENABLE_AMBIENT_WAVEFORM_PROTOTYPE === "true";
-
 export function ListenVisualizerStage({
   active,
   activeArtworkUrl,
   activeMediaId,
+  ambientFallbackEnabled,
   artist,
   companion,
   currentItem,
@@ -44,11 +43,13 @@ export function ListenVisualizerStage({
   theme,
   title,
   visualizationMode,
+  visualizerArtworkEnabled,
   embedded = false,
 }: {
   active: boolean;
   activeArtworkUrl?: string | null;
   activeMediaId?: string | null;
+  ambientFallbackEnabled: boolean;
   artist: string;
   companion: {
     client: AudioCompanionClient;
@@ -65,6 +66,7 @@ export function ListenVisualizerStage({
   theme: ListenCanvasTheme;
   title: string;
   visualizationMode: ListenVisualizationMode;
+  visualizerArtworkEnabled: boolean;
   embedded?: boolean;
 }) {
   const hasSharedRhythm = Boolean(
@@ -83,7 +85,7 @@ export function ListenVisualizerStage({
     preview: false,
   });
   const presentation = getListenVisualizerStagePresentation({
-    ambientPrototypeEnabled: AMBIENT_WAVEFORM_PROTOTYPE_ENABLED,
+    ambientFallbackEnabled,
     capability,
     selectedMode: visualizationMode,
   });
@@ -91,7 +93,14 @@ export function ListenVisualizerStage({
     ? Math.min(100, Math.max(0, (currentPosition / durationSeconds) * 100))
     : 0;
   const preference = mediaPreferences.getPreference(currentItem);
-  const showArtwork = presentation.activeMode !== "off" && activeArtworkUrl;
+  const visibleArtworkUrl =
+    activeArtworkUrl &&
+    shouldShowListenStageArtwork(
+      presentation.activeMode,
+      visualizerArtworkEnabled,
+    )
+      ? activeArtworkUrl
+      : null;
 
   return (
     <section
@@ -105,7 +114,7 @@ export function ListenVisualizerStage({
       data-listen-stage-mode={presentation.activeMode}
       data-listen-stage-status={presentation.statusLabel}
     >
-      {showArtwork ? (
+      {visibleArtworkUrl ? (
         <>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_38%,rgb(var(--listen-background-secondary)/0.72),transparent_46%),linear-gradient(90deg,rgb(var(--listen-background-primary)/0.92),rgb(var(--listen-background-secondary)/0.72)_50%,rgb(var(--listen-background-primary)/0.92))]" />
           {/* eslint-disable-next-line @next/next/no-img-element -- Provider artwork is intentionally confined to the Visualizer stage. */}
@@ -113,14 +122,14 @@ export function ListenVisualizerStage({
             alt=""
             className="absolute inset-0 h-full w-full scale-110 object-cover opacity-18 blur-2xl saturate-125"
             decoding="async"
-            src={activeArtworkUrl}
+            src={visibleArtworkUrl}
           />
           {/* eslint-disable-next-line @next/next/no-img-element -- The clear artwork layer preserves the actual media composition. */}
           <img
             alt=""
             className="absolute inset-0 h-full w-full object-cover opacity-72 saturate-110"
             decoding="async"
-            src={activeArtworkUrl}
+            src={visibleArtworkUrl}
           />
         </>
       ) : null}

@@ -67,8 +67,13 @@ export function ListenModeLayout({
   );
   const [tvMode, setTvMode] = useState(false);
   const [tvSettings, setTvSettings] = usePersistentListenTvSettings();
-  const { backgroundDimming, backgroundVibrancy, visualIntensity } =
-    useListenAmbientPreference();
+  const {
+    ambientFallbackEnabled,
+    backgroundDimming,
+    backgroundVibrancy,
+    visualIntensity,
+    visualizerArtworkEnabled,
+  } = useListenAmbientPreference();
   const { mode: visualizationMode } = useListenVisualizationPreference();
   const audioCompanion = useAudioCompanion();
   const [volume, setVolume] = useState(DEFAULT_LISTEN_VOLUME);
@@ -433,6 +438,7 @@ export function ListenModeLayout({
               active={session?.status === "playing"}
               activeArtworkUrl={activeArtworkUrl}
               activeMediaId={activeMediaId}
+              ambientFallbackEnabled={ambientFallbackEnabled}
               artist={activeArtist}
               canAddQueue={liveRoom.canAddQueue && isConnected}
               canLoadSource={liveRoom.canManageAuthority && isConnected}
@@ -454,6 +460,7 @@ export function ListenModeLayout({
               theme={listenTheme}
               title={activeTitle}
               visualizationMode={visualizationMode}
+              visualizerArtworkEnabled={visualizerArtworkEnabled}
             />
           </div>
         </section>
