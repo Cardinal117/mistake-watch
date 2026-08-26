@@ -16,7 +16,7 @@
     "benchmark:media-hub": "node scripts/benchmark-media-hub-catalogue.mjs",
     "benchmark:recommendations": "node scripts/benchmark-recommendation-baseline.mjs",
     "start": "next start",
-    "test": "node --test",
+    "test": "node --experimental-strip-types --test",
     "test:identity": "node --test tests/identity/*.test.mjs",
     "test:dev": "node --test tests/dev/*.test.mjs",
     "test:queue": "node --test tests/queue/*.test.mjs",
