@@ -88,3 +88,16 @@ passed desktop and narrow-layout checks.
 Checkpoint: **promoted 2026-08-25**. Commit `75f33ef`; Vercel deployment
 `dpl_A1TzXCpKJtJ6ySHD7QF5HYtW28En`; owner production QA passed. Branch merge
 remains a separate repository lifecycle action.
+
+## Post-Release Renderer Optimization
+
+TASK-019 remains complete. TASK-015C subsequently replaced Siri Ribbon's
+costly travelling lines with bounded five-lobe geometry and deployed commit
+`7951355` for production evaluation.
+
+The updated gate confirms that the shared profile is consumed and the renderer
+is mounted and responsive. It also finds insufficient live prominence and does
+not provide the required active/paused/hidden performance matrix or a repeated
+extension-free participant timing comparison. Those are TASK-015C presentation
+and performance obligations; they do not invalidate TASK-019's bridge,
+authority, privacy, expiry, or prior multi-device promotion.

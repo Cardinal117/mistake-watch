@@ -7,7 +7,7 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 | ----------------------------------------------------------------------- | ----------- | -------- | ------------------ | ----------------- | --------------------------------------------------------- | ------------------ |
 | [MW-BUG-001](items/MW-BUG-001-long-participant-names.md)                | Bug         | P1       | Needs reproduction | Room admission    | Long names may prevent joining or normal room use         | TASK-012           |
 | [MW-BUG-002](items/MW-BUG-002-saved-room-dashboard-gap.md)              | Bug         | P1       | In progress        | Account rooms     | Attached room can disappear from dashboard after sign-out | TASK-014           |
-| [MW-BUG-003](items/MW-BUG-003-google-redirect-black-player.md)          | Bug         | P1       | Needs reproduction | Auth / playback   | Redirect failure may leave controls active without media  | TASK-012           |
+| [MW-BUG-003](items/MW-BUG-003-google-redirect-black-player.md)          | Bug         | P1       | Needs verification | YouTube playback  | Mode switch can leave a redirected black provider frame   | TASK-004, 021      |
 | [MW-BUG-004](items/MW-BUG-004-uploaded-session-renewal-freeze.md)       | Bug         | P1       | Needs reproduction | Uploaded playback | One participant can freeze while room progress continues  | TASK-009           |
 | [MW-BUG-006](items/MW-BUG-006-host-refresh-playback-drift.md)           | Bug         | P1       | Needs reproduction | Playback sync     | Resume can start far from authoritative room position     | Playback stability |
 | [MW-BUG-007](items/MW-BUG-007-signed-in-room-remains-browser-scoped.md) | Bug         | P1       | In progress        | Account rooms     | Signed-in room can remain browser-scoped                  | TASK-014B          |
@@ -21,6 +21,7 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 | [MW-FEAT-004](items/MW-FEAT-004-create-room-from-account-rooms.md)      | Feature     | P2       | Ready for planning | Account rooms     | Create a room directly from Account Rooms                 | TASK-014C          |
 | [MW-FEAT-005](items/MW-FEAT-005-local-ai-dj-intent-router.md)           | Feature     | P1       | Ready for planning | AI DJ             | Route local intent into bounded tools and escalation      | TASK-002.10B, 011  |
 | [MW-FEAT-007](items/MW-FEAT-007-native-web-audio-analysis.md)           | Feature     | P3       | Ready for planning | Media analysis    | Analyse accessible media locally through Web Audio        | TASK-015, 018      |
+| [MW-FEAT-009](items/MW-FEAT-009-responsive-listen-room-redesign.md)     | Feature     | P2       | In progress        | Listen UI         | Build an immersive responsive Listen room                 | TASK-021           |
 | [MW-QOL-001](items/MW-QOL-001-simplify-listen-youtube-embed.md)         | QoL         | P2       | Planned            | Listen player     | Reduce duplicate iframe controls and add copy-link        | Add/Discover       |
 | [MW-QOL-002](items/MW-QOL-002-drag-drop-queue.md)                       | QoL         | P2       | Ready for planning | Queue             | Reorder queue items directly instead of repeated clicks   | Queue UX           |
 | [MW-QOL-003](items/MW-QOL-003-media-session-room-authority.md)          | QoL         | P2       | Needs verification | Media Session     | Verify device controls use room-authoritative actions     | TASK-006           |
@@ -31,23 +32,36 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 | [MW-QOL-008](items/MW-QOL-008-tv-mode-settings-access.md)               | QoL         | P2       | Ready for planning | TV mode           | Open TV settings without leaving TV mode                  | TASK-002.5G        |
 | [MW-QOL-009](items/MW-QOL-009-suicide-mode-visualization.md)            | QoL         | P3       | Ready for planning | Listen visuals    | Add an optional owner-named visualization                 | TASK-015           |
 | [MW-QOL-010](items/MW-QOL-010-direct-play-action-parity.md)             | QoL         | P1       | Ready for planning | Add Media         | Give direct Play Now media Like and Play Next parity      | TASK-002, 011      |
+| [MW-QOL-012](items/MW-QOL-012-avatar-permissions-entry-point.md)        | QoL         | P2       | In progress        | Permissions UI    | Open participant permissions from the avatar cluster      | TASK-021           |
 | [MW-OPS-001](items/MW-OPS-001-controlled-conversion-prep.md)            | Operations  | P1       | Planned            | Media processing  | Restore CloudConvert safely and plan local preparation    | Incident follow-up |
 | [MW-OPS-002](items/MW-OPS-002-living-documentation-refresh.md)          | Operations  | P2       | Ready for planning | Documentation     | Keep concise product and architecture docs current        | TASK-009, 013      |
 | [MW-OBS-001](items/MW-OBS-001-spacetime-participant-cache-warning.md)   | Observation | P3       | Needs reproduction | Live room sync    | Participant update can target a missing cached row        | TASK-009, 012      |
 
 ## Current Focus
 
-1. Collect an affected-versus-working evidence bundle for
+1. Resolve and verify
+   [[items/MW-BUG-003-google-redirect-black-player|MW-BUG-003]] before the
+   TASK-021 integrated release gate. A playing Listen/Watch switch must not
+   overlap YouTube iframe lifecycles or leave a redirected provider frame.
+2. Record atomic checkpoints for the user-accepted TASK-021 Batches A-E and
+   visual-refinement gate, then complete Batch F's expanded-queue, safe-area,
+   large-queue, accessibility, and integrated release checks.
+3. Complete TASK-015C's affected-laptop performance and shared-timing evidence.
+   Static Artwork remains the safe default while animated modes are
+   experimental.
+4. Keep [[items/MW-QOL-007-configurable-listen-artwork|MW-QOL-007]] as related
+   composition work without expanding TASK-015C's performance correction.
+5. Collect an affected-versus-working evidence bundle for
    [[items/MW-BUG-014-youtube-embed-too-many-requests|MW-BUG-014]] before
    changing provider or player behavior.
-2. Plan [[items/MW-QOL-010-direct-play-action-parity|MW-QOL-010]] as a compact
+6. Plan [[items/MW-QOL-010-direct-play-action-parity|MW-QOL-010]] as a compact
    Add Media action-parity task.
-3. Prepare a research/prototype packet for
+7. Prepare a research/prototype packet for
    [[items/MW-FEAT-005-local-ai-dj-intent-router|MW-FEAT-005]]. Preserve server
    authority and do not connect experimental inference directly to room
    mutations.
-4. Reconcile the released TASK-014 guest-footer refinement and completed owner
+8. Reconcile the released TASK-014 guest-footer refinement and completed owner
    QA into the Account Rooms task records before closing
    [[items/MW-FEAT-003-account-rooms-surface|MW-FEAT-003]].
-5. Schedule [[items/MW-QOL-008-tv-mode-settings-access|MW-QOL-008]] as a compact
+9. Schedule [[items/MW-QOL-008-tv-mode-settings-access|MW-QOL-008]] as a compact
    UI task; keep optional TV-mode motion behind current reliability work.

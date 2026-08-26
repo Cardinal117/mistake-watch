@@ -1,6 +1,6 @@
 # Mistake Watch Roadmap
 
-Snapshot date: 2026-08-17
+Snapshot date: 2026-08-26
 
 This is the compact product-state index. Task packets remain the detailed
 requirements and evidence record.
@@ -60,6 +60,29 @@ The repository now tracks owner findings in `docs/product-intake/`.
 evidence. Other P1 reports remain explicitly marked for reproduction rather
 than being presented as confirmed root causes.
 
+## Listen Visualizer Workstream
+
+- TASK-018 is complete. Private extension `0.6.2` provides explicit local tab
+  capture, bounded first-party rhythm analysis, and local-only detailed visual
+  frames without network or persistent audio data.
+- TASK-019 is complete at its production gate. The host-authoritative bounded
+  room rhythm profile reached an extension-free participant and expired safely
+  when capture stopped.
+- TASK-015 remains active because every animated mode is still experimental.
+  Static Artwork remains the safe default and Off remains the lowest-complexity
+  option.
+- TASK-015C commit `7951355` is deployed. Siri Ribbon now uses bounded five-lobe
+  geometry, but production QA found insufficient visual prominence and did not
+  complete the affected-laptop performance/timing matrix.
+- The immediate task is a small Siri visibility correction followed by focused
+  CPU/GPU, paused/hidden, 390-pixel, and two-device timing evidence.
+- TASK-021 Batches A-E and its visual-refinement gate are implemented and user
+  accepted in the feature worktree. The immersive shell, multi-shelf Discover
+  surface, Visualizer stage, player artwork, fuller Up Next rail, and
+  MW-QOL-012 participant entry point are awaiting atomic Git checkpoints.
+  Batch F remains open for expanded-queue, safe-area, large-queue,
+  accessibility, and integrated release evidence.
+
 ## Account Rooms Lifecycle In Progress
 
 TASK-014 is deployed from commit `d415362`. Attached-room cross-browser QA
@@ -72,24 +95,33 @@ and readiness passing on both public aliases. It is not owner-accepted yet.
 
 ## Planned Product Sequence
 
-1. **Account Rooms release gate**
+1. **Checkpoint and finish TASK-021**
+   Record the accepted implementation atomically, then complete Batch F's open
+   queue, safe-area, large-queue, accessibility, and integrated release gates.
+2. **Complete TASK-015C evidence**
+   Measure active/idle cost and shared timing for experimental Siri Ribbon.
+   Keep Static Artwork as default.
+3. **Plan MW-QOL-007 artwork composition**
+   Define per-mode artwork enablement, clarity bounds, right-side framing, and
+   browser-local persistence without weakening the safe rendering budget.
+4. **Account Rooms release reconciliation**
    Verify signed-in create, invite join, save, lifecycle controls, cross-browser
    discovery, dashboard persistence, and room re-entry before resolving
    `MW-FEAT-003`, `MW-BUG-002`, and `MW-BUG-007`.
-2. **Consented YouTube account signals**
+5. **Consented YouTube account signals**
    Add incremental OAuth only for approved playlist/subscription capabilities.
    Provider tokens remain server-only and revocable. Do not claim access to the
    private YouTube home recommendation feed.
-3. **Add/Discover redesign**
+6. **Add/Discover redesign**
    Turn Add Media into a fast search/import/discovery workspace using the
    recommendation foundation, clear source states, and compact mobile flows.
-4. **Watch discovery overhaul**
+7. **Watch discovery overhaul**
    Evolve the Watch room media surface toward a streaming-style browse and
    recommendation experience without weakening the synchronized room focus.
-5. **AI DJ / session intelligence**
+8. **AI DJ / session intelligence**
    Explain session patterns and offer host-approved suggestions. AI output is
    advisory and cannot mutate the queue without an explicit action.
-6. **Social graph and incremental provider features**
+9. **Social graph and incremental provider features**
    Friends, invites, notifications, and provider-aware features remain separate
    permission and privacy work.
 

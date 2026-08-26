@@ -4,7 +4,7 @@ status: completed
 type: compact-task
 related: [MW-FEAT-006, MW-FEAT-007, TASK-015, MW-BUG-009]
 created: 2026-08-19
-updated: 2026-08-21
+updated: 2026-08-25
 ---
 
 # Private Local Audio Companion Extension Prototype
@@ -495,3 +495,25 @@ offset, confidence, algorithm version, and playback generation through
 SpacetimeDB. Participants would reconstruct beat pulses from the synchronized
 room playback clock without requiring the extension. Continuous PCM, FFT,
 onset, or energy-frame streaming remains excluded unless separately justified.
+
+## Follow-Up Status - 2026-08-25
+
+The separately approved production bridge and host-authoritative publication
+work was completed through TASK-019. The private extension is now at `0.6.2`:
+
+- capture remains explicit and local;
+- detailed visual frames remain available only to the captured host tab;
+- stable BPM, interval, phase offset, confidence, revision, and expiry may be
+  published by the active host through bounded SpacetimeDB authority;
+- extension-free participants reconstruct compatible shared visuals from the
+  room playback clock;
+- the same Google account on multiple devices resolves to one durable room
+  member but receives separate live admissions and presence sessions. Each
+  connected device subscribes to the room rhythm profile even when the member
+  list presents the account as one logical participant;
+- visualization selection remains browser-local, so each device must select a
+  compatible shared mode independently.
+
+TASK-018 remains complete. Current Siri Ribbon visibility and resource evidence
+belong to TASK-015C and do not reopen capture, DSP, privacy, or extension
+lifecycle acceptance.

@@ -34,6 +34,11 @@ updated: 2026-08-25
 - **Release:** Vercel deployment `dpl_A1TzXCpKJtJ6ySHD7QF5HYtW28En` serves both
   production aliases. Static Artwork remains the default and experimental
   visualizers retain their power labels.
+- **Post-release status:** TASK-015C commit `7951355` preserves the completed
+  shared-rhythm capability while optimizing Siri Ribbon. Current production QA
+  requires a narrow visibility and measurement correction; this does not
+  reopen the resolved bridge, authority, privacy, or extension-free participant
+  capability.
 - **Task:** [[../../tasks/TASK-019-shared-rhythm-visualizers/proposal|TASK-019]]
 - **Origin:** Follow-up from
   [[MW-FEAT-006-local-audio-companion-extension|MW-FEAT-006]].

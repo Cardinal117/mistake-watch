@@ -1,6 +1,6 @@
 # TASK-015: Listen Visualizer Performance
 
-Status: In progress - TASK-015C Siri Ribbon optimization approved
+Status: In progress - TASK-015C visibility and measurement revision
 Documentation level: Compact task
 Updated: 2026-08-25
 Related intake: MW-BUG-009
@@ -253,3 +253,14 @@ rendering method]] to restore five meaningful lobes, remove expensive paint
   Silk Nebula and Obsidian Grid remain held. Full evidence and measurement
   limitations are recorded in
   [[TASK-015B-visualizer-renderer-benchmark|TASK-015B]].
+- TASK-015C commit `7951355` is deployed to production. Updated owner and laptop
+  QA withdrew the earlier missing-canvas diagnosis: Siri Ribbon mounts, responds
+  to shared rhythm, and contains the intended five-lobe structure. Its live
+  strokes are nevertheless too thin and subdued behind the artwork/dimming and
+  foreground composition, so users can mistake the renderer for a blank or
+  delayed state.
+- The active correction is deliberately narrow: establish a visible ribbon
+  layer above ambient artwork dimming but below controls, increase stroke and
+  lobe separation without blur or expanded raster work, then repeat only the
+  affected performance, narrow-layout, and shared-timing checks. Static Artwork
+  remains the default regardless of the experimental result.

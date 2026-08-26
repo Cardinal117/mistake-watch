@@ -295,3 +295,22 @@
 - **Final state:** The laptop repository remained clean at the exact SHA. The
   TASK-019 production gate is complete; merge to `main` remains a separately
   controlled repository action.
+
+### TASK-015C Post-Release QA - 2026-08-25
+
+- **Boundary:** TASK-019 stays promoted. Commit `7951355` changes Siri Ribbon
+  rendering only and is tracked under TASK-015C.
+- **Corrected finding:** The canvas is present, rhythm-responsive, and uses the
+  intended five lobes. The previous missing-canvas interpretation is withdrawn.
+- **Remaining defect:** Thin, low-opacity strokes rendered behind dimming and
+  foreground composition make the center and side lobes difficult to perceive
+  in the production room. Owner observation matches the laptop report.
+- **Identity clarification:** Multiple devices signed into the same Google
+  account share one durable member record but maintain separate live connection
+  sessions. Each connection subscribes to `room_rhythm_profile`; the aggregate
+  participant display does not exclude the second device from rhythm delivery.
+- **Preference clarification:** Visualization choice is browser-local. An
+  extension-free second device must independently select a compatible shared
+  mode even though it receives the same room profile.
+- **Next gate:** Apply a bounded visibility correction, then rerun only active,
+  paused, hidden, 390-pixel, and host/participant timing checks.

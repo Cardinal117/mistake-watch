@@ -61,9 +61,15 @@ updated: 2026-08-25
   compositing, travelling sampled lines, and full-height raster work were
   removed. The full 476-test suite, typecheck, lint, file-length policy,
   formatting, production build, and desktop/narrow browser checks passed.
-- **Next action:** Keep Static Artwork as the safe default and run the
-  controlled affected-laptop current-versus-v2 comparison. Siri Ribbon retains
-  its experimental label until that evidence meets the existing budget.
+- **Updated production QA:** Commit `7951355` proves that optimized Siri Ribbon
+  mounts, responds to shared rhythm, and retains five-lobe geometry. It remains
+  too faint behind the production room composition, and the corrected laptop
+  run did not collect valid Siri active, paused, or hidden measurements.
+- **Next action:** Keep Static Artwork as the safe default. Correct Siri's live
+  stacking, stroke prominence, and lobe separation without restoring blur or
+  larger raster work; then run three active samples, paused/hidden checks, one
+  narrow-layout check, and one host/participant timing comparison. Siri remains
+  an experimental high-power option until that focused gate passes.
 - **Task:** [[../../tasks/TASK-015-listen-visualizer-performance/task|TASK-015]]
 - **Original report:**
   [[../archive/quick-capture-2026-08-18#Capture 3]]

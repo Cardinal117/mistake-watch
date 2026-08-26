@@ -166,9 +166,61 @@ experimental until the release evidence below passes.
 
 ## Release Evidence Still Required
 
-- Three-run current-versus-v2 affected-laptop comparison.
-- At least three contrasting tracks producing recognizably different motion
-  when truthful local detail becomes available.
-- Host and extension-free participant timing comparison.
-- Paint, GPU, and exact-tab evidence where browser tooling permits it.
+- Three active affected-laptop samples plus paused and hidden measurements after
+  the visibility correction. The corrected 2026-08-25 run did not collect a
+  valid Siri performance matrix.
+- One 390-pixel layout check after changing the live ribbon composition.
+- One host and extension-free participant timing comparison after rhythm lock.
+  The earlier TASK-019 production gate passed this path, but it was not rerun
+  against commit `7951355`.
+- Paint, GPU, and exact-tab evidence where browser tooling permits it. Aggregate
+  Opera measurements must remain labeled as aggregate.
 - A separate approved task before any richer shared accent contract.
+
+## Production QA Revision - 2026-08-25
+
+Checkpoint `7951355` is deployed and the corrected laptop inspection returns a
+**Revise** verdict for presentation and incomplete measurement, not renderer
+startup or shared-rhythm architecture.
+
+- Companion capture reached `PCM` and Rhythm Lab reported a stable rhythm lock.
+- Siri Ribbon mounted one canvas and reacted to rhythm. The intended center,
+  two inner, and two outer lobes were present.
+- The center response was strongest, but inner and outer roles were difficult
+  to distinguish because the live stroke is very thin and low contrast.
+- The Personalization panel remained stable and dismissible at desktop width.
+- Playback and queue state progressed normally with no duplicate renderer or
+  Lab session.
+- Static Artwork remains the safe baseline. The only valid aggregate sample in
+  this run was Static Artwork at 9.58% median CPU; it is not directly comparable
+  with the earlier controlled 4.62% result because the Opera process set and
+  test conditions differed.
+- The owner independently reported that only a small exposed portion of the
+  ribbon was easy to see. Current composition places the bounded canvas behind
+  later dimming and foreground layers, which can conceal most of the shape.
+
+## Next Direction
+
+1. Add focused visual evidence for ribbon prominence and stacking before the
+   production adjustment.
+2. Keep the existing five-lobe dynamics, fixed buffers, 24 FPS cap, bounded
+   canvas, normal compositing, and zero blur.
+3. Place the ribbon above ambient artwork dimming while retaining controls and
+   readable content above it.
+4. Increase stroke thickness and opacity and add, at most, one broad low-alpha
+   under-stroke. Do not restore shadow blur or full-canvas paint.
+5. Verify complete center, inner, and outer lobe visibility in the room and the
+   Personalization preview at desktop and 390-pixel widths.
+6. Deploy only after local visual and automated gates pass, then run the focused
+   laptop evidence listed above. Do not repeat TASK-018 detector accuracy or its
+   full lifecycle matrix.
+
+Timing classification for the final gate:
+
+- Up to approximately 80 ms should appear immediate at the current 24 FPS and
+  attack settings.
+- A repeatable offset above roughly 150 ms requires investigation rather than
+  being dismissed as smoothing.
+- If host and participant are equally late, inspect phase mapping. If only the
+  participant is late, inspect shared-clock consumption. If local-detail modes
+  align but Siri does not, keep the investigation inside shared rhythm.

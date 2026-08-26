@@ -1,6 +1,6 @@
 # Mistake Watch Handoff
 
-Updated: 2026-08-17
+Updated: 2026-08-26
 
 ## Current State
 
@@ -43,6 +43,24 @@ Its 341-test, typecheck, ESLint, formatting, file-length, build, and local visua
 gates pass. Commit `a0cf709` is on `origin/main` and deployed to production as
 `dpl_2kBX4Eg2iS7R6ve46RBhNfQVSjWd`; both public aliases passed health and
 readiness checks. Signed-in owner QA remains required.
+
+TASK-018 private local audio analysis and TASK-019 shared rhythm publication
+are complete. TASK-019 passed production with extension `0.6.2`, website commit
+`75f33ef`, and an extension-free participant receiving synchronized Siri
+Ribbon. The feature branch is nine commits ahead of `origin/main`; production
+release does not itself authorize merging that branch.
+
+TASK-015C is the active work item. Commit `7951355` is deployed and replaces
+Siri Ribbon's high-cost travelling lines with bounded five-lobe Bezier
+geometry. Corrected production QA confirms the canvas and rhythm response, but
+the ribbon is too faint behind the room composition and the laptop performance
+matrix is incomplete. Static Artwork remains the safe default.
+
+TASK-021 is now actively implemented in the feature worktree. Batches A-E and
+the approved visual-refinement gate are user accepted and pass focused browser,
+automated, type, lint, build, formatting, and file-length checks. The work is
+not committed or deployed yet. Batch F still requires expanded-queue,
+safe-area, large-queue, accessibility, and integrated release verification.
 
 ## Required Reading
 
@@ -110,10 +128,12 @@ verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
 
-Verify TASK-014B signed-in create, invite join, save, lifecycle controls, and
-cross-device Account Rooms discovery before resolving `MW-FEAT-003`,
-`MW-BUG-002`, and `MW-BUG-007`. After that gate, proceed with consented YouTube
-account signals before the Add/Discover overhaul. Keep provider scopes
-incremental, tokens server-only, and the existing first-party ranking engine
-authoritative. TASK-008 Spatial Cinema remains an unapproved separate direction
-packet.
+Create atomic checkpoints for the accepted TASK-021 implementation, then finish
+Batch F without widening scope: preserve queue virtualization, verify the open
+drawer and history at large scale, complete mobile safe-area and keyboard
+coverage, and run the integrated production-candidate comparison.
+
+TASK-015C's affected-laptop performance and shared-timing evidence remains a
+separate visualizer gate. Static Artwork remains the safe default. Do not fold
+account persistence, richer shared frequency events, GetSongBPM, or the future
+Watch/Add Media overhauls into TASK-021 Batch F.
