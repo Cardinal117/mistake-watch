@@ -20,10 +20,116 @@ export type ListenDiscoveryResult = {
   sourceLabel: string;
 };
 
+export type ListenDiscoveryShelfId =
+  | "room-picks"
+  | "because-listened"
+  | "recently-played"
+  | "room-playlists"
+  | "most-listened";
+
+export type ListenDiscoveryShelf = {
+  id: ListenDiscoveryShelfId;
+  items: RoomQueueItem[];
+  message?: string;
+  source: ListenDiscoverySource;
+  sourceLabel: string;
+  title: string;
+};
+
 export type ListenSessionInsight = {
   label: string;
   value: string;
 };
+
+export function buildListenDiscoveryShelves({
+  currentItem,
+  items,
+  providerItems = [],
+  providerRankedEmpty = false,
+  providerUnavailable = false,
+  roomName,
+}: {
+  currentItem: RoomQueueItem | null;
+  items: RoomQueueItem[];
+  providerItems?: RoomQueueItem[];
+  providerRankedEmpty?: boolean;
+  providerUnavailable?: boolean;
+  roomName: string;
+}): ListenDiscoveryShelf[] {
+  const roomPicks = getForYouItems(items, currentItem);
+  const roomRelated = getRecommendedFromRoom(items, currentItem);
+  const providerRelated = uniqueByPlayableSource(providerItems).slice(0, 8);
+  const contextualItems = providerRankedEmpty
+    ? []
+    : providerRelated.length > 0
+      ? providerRelated
+      : roomRelated;
+  const recentlyPlayed = uniqueByPlayableSource(
+    items.filter(
+      (item) => item.status === "played" && item.id !== currentItem?.id,
+    ),
+  ).slice(0, 8);
+  const playlistItems = getPlaylistLikeItems(items, currentItem);
+  const mostListened = getTopListenedItems(items);
+  const seedTitle = currentItem?.title?.trim();
+  const safeRoomName = roomName.trim() || "this room";
+  const candidates: ListenDiscoveryShelf[] = [
+    {
+      id: "room-picks",
+      items: roomPicks,
+      source: "room-queue",
+      sourceLabel: "Queue based",
+      title: "Room picks",
+    },
+    {
+      id: "because-listened",
+      items: contextualItems,
+      message: providerUnavailable
+        ? "Provider suggestions are unavailable, so these picks use room history."
+        : undefined,
+      source:
+        providerRelated.length > 0
+          ? "provider"
+          : providerUnavailable
+            ? "provider-limited"
+            : "room-history",
+      sourceLabel:
+        providerRelated.length > 0
+          ? "Mistake Watch ranking"
+          : providerUnavailable
+            ? "Provider limited - room history"
+            : "Room history",
+      title: seedTitle
+        ? `Because you listened to ${seedTitle}`
+        : "Recommended for this room",
+    },
+    {
+      id: "recently-played",
+      items: recentlyPlayed,
+      source: "room-history",
+      sourceLabel: "Room history",
+      title: `Recently played in ${safeRoomName}`,
+    },
+    {
+      id: "room-playlists",
+      items: playlistItems,
+      source: "room-history",
+      sourceLabel: "Room playlist history",
+      title: "From playlists in this room",
+    },
+    {
+      id: "most-listened",
+      items: mostListened,
+      source: "room-history",
+      sourceLabel: "Host room history",
+      title: `Most listened in ${safeRoomName}`,
+    },
+  ];
+
+  return suppressEarlierShelfRepeats(candidates).filter(
+    (shelf) => shelf.items.length > 0,
+  );
+}
 
 export function buildListenDiscoveryResult({
   activeTab,
@@ -252,6 +358,31 @@ function uniqueByPlayableSource(items: RoomQueueItem[]) {
   }
 
   return result;
+}
+
+function suppressEarlierShelfRepeats(shelves: ListenDiscoveryShelf[]) {
+  const shown = new Set<string>();
+
+  return shelves.map((shelf) => {
+    const uniqueItems = uniqueByPlayableSource(shelf.items);
+    const alternatives = uniqueItems.filter(
+      (item) => !shown.has(getPlayableSourceKey(item)),
+    );
+    const visibleItems = alternatives.length > 0 ? alternatives : uniqueItems;
+
+    for (const item of visibleItems) {
+      shown.add(getPlayableSourceKey(item));
+    }
+
+    return {
+      ...shelf,
+      items: visibleItems.slice(0, 8),
+    };
+  });
+}
+
+function getPlayableSourceKey(item: RoomQueueItem) {
+  return item.videoId ?? item.sourceUrl ?? item.id;
 }
 
 function sameValue(first?: string | null, second?: string | null) {

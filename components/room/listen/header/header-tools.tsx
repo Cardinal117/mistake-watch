@@ -20,7 +20,7 @@ import {
   UsersRound,
   Video,
 } from "lucide-react";
-import { Avatar, PendingLink, RoomTransitionOverlay } from "@/components/ui";
+import { PendingLink, RoomTransitionOverlay } from "@/components/ui";
 import { setRoomSavedAction } from "@/lib/rooms/actions";
 import type { RoomQueueItem, RoomSnapshot } from "@/lib/rooms";
 import type { LiveRoomState } from "@/lib/spacetime";
@@ -37,52 +37,6 @@ import {
   getCopyableRoomLink,
   ListenPermissionsDialog,
 } from "@/components/room/listen/settings/settings-dialogs";
-
-export function ListenMemberAvatarRow({
-  participants,
-}: {
-  participants: LiveRoomState["participants"];
-}) {
-  const visibleParticipants = participants
-    .filter((participant) => participant.status === "online")
-    .slice(0, 10);
-  const hiddenCount = Math.max(
-    0,
-    participants.length - visibleParticipants.length,
-  );
-
-  if (participants.length === 0) {
-    return null;
-  }
-
-  return (
-    <div
-      aria-label="Room members"
-      className="mb-2 flex min-h-7 flex-wrap items-center gap-1"
-    >
-      {visibleParticipants.map((participant) => (
-        <Avatar
-          avatarKey={participant.avatarKey}
-          className="h-7 w-7 rounded-full border border-[rgb(var(--listen-primary)/0.58)] bg-surface-container-low shadow-[0_0_18px_rgb(var(--listen-shadow)/0.18)]"
-          crowned={participant.role === "host"}
-          key={participant.id}
-          name={participant.name}
-          seed={participant.id}
-          status={participant.status}
-          title={participant.name}
-        />
-      ))}
-      {hiddenCount > 0 ? (
-        <span
-          className="inline-flex h-8 min-w-8 items-center justify-center rounded-full border border-white/10 bg-surface-container-low px-2 text-[11px] font-semibold text-on-surface-variant"
-          title={`${hiddenCount} more member${hiddenCount === 1 ? "" : "s"}`}
-        >
-          +{hiddenCount}
-        </span>
-      ) : null}
-    </div>
-  );
-}
 export function ListenModeTabs({
   canSwitch,
   mode,
@@ -160,8 +114,18 @@ export function ListenModeTabs({
               role="tab"
               type="button"
             >
-              <Icon className="h-5 w-5" aria-hidden />
-              {item.label}
+              <Icon
+                className={cx(
+                  "h-5 w-5",
+                  active && "text-[rgb(var(--listen-primary))]",
+                )}
+                aria-hidden
+              />
+              <span
+                className={cx(active && "text-[rgb(var(--listen-primary))]")}
+              >
+                {item.label}
+              </span>
               {active ? (
                 <span
                   aria-hidden
@@ -270,7 +234,7 @@ export function ListenSearchShell({
         canAddQueue={canSearchAdd}
         canLoadSource={canSearchLoad}
         duplicateVideoIds={duplicateVideoIds}
-        inputClassName="h-12 w-full border-white/10 bg-surface-container-low/40 px-4 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.035)] focus-within:border-[rgb(var(--listen-primary)/0.55)] focus-within:bg-surface-container-low/72 focus-within:shadow-[0_0_24px_rgb(var(--listen-shadow)/0.16)] hover:border-[rgb(var(--listen-primary)/0.42)] hover:bg-surface-container-low/62"
+        inputClassName="h-12 w-full border-white/10 bg-surface-container-low/24 px-4 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.035)] backdrop-blur-sm focus-within:border-[rgb(var(--listen-primary)/0.55)] focus-within:bg-surface-container-low/58 focus-within:shadow-[0_0_24px_rgb(var(--listen-shadow)/0.16)] hover:border-[rgb(var(--listen-primary)/0.42)] hover:bg-surface-container-low/42"
         inputIconClassName="h-5 w-5 text-[rgb(var(--listen-primary))]"
         mode="listen"
         onAddResult={addSearchResult}
@@ -298,6 +262,8 @@ export function ListenRoomSettingsMenu({
   roomCode,
   roomId,
   tvSettings,
+  showPermissionsAction = true,
+  showSaveAction = true,
 }: {
   canSave: boolean;
   controllerMemberId: string | null;
@@ -309,6 +275,8 @@ export function ListenRoomSettingsMenu({
   roomCode: string;
   roomId: string;
   tvSettings: ListenTvSettings;
+  showPermissionsAction?: boolean;
+  showSaveAction?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
@@ -447,18 +415,20 @@ export function ListenRoomSettingsMenu({
             onClick={() => void shareRoom()}
           />
           <div className="my-2 h-px bg-white/10" />
-          <ListenMenuButton
-            disabled={!canSave || saving}
-            icon={
-              isSaved ? (
-                <BookmarkCheck className="h-4 w-4" aria-hidden />
-              ) : (
-                <Bookmark className="h-4 w-4" aria-hidden />
-              )
-            }
-            label={isSaved ? "Saved Room" : "Save Room"}
-            onClick={() => void toggleSaved()}
-          />
+          {showSaveAction ? (
+            <ListenMenuButton
+              disabled={!canSave || saving}
+              icon={
+                isSaved ? (
+                  <BookmarkCheck className="h-4 w-4" aria-hidden />
+                ) : (
+                  <Bookmark className="h-4 w-4" aria-hidden />
+                )
+              }
+              label={isSaved ? "Saved Room" : "Save Room"}
+              onClick={() => void toggleSaved()}
+            />
+          ) : null}
           <ListenMenuButton
             icon={<Settings className="h-4 w-4" aria-hidden />}
             label="Room Settings"
@@ -467,14 +437,16 @@ export function ListenRoomSettingsMenu({
               setOpen(false);
             }}
           />
-          <ListenMenuButton
-            icon={<UsersRound className="h-4 w-4" aria-hidden />}
-            label="Permissions"
-            onClick={() => {
-              setPermissionsOpen(true);
-              setOpen(false);
-            }}
-          />
+          {showPermissionsAction ? (
+            <ListenMenuButton
+              icon={<UsersRound className="h-4 w-4" aria-hidden />}
+              label="Permissions"
+              onClick={() => {
+                setPermissionsOpen(true);
+                setOpen(false);
+              }}
+            />
+          ) : null}
           <div className="my-2 h-px bg-white/10" />
           <PendingLink
             className="flex min-h-10 w-full items-center gap-3 rounded-sm px-3 text-left text-label-sm font-semibold text-[rgb(var(--listen-primary))] transition hover:bg-[rgb(var(--listen-primary)/0.1)]"

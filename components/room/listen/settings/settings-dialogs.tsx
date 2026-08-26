@@ -9,14 +9,8 @@ import type { LiveRoomState } from "@/lib/spacetime";
 import { MembersPanel } from "@/components/room/members-panel";
 import { useNextItemPreparation } from "@/components/room/use-next-item-preparation";
 import { type ListenTvSettings } from "@/components/room/listen/shared";
-import {
-  SmallMediaCard,
-  QueueArtwork,
-} from "@/components/room/listen/discovery/media-cards";
-import {
-  formatListenPreparationStatus,
-  formatQueueRemainingDuration,
-} from "@/components/room/listen/helpers";
+import { QueueArtwork } from "@/components/room/listen/discovery/media-cards";
+import { formatListenPreparationStatus } from "@/components/room/listen/helpers";
 
 export function ListenRoomSettingsDialog({
   onChange,
@@ -296,42 +290,5 @@ export function ListenPreparingNextStrip({
         </p>
       </div>
     </div>
-  );
-}
-export function ListenRailQueueSummary({
-  nextItem,
-  queueCount,
-  remainingSeconds,
-}: {
-  nextItem: RoomQueueItem | null;
-  queueCount: number;
-  remainingSeconds: number | null;
-}) {
-  return (
-    <section className="mt-auto grid gap-3.5 border-t border-white/8 pt-5">
-      <div className="flex items-center justify-between gap-3">
-        <span className="technical-label border-0 p-0 text-[rgb(var(--listen-primary))]">
-          Up Next
-        </span>
-        <span className="text-label-sm text-on-surface-variant">
-          Queue {queueCount}
-          {remainingSeconds
-            ? ` / ${formatQueueRemainingDuration(remainingSeconds)}`
-            : ""}
-        </span>
-      </div>
-      {nextItem ? (
-        <SmallMediaCard item={nextItem} label="Up next" />
-      ) : (
-        <div className="border-l border-[rgb(var(--listen-primary)/0.34)] py-1 pl-3">
-          <p className="text-label-sm font-semibold text-on-surface">
-            Build the next run
-          </p>
-          <p className="mt-1 text-label-sm text-on-surface-variant">
-            Use Room Picks, search, or Add Media to keep the session moving.
-          </p>
-        </div>
-      )}
-    </section>
   );
 }

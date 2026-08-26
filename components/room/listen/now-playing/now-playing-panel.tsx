@@ -25,11 +25,9 @@ import { YoutubeMediaPlayer } from "@/components/room/youtube-media-player";
 import { YouTubeMetadataLine } from "@/components/room/youtube-metadata-line";
 import { PreferenceHeartButton } from "@/components/room/listen/preference-heart-button";
 import type { MediaPreferenceController } from "@/lib/recommendations/use-media-preferences";
-import {
-  ListenPreparingNextStrip,
-  ListenRailQueueSummary,
-} from "@/components/room/listen/settings/settings-dialogs";
+import { ListenPreparingNextStrip } from "@/components/room/listen/settings/settings-dialogs";
 import { formatSeconds } from "@/components/room/listen/helpers";
+import { ListenUpNextPreview } from "@/components/room/listen/now-playing/up-next-preview";
 
 export function ListenNowPlayingPanel({
   canControl,
@@ -42,6 +40,7 @@ export function ListenNowPlayingPanel({
   mobileTools,
   nextPreparation,
   onNext,
+  onOpenQueue,
   onPlaybackChange,
   onPrevious,
   onSeek,
@@ -63,6 +62,7 @@ export function ListenNowPlayingPanel({
   mobileTools?: ReactNode;
   nextPreparation: ReturnType<typeof useNextItemPreparation>;
   onNext(): void;
+  onOpenQueue(): void;
   onPlaybackChange(status: "paused" | "playing"): void;
   onPrevious(): void;
   onSeek(positionSeconds: number): void;
@@ -92,14 +92,13 @@ export function ListenNowPlayingPanel({
   const awaitingMedia = !liveSource;
   const progressMax =
     durationSeconds || Math.max(100, Math.ceil(currentPosition));
-  const nextQueueItem = queuedItems[0] ?? null;
-
   return (
     <aside
       className={cx(
-        "relative grid min-h-0 content-start overflow-visible border-white/10 bg-transparent p-0 pb-2",
+        "relative grid min-h-0 content-start overflow-visible border-white/10 bg-transparent p-0",
         desktopShell &&
-          "h-dvh grid-rows-[minmax(0,1fr)] overflow-hidden border-r bg-background/70 p-0 backdrop-blur-xl",
+          "h-full grid-rows-[minmax(0,1fr)] overflow-hidden rounded-xl border bg-background/72 p-0 shadow-[0_22px_64px_rgb(0_0_0_/_0.32)] backdrop-blur-xl",
+        !desktopShell && "pb-2",
       )}
       style={
         desktopShell
@@ -114,7 +113,7 @@ export function ListenNowPlayingPanel({
         className={cx(
           "relative grid min-h-0 overflow-hidden transition-colors duration-1000",
           desktopShell
-            ? "grid-rows-[minmax(0,1fr)_auto] rounded-none border-0 shadow-none"
+            ? "grid-rows-[minmax(0,1fr)_auto] rounded-[inherit] border-0 shadow-none"
             : "rounded-none border-0 bg-transparent shadow-none",
         )}
         style={
@@ -132,24 +131,35 @@ export function ListenNowPlayingPanel({
             {/* eslint-disable-next-line @next/next/no-img-element -- Provider thumbnails are external media artwork. */}
             <img
               alt=""
-              className="absolute inset-0 h-full w-full scale-125 object-cover opacity-32 blur-3xl saturate-150"
+              className="absolute inset-0 h-full w-full object-cover"
               fetchPriority="high"
               loading="eager"
               src={thumbnailUrl}
+              style={{
+                filter:
+                  "saturate(var(--listen-background-saturation, 1.44)) contrast(1.05) blur(8px)",
+                opacity:
+                  "calc(var(--listen-background-presence, 0.955) * 0.68)",
+                transform: "scale(1.08)",
+              }}
             />
             <div
               aria-hidden
-              className="absolute inset-0 bg-[linear-gradient(180deg,rgb(14_14_15_/_0.16),rgb(14_14_15_/_0.82))]"
+              className="absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(180deg, rgb(10 10 11 / 0.18), rgb(10 10 11 / var(--listen-rail-dim-bottom,0.48)) 52%, rgb(10 10 11 / var(--listen-rail-dim-top,0.58)) 100%)",
+              }}
             />
           </>
         ) : null}
         <div
           className={cx(
-            "relative z-10 flex min-h-0 flex-col gap-5 overflow-y-auto py-1 [scrollbar-color:rgb(var(--listen-primary)_/_0.42)_transparent] [scrollbar-width:thin]",
-            desktopShell && "h-full content-start px-4 py-5 pt-6",
+            "relative z-10 flex min-h-0 flex-col gap-[clamp(0.625rem,1.35vh,1rem)] overflow-y-auto py-1 [scrollbar-color:rgb(var(--listen-primary)_/_0.42)_transparent] [scrollbar-width:thin]",
+            desktopShell && "h-full content-start px-3 py-3",
           )}
         >
-          <div className="relative aspect-[1/1.02] min-h-[16rem] overflow-hidden rounded-md border border-white/8 bg-black shadow-[0_0_34px_rgb(var(--listen-shadow)/0.12),inset_0_0_0_1px_rgb(255_255_255_/_0.04)] xl:min-h-[18.5rem]">
+          <div className="relative h-[clamp(16rem,36vh,20rem)] shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black shadow-[0_0_34px_rgb(var(--listen-shadow)/0.12),inset_0_0_0_1px_rgb(255_255_255_/_0.05)]">
             {thumbnailUrl ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element -- Provider thumbnails are external media artwork. */}
@@ -174,7 +184,7 @@ export function ListenNowPlayingPanel({
                 {/* eslint-disable-next-line @next/next/no-img-element -- Provider thumbnails are external media artwork. */}
                 <img
                   alt=""
-                  className="absolute inset-0 h-full w-full object-contain"
+                  className="absolute inset-0 h-full w-full object-cover"
                   fetchPriority="high"
                   loading="eager"
                   src={thumbnailUrl}
@@ -199,7 +209,7 @@ export function ListenNowPlayingPanel({
             />
           ) : null}
 
-          <div className="grid gap-2.5 pt-1">
+          <div className="grid gap-[clamp(0.5rem,1vh,0.75rem)]">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
               <h1 className="text-headline-md font-semibold leading-tight text-on-surface [overflow-wrap:anywhere]">
                 {title}
@@ -211,6 +221,7 @@ export function ListenNowPlayingPanel({
                     void mediaPreferences.togglePreference(currentItem)
                   }
                   preference={mediaPreferences.getPreference(currentItem)}
+                  variant="inline"
                 />
               ) : null}
             </div>
@@ -226,7 +237,7 @@ export function ListenNowPlayingPanel({
             ) : null}
           </div>
 
-          <div className="grid gap-3">
+          <div className="grid gap-[clamp(0.625rem,1.35vh,1rem)]">
             <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 text-label-sm text-on-surface-variant">
               <span>{formatSeconds(currentPosition)}</span>
               <Slider
@@ -249,7 +260,7 @@ export function ListenNowPlayingPanel({
               </span>
             </div>
 
-            <div className="flex items-center justify-center gap-3 py-1">
+            <div className="flex items-center justify-center gap-2">
               <IconButton
                 className="hover:bg-[rgb(var(--listen-primary)/0.08)] hover:text-[rgb(var(--listen-primary))]"
                 disabled={!canControl}
@@ -269,7 +280,7 @@ export function ListenNowPlayingPanel({
                 <SkipBack className="h-5 w-5" aria-hidden />
               </IconButton>
               <IconButton
-                className="bg-[rgb(var(--listen-primary))] text-background shadow-[0_0_24px_rgb(var(--listen-shadow)/0.28)] hover:bg-[rgb(var(--listen-primary)/0.9)]"
+                className="h-12 w-12 rounded-full border border-[rgb(var(--listen-primary)/0.38)] bg-[rgb(var(--listen-primary))] text-background shadow-[0_0_24px_rgb(var(--listen-shadow)/0.28)] hover:bg-[rgb(var(--listen-primary)/0.9)]"
                 disabled={awaitingMedia || !canControl}
                 label={isPlaying ? "Pause" : "Play"}
                 onClick={() =>
@@ -311,7 +322,7 @@ export function ListenNowPlayingPanel({
               </IconButton>
             </div>
 
-            <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 pt-1">
+            <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2">
               {volume <= 0 ? (
                 <VolumeX
                   className="h-5 w-5 text-on-surface-variant"
@@ -333,6 +344,12 @@ export function ListenNowPlayingPanel({
                 tone="dynamic"
                 value={volume}
               />
+              <span
+                aria-label={`Volume ${Math.round(volume)} percent`}
+                className="min-w-9 text-right text-label-sm tabular-nums text-on-surface-variant"
+              >
+                {Math.round(volume)}%
+              </span>
               <IconButton
                 className="hover:bg-[rgb(var(--listen-primary)/0.08)] hover:text-[rgb(var(--listen-primary))]"
                 label="Fullscreen"
@@ -344,13 +361,11 @@ export function ListenNowPlayingPanel({
             </div>
           </div>
 
-          {desktopShell ? (
-            <ListenRailQueueSummary
-              nextItem={nextQueueItem}
-              queueCount={queuedItems.length}
-              remainingSeconds={remainingQueueSeconds}
-            />
-          ) : null}
+          <ListenUpNextPreview
+            items={queuedItems}
+            onOpenQueue={onOpenQueue}
+            remainingSeconds={remainingQueueSeconds}
+          />
         </div>
 
         {!desktopShell &&

@@ -11,10 +11,6 @@ import { useYouTubeMetadata } from "@/lib/youtube/use-youtube-metadata";
 import type { MediaPreferenceController } from "@/lib/recommendations/use-media-preferences";
 import { PreferenceHeartButton } from "@/components/room/listen/preference-heart-button";
 import {
-  type SourceLoadInput,
-  type QueueAddInput,
-} from "@/components/room/listen/shared";
-import {
   getQueueItemDisplayDuration,
   formatSeconds,
 } from "@/components/room/listen/helpers";
@@ -47,33 +43,6 @@ export function youtubeMetadataToQueueItem(
     thumbnailUrl: item.thumbnailUrl ?? undefined,
     title: item.title ?? "YouTube video",
     videoId: item.videoId,
-  };
-}
-export function queueItemToSourceLoadInput(
-  item: RoomQueueItem,
-): SourceLoadInput {
-  return {
-    sourceTitle: item.title,
-    sourceType: item.sourceType ?? "youtube",
-    sourceUrl: item.sourceUrl ?? "",
-  };
-}
-export function queueItemToQueueAddInput(
-  item: RoomQueueItem,
-  options: { isPlayNext?: boolean } = {},
-): QueueAddInput {
-  return {
-    artist: item.artist,
-    channelName: item.channelName,
-    durationSeconds: item.durationSeconds,
-    isPlayNext: options.isPlayNext,
-    isUnavailable: item.isUnavailable,
-    playlistId: item.playlistId,
-    playlistTitle: item.playlistTitle,
-    sourceTitle: item.title,
-    sourceType: item.sourceType ?? "youtube",
-    sourceUrl: item.sourceUrl ?? "",
-    thumbnailUrl: item.thumbnailUrl,
   };
 }
 export function RecommendationCard({
@@ -118,10 +87,10 @@ export function RecommendationCard({
   return (
     <article
       className={cx(
-        "group min-w-0 snap-start overflow-hidden rounded-md border bg-surface/66 text-left transition",
+        "group grid h-[7.5rem] min-w-0 snap-start grid-cols-[6rem_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_2.25rem] overflow-hidden rounded-md border bg-surface/58 text-left transition",
         current
           ? "border-[rgb(var(--listen-primary)/0.5)] bg-[rgb(var(--listen-primary)/0.08)]"
-          : "border-white/10 hover:border-[rgb(var(--listen-primary)/0.42)] hover:bg-surface-container-low/62 hover:shadow-[0_0_24px_rgb(var(--listen-shadow)/0.1)]",
+          : "border-white/10 hover:border-[rgb(var(--listen-primary)/0.38)] hover:bg-surface-container-low/58",
         disabled && !current && "opacity-75",
       )}
     >
@@ -135,88 +104,96 @@ export function RecommendationCard({
                 : `${primaryLabel} ${title}`
               : `Permission required for ${title}`
         }
-        className="block w-full text-left disabled:cursor-not-allowed"
+        className="group/artwork relative row-span-2 block overflow-hidden border-r border-white/10 text-left disabled:cursor-not-allowed"
         disabled={disabled}
         onClick={onLoadNow}
         type="button"
       >
-        <div className="relative aspect-[16/10] overflow-hidden bg-surface-container">
-          <QueueArtwork
-            className="h-full w-full rounded-none border-0"
-            thumbnailUrl={thumbnailUrl}
-            title={title}
-          />
-          <span
-            className={cx(
-              "absolute inset-0 grid place-items-center bg-black/0 text-[rgb(var(--listen-primary))] opacity-0 transition group-hover:bg-black/24 group-hover:opacity-100",
-              current && "bg-black/18 opacity-100",
-            )}
-          >
-            {current ? (
-              <span className="technical-label border-[rgb(var(--listen-primary)/0.35)] bg-surface/80 text-[rgb(var(--listen-primary))]">
-                Now
-              </span>
-            ) : (
-              <Play
-                className="h-8 w-8 drop-shadow-[0_0_16px_rgb(var(--listen-shadow)/0.35)]"
-                aria-hidden
-              />
-            )}
-          </span>
-        </div>
+        <QueueArtwork
+          className="h-full w-full rounded-none border-0"
+          thumbnailUrl={thumbnailUrl}
+          title={title}
+        />
+        <span
+          className={cx(
+            "absolute inset-0 grid place-items-center bg-black/0 text-[rgb(var(--listen-primary))] opacity-0 transition group-hover/artwork:bg-black/26 group-hover/artwork:opacity-100 group-focus-visible/artwork:bg-black/26 group-focus-visible/artwork:opacity-100",
+            current && "bg-black/20 opacity-100",
+          )}
+        >
+          {current ? (
+            <span className="technical-label border-[rgb(var(--listen-primary)/0.35)] bg-surface/84 text-[rgb(var(--listen-primary))]">
+              Now
+            </span>
+          ) : (
+            <Play className="h-6 w-6" aria-hidden />
+          )}
+        </span>
       </button>
-      <div className="grid min-h-[8.75rem] gap-1.5 p-4">
-        <p className="truncate text-body-md font-semibold text-on-surface">
+      <div className="min-w-0 self-center px-2.5 py-1.5">
+        <p
+          className="truncate text-body-md font-semibold text-on-surface"
+          title={title}
+        >
           {title}
         </p>
-        <p className="truncate text-label-sm text-on-surface-variant">
+        <p
+          className="mt-0.5 truncate text-label-sm text-on-surface-variant"
+          title={channel ?? "Room source"}
+        >
           {channel ?? "Room source"}
         </p>
-        {duration ? (
-          <p className="text-label-sm text-on-surface-variant">{duration}</p>
-        ) : null}
-        {reason ? (
-          <p className="line-clamp-2 text-label-sm text-on-surface-variant">
-            {reason}
-          </p>
-        ) : null}
-        {isBlocked ? (
-          <Badge tone="amber">
-            {getYouTubeAvailabilityLabel(metadata.metadata?.availability)}
-          </Badge>
-        ) : null}
-        <CardActionRail>
-          <IconQueueButton
-            disabled={disabled}
-            icon={<Play className="h-3.5 w-3.5" aria-hidden />}
-            label={`${primaryLabel} ${title}`}
-            onClick={onLoadNow}
-            rail
-          />
-          <IconQueueButton
-            disabled={!canAddQueue || isBlocked}
-            icon={<Plus className="h-3.5 w-3.5" aria-hidden />}
-            label={`Add ${title} to the end of the queue`}
-            onClick={onAddQueue}
-            rail
-          />
-          <IconQueueButton
-            disabled={!canAddQueue || isBlocked}
-            icon={<ListPlus className="h-3.5 w-3.5" aria-hidden />}
-            label={`Add ${title} to play next. Pinned songs stay first when pinned-first is active.`}
-            onClick={onPlayNext}
-            rail
-          />
-          <div className="grid h-8 place-items-center border-l border-white/10">
-            <PreferenceHeartButton
-              className="border-0"
-              item={item}
-              onToggle={() => void mediaPreferences.togglePreference(item)}
-              preference={mediaPreferences.getPreference(item)}
-            />
-          </div>
-        </CardActionRail>
+        <div className="mt-1 flex min-w-0 items-center gap-2">
+          {duration ? (
+            <span className="shrink-0 text-label-sm text-on-surface-variant">
+              {duration}
+            </span>
+          ) : null}
+          {reason ? (
+            <span
+              className="truncate text-label-sm text-[rgb(var(--listen-primary))]"
+              title={reason}
+            >
+              {reason}
+            </span>
+          ) : null}
+          {isBlocked ? (
+            <Badge tone="amber">
+              {getYouTubeAvailabilityLabel(metadata.metadata?.availability)}
+            </Badge>
+          ) : null}
+        </div>
       </div>
+      <CardActionRail className="!mt-0 rounded-none border-x-0 border-b-0">
+        <IconQueueButton
+          disabled={disabled}
+          icon={<Play className="h-3.5 w-3.5" aria-hidden />}
+          label={`${primaryLabel} ${title}`}
+          onClick={onLoadNow}
+          rail
+        />
+        <IconQueueButton
+          disabled={!canAddQueue || isBlocked}
+          icon={<Plus className="h-3.5 w-3.5" aria-hidden />}
+          label={`Add ${title} to the end of the queue`}
+          onClick={onAddQueue}
+          rail
+        />
+        <IconQueueButton
+          disabled={!canAddQueue || isBlocked}
+          icon={<ListPlus className="h-3.5 w-3.5" aria-hidden />}
+          label={`Add ${title} to play next. Pinned songs stay first when pinned-first is active.`}
+          onClick={onPlayNext}
+          rail
+        />
+        <div className="grid h-full min-h-9 place-items-center border-l border-white/10">
+          <PreferenceHeartButton
+            className="h-full w-full rounded-none border-0"
+            item={item}
+            onToggle={() => void mediaPreferences.togglePreference(item)}
+            preference={mediaPreferences.getPreference(item)}
+          />
+        </div>
+      </CardActionRail>
     </article>
   );
 }
@@ -244,9 +221,20 @@ export function SmallMediaCard({
     </div>
   );
 }
-export function CardActionRail({ children }: { children: ReactNode }) {
+export function CardActionRail({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="mt-2 grid grid-flow-col auto-cols-fr overflow-hidden rounded-sm border border-white/10 bg-background/52">
+    <div
+      className={cx(
+        "mt-2 grid grid-flow-col auto-cols-fr overflow-hidden rounded-sm border border-white/10 bg-background/52",
+        className,
+      )}
+    >
       {children}
     </div>
   );
@@ -276,7 +264,13 @@ export function QueueArtwork({
     >
       {thumbnailUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- Provider thumbnails are external media artwork.
-        <img alt="" className="h-full w-full object-cover" src={thumbnailUrl} />
+        <img
+          alt=""
+          className="h-full w-full object-cover"
+          decoding="async"
+          loading="lazy"
+          src={thumbnailUrl}
+        />
       ) : (
         <span className="flex h-full w-full items-center justify-center text-[rgb(var(--listen-primary))]">
           <Headphones className="h-5 w-5" aria-hidden />
@@ -313,7 +307,7 @@ export function IconQueueButton({
       aria-pressed={selected || undefined}
       className={cx(
         rail
-          ? "inline-flex h-8 items-center justify-center border-l border-white/10 transition first:border-l-0 disabled:opacity-35"
+          ? "inline-flex h-full min-h-9 items-center justify-center border-l border-white/10 py-1 transition first:border-l-0 disabled:opacity-35"
           : "inline-flex h-7 w-7 items-center justify-center rounded-sm border transition disabled:opacity-35",
         selected
           ? "border-[rgb(var(--listen-primary)/0.4)] bg-[rgb(var(--listen-primary)/0.12)] text-[rgb(var(--listen-primary))] shadow-[0_0_14px_rgb(var(--listen-shadow)/0.12)]"

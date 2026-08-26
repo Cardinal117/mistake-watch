@@ -14,11 +14,14 @@ import {
   type ListenTvSettings,
 } from "@/components/room/listen/shared";
 import {
-  ListenMemberAvatarRow,
   ListenModeTabs,
   ListenSearchShell,
   ListenRoomSettingsMenu,
 } from "@/components/room/listen/header/header-tools";
+import {
+  ListenMemberAvatarRow,
+  ListenRoomSaveButton,
+} from "@/components/room/listen/header/header-participant-tools";
 import { ListenAddMediaPopover } from "@/components/room/listen/add-media/add-media-popover";
 import { formatQueueRemainingDuration } from "@/components/room/listen/helpers";
 
@@ -157,57 +160,70 @@ export function ListenTechnicalRoomHeader({
   );
 
   return (
-    <section className="relative z-20 border-b border-white/8 bg-background/68 backdrop-blur-xl">
+    <section className="relative z-20 min-w-0 w-full max-w-full bg-transparent">
       <div
         className={cx(
-          "grid gap-3 px-4 py-3 sm:px-6",
-          desktopShell && "px-6 py-5 min-[1200px]:px-10",
+          "grid min-w-0 w-full max-w-full grid-cols-[minmax(0,1fr)] gap-3 py-3",
+          desktopShell ? "px-[var(--listen-workspace-inset)]" : "px-4 sm:px-6",
         )}
       >
         <div
           className={cx(
-            "grid gap-4",
+            "grid min-w-0 w-full max-w-full grid-cols-[minmax(0,1fr)] gap-4",
             desktopShell &&
               "items-start min-[1200px]:grid-cols-[minmax(0,1fr)_auto] min-[1200px]:items-start",
           )}
         >
           <div className="min-w-0">
-            <ListenMemberAvatarRow participants={liveRoom.participants} />
-            <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-              <input
-                aria-label="Room name"
-                className="min-w-[7rem] max-w-full bg-transparent text-headline-md font-semibold leading-tight text-on-surface outline-none transition placeholder:text-on-surface-variant/50 focus:border-b focus:border-[rgb(var(--listen-primary)/0.78)] disabled:cursor-default"
-                disabled={!canRename || renaming}
-                onBlur={commitRoomName}
-                onChange={(event) => {
-                  setEditingName(event.currentTarget.value);
-                  setRoomNameDirty(true);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.currentTarget.blur();
-                  }
-
-                  if (event.key === "Escape") {
-                    setEditingName(roomName);
-                    setRoomNameDirty(false);
-                    event.currentTarget.blur();
-                  }
-                }}
-                size={Math.min(Math.max(visibleRoomName.length, 7), 28)}
-                value={visibleRoomName}
-              />
-              {renaming ? (
-                <SignalInlineStatus
-                  className="shrink-0"
-                  state={{
-                    detail: "Applying room name.",
-                    label: "Saving",
-                    state: "loading",
-                    tone: "warning",
+            <div className="flex min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-2">
+              <div className="flex min-w-0 flex-1 items-center gap-1">
+                <input
+                  aria-label="Room name"
+                  className="min-w-0 max-w-[calc(100%-2.75rem)] flex-[0_1_auto] truncate bg-transparent text-headline-md font-semibold leading-tight text-on-surface outline-none transition placeholder:text-on-surface-variant/50 focus:border-b focus:border-[rgb(var(--listen-primary)/0.78)] disabled:cursor-default"
+                  disabled={!canRename || renaming}
+                  onBlur={commitRoomName}
+                  onChange={(event) => {
+                    setEditingName(event.currentTarget.value);
+                    setRoomNameDirty(true);
                   }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.currentTarget.blur();
+                    }
+
+                    if (event.key === "Escape") {
+                      setEditingName(roomName);
+                      setRoomNameDirty(false);
+                      event.currentTarget.blur();
+                    }
+                  }}
+                  size={Math.min(Math.max(visibleRoomName.length + 1, 7), 34)}
+                  value={visibleRoomName}
                 />
-              ) : null}
+                <ListenRoomSaveButton
+                  canSave={liveRoom.canManageAuthority}
+                  initialSaved={room.isSaved}
+                  key={`${room.id}:${room.isSaved}`}
+                  roomId={room.id}
+                />
+                {renaming ? (
+                  <SignalInlineStatus
+                    className="shrink-0"
+                    state={{
+                      detail: "Applying room name.",
+                      label: "Saving",
+                      state: "loading",
+                      tone: "warning",
+                    }}
+                  />
+                ) : null}
+              </div>
+              <ListenMemberAvatarRow
+                controllerMemberId={controllerMemberId}
+                currentMemberId={room.currentMember?.id}
+                liveRoom={liveRoom}
+                participants={liveRoom.participants}
+              />
             </div>
             <p
               aria-live="polite"
@@ -257,7 +273,7 @@ export function ListenTechnicalRoomHeader({
           </div>
           <div
             className={cx(
-              "flex-wrap items-center gap-2",
+              "min-w-0 max-w-full flex-wrap items-center gap-2",
               desktopShell
                 ? "flex justify-start min-[1200px]:justify-end"
                 : "hidden",
@@ -301,13 +317,15 @@ export function ListenTechnicalRoomHeader({
               liveRoom={liveRoom}
               roomCode={room.code}
               roomId={room.id}
+              showPermissionsAction={false}
+              showSaveAction={false}
               tvSettings={tvSettings}
               onTvSettingsChange={onTvSettingsChange}
             />
           </div>
         </div>
         {desktopShell ? (
-          <div className="grid gap-4 rounded-md border border-white/10 bg-background/34 p-2 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.035)] min-[980px]:grid-cols-[auto_minmax(20rem,1fr)] min-[980px]:items-center">
+          <div className="grid gap-4 rounded-lg border border-white/10 bg-background/22 p-2 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.025)] backdrop-blur-md min-[980px]:grid-cols-[auto_minmax(20rem,1fr)] min-[980px]:items-center">
             <ListenModeTabs
               canSwitch={
                 liveRoom.canManageAuthority &&

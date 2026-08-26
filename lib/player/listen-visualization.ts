@@ -67,6 +67,22 @@ export const listenVisualizationModes = [
 export type ListenVisualizationMode =
   (typeof listenVisualizationModes)[number]["id"];
 
+export type ListenStageView = "discover" | "visualizer";
+
+type ListenVisualizationCapability = Readonly<{
+  effectiveMode: ListenVisualizationMode;
+  reason: "companion-required" | "shared-rhythm-unavailable" | null;
+  source: "fallback" | "local-detail" | "none" | "preview" | "shared-rhythm";
+}>;
+
+export type ListenVisualizerStagePresentation = Readonly<{
+  activeMode: ListenVisualizationMode | "ambient-waveform";
+  fallbackActive: boolean;
+  message: string;
+  rendererLabel: string;
+  statusLabel: string;
+}>;
+
 export const DEFAULT_LISTEN_VISUALIZATION_MODE: ListenVisualizationMode =
   "static-artwork";
 
@@ -84,6 +100,13 @@ export const LISTEN_BACKGROUND_DIMMING = {
   step: 5,
 } as const;
 
+export const LISTEN_BACKGROUND_VIBRANCY = {
+  default: 70,
+  max: 100,
+  min: 25,
+  step: 5,
+} as const;
+
 export function isListenVisualizationMode(
   value: unknown,
 ): value is ListenVisualizationMode {
@@ -96,6 +119,101 @@ export function normalizeListenVisualizationMode(
   return isListenVisualizationMode(value)
     ? value
     : DEFAULT_LISTEN_VISUALIZATION_MODE;
+}
+
+export function normalizeListenStageView(value: unknown): ListenStageView {
+  return value === "visualizer" ? "visualizer" : "discover";
+}
+
+export function getListenVisualizerStagePresentation({
+  ambientPrototypeEnabled,
+  capability,
+  selectedMode,
+}: {
+  ambientPrototypeEnabled: boolean;
+  capability: ListenVisualizationCapability;
+  selectedMode: ListenVisualizationMode;
+}): ListenVisualizerStagePresentation {
+  const selected = getListenVisualizationMode(selectedMode);
+
+  if (capability.source === "fallback") {
+    const requirement =
+      capability.reason === "companion-required"
+        ? "local companion detail"
+        : "a fresh shared rhythm signal";
+
+    if (ambientPrototypeEnabled) {
+      return {
+        activeMode: "ambient-waveform",
+        fallbackActive: true,
+        message: `${selected.label} needs ${requirement}. Showing the development-only Ambient Waveform prototype.`,
+        rendererLabel: "Ambient Waveform",
+        statusLabel: "Prototype fallback",
+      };
+    }
+
+    return {
+      activeMode: "static-artwork",
+      fallbackActive: true,
+      message: `${selected.label} needs ${requirement}. Showing Static Artwork.`,
+      rendererLabel: "Static Artwork",
+      statusLabel: "Fallback active",
+    };
+  }
+
+  const status =
+    capability.source === "local-detail"
+      ? {
+          message: "Detailed locally by the private audio companion.",
+          statusLabel: "Local companion detail",
+        }
+      : capability.source === "shared-rhythm"
+        ? {
+            message: "Synchronized from the room's shared rhythm signal.",
+            statusLabel: "Shared room rhythm",
+          }
+        : null;
+
+  return {
+    activeMode: capability.effectiveMode,
+    fallbackActive: false,
+    message:
+      status?.message ??
+      (selectedMode === "off"
+        ? "Ambient visualization is disabled on this browser."
+        : "Song artwork and room color without continuous motion."),
+    rendererLabel: selected.label,
+    statusLabel:
+      status?.statusLabel ??
+      (selectedMode === "off" ? "Visualization off" : "Artwork mode"),
+  };
+}
+
+export function createAmbientWaveformSamples(
+  seedKey: string,
+  mediaPositionSeconds: number,
+  count = 48,
+) {
+  const safeCount = Math.max(8, Math.floor(count));
+  const halfCount = Math.ceil(safeCount / 2);
+  const samples = Array.from({ length: safeCount }, () => 0);
+  const seed = stableWaveformSeed(seedKey);
+  const phase = mediaPositionSeconds * 0.72 + seed * Math.PI * 2;
+
+  for (let index = 0; index < halfCount; index += 1) {
+    const ratio = halfCount === 1 ? 0 : index / (halfCount - 1);
+    const envelope = 0.24 + Math.sin(ratio * Math.PI) * 0.76;
+    const primary = Math.sin(ratio * Math.PI * 5 + phase) * 0.52;
+    const detail = Math.sin(ratio * Math.PI * 11 - phase * 0.63) * 0.2;
+    const sample = roundPresentationValue(
+      Math.max(-1, Math.min(1, (primary + detail) * envelope)),
+    );
+
+    samples[index] = sample;
+    samples[safeCount - index - 1] = sample;
+  }
+
+  return samples;
 }
 
 export function getListenVisualizationMode(mode: ListenVisualizationMode) {
@@ -127,15 +245,27 @@ export function normalizeListenAmbientLevel(
 export function getListenPresentationVariables(
   visualIntensity: unknown,
   backgroundDimming: unknown,
+  backgroundVibrancy: unknown = LISTEN_BACKGROUND_VIBRANCY.default,
 ) {
   const intensity =
     normalizeListenAmbientLevel(visualIntensity, LISTEN_VISUAL_INTENSITY) / 100;
   const dimming =
     normalizeListenAmbientLevel(backgroundDimming, LISTEN_BACKGROUND_DIMMING) /
     100;
+  const vibrancy =
+    normalizeListenAmbientLevel(
+      backgroundVibrancy,
+      LISTEN_BACKGROUND_VIBRANCY,
+    ) / 100;
 
   return {
     "--listen-artwork-opacity": roundPresentationValue(0.25 + intensity * 0.6),
+    "--listen-background-presence": roundPresentationValue(
+      0.85 + vibrancy * 0.15,
+    ),
+    "--listen-background-saturation": roundPresentationValue(
+      0.95 + vibrancy * 0.7,
+    ),
     "--listen-dim-bottom": roundPresentationValue(0.45 + dimming * 0.5),
     "--listen-dim-edge": roundPresentationValue(0.42 + dimming * 0.5),
     "--listen-dim-left": roundPresentationValue(0.22 + dimming * 0.5),
@@ -153,4 +283,15 @@ export function getListenPresentationVariables(
 
 function roundPresentationValue(value: number) {
   return Number(value.toFixed(3));
+}
+
+function stableWaveformSeed(value: string) {
+  let hash = 2166136261;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return (hash >>> 0) / 4294967295;
 }

@@ -20,14 +20,13 @@ import {
 import { ListenNowPlayingPanel } from "@/components/room/listen/now-playing/now-playing-panel";
 import { ListenTechnicalRoomHeader } from "@/components/room/listen/header/technical-room-header";
 import { ListenMobileRoomTools } from "@/components/room/listen/mobile/mobile-room-tools";
-import { ListenDiscoveryPanel } from "@/components/room/listen/discovery/discovery-panel";
 import { ListenQueueDrawer } from "@/components/room/listen/queue/queue-drawer";
+import { ListenContentStage } from "@/components/room/listen/stage/listen-content-stage";
 import {
   ListenAmbientBackdrop,
   useArtworkTheme,
   getListenTheme,
 } from "@/components/room/listen/theme/listen-theme";
-import { ListenVisualization } from "@/components/room/listen/theme/listen-visualization";
 import { useListenAmbientPreference } from "@/components/room/listen/theme/use-listen-ambient-preference";
 import { useListenVisualizationPreference } from "@/components/room/listen/theme/use-listen-visualization-preference";
 import { getListenPresentationVariables } from "@/lib/player/listen-visualization";
@@ -68,7 +67,8 @@ export function ListenModeLayout({
   );
   const [tvMode, setTvMode] = useState(false);
   const [tvSettings, setTvSettings] = usePersistentListenTvSettings();
-  const { backgroundDimming, visualIntensity } = useListenAmbientPreference();
+  const { backgroundDimming, backgroundVibrancy, visualIntensity } =
+    useListenAmbientPreference();
   const { mode: visualizationMode } = useListenVisualizationPreference();
   const audioCompanion = useAudioCompanion();
   const [volume, setVolume] = useState(DEFAULT_LISTEN_VOLUME);
@@ -102,13 +102,26 @@ export function ListenModeLayout({
   );
   const listenTheme = useArtworkTheme(activeArtworkUrl, fallbackListenTheme);
   const listenThemeStyle = {
-    ...getListenPresentationVariables(visualIntensity, backgroundDimming),
+    ...getListenPresentationVariables(
+      visualIntensity,
+      backgroundDimming,
+      backgroundVibrancy,
+    ),
+    "--listen-background-primary": listenTheme.backgroundPrimary,
+    "--listen-background-secondary": listenTheme.backgroundSecondary,
     "--listen-primary": listenTheme.primary,
     "--listen-secondary": listenTheme.secondary,
     "--listen-shadow": listenTheme.shadow,
     "--listen-wave": listenTheme.wave,
-    "--listen-player-rail-width": "clamp(380px, 24vw, 420px)",
+    "--listen-player-rail-width": "clamp(380px, 22.5vw, 420px)",
+    "--listen-shell-gap": "1rem",
+    "--listen-shell-inset": "0.75rem",
+    "--listen-workspace-inset": "clamp(0.75rem, 1vw, 1rem)",
+    "--listen-workspace-left":
+      "calc(var(--listen-shell-inset) + var(--listen-player-rail-width) + var(--listen-shell-gap))",
     "--listen-room-columns": "var(--listen-player-rail-width) minmax(0,1fr)",
+    "--listen-collapsed-queue-height":
+      queuedItems.length > 0 ? "4.5rem" : "3rem",
   } as CSSProperties;
   const desktopShell = useDesktopListenShell();
   const controllerMemberId =
@@ -123,6 +136,13 @@ export function ListenModeLayout({
     currentLiveQueueItem?.durationSeconds ??
     session?.sourceDurationSeconds ??
     0;
+  const activeTitle =
+    session?.sourceTitle ?? currentItem?.title ?? room.nowPlaying.title;
+  const activeArtist =
+    currentItem?.artist ??
+    currentItem?.channelName ??
+    room.nowPlaying.artist ??
+    "Room source";
   const activeMediaId = parseYouTubeVideoId(session?.sourceUrl ?? "");
   const hasSharedRhythm = Boolean(
     activeMediaId &&
@@ -311,10 +331,7 @@ export function ListenModeLayout({
       style={listenThemeStyle}
     >
       {desktopShell && effectiveVisualizationMode !== "off" ? (
-        <ListenAmbientBackdrop
-          artworkUrl={activeArtworkUrl}
-          mode={effectiveVisualizationMode}
-        />
+        <ListenAmbientBackdrop mode={effectiveVisualizationMode} />
       ) : null}
       {effectiveVisualizationMode !== "off" ? (
         <div
@@ -326,25 +343,11 @@ export function ListenModeLayout({
           }}
         />
       ) : null}
-      {desktopShell ? (
-        <ListenVisualization
-          active={session?.status === "playing"}
-          activeMediaId={activeMediaId}
-          companion={audioCompanion}
-          intensity={visualIntensity}
-          mediaPositionSeconds={currentPosition}
-          mode={visualizationMode}
-          nowMs={clockMs}
-          playbackOccurrenceId={session?.playbackOccurrenceId}
-          roomRhythmProfile={liveRoom.snapshot.roomRhythmProfile}
-          theme={listenTheme}
-        />
-      ) : null}
       <div
         className={cx(
           "relative z-10 grid transition-[grid-template-columns] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
           desktopShell
-            ? "h-dvh min-h-0 grid-cols-[var(--listen-room-columns)] gap-0 overflow-hidden px-0 pb-0 pt-0"
+            ? "h-dvh min-h-0 grid-cols-[var(--listen-room-columns)] gap-[var(--listen-shell-gap)] overflow-hidden p-[var(--listen-shell-inset)]"
             : "gap-4 px-margin-mobile pb-32 pt-4 md:px-margin-desktop",
         )}
       >
@@ -378,6 +381,7 @@ export function ListenModeLayout({
           }
           nextPreparation={nextPreparation}
           onNext={playNext}
+          onOpenQueue={() => setQueueDrawerOpen(true)}
           onPlaybackChange={setPlayback}
           onPrevious={playPrevious}
           onSeek={seekTo}
@@ -392,19 +396,11 @@ export function ListenModeLayout({
 
         <section
           className={cx(
-            "relative grid min-w-0 overflow-visible border-white/10",
+            "relative grid min-w-0 overflow-visible",
             desktopShell &&
-              "min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden border-x",
+              "min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden pb-[calc(var(--listen-collapsed-queue-height)+1rem)]",
           )}
-          style={{
-            background:
-              "radial-gradient(circle at 0% 20%, rgb(var(--listen-primary) / 0.085), transparent 34rem), radial-gradient(circle at 20% 54%, rgb(var(--listen-secondary) / 0.055), transparent 42rem), linear-gradient(90deg,rgb(14 14 15 / var(--listen-panel-dim-start,0.88)),rgb(14 14 15 / var(--listen-panel-dim-middle,0.78)) 44%,rgb(19 19 20 / var(--listen-panel-dim-end,0.9)))",
-          }}
         >
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgb(255_255_255_/_0.035)_1px,transparent_1px),linear-gradient(180deg,rgb(255_255_255_/_0.03)_1px,transparent_1px)] bg-[size:72px_72px] opacity-20"
-          />
           <ListenTechnicalRoomHeader
             account={account}
             accountNotice={accountNotice}
@@ -427,22 +423,37 @@ export function ListenModeLayout({
           />
           <div
             className={cx(
-              "relative z-10 grid gap-4 px-4 py-4 [scrollbar-color:rgb(var(--listen-primary)_/_0.42)_transparent] [scrollbar-width:thin] sm:px-6",
+              "relative z-10 grid gap-4 py-4 [scrollbar-color:rgb(var(--listen-primary)_/_0.42)_transparent] [scrollbar-width:thin]",
               desktopShell &&
-                "min-h-0 overflow-y-auto px-6 py-5 min-[1200px]:px-10",
+                "min-h-0 overflow-hidden px-[var(--listen-workspace-inset)] pb-0 pt-1",
+              !desktopShell && "px-4 sm:px-6",
             )}
           >
-            <ListenDiscoveryPanel
+            <ListenContentStage
+              active={session?.status === "playing"}
+              activeArtworkUrl={activeArtworkUrl}
+              activeMediaId={activeMediaId}
+              artist={activeArtist}
               canAddQueue={liveRoom.canAddQueue && isConnected}
               canLoadSource={liveRoom.canManageAuthority && isConnected}
               canPlay={canControl && isConnected}
+              companion={audioCompanion}
               currentItem={currentItem}
+              currentPosition={currentPosition}
+              durationSeconds={durationSeconds}
+              intensity={visualIntensity}
               items={liveQueueItems}
               mediaPreferences={mediaPreferences}
+              nowMs={clockMs}
               onAddQueueItem={liveRoom.addQueueItem}
               onLoadSource={liveRoom.loadMediaSource}
               onPlayQueueItem={liveRoom.playQueueItemNow}
+              playbackOccurrenceId={session?.playbackOccurrenceId}
               room={room}
+              roomRhythmProfile={liveRoom.snapshot.roomRhythmProfile}
+              theme={listenTheme}
+              title={activeTitle}
+              visualizationMode={visualizationMode}
             />
           </div>
         </section>

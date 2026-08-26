@@ -39,6 +39,8 @@ export type ListenNotification = {
   tone: "error" | "info" | "success" | "warning";
 };
 export type ListenTheme = {
+  backgroundPrimary: string;
+  backgroundSecondary: string;
   primary: string;
   secondary: string;
   shadow: string;

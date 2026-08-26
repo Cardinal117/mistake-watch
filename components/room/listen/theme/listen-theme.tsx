@@ -4,28 +4,35 @@ import { useEffect, useState } from "react";
 import { type ListenTheme } from "@/components/room/listen/shared";
 import { extractThemeFromImage } from "@/components/room/listen/helpers";
 import type { ListenVisualizationMode } from "@/lib/player/listen-visualization";
-import { cx } from "@/lib/ui";
 
 export const LISTEN_THEME_PRESETS = [
   {
+    backgroundPrimary: "32 27 12",
+    backgroundSecondary: "20 18 13",
     primary: "255 186 32",
     secondary: "184 130 22",
     shadow: "255 186 32",
     wave: "255 214 108",
   },
   {
+    backgroundPrimary: "40 22 18",
+    backgroundSecondary: "29 24 14",
     primary: "219 116 62",
     secondary: "255 186 32",
     shadow: "219 116 62",
     wave: "255 196 92",
   },
   {
+    backgroundPrimary: "28 20 38",
+    backgroundSecondary: "25 22 14",
     primary: "176 111 224",
     secondary: "255 186 32",
     shadow: "176 111 224",
     wave: "225 184 255",
   },
   {
+    backgroundPrimary: "38 30 22",
+    backgroundSecondary: "24 20 18",
     primary: "255 219 157",
     secondary: "155 112 72",
     shadow: "255 186 32",
@@ -33,10 +40,8 @@ export const LISTEN_THEME_PRESETS = [
   },
 ] satisfies ListenTheme[];
 export function ListenAmbientBackdrop({
-  artworkUrl,
   mode,
 }: {
-  artworkUrl?: string | null;
   mode: ListenVisualizationMode;
 }) {
   return (
@@ -44,26 +49,18 @@ export function ListenAmbientBackdrop({
       aria-hidden
       className="pointer-events-none absolute inset-0 overflow-hidden"
     >
-      {artworkUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element -- Provider artwork drives the ambient listen-room backdrop.
-        <img
-          alt=""
-          className={cx(
-            "absolute -inset-[12%] h-[124%] w-[124%] object-cover",
-            mode === "static-artwork"
-              ? "blur-[8px] saturate-125"
-              : "blur-3xl saturate-150",
-          )}
-          fetchPriority="high"
-          key={artworkUrl}
-          loading="eager"
-          src={artworkUrl}
-          style={{
-            animation: "listen-artwork-fade-in 1400ms ease-out both",
-            opacity: "var(--listen-artwork-opacity, 0.48)",
-          }}
-        />
-      ) : null}
+      <div
+        className="absolute inset-0 transition-colors duration-1000"
+        style={{
+          background:
+            "radial-gradient(circle at 8% 8%,rgb(var(--listen-background-secondary)/0.96),transparent 38%),radial-gradient(circle at 30% 80%,rgb(var(--listen-background-primary)/0.9),transparent 48%),radial-gradient(circle at 76% 12%,rgb(var(--listen-primary)/0.16),transparent 34%),linear-gradient(112deg,rgb(var(--listen-background-primary)/0.94),rgb(var(--listen-background-secondary)/0.78) 44%,rgb(10 12 14/0.97) 88%)",
+          filter:
+            "saturate(var(--listen-background-saturation, 1.44)) contrast(1.04)",
+          opacity: `calc(var(--listen-background-presence, 0.955) * ${
+            mode === "static-artwork" ? 0.98 : 0.92
+          })`,
+        }}
+      />
       <div
         className="absolute inset-0"
         style={{

@@ -6,15 +6,23 @@ import test from "node:test";
 import { root } from "./ranking-test-helpers.mjs";
 
 test("Like control exposes stable accessible pressed and unavailable states", async () => {
-  const source = await read(
-    "components/room/listen/preference-heart-button.tsx",
-  );
+  const [source, nowPlaying, visualizer] = await Promise.all([
+    read("components/room/listen/preference-heart-button.tsx"),
+    read("components/room/listen/now-playing/now-playing-panel.tsx"),
+    read("components/room/listen/stage/listen-visualizer-stage.tsx"),
+  ]);
 
   assert.match(source, /Heart/);
   assert.match(source, /aria-pressed=\{preference\.liked\}/);
   assert.match(source, /Like \$\{item\.title\}/);
   assert.match(source, /Remove Like from \$\{item\.title\}/);
-  assert.match(source, /h-8 w-8 shrink-0/);
+  assert.match(source, /variant\?: "circular" \| "compact" \| "inline"/);
+  assert.match(source, /variant = "compact"/);
+  assert.match(source, /h-8 w-8 rounded-sm/);
+  assert.match(source, /h-10 w-10 rounded-full border border-transparent/);
+  assert.match(source, /h-10 w-10 rounded-full border border-white\/10/);
+  assert.match(nowPlaying, /variant="inline"/);
+  assert.match(visualizer, /variant="circular"/);
   assert.match(
     source,
     /disabled=\{!preference\.available \|\| preference\.pending\}/,
@@ -63,15 +71,17 @@ test("Listen surfaces use the same room preference controller", async () => {
 });
 
 test("first-party ranking preserves provider order as the safe fallback", async () => {
-  const source = await read(
-    "components/room/listen/discovery/discovery-panel.tsx",
-  );
+  const [source, discovery] = await Promise.all([
+    read("components/room/listen/discovery/discovery-panel.tsx"),
+    read("lib/recommendations/listen-discovery.ts"),
+  ]);
 
   assert.match(source, /return providerItems;/);
   assert.match(source, /ranked\.response\.status !== "available"/);
-  assert.match(source, /return rankedItems;/);
-  assert.match(source, /providerRankedEmpty/);
-  assert.match(source, /Mistake Watch ranking/);
+  assert.match(source, /ranked\.response\.items\.flatMap/);
+  assert.match(source, /itemById\.delete\(item\.candidateId\)/);
+  assert.match(discovery, /providerRankedEmpty/);
+  assert.match(discovery, /Mistake Watch ranking/);
   assert.doesNotMatch(source, /youtube.*like|like.*youtube/i);
 });
 

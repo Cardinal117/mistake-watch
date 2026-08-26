@@ -3,6 +3,7 @@
 import { useCallback, useSyncExternalStore } from "react";
 import {
   LISTEN_BACKGROUND_DIMMING,
+  LISTEN_BACKGROUND_VIBRANCY,
   LISTEN_VISUAL_INTENSITY,
   normalizeListenAmbientLevel,
 } from "@/lib/player/listen-visualization";
@@ -11,9 +12,12 @@ const INTENSITY_STORAGE_KEY = "mw_listen_visual_intensity_v1";
 const INTENSITY_CHANGE_EVENT = "mistake-watch:listen-intensity-change";
 const DIMMING_STORAGE_KEY = "mw_listen_background_dimming_v1";
 const DIMMING_CHANGE_EVENT = "mistake-watch:listen-dimming-change";
+const VIBRANCY_STORAGE_KEY = "mw_listen_background_vibrancy_v1";
+const VIBRANCY_CHANGE_EVENT = "mistake-watch:listen-vibrancy-change";
 
 let fallbackIntensity: number = LISTEN_VISUAL_INTENSITY.default;
 let fallbackDimming: number = LISTEN_BACKGROUND_DIMMING.default;
+let fallbackVibrancy: number = LISTEN_BACKGROUND_VIBRANCY.default;
 
 export function useListenAmbientPreference() {
   const visualIntensity = useSyncExternalStore(
@@ -25,6 +29,11 @@ export function useListenAmbientPreference() {
     subscribeToDimming,
     readBackgroundDimming,
     () => LISTEN_BACKGROUND_DIMMING.default,
+  );
+  const backgroundVibrancy = useSyncExternalStore(
+    subscribeToVibrancy,
+    readBackgroundVibrancy,
+    () => LISTEN_BACKGROUND_VIBRANCY.default,
   );
 
   const setVisualIntensity = useCallback((value: number) => {
@@ -47,9 +56,23 @@ export function useListenAmbientPreference() {
     writePreference(DIMMING_STORAGE_KEY, DIMMING_CHANGE_EVENT, fallbackDimming);
   }, []);
 
+  const setBackgroundVibrancy = useCallback((value: number) => {
+    fallbackVibrancy = normalizeListenAmbientLevel(
+      value,
+      LISTEN_BACKGROUND_VIBRANCY,
+    );
+    writePreference(
+      VIBRANCY_STORAGE_KEY,
+      VIBRANCY_CHANGE_EVENT,
+      fallbackVibrancy,
+    );
+  }, []);
+
   return {
     backgroundDimming,
+    backgroundVibrancy,
     setBackgroundDimming,
+    setBackgroundVibrancy,
     setVisualIntensity,
     visualIntensity,
   };
@@ -68,6 +91,14 @@ function readBackgroundDimming() {
     DIMMING_STORAGE_KEY,
     LISTEN_BACKGROUND_DIMMING,
     fallbackDimming,
+  );
+}
+
+function readBackgroundVibrancy() {
+  return readPreference(
+    VIBRANCY_STORAGE_KEY,
+    LISTEN_BACKGROUND_VIBRANCY,
+    fallbackVibrancy,
   );
 }
 
@@ -90,6 +121,18 @@ function subscribeToDimming(onChange: () => void) {
     LISTEN_BACKGROUND_DIMMING,
     (value) => {
       fallbackDimming = value;
+      onChange();
+    },
+  );
+}
+
+function subscribeToVibrancy(onChange: () => void) {
+  return subscribeToPreference(
+    VIBRANCY_STORAGE_KEY,
+    VIBRANCY_CHANGE_EVENT,
+    LISTEN_BACKGROUND_VIBRANCY,
+    (value) => {
+      fallbackVibrancy = value;
       onChange();
     },
   );

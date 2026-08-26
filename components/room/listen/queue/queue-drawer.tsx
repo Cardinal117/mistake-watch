@@ -349,14 +349,15 @@ export function ListenQueueDrawer({
 
   return (
     <section
+      data-listen-queue-drawer
       className={cx(
-        "fixed z-50 flex flex-col overflow-hidden border border-white/10 bg-surface/94 backdrop-blur-xl transition-[height,max-height,border-color,box-shadow,left,right,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+        "fixed z-50 flex flex-col overflow-hidden border border-white/10 backdrop-blur-xl transition-[height,max-height,border-color,background-color,box-shadow,left,right,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
         desktopShell
-          ? "bottom-0 left-[var(--listen-player-rail-width)] right-0 rounded-t-md border-b-0 shadow-[0_-18px_48px_rgb(0_0_0_/_0.32)]"
+          ? "bottom-[var(--listen-shell-inset)] left-[calc(var(--listen-workspace-left)+var(--listen-workspace-inset))] right-[calc(var(--listen-shell-inset)+var(--listen-workspace-inset))] rounded-lg shadow-[0_-18px_48px_rgb(0_0_0_/_0.32)]"
           : "bottom-0 left-3 right-3 rounded-t-md border-b-0 shadow-[0_-18px_48px_rgb(0_0_0_/_0.32)]",
         open
-          ? "border-[rgb(var(--listen-primary)/0.28)]"
-          : "max-h-12 border-white/10",
+          ? "border-[rgb(var(--listen-primary)/0.28)] bg-surface/94"
+          : "max-h-12 border-white/10 bg-surface/66",
       )}
       style={drawerStyle}
     >
@@ -365,7 +366,7 @@ export function ListenQueueDrawer({
         aria-label={open ? "Collapse queue drawer" : "Open queue drawer"}
         className={cx(
           "group mx-auto grid min-h-11 w-full shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 py-2 text-[rgb(var(--listen-primary))] transition hover:bg-[rgb(var(--listen-primary)/0.08)] sm:px-4",
-          open && "border-b border-white/10",
+          open ? "border-b border-white/10" : "h-full",
         )}
         onClick={toggleDrawer}
         type="button"

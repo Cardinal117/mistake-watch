@@ -28,12 +28,16 @@ await writeFile(contractModulePath, contractJs);
 const {
   DEFAULT_LISTEN_VISUALIZATION_MODE,
   LISTEN_BACKGROUND_DIMMING,
+  LISTEN_BACKGROUND_VIBRANCY,
   LISTEN_VISUAL_INTENSITY,
+  createAmbientWaveformSamples,
+  getListenVisualizerStagePresentation,
   getListenPresentationVariables,
   getListenVisualizationMode,
   isListenVisualizationMode,
   listenVisualizationModes,
   normalizeListenAmbientLevel,
+  normalizeListenStageView,
   normalizeListenVisualizationMode,
 } = await import(pathToFileURL(contractModulePath));
 
@@ -85,6 +89,92 @@ test("unknown stored visualization values fail closed to the default", () => {
   assert.equal(normalizeListenVisualizationMode(null), "static-artwork");
 });
 
+test("Listen stage selection fails closed to Discover", () => {
+  assert.equal(typeof normalizeListenStageView, "function");
+  assert.equal(normalizeListenStageView("discover"), "discover");
+  assert.equal(normalizeListenStageView("visualizer"), "visualizer");
+  assert.equal(normalizeListenStageView("queue"), "discover");
+  assert.equal(normalizeListenStageView(null), "discover");
+});
+
+test("Visualizer stage reports compatible and fallback states honestly", () => {
+  assert.equal(typeof getListenVisualizerStagePresentation, "function");
+
+  assert.deepEqual(
+    getListenVisualizerStagePresentation({
+      ambientPrototypeEnabled: false,
+      capability: {
+        effectiveMode: "siri-ribbon",
+        reason: null,
+        source: "shared-rhythm",
+      },
+      selectedMode: "siri-ribbon",
+    }),
+    {
+      activeMode: "siri-ribbon",
+      fallbackActive: false,
+      message: "Synchronized from the room's shared rhythm signal.",
+      rendererLabel: "Siri Ribbon",
+      statusLabel: "Shared room rhythm",
+    },
+  );
+
+  assert.deepEqual(
+    getListenVisualizerStagePresentation({
+      ambientPrototypeEnabled: false,
+      capability: {
+        effectiveMode: "static-artwork",
+        reason: "companion-required",
+        source: "fallback",
+      },
+      selectedMode: "mirror-spectrum",
+    }),
+    {
+      activeMode: "static-artwork",
+      fallbackActive: true,
+      message:
+        "Mirror Spectrum needs local companion detail. Showing Static Artwork.",
+      rendererLabel: "Static Artwork",
+      statusLabel: "Fallback active",
+    },
+  );
+
+  assert.deepEqual(
+    getListenVisualizerStagePresentation({
+      ambientPrototypeEnabled: true,
+      capability: {
+        effectiveMode: "static-artwork",
+        reason: "shared-rhythm-unavailable",
+        source: "fallback",
+      },
+      selectedMode: "dot-waves",
+    }),
+    {
+      activeMode: "ambient-waveform",
+      fallbackActive: true,
+      message:
+        "Dot Waves needs a fresh shared rhythm signal. Showing the development-only Ambient Waveform prototype.",
+      rendererLabel: "Ambient Waveform",
+      statusLabel: "Prototype fallback",
+    },
+  );
+});
+
+test("Ambient Waveform samples are mirrored, deterministic, and bounded", () => {
+  assert.equal(typeof createAmbientWaveformSamples, "function");
+  const first = createAmbientWaveformSamples("youtube:abc", 12.5, 48);
+  const repeated = createAmbientWaveformSamples("youtube:abc", 12.5, 48);
+  const advanced = createAmbientWaveformSamples("youtube:abc", 13, 48);
+
+  assert.equal(first.length, 48);
+  assert.deepEqual(first, repeated);
+  assert.notDeepEqual(first, advanced);
+  assert.ok(first.every((sample) => sample >= -1 && sample <= 1));
+  assert.ok(
+    first.every((sample, index) => sample === first[first.length - index - 1]),
+  );
+});
+
 test("ambient presentation levels are bounded and deterministic", () => {
   assert.equal(
     normalizeListenAmbientLevel(null, LISTEN_VISUAL_INTENSITY),
@@ -99,10 +189,12 @@ test("ambient presentation levels are bounded and deterministic", () => {
   const subdued = getListenPresentationVariables(
     LISTEN_VISUAL_INTENSITY.min,
     LISTEN_BACKGROUND_DIMMING.min,
+    LISTEN_BACKGROUND_VIBRANCY.min,
   );
   const strong = getListenPresentationVariables(
     LISTEN_VISUAL_INTENSITY.max,
     LISTEN_BACKGROUND_DIMMING.max,
+    LISTEN_BACKGROUND_VIBRANCY.max,
   );
 
   assert.ok(
@@ -121,10 +213,20 @@ test("ambient presentation levels are bounded and deterministic", () => {
   assert.ok(strong["--listen-panel-dim-end"] <= 0.75);
   assert.ok(strong["--listen-room-dim-end"] <= 0.75);
   assert.ok(strong["--listen-rail-dim-top"] <= 0.65);
+  assert.ok(
+    strong["--listen-background-saturation"] >
+      subdued["--listen-background-saturation"],
+  );
+  assert.ok(
+    strong["--listen-background-presence"] >
+      subdued["--listen-background-presence"],
+  );
+  assert.ok(strong["--listen-background-saturation"] <= 1.65);
+  assert.ok(strong["--listen-background-presence"] <= 1);
 });
 
 test("the Listen renderer uses the bounded canvas host", async () => {
-  const [component, theme, layout, css] = await Promise.all([
+  const [component, theme, visualizerStage, layout, css] = await Promise.all([
     readFile(
       path.join(
         rootDir,
@@ -134,6 +236,13 @@ test("the Listen renderer uses the bounded canvas host", async () => {
     ),
     readFile(
       path.join(rootDir, "components/room/listen/theme/listen-theme.tsx"),
+      "utf8",
+    ),
+    readFile(
+      path.join(
+        rootDir,
+        "components/room/listen/stage/listen-visualizer-stage.tsx",
+      ),
       "utf8",
     ),
     readFile(
@@ -161,13 +270,11 @@ test("the Listen renderer uses the bounded canvas host", async () => {
     /roomRhythmProfile=\{liveRoom\.snapshot\.roomRhythmProfile\}/,
   );
   assert.match(theme, /mode === "static-artwork"/);
-  assert.match(theme, /blur-\[8px\] saturate-125/);
-  assert.match(theme, /blur-3xl saturate-150/);
-  assert.match(
-    css,
-    /to\s*\{\s*opacity:\s*var\(--listen-artwork-opacity,\s*0\.48\)/,
-  );
-  assert.doesNotMatch(css, /to\s*\{\s*opacity:\s*0\.38/);
+  assert.match(theme, /--listen-background-primary/);
+  assert.match(theme, /--listen-background-secondary/);
+  assert.doesNotMatch(theme, /<img/);
+  assert.match(visualizerStage, /object-cover opacity-72 saturate-110/);
+  assert.match(visualizerStage, /object-cover opacity-18 blur-2xl/);
   assert.doesNotMatch(css, /listen-center-wave-bar|listen-center-wave\s*\{/);
   assert.doesNotMatch(css, /listen-horizon-drift|listen-minimal-pulse/);
 });
@@ -212,6 +319,7 @@ test("personalization provides bounded previews and ambient controls", async () 
   assert.match(personalization, /type="range"/);
   assert.match(personalization, /LISTEN_VISUAL_INTENSITY/);
   assert.match(personalization, /LISTEN_BACKGROUND_DIMMING/);
+  assert.match(personalization, /LISTEN_BACKGROUND_VIBRANCY/);
   assert.match(personalization, /FALLBACK_PREVIEW_ARTWORK/);
   assert.match(personalization, /previewArtworkUrl/);
   assert.match(personalization, /option\.powerLabel/);
@@ -223,6 +331,7 @@ test("personalization provides bounded previews and ambient controls", async () 
   assert.match(preference, /normalizeListenVisualizationMode/);
   assert.match(ambientPreference, /mw_listen_visual_intensity_v1/);
   assert.match(ambientPreference, /mw_listen_background_dimming_v1/);
+  assert.match(ambientPreference, /mw_listen_background_vibrancy_v1/);
   assert.match(ambientPreference, /addEventListener\("storage"/);
   assert.match(ambientPreference, /normalizeListenAmbientLevel/);
 });

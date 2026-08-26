@@ -35,9 +35,11 @@ const output = ts.transpileModule(source, {
 await mkdir(path.dirname(outputPath), { recursive: true });
 await writeFile(outputPath, output);
 
-const { buildListenDiscoveryResult, buildListenSessionInsights } = await import(
-  pathToFileURL(outputPath)
-);
+const {
+  buildListenDiscoveryResult,
+  buildListenDiscoveryShelves,
+  buildListenSessionInsights,
+} = await import(pathToFileURL(outputPath));
 
 test.after(async () => {
   await rm(tempDir, { force: true, recursive: true });
@@ -153,6 +155,168 @@ test("session insights are derived from real queue data", () => {
     ["Session", "Pattern", "Contributors"],
   );
   assert.match(insights[0].value, /upcoming/);
+});
+
+test("multi-shelf discovery preserves the approved order and honest labels", () => {
+  const current = item({
+    id: "current",
+    playlistId: "playlist-a",
+    playlistTitle: "Room Mix",
+    status: "now",
+    title: "Current Song",
+  });
+  const related = item({
+    id: "related",
+    artist: current.artist,
+    status: "queued",
+    title: "Related Song",
+  });
+  const played = item({
+    id: "history",
+    status: "played",
+    title: "History Song",
+  });
+  const playlist = item({
+    id: "playlist",
+    playlistId: "playlist-a",
+    playlistTitle: "Room Mix",
+    status: "played",
+    title: "Playlist Song",
+  });
+  const provider = item({
+    id: "provider:new",
+    sourceUrl: "https://www.youtube.com/watch?v=provider-new",
+    title: "Provider Song",
+    videoId: "provider-new",
+  });
+
+  const shelves = buildListenDiscoveryShelves({
+    currentItem: current,
+    items: [current, related, played, playlist],
+    providerItems: [provider],
+    roomName: "Duno",
+  });
+
+  assert.deepEqual(
+    shelves.map((shelf) => shelf.id),
+    [
+      "room-picks",
+      "because-listened",
+      "recently-played",
+      "room-playlists",
+      "most-listened",
+    ],
+  );
+  assert.equal(shelves[1].title, "Because you listened to Current Song");
+  assert.equal(shelves[2].title, "Recently played in Duno");
+  assert.equal(shelves[3].title, "From playlists in this room");
+  assert.doesNotMatch(shelves[3].title, /your playlists/i);
+});
+
+test("each shelf deduplicates playable sources without changing ranked order", () => {
+  const duplicateSource = "https://www.youtube.com/watch?v=duplicate";
+  const first = item({
+    id: "first",
+    sourceUrl: duplicateSource,
+    videoId: "duplicate",
+  });
+  const duplicate = item({
+    id: "second",
+    sourceUrl: duplicateSource,
+    videoId: "duplicate",
+  });
+  const third = item({ id: "third" });
+  const shelves = buildListenDiscoveryShelves({
+    currentItem: null,
+    items: [first, duplicate, third],
+    providerItems: [first, duplicate, third],
+    roomName: "Duno",
+  });
+
+  for (const shelf of shelves) {
+    const keys = shelf.items.map(
+      (entry) => entry.videoId ?? entry.sourceUrl ?? entry.id,
+    );
+    assert.equal(new Set(keys).size, keys.length);
+  }
+
+  assert.deepEqual(
+    shelves
+      .find((shelf) => shelf.id === "because-listened")
+      ?.items.map((entry) => entry.id),
+    ["first", "third"],
+  );
+});
+
+test("provider failure stays isolated and falls back to honest room results", () => {
+  const current = item({ id: "current", status: "now" });
+  const related = item({
+    id: "related",
+    artist: current.artist,
+    status: "played",
+  });
+  const shelves = buildListenDiscoveryShelves({
+    currentItem: current,
+    items: [current, related],
+    providerUnavailable: true,
+    roomName: "Duno",
+  });
+  const contextual = shelves.find((shelf) => shelf.id === "because-listened");
+
+  assert.ok(shelves.some((shelf) => shelf.id === "recently-played"));
+  assert.equal(contextual?.source, "provider-limited");
+  assert.match(contextual?.message ?? "", /room history/i);
+  assert.deepEqual(
+    contextual?.items.map((entry) => entry.id),
+    ["related"],
+  );
+});
+
+test("later shelves suppress repeats only when an honest alternative remains", () => {
+  const queued = item({ id: "queued", status: "queued" });
+  const repeatedProvider = item({
+    id: "provider:repeat",
+    sourceUrl: queued.sourceUrl,
+    videoId: queued.videoId,
+  });
+  const providerAlternative = item({ id: "provider:alternative" });
+
+  const withAlternative = buildListenDiscoveryShelves({
+    currentItem: null,
+    items: [queued],
+    providerItems: [repeatedProvider, providerAlternative],
+    roomName: "Duno",
+  });
+  const withoutAlternative = buildListenDiscoveryShelves({
+    currentItem: null,
+    items: [queued],
+    providerItems: [repeatedProvider],
+    roomName: "Duno",
+  });
+
+  assert.deepEqual(
+    withAlternative
+      .find((shelf) => shelf.id === "because-listened")
+      ?.items.map((entry) => entry.id),
+    ["provider:alternative"],
+  );
+  assert.deepEqual(
+    withoutAlternative
+      .find((shelf) => shelf.id === "because-listened")
+      ?.items.map((entry) => entry.id),
+    ["provider:repeat"],
+  );
+});
+
+test("empty discovery returns no decorative shelves", () => {
+  assert.deepEqual(
+    buildListenDiscoveryShelves({
+      currentItem: null,
+      items: [],
+      roomName: "Empty Room",
+    }),
+    [],
+  );
 });
 
 function item(overrides) {

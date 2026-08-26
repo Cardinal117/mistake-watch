@@ -9,6 +9,7 @@ import { useListenVisualizationPreference } from "@/components/room/listen/theme
 import {
   getListenPresentationVariables,
   LISTEN_BACKGROUND_DIMMING,
+  LISTEN_BACKGROUND_VIBRANCY,
   LISTEN_VISUAL_INTENSITY,
   listenVisualizationModes,
   type ListenVisualizationMode,
@@ -19,6 +20,8 @@ import { useAudioCompanion } from "@/lib/audio-companion/use-audio-companion";
 
 const FALLBACK_PREVIEW_ARTWORK = "/brand/logo-concept-01-signal-aperture.png";
 const previewFallbackTheme = {
+  backgroundPrimary: "19 42 45",
+  backgroundSecondary: "28 23 11",
   primary: "0 219 233",
   secondary: "255 186 32",
   shadow: "0 219 233",
@@ -34,7 +37,9 @@ export function PersonalizationSection({
   const audioCompanion = useAudioCompanion();
   const {
     backgroundDimming,
+    backgroundVibrancy,
     setBackgroundDimming,
+    setBackgroundVibrancy,
     setVisualIntensity,
     visualIntensity,
   } = useListenAmbientPreference();
@@ -46,7 +51,13 @@ export function PersonalizationSection({
     previewFallbackTheme,
   );
   const previewTheme = {
-    ...getListenPresentationVariables(visualIntensity, backgroundDimming),
+    ...getListenPresentationVariables(
+      visualIntensity,
+      backgroundDimming,
+      backgroundVibrancy,
+    ),
+    "--listen-background-primary": previewArtworkTheme.backgroundPrimary,
+    "--listen-background-secondary": previewArtworkTheme.backgroundSecondary,
     "--listen-primary": previewArtworkTheme.primary,
     "--listen-secondary": previewArtworkTheme.secondary,
     "--listen-shadow": previewArtworkTheme.shadow,
@@ -224,7 +235,7 @@ export function PersonalizationSection({
         })}
       </div>
 
-      <div className="mt-5 grid gap-5 border-t border-white/10 pt-5 lg:grid-cols-2">
+      <div className="mt-5 grid gap-5 border-t border-white/10 pt-5 lg:grid-cols-3">
         <AmbientRangeControl
           bounds={LISTEN_VISUAL_INTENSITY}
           description="Controls artwork and visualization presence."
@@ -240,6 +251,14 @@ export function PersonalizationSection({
           label="Background dimming"
           onChange={setBackgroundDimming}
           value={backgroundDimming}
+        />
+        <AmbientRangeControl
+          bounds={LISTEN_BACKGROUND_VIBRANCY}
+          description="Strengthens the extracted room gradient without changing its colors."
+          id="listen-background-vibrancy"
+          label="Background vibrancy"
+          onChange={setBackgroundVibrancy}
+          value={backgroundVibrancy}
         />
       </div>
     </section>
