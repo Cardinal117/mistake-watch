@@ -307,3 +307,16 @@ test("youtube player claims its initial source before the iframe ready callback"
     "the initial video id should be claimed before YouTube reports ready",
   );
 });
+
+test("youtube player serializes iframe replacement across room mode layouts", () => {
+  assert.match(youtubePlayerSource, /youtubePlayerLifecycle\s*\.acquire/);
+  assert.ok(
+    youtubePlayerSource.indexOf("youtubePlayerLifecycle") <
+      youtubePlayerSource.indexOf("new yt.Player"),
+    "the iframe lifecycle lease should be acquired before player creation",
+  );
+  assert.match(
+    youtubePlayerSource,
+    /destroyYouTubePlayer\(playerRef\.current\)[\s\S]*lifecycleLease\?\.release\(\)/,
+  );
+});
