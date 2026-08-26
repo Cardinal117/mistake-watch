@@ -396,3 +396,48 @@ accessibility, honesty, and deterministic cross-client checks.
   horizontal overflow.
 - Focused UI tests (`17/17`), typecheck, ESLint, production build, file-length
   policy, changed-file formatting, and `git diff --check` passed.
+
+## Integrated QA And Optional Ambient Follow-up - 2026-08-26
+
+- User production QA passed Listen-to-Watch switching in the previously
+  affected Opera environment, two-participant playback continuity, uploaded
+  playback and guest catalogue denial, and owner/member/guest permissions.
+- Ambient Waveform is now an explicit browser-local fallback preference rather
+  than a build-time development flag. It defaults off, remains deterministic
+  and non-reactive, and is announced as a fallback when the selected renderer
+  lacks fresh input.
+- A separate browser-local preference controls artwork behind moving
+  visualizers and Ambient Waveform. It defaults on; explicit Static Artwork is
+  never hidden and `Off` never renders artwork.
+- The Background vibrancy mapping now spans a materially stronger bounded
+  range: presentation presence moves from `0.625` to `1.0` and saturation from
+  `1.06` to `1.9` between `25%` and `100%`.
+- The primary Play/Pause action now uses the approved `56px` circular glass
+  treatment with a dynamic accent border, inset highlight, restrained halo,
+  and lower depth shadow instead of a flat solid fill.
+- Local browser QA confirmed both new switches have the intended defaults,
+  persist across reload, and mount exactly one Ambient canvas when enabled.
+  The browser was restored to Static Artwork, Ambient off, and artwork on.
+- `queue-drawer.tsx` remains at `693` lines. Per the agreed policy, files over
+  `700` lines require immediate architecture attention; the current drawer is
+  a recorded follow-up rather than a blocker for this bounded release.
+- Final gates passed: focused visualization tests (`10/10`), full suite
+  (`503/503`), typecheck, ESLint, production build, changed-file Prettier, and
+  `git diff --check`. File-length policy reported zero violations and 16
+  tracked architecture warnings.
+
+## Final Disclosure And Switch Correction - 2026-08-26
+
+- User visual QA accepted the final integrated Listen surface, including the
+  circular Play/Pause control, queue disclosure, Personalization switches,
+  optional Ambient fallback, and artwork preference behavior.
+- Atomic implementation checkpoints were recorded as `471bad0`, `ac7d675`, and
+  `be1c8bf`; branch publication and release review remain separate gates.
+- The collapsed queue drawer now uses one centered disclosure chevron inside a
+  compact rounded pill. The removed grip bar no longer competes with the icon,
+  and the chevron inherits the current room accent in both drawer states.
+- Personalization switch thumbs now have a fixed left origin, bounded
+  translations, and track clipping. Checked switches remain entirely inside
+  their controls at narrow widths without changing the surrounding card layout.
+- Focused regression coverage records both visual contracts so the interim
+  queue grip and unbounded switch geometry cannot return silently.

@@ -99,10 +99,13 @@ inside another decorative panel.
 2. When input is unavailable, keep Visualizer selected and visibly state that
    a fallback is active.
 3. Use Static Artwork as the release fallback.
-4. Evaluate an `Ambient Waveform` candidate separately. It may replace Static
-   Artwork only if it is deterministic, honestly non-reactive, synchronized to
-   playback time, frozen while paused/hidden/reduced-motion, and within the
-   safe-default resource budget.
+4. Offer `Ambient Waveform` as an explicit browser-local fallback preference.
+   It is off by default and never replaces Static Artwork unless the user opts
+   in. It is deterministic, honestly non-reactive, synchronized to playback
+   time, and frozen while paused, hidden, or reduced-motion.
+5. Offer a separate browser-local preference for showing artwork behind moving
+   visualizers and Ambient Waveform. It defaults on. Explicit Static Artwork
+   always remains visible and `Off` always remains artwork-free.
 
 No fallback may fabricate bass, mids, highs, onset, or rhythm lock.
 
@@ -116,7 +119,8 @@ No fallback may fabricate bass, mids, highs, onset, or rhythm lock.
   background dimming controls in Personalization. Persist it with the existing
   browser-local Listen presentation preferences.
 - Bound the setting from `25%` to `100%`, default it to `70%`, and preserve
-  readable foreground contrast at both limits.
+  readable foreground contrast at both limits. The endpoints must produce a
+  clearly distinguishable change in gradient saturation and presence.
 
 ## Queue Drawer
 

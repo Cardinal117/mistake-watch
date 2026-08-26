@@ -10,8 +10,8 @@ updated: 2026-08-26
 ## Batch A - Contract Baseline And Shell
 
 **Status:** user QA accepted on 2026-08-25. Follow-up density, command, and
-drawer-clearance corrections were accepted on 2026-08-26; awaiting atomic Git
-review.
+drawer-clearance corrections were accepted on 2026-08-26 and recorded in
+branch checkpoints; release review remains.
 
 - Capture desktop, portrait, and mobile baselines before source changes.
 - Establish characterization coverage for playback continuity, queue state,
@@ -24,7 +24,8 @@ review.
 
 ## Batch B - Header And Participant Entry Point
 
-**Status:** user QA accepted on 2026-08-25; awaiting atomic Git review.
+**Status:** user QA accepted on 2026-08-25 and recorded in branch checkpoints;
+release review remains.
 
 - Add the existing Save Room action beside the room name.
 - Preserve active avatars and numeric blip on the right with adaptive name
@@ -36,7 +37,8 @@ review.
 
 ## Batch C - Player Rail And Up Next
 
-**Status:** user QA accepted on 2026-08-25; awaiting atomic Git review.
+**Status:** user QA accepted on 2026-08-25 and recorded in branch checkpoints;
+release review remains.
 
 - Round and frame the existing provider surface without changing the YouTube
   lifecycle or native menu.
@@ -48,7 +50,8 @@ review.
 
 ## Batch D - Discover Surface
 
-**Status:** user QA accepted on 2026-08-25; awaiting atomic Git review.
+**Status:** user QA accepted on 2026-08-25 and recorded in branch checkpoints;
+release review remains.
 
 - Keep the Discover/Visualizer segmented control paired with the functional
   Visualizer stage in Batch E; do not expose an empty selectable state.
@@ -67,21 +70,24 @@ review.
 ## Batch E - Visualizer Stage
 
 **Status:** user QA accepted on 2026-08-26, including visual-parity,
-artwork-palette, glass-surface, and player-rail corrections; awaiting atomic Git
-review.
+artwork-palette, glass-surface, and player-rail corrections. Branch checkpoints
+are recorded; release review remains.
 
 - Present compatible visualizers, metadata, progress, and mirrored Like under
   Visualizer.
 - Add the explicit Static Artwork fallback message.
-- Prototype Ambient Waveform behind a non-default development flag and measure
-  it before any promotion decision.
+- Keep Ambient Waveform non-default and user-controlled. The accepted browser
+  preference replaces the temporary development flag without changing Static
+  Artwork as the safe default.
 - Review point: capability, fallback honesty, performance, and visual prominence.
 
 ## Batch F - Floating Queue And Responsive Completion
 
-**Status:** not complete. The aligned floating collapsed shell and reserved
-content clearance are implemented; open-drawer, safe-area, large-queue, and
-integrated release gates remain.
+**Status:** implementation and user QA accepted on 2026-08-26. Integrated live
+checks passed for Opera Listen-to-Watch switching, two-participant playback,
+uploaded playback boundaries, catalogue denial, and owner/member/guest
+permissions. Final automated gates and atomic Git review passed; branch
+publication and release review remain.
 
 - Restyle the collapsed queue and themed disclosure handle.
 - Preserve open-drawer virtualization, scrolling, controls, and history.
@@ -91,8 +97,8 @@ integrated release gates remain.
 
 ## Visual Refinement Gate - Player, Discover, And Ambient Presentation
 
-**Status:** implemented and user accepted on 2026-08-26; awaiting atomic Git
-review before the integrated Batch F release gate.
+**Status:** implemented and user accepted on 2026-08-26. Branch checkpoints are
+recorded; integrated release review remains.
 
 - Make the player artwork/provider frame consume its available top surface
   without introducing provider remounts or cropping native controls.
@@ -107,6 +113,12 @@ review before the integrated Batch F release gate.
 - Replace always-visible Visualizer capability copy with an accessible compact
   information trigger and anchored popover. Fallback state remains explicit to
   assistive technology and available on demand without obscuring artwork.
+- Add an optional browser-local Ambient Waveform fallback, off by default, plus
+  an independent artwork-behind-visualizers preference that defaults on.
+- Strengthen the bounded Background vibrancy range so its endpoints are
+  materially distinct without changing extracted palette identity.
+- Refine the primary Play/Pause control into the approved circular translucent
+  accent treatment with restrained depth and halo.
 
 ## Safe Checkpoints
 

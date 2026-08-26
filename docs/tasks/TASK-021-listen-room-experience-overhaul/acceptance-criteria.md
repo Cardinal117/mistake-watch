@@ -15,7 +15,8 @@ updated: 2026-08-26
 - Dynamic background is visible around major surfaces while text and controls
   meet contrast requirements.
 - Personalization provides a bounded Background vibrancy control that changes
-  gradient presence without changing the extracted artwork palette identity.
+  gradient presence without changing the extracted artwork palette identity;
+  `25%` and `100%` are visibly distinct while preserving readable contrast.
 - The room name remains left aligned; participant avatars/count remain right
   aligned until the responsive layout deliberately stacks them.
 - The Save Room star follows the rendered room name with a stable small gap;
@@ -34,6 +35,9 @@ updated: 2026-08-26
   not create a second favourite record.
 - Player and visualizer Like controls stay synchronized across click, refresh,
   same-account devices, and current-media transitions.
+- The primary Play/Pause action is a circular, translucent accent control with
+  a visible border, restrained halo, and depth; it must not read as a flat
+  square or solid cyan block.
 - The player Like control reads as an inline heart and the Visualizer Like
   control as a circular action; neither is presented as an unrelated square.
 - Discover and Visualizer preserve playback and queue state when switching.
@@ -86,8 +90,12 @@ to`, room history, and room playlist-match shelves when each has useful data.
   input contracts.
 - Missing rhythm input produces an explicit fallback state rather than a blank
   or falsely reactive visualization.
-- Static Artwork remains the fallback until Ambient Waveform independently
-  meets the safe-default budget.
+- Static Artwork remains the default fallback. Personalization may enable an
+  optional deterministic Ambient Waveform fallback, but it defaults off and is
+  labelled honestly as non-reactive.
+- Personalization separately controls whether artwork remains behind moving
+  visualizers and Ambient Waveform. Static Artwork cannot be hidden by this
+  preference, while `Off` never renders artwork.
 - Paused, hidden, and reduced-motion states perform no continuous fallback work.
 - The shell introduces no continuous decorative animation.
 - Compared on the same room/device/visualizer, TASK-021 adds no more than two
@@ -122,6 +130,10 @@ to`, room history, and room playlist-match shelves when each has useful data.
 - Keyboard navigation reaches all primary actions in a logical order.
 - Selected, fallback, permission, and live states are not communicated by color
   alone.
+- The queue drawer disclosure uses one centered room-accent chevron; no separate
+  grip bar competes with the open or closed state.
+- Personalization switch thumbs remain fully bounded by their tracks in both
+  states at desktop and compact widths.
 
 ## Must Not Break
 
