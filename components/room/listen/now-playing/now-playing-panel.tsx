@@ -280,7 +280,7 @@ export function ListenNowPlayingPanel({
                 <SkipBack className="h-5 w-5" aria-hidden />
               </IconButton>
               <IconButton
-                className="h-12 w-12 rounded-full border border-[rgb(var(--listen-primary)/0.38)] bg-[rgb(var(--listen-primary))] text-background shadow-[0_0_24px_rgb(var(--listen-shadow)/0.28)] hover:bg-[rgb(var(--listen-primary)/0.9)]"
+                className="!h-14 !w-14 !rounded-full border-[1.5px] border-[rgb(var(--listen-primary)/0.78)] bg-[rgb(var(--listen-primary)/0.16)] text-on-surface shadow-[inset_0_0_0_1px_rgb(var(--listen-primary)/0.14),0_0_26px_rgb(var(--listen-shadow)/0.32),0_10px_24px_rgb(0_0_0/0.34)] backdrop-blur-md hover:bg-[rgb(var(--listen-primary)/0.24)] hover:shadow-[inset_0_0_0_1px_rgb(var(--listen-primary)/0.2),0_0_32px_rgb(var(--listen-shadow)/0.42),0_12px_28px_rgb(0_0_0/0.38)]"
                 disabled={awaitingMedia || !canControl}
                 label={isPlaying ? "Pause" : "Play"}
                 onClick={() =>
@@ -289,9 +289,9 @@ export function ListenNowPlayingPanel({
                 variant="ghost"
               >
                 {isPlaying ? (
-                  <Pause className="h-5 w-5" aria-hidden />
+                  <Pause className="h-6 w-6" strokeWidth={2.5} aria-hidden />
                 ) : (
-                  <Play className="h-5 w-5" aria-hidden />
+                  <Play className="h-6 w-6" strokeWidth={2.5} aria-hidden />
                 )}
               </IconButton>
               <IconButton
