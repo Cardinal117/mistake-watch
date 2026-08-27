@@ -11,6 +11,10 @@ import {
 } from "react";
 import { Play } from "lucide-react";
 import {
+  useYouTubePlayerStartupRecovery,
+  YouTubePlayerAlerts,
+} from "@/components/room/youtube-player-startup-recovery";
+import {
   chooseSyncCorrection,
   type CanonicalPlaybackState,
   type PlaybackMode,
@@ -35,12 +39,18 @@ import {
   type YoutubePlayerEvent,
 } from "@/lib/youtube/iframe-api";
 import {
+  destroyYouTubePlayer,
+  isUsableYouTubePlayer,
+} from "@/lib/youtube/player-instance";
+import {
   classifyYouTubeIframeError,
   type YouTubeAvailability,
 } from "@/lib/youtube/availability";
 import {
+  releaseYouTubePlayerLifecycleSafely,
   youtubePlayerLifecycle,
   type YouTubePlayerLifecycleLease,
+  YouTubePlayerStartupGuard,
 } from "@/lib/youtube/player-lifecycle";
 import {
   buildYouTubeCanonicalPlaybackState,
@@ -87,6 +97,27 @@ export function YoutubeMediaPlayer({
   );
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const clearPlayerError = useCallback(() => {
+    setAutoplayBlocked(false);
+    setLocalError(null);
+  }, []);
+  const getStartupRecoveryKey = useCallback(
+    () =>
+      getActivePlaybackKey(canonicalStateRef.current) ??
+      activeSourceUrlRef.current ??
+      null,
+    [],
+  );
+  const {
+    armStartupGuard,
+    markStartupReady,
+    playerGeneration,
+    reloadYouTubePlayer,
+    startupFailed,
+  } = useYouTubePlayerStartupRecovery({
+    clearPlayerError,
+    getRecoveryKey: getStartupRecoveryKey,
+  });
   const canonicalState = useMemo(
     () => buildYouTubeCanonicalPlaybackState(liveRoom, mode),
     [liveRoom, mode],
@@ -482,7 +513,10 @@ export function YoutubeMediaPlayer({
 
     let cancelled = false;
     let lifecycleLease: YouTubePlayerLifecycleLease | null = null;
+    let startupGuard: YouTubePlayerStartupGuard | null = null;
     const lifecycleController = new AbortController();
+    const recoveryKey =
+      getActivePlaybackKey(canonicalStateRef.current) ?? initialSourceUrl;
 
     youtubePlayerLifecycle
       .acquire({ signal: lifecycleController.signal })
@@ -496,12 +530,15 @@ export function YoutubeMediaPlayer({
 
         playerSourceUrlRef.current = initialSourceUrl;
         playerVideoIdRef.current = initialVideoId;
+        startupGuard = armStartupGuard(recoveryKey);
         playerRef.current = new yt.Player(elementId, {
           events: {
             onAutoplayBlocked: () => {
               setAutoplayBlocked(true);
             },
             onError: (event: YoutubePlayerEvent) => {
+              startupGuard?.markReady();
+              markStartupReady();
               const availability = classifyYouTubeIframeError(event.data);
               const canAutoSkip =
                 shouldAutoSkipYouTubeRuntimeError(availability) &&
@@ -537,6 +574,8 @@ export function YoutubeMediaPlayer({
               }
             },
             onReady: () => {
+              startupGuard?.markReady();
+              markStartupReady();
               setLocalError(null);
               const player = playerRef.current;
 
@@ -568,6 +607,7 @@ export function YoutubeMediaPlayer({
         });
       })
       .catch((error: unknown) => {
+        startupGuard?.dispose();
         lifecycleLease?.release();
         lifecycleLease = null;
 
@@ -579,7 +619,14 @@ export function YoutubeMediaPlayer({
     return () => {
       cancelled = true;
       lifecycleController.abort();
-      destroyYouTubePlayer(playerRef.current);
+      startupGuard?.dispose();
+      releaseYouTubePlayerLifecycleSafely({
+        destroy: () => destroyYouTubePlayer(playerRef.current),
+        release: () => {
+          lifecycleLease?.release();
+          lifecycleLease = null;
+        },
+      });
       if (metadataRefreshTimerRef.current) {
         window.clearTimeout(metadataRefreshTimerRef.current);
         metadataRefreshTimerRef.current = null;
@@ -587,14 +634,15 @@ export function YoutubeMediaPlayer({
       playerRef.current = null;
       playerSourceUrlRef.current = null;
       playerVideoIdRef.current = null;
-      lifecycleLease?.release();
-      lifecycleLease = null;
     };
   }, [
     applyCanonicalVideoToPlayer,
+    armStartupGuard,
     elementId,
     hasVideo,
     handlePlayerStateChange,
+    markStartupReady,
+    playerGeneration,
     publishPlaybackState,
     publishCurrentMetadata,
     requestAutoplayAdvance,
@@ -769,6 +817,16 @@ export function YoutubeMediaPlayer({
     return () => window.clearInterval(syncTimer);
   }, [autoplayBlocked, canonicalState, requestAutoplayAdvance, source]);
 
+  const resumeBlockedPlayback = useCallback(() => {
+    const player = playerRef.current;
+
+    if (isUsableYouTubePlayer(player)) {
+      applyCanonicalVideoToPlayer(player);
+      resyncPlayerToCanonicalState(player, { forcePlayAttempt: true });
+    }
+    setAutoplayBlocked(false);
+  }, [applyCanonicalVideoToPlayer, resyncPlayerToCanonicalState]);
+
   return (
     <>
       <div className={className}>
@@ -780,31 +838,13 @@ export function YoutubeMediaPlayer({
           </div>
         )}
       </div>
-      {autoplayBlocked ? (
-        <button
-          className="absolute inset-x-4 bottom-28 z-20 mx-auto max-w-sm rounded-sm border border-primary-fixed-dim/35 bg-surface/92 px-4 py-3 text-body-md font-semibold text-primary-fixed-dim backdrop-blur-xl"
-          onClick={() => {
-            const player = playerRef.current;
-
-            if (isUsableYouTubePlayer(player)) {
-              applyCanonicalVideoToPlayer(player);
-              resyncPlayerToCanonicalState(player, { forcePlayAttempt: true });
-            }
-            setAutoplayBlocked(false);
-          }}
-          type="button"
-        >
-          Resume playback
-        </button>
-      ) : null}
-      {localError ? (
-        <p
-          className="absolute inset-x-4 bottom-28 z-20 mx-auto max-w-md rounded-md border border-error/35 bg-surface/90 px-4 py-3 text-body-md text-error backdrop-blur-xl"
-          role="alert"
-        >
-          {localError}
-        </p>
-      ) : null}
+      <YouTubePlayerAlerts
+        autoplayBlocked={autoplayBlocked}
+        localError={localError}
+        onReload={reloadYouTubePlayer}
+        onResume={resumeBlockedPlayback}
+        startupFailed={startupFailed}
+      />
     </>
   );
 }
@@ -826,34 +866,6 @@ function getActivePlaybackKey(state: CanonicalPlaybackState | null) {
   }
 
   return state.activeQueueItemId ?? state.source.url;
-}
-
-function isUsableYouTubePlayer(
-  player: Partial<YoutubePlayer> | null,
-): player is YoutubePlayer {
-  return Boolean(
-    player &&
-    typeof player.getCurrentTime === "function" &&
-    typeof player.getDuration === "function" &&
-    typeof player.getPlaybackRate === "function" &&
-    typeof player.getPlayerState === "function" &&
-    typeof player.getVideoData === "function" &&
-    typeof player.cueVideoById === "function" &&
-    typeof player.loadVideoById === "function" &&
-    typeof player.mute === "function" &&
-    typeof player.pauseVideo === "function" &&
-    typeof player.playVideo === "function" &&
-    typeof player.seekTo === "function" &&
-    typeof player.setPlaybackRate === "function" &&
-    typeof player.setVolume === "function" &&
-    typeof player.unMute === "function",
-  );
-}
-
-function destroyYouTubePlayer(player: Partial<YoutubePlayer> | null) {
-  if (player && typeof player.destroy === "function") {
-    player.destroy();
-  }
 }
 
 function isAbortError(error: unknown) {
