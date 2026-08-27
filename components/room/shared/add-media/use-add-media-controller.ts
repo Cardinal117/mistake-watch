@@ -172,10 +172,11 @@ export function useAddMediaController({
 
   function addQueueItemWithFeedback(input: QueueAddInput) {
     onAddQueueItem?.(input);
+    const action = input.isPlayNext ? "Set to play next" : "Added to queue";
     notify(
       input.allowDuplicate
-        ? `Duplicate added: ${input.sourceTitle}`
-        : `Added to queue: ${input.sourceTitle}`,
+        ? `Duplicate ${action.toLowerCase()}: ${input.sourceTitle}`
+        : `${action}: ${input.sourceTitle}`,
       input.allowDuplicate ? "warning" : "success",
     );
   }
@@ -278,19 +279,26 @@ export function useAddMediaController({
         );
   }
 
-  async function handleAddQueueItem(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function queueCurrentInput(isPlayNext = false) {
     const checkedInput = await resolveCurrentInput();
     if (!checkedInput) return;
-    const duplicate = isDuplicateQueueSource(checkedInput);
+    const input = isPlayNext
+      ? { ...checkedInput, isPlayNext: true }
+      : checkedInput;
+    const duplicate = isDuplicateQueueSource(input);
     if (duplicate && duplicatePreference === "warn") {
-      setPendingDuplicateAdd({ item: checkedInput, kind: "single" });
+      setPendingDuplicateAdd({ item: input, kind: "single" });
       notify("Duplicate detected. Confirm whether to add it again.", "warning");
       return;
     }
-    addQueueItemWithFeedback({ ...checkedInput, allowDuplicate: duplicate });
+    addQueueItemWithFeedback({ ...input, allowDuplicate: duplicate });
     clearAddMediaState();
     onClose();
+  }
+
+  async function handleAddQueueItem(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await queueCurrentInput();
   }
 
   async function handleLoadSource() {
@@ -493,6 +501,7 @@ export function useAddMediaController({
     errorMessage,
     handleAddQueueItem,
     handleLoadSource,
+    handlePlayNext: () => queueCurrentInput(true),
     handleUrlChange(value: string) {
       setQueueUrl(value);
       setImportSummary(null);

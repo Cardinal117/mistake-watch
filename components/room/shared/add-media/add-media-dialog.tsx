@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { Play, Plus, X } from "lucide-react";
+import { ListPlus, Play, Plus, X } from "lucide-react";
 
 import { Badge, Button, SignalInlineStatus } from "@/components/ui";
 import { YouTubeAddMediaSearch } from "../../youtube-add-media-search";
@@ -154,6 +154,21 @@ export function AddMediaDialog({
             >
               <Plus className="h-4 w-4" aria-hidden />
               Add to Queue
+            </Button>
+            <Button
+              disabled={
+                addDisabled ||
+                controller.isImportingPlaylist ||
+                !controller.singlePreview
+              }
+              onClick={() => void controller.handlePlayNext()}
+              size="sm"
+              title={!canAddQueue ? "Queue permission required." : undefined}
+              type="button"
+              variant="secondary"
+            >
+              <ListPlus className="h-4 w-4" aria-hidden />
+              Play Next
             </Button>
             <Button
               disabled={

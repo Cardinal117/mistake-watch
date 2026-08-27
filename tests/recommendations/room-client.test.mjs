@@ -3,8 +3,11 @@ import test from "node:test";
 
 import { loadRecommendationModule } from "./ranking-test-helpers.mjs";
 
-const { buildRoomRecommendationRequest, queueItemRecommendationIdentity } =
-  await loadRecommendationModule("room-client.ts");
+const {
+  activeMediaPreferenceItem,
+  buildRoomRecommendationRequest,
+  queueItemRecommendationIdentity,
+} = await loadRecommendationModule("room-client.ts");
 
 test("room client emits bounded opaque identities without source URLs", () => {
   const request = buildRoomRecommendationRequest({
@@ -37,6 +40,78 @@ test("room client derives direct identities from queue ids, not destinations", (
     mediaId: "queue:queue-item-7",
     sourceType: "hls",
   });
+});
+
+test("directly loaded YouTube media gets a canonical preference target", () => {
+  const directItem = activeMediaPreferenceItem({
+    currentItem: null,
+    sourceTitle: "Direct fixture",
+    sourceType: "youtube",
+    sourceUrl: "https://www.youtube.com/watch?v=hmJPbHVK-co",
+  });
+
+  assert.equal(directItem.id, "active:hmJPbHVK-co");
+  assert.equal(directItem.title, "Direct fixture");
+  assert.deepEqual(queueItemRecommendationIdentity(directItem), {
+    mediaId: "hmJPbHVK-co",
+    sourceType: "youtube",
+  });
+});
+
+test("canonical active YouTube identity wins over a stale queue row", () => {
+  const staleItem = youtubeItem("current:9bZkp7q19f0", "now");
+  const activeItem = activeMediaPreferenceItem({
+    currentItem: staleItem,
+    sourceTitle: "Active fixture",
+    sourceType: "youtube",
+    sourceUrl: "https://youtu.be/hmJPbHVK-co",
+  });
+
+  assert.notEqual(activeItem, staleItem);
+  assert.equal(activeItem.id, "active:hmJPbHVK-co");
+  assert.equal(
+    activeMediaPreferenceItem({
+      currentItem: staleItem,
+      sourceTitle: staleItem.title,
+      sourceType: staleItem.sourceType,
+      sourceUrl: staleItem.sourceUrl,
+    }),
+    staleItem,
+  );
+});
+
+test("non-YouTube media keeps its existing queue-backed preference target", () => {
+  const currentItem = {
+    id: "direct-queue-item",
+    sourceType: "direct",
+    sourceUrl: "mw-uploaded-asset:00000000-0000-4000-8000-000000000021",
+    status: "now",
+    title: "Private fixture",
+  };
+
+  assert.equal(
+    activeMediaPreferenceItem({
+      currentItem,
+      sourceTitle: "Direct fixture",
+      sourceType: "direct",
+      sourceUrl: "mw-uploaded-session:00000000-0000-4000-8000-000000000022",
+    }),
+    currentItem,
+  );
+});
+
+test("missing session source metadata preserves the queue-backed preference target", () => {
+  const currentItem = youtubeItem("current:hmJPbHVK-co", "now");
+
+  assert.equal(
+    activeMediaPreferenceItem({
+      currentItem,
+      sourceTitle: null,
+      sourceType: null,
+      sourceUrl: null,
+    }),
+    currentItem,
+  );
 });
 
 function youtubeItem(id, status) {

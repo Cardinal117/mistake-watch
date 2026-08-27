@@ -12,6 +12,7 @@ import { shuffleUpcomingQueue, smartShuffleQueue } from "@/lib/queue/model";
 import { deriveQueueState } from "@/lib/queue/derived";
 import { cx } from "@/lib/ui";
 import { useMediaPreferences } from "@/lib/recommendations/use-media-preferences";
+import { activeMediaPreferenceItem } from "@/lib/recommendations/room-client";
 import { useNextItemPreparation } from "@/components/room/use-next-item-preparation";
 import {
   type ListenModeLayoutProps,
@@ -89,6 +90,21 @@ export function ListenModeLayout({
   );
   const session = liveRoom.snapshot.session;
   const currentItem = queueState.currentItem;
+  const activePreferenceItem = useMemo(
+    () =>
+      activeMediaPreferenceItem({
+        currentItem,
+        sourceTitle: session?.sourceTitle ?? null,
+        sourceType: session?.sourceType ?? null,
+        sourceUrl: session?.sourceUrl ?? null,
+      }),
+    [
+      currentItem,
+      session?.sourceTitle,
+      session?.sourceType,
+      session?.sourceUrl,
+    ],
+  );
   const currentLiveQueueItem = session?.activeQueueItemId
     ? liveRoom.snapshot.queue.find(
         (item) => item.queueItemId === session.activeQueueItemId,
@@ -358,7 +374,7 @@ export function ListenModeLayout({
       >
         <ListenNowPlayingPanel
           canControl={canControl}
-          currentItem={currentItem}
+          currentItem={activePreferenceItem}
           currentPosition={currentPosition}
           desktopShell={desktopShell}
           durationSeconds={durationSeconds}
@@ -455,6 +471,7 @@ export function ListenModeLayout({
               onLoadSource={liveRoom.loadMediaSource}
               onPlayQueueItem={liveRoom.playQueueItemNow}
               playbackOccurrenceId={session?.playbackOccurrenceId}
+              preferenceItem={activePreferenceItem}
               room={room}
               roomRhythmProfile={liveRoom.snapshot.roomRhythmProfile}
               theme={listenTheme}

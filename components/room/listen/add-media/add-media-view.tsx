@@ -2,7 +2,7 @@
 
 import type { Dispatch, FormEvent, SetStateAction } from "react";
 import { createPortal } from "react-dom";
-import { ListMusic, Play, Plus, X } from "lucide-react";
+import { ListMusic, ListPlus, Play, Plus, X } from "lucide-react";
 
 import { Badge, Button, SignalInlineStatus } from "@/components/ui";
 import { detectUrlType } from "@/lib/player/source";
@@ -59,6 +59,7 @@ type ListenAddMediaViewProps = {
     label: string;
   } | null;
   playSearchResultNext(item: YouTubeSearchItem): void;
+  playSingleNext(): Promise<void>;
   playlistPreview: PlaylistPreview | null;
   playlistReviewOpen: boolean;
   previewLoading: boolean;
@@ -110,6 +111,7 @@ export function ListenAddMediaView({
   pendingDuplicateInput,
   pendingDuplicatePlaylist,
   playSearchResultNext,
+  playSingleNext,
   playlistPreview,
   playlistReviewOpen,
   previewLoading,
@@ -208,6 +210,23 @@ export function ListenAddMediaView({
                       >
                         <Plus className="h-4 w-4" aria-hidden />
                         Add to Queue
+                      </Button>
+                      <Button
+                        disabled={
+                          addDisabled || isImportingPlaylist || !singlePreview
+                        }
+                        onClick={() => void playSingleNext()}
+                        size="sm"
+                        title={
+                          !canAddQueue
+                            ? "Queue permission required."
+                            : undefined
+                        }
+                        type="button"
+                        variant="secondary"
+                      >
+                        <ListPlus className="h-4 w-4" aria-hidden />
+                        Play Next
                       </Button>
                       <Button
                         disabled={

@@ -302,8 +302,7 @@ export function ListenAddMediaPopover({
     notify(`Loaded source: ${input.sourceTitle}`, "success");
   }
 
-  async function addSingle(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function queueSingle(isPlayNext = false) {
     const input = singlePreview ?? parseMediaUrl();
 
     if (!input) {
@@ -316,11 +315,13 @@ export function ListenAddMediaPopover({
       return;
     }
 
-    if (
-      duplicateSourceUrls.has(checkedInput.sourceUrl) &&
-      duplicatePreference === "warn"
-    ) {
-      setPendingDuplicateInput(checkedInput);
+    const queueInput = isPlayNext
+      ? { ...checkedInput, isPlayNext: true }
+      : checkedInput;
+    const duplicate = isDuplicateSingle(queueInput);
+
+    if (duplicate && duplicatePreference === "warn") {
+      setPendingDuplicateInput(queueInput);
       setErrorMessage(
         "Duplicate detected. Add anyway only if you want this source repeated.",
       );
@@ -329,12 +330,24 @@ export function ListenAddMediaPopover({
     }
 
     onAddQueueItem({
-      ...checkedInput,
-      allowDuplicate: duplicateSourceUrls.has(checkedInput.sourceUrl),
+      ...queueInput,
+      allowDuplicate: duplicate,
     });
-    notify(`Added to queue: ${checkedInput.sourceTitle}`, "success");
+    notify(
+      `${isPlayNext ? "Set to play next" : "Added to queue"}: ${queueInput.sourceTitle}`,
+      "success",
+    );
     clearAddMediaState();
     setIsOpen(false);
+  }
+
+  async function addSingle(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await queueSingle();
+  }
+
+  async function playSingleNext() {
+    await queueSingle(true);
   }
 
   async function loadSingle() {
@@ -474,6 +487,7 @@ export function ListenAddMediaPopover({
       pendingDuplicateInput={pendingDuplicateInput}
       pendingDuplicatePlaylist={pendingDuplicatePlaylist}
       playSearchResultNext={playSearchResultNext}
+      playSingleNext={playSingleNext}
       playlistPreview={playlistPreview}
       playlistReviewOpen={playlistReviewOpen}
       previewLoading={previewLoading}
