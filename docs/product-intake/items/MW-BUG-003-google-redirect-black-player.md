@@ -90,6 +90,10 @@ updated: 2026-08-27
   production build pass. The player remains below its recorded legacy ceiling
   at 883 lines after recovery ownership and provider-instance helpers were
   extracted.
+- **Production checkpoint:** Commit `a1f6b1c` is on `main` and deployed as
+  `dpl_8Qfx6zZ8rLeiDZbT9TAGPnpt8Gwr` on 2026-08-27. Both production aliases
+  resolve to that deployment. `/api/health` and `/api/ready` returned `200`,
+  with Supabase and SpacetimeDB ready and CloudConvert configured.
 - **Live gate:** Keep this item in progress until the affected participant
   confirms either automatic recovery or the manual reload state on a deployed
   build. Normal ready playback must remain unchanged, and recovery must not

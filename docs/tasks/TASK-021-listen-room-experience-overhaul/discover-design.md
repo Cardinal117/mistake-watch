@@ -1,8 +1,8 @@
 ---
 id: TASK-021-DISCOVER-DESIGN
-status: proposed
+status: accepted
 related: [TASK-021, TASK-011, MW-FEAT-009]
-updated: 2026-08-25
+updated: 2026-08-27
 ---
 
 # Listen Discover Surface Design

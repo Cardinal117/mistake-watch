@@ -1,17 +1,17 @@
 ---
 id: MW-QOL-012
 type: qol
-status: in-progress
+status: complete
 priority: P2
 area: room-permissions-ui
 created: 2026-08-25
-updated: 2026-08-26
+updated: 2026-08-27
 related: [TASK-021, TASK-012]
 ---
 
 # Open participant permissions from the room avatar cluster
 
-> [!qol] In progress - P2
+> [!success] Complete - released with TASK-021
 
 - **Requested:** Make the Listen-room avatar cluster open the participant and
   permissions surface while preserving the compact participant-count blip.
@@ -26,7 +26,10 @@ related: [TASK-021, TASK-012]
   overflow.
 - **Decision:** This interaction is planned as a bounded batch inside
   [[../../tasks/TASK-021-listen-room-experience-overhaul/proposal|TASK-021]].
-- **Current evidence:** TASK-021 Batch B is locally implemented and user
-  accepted. Owner/member/guest presentation tests, guest authority checks,
-  keyboard focus restoration, and the required responsive widths pass. The
-  atomic Git checkpoint remains outstanding.
+- **Completion evidence:** TASK-021 Batch B is released. The avatar cluster
+  preserves active avatars and the numeric blip, opens the audience/permissions
+  surface, and retains server-side owner/member/guest authority. Presentation,
+  guest denial, keyboard focus restoration, responsive widths, integrated live
+  permissions QA, and production readiness passed.
+- **Release:** Production commit `a1f6b1c`; Vercel deployment
+  `dpl_8Qfx6zZ8rLeiDZbT9TAGPnpt8Gwr`; released 2026-08-27.

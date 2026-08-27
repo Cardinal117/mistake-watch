@@ -1,8 +1,8 @@
 ---
 id: TASK-021-DESIGN
-status: proposed
+status: accepted
 related: [TASK-021, DESIGN, MW-QOL-012]
-updated: 2026-08-25
+updated: 2026-08-27
 ---
 
 # Listen Room Experience Design

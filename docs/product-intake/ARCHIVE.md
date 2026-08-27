@@ -29,6 +29,30 @@ evidence, commit, and deployment reference where applicable.
 - **Original report:**
   [[archive/MW-FEAT-008-shared-rhythm-visualizers|Archived item]]
 
+## MW-FEAT-009 Responsive Listen room redesign
+
+- **Final status:** Resolved
+- **Decision date:** 2026-08-27
+- **Task:** TASK-021
+- **Evidence:** Atomic implementation checkpoints through `be1c8bf`;
+  documentation checkpoint `8a534bf`; production commit `a1f6b1c`; deployment
+  `dpl_8Qfx6zZ8rLeiDZbT9TAGPnpt8Gwr`; 503-test integrated gate; owner visual,
+  responsive, permissions, uploaded-media, queue, and two-participant QA.
+- **Original report:**
+  [[archive/MW-FEAT-009-responsive-listen-room-redesign|Archived item]]
+
+## MW-QOL-012 Avatar permissions entry point
+
+- **Final status:** Resolved
+- **Decision date:** 2026-08-27
+- **Task:** TASK-021 Batch B
+- **Evidence:** Responsive avatar cluster and numeric blip; owner/member/guest
+  authority checks; keyboard focus restoration; integrated live permission QA;
+  production commit `a1f6b1c`; deployment
+  `dpl_8Qfx6zZ8rLeiDZbT9TAGPnpt8Gwr`.
+- **Original report:**
+  [[archive/MW-QOL-012-avatar-permissions-entry-point|Archived item]]
+
 ## MW-BUG-005 Like state remains stale on another active device
 
 - **Final status:** Resolved

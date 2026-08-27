@@ -1,6 +1,6 @@
 # Mistake Watch Handoff
 
-Updated: 2026-08-26
+Updated: 2026-08-27
 
 ## Current State
 
@@ -47,20 +47,25 @@ readiness checks. Signed-in owner QA remains required.
 TASK-018 private local audio analysis and TASK-019 shared rhythm publication
 are complete. TASK-019 passed production with extension `0.6.2`, website commit
 `75f33ef`, and an extension-free participant receiving synchronized Siri
-Ribbon. The feature branch is nine commits ahead of `origin/main`; production
-release does not itself authorize merging that branch.
+Ribbon. Its implementation and follow-up visualizer commits are now included in
+`main` through the TASK-021 release line.
 
-TASK-015C is the active work item. Commit `7951355` is deployed and replaces
-Siri Ribbon's high-cost travelling lines with bounded five-lobe Bezier
-geometry. Corrected production QA confirms the canvas and rhythm response, but
-the ribbon is too faint behind the room composition and the laptop performance
-matrix is incomplete. Static Artwork remains the safe default.
+TASK-021 Listen Room Experience Overhaul is complete on `main`. Its responsive
+shell, player rail, multi-shelf Discover surface, Visualizer stage, artwork
+palette, participant entry point, Up Next preview, floating queue, and browser
+preferences passed focused and integrated QA. The release is included in commit
+`a1f6b1c` and Vercel deployment `dpl_8Qfx6zZ8rLeiDZbT9TAGPnpt8Gwr`.
 
-TASK-021 is now actively implemented in the feature worktree. Batches A-E and
-the approved visual-refinement gate are user accepted and pass focused browser,
-automated, type, lint, build, formatting, and file-length checks. The work is
-not committed or deployed yet. Batch F still requires expanded-queue,
-safe-area, large-queue, accessibility, and integrated release verification.
+MW-BUG-003 bounded YouTube startup recovery is also live in `a1f6b1c`. A stalled
+player receives one automatic clean recreation after 12 seconds; a second
+failure exposes a cooldown-protected manual reload action. All 507 tests and
+the build gates passed, production health/readiness is green, and the item
+remains in progress only until the affected participant completes live QA.
+
+TASK-015C remains the next visualizer evidence item. Siri Ribbon's bounded
+five-lobe presentation is part of the released Listen composition, but the
+affected-laptop active/paused/hidden performance and shared-timing matrix is
+still incomplete. Static Artwork remains the safe default.
 
 ## Required Reading
 
@@ -128,12 +133,12 @@ verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
 
-Create atomic checkpoints for the accepted TASK-021 implementation, then finish
-Batch F without widening scope: preserve queue virtualization, verify the open
-drawer and history at large scale, complete mobile safe-area and keyboard
-coverage, and run the integrated production-candidate comparison.
+First, verify MW-BUG-003 in the affected participant profile on production.
+Normal playback should remain unchanged; if startup stalls, prove one automatic
+recovery or the bounded manual reload state without queue, authority, or
+canonical-position mutation.
 
-TASK-015C's affected-laptop performance and shared-timing evidence remains a
-separate visualizer gate. Static Artwork remains the safe default. Do not fold
-account persistence, richer shared frequency events, GetSongBPM, or the future
-Watch/Add Media overhauls into TASK-021 Batch F.
+After that, complete TASK-015C's affected-laptop performance and shared-timing
+evidence. Then reconcile the already-released Account Rooms work before choosing
+between MW-QOL-007 artwork composition, MW-QOL-010 Add Media action parity, and
+the broader Add/Discover redesign. Do not combine these into one task.

@@ -1,10 +1,10 @@
 ---
 id: TASK-021
-status: proposed
+status: complete
 type: full-packet
 related: [MW-FEAT-009, MW-QOL-001, MW-QOL-007, MW-QOL-012, TASK-015, TASK-019]
 created: 2026-08-25
-updated: 2026-08-25
+updated: 2026-08-27
 ---
 
 # Listen Room Experience Overhaul

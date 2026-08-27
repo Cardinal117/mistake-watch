@@ -14,7 +14,8 @@ Production:
 ## What Exists
 
 - Guest-first private rooms with optional Google account identity.
-- Watch and Listen layouts with synchronized host-led playback.
+- Watch and immersive responsive Listen layouts with synchronized host-led
+  playback, multi-shelf discovery, visualizer presentation, and bounded Up Next.
 - SpacetimeDB live presence, queue, playback, chat, and permission state.
 - Supabase durable rooms, accounts, media records, uploads, and authorization.
 - YouTube, direct media, HLS, and first-party uploaded playback.

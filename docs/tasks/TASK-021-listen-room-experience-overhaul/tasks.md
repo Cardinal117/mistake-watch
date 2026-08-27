@@ -1,17 +1,17 @@
 ---
 id: TASK-021-TASKS
-status: in-progress
+status: complete
 related: [TASK-021]
-updated: 2026-08-26
+updated: 2026-08-27
 ---
 
 # TASK-021 Implementation Batches
 
 ## Batch A - Contract Baseline And Shell
 
-**Status:** user QA accepted on 2026-08-25. Follow-up density, command, and
-drawer-clearance corrections were accepted on 2026-08-26 and recorded in
-branch checkpoints; release review remains.
+**Status:** complete and released. User QA accepted the batch on 2026-08-25;
+follow-up density, command, and drawer-clearance corrections were accepted on
+2026-08-26.
 
 - Capture desktop, portrait, and mobile baselines before source changes.
 - Establish characterization coverage for playback continuity, queue state,
@@ -24,8 +24,7 @@ branch checkpoints; release review remains.
 
 ## Batch B - Header And Participant Entry Point
 
-**Status:** user QA accepted on 2026-08-25 and recorded in branch checkpoints;
-release review remains.
+**Status:** complete and released. User QA accepted the batch on 2026-08-25.
 
 - Add the existing Save Room action beside the room name.
 - Preserve active avatars and numeric blip on the right with adaptive name
@@ -37,8 +36,7 @@ release review remains.
 
 ## Batch C - Player Rail And Up Next
 
-**Status:** user QA accepted on 2026-08-25 and recorded in branch checkpoints;
-release review remains.
+**Status:** complete and released. User QA accepted the batch on 2026-08-25.
 
 - Round and frame the existing provider surface without changing the YouTube
   lifecycle or native menu.
@@ -50,8 +48,7 @@ release review remains.
 
 ## Batch D - Discover Surface
 
-**Status:** user QA accepted on 2026-08-25 and recorded in branch checkpoints;
-release review remains.
+**Status:** complete and released. User QA accepted the batch on 2026-08-25.
 
 - Keep the Discover/Visualizer segmented control paired with the functional
   Visualizer stage in Batch E; do not expose an empty selectable state.
@@ -69,9 +66,8 @@ release review remains.
 
 ## Batch E - Visualizer Stage
 
-**Status:** user QA accepted on 2026-08-26, including visual-parity,
-artwork-palette, glass-surface, and player-rail corrections. Branch checkpoints
-are recorded; release review remains.
+**Status:** complete and released. User QA accepted visual parity, artwork
+palette, glass surfaces, and player-rail corrections on 2026-08-26.
 
 - Present compatible visualizers, metadata, progress, and mirrored Like under
   Visualizer.
@@ -83,11 +79,12 @@ are recorded; release review remains.
 
 ## Batch F - Floating Queue And Responsive Completion
 
-**Status:** implementation and user QA accepted on 2026-08-26. Integrated live
+**Status:** complete and released. Implementation and user QA were accepted on
+2026-08-26. Integrated live
 checks passed for Opera Listen-to-Watch switching, two-participant playback,
 uploaded playback boundaries, catalogue denial, and owner/member/guest
-permissions. Final automated gates and atomic Git review passed; branch
-publication and release review remain.
+permissions. Final automated gates, atomic Git review, branch publication, and
+production release passed.
 
 - Restyle the collapsed queue and themed disclosure handle.
 - Preserve open-drawer virtualization, scrolling, controls, and history.
@@ -97,8 +94,7 @@ publication and release review remain.
 
 ## Visual Refinement Gate - Player, Discover, And Ambient Presentation
 
-**Status:** implemented and user accepted on 2026-08-26. Branch checkpoints are
-recorded; integrated release review remains.
+**Status:** complete and released. Implemented and user accepted on 2026-08-26.
 
 - Make the player artwork/provider frame consume its available top surface
   without introducing provider remounts or cropping native controls.
@@ -119,6 +115,18 @@ recorded; integrated release review remains.
   materially distinct without changing extracted palette identity.
 - Refine the primary Play/Pause control into the approved circular translucent
   accent treatment with restrained depth and halo.
+
+## Production Release
+
+- Atomic implementation checkpoints: `e8638e9`, `471bad0`, `ac7d675`, and
+  `be1c8bf`.
+- Documentation checkpoint: `8a534bf`.
+- Released through production commit `a1f6b1c` on 2026-08-27.
+- Vercel deployment: `dpl_8Qfx6zZ8rLeiDZbT9TAGPnpt8Gwr`.
+- Both production aliases, `/api/health`, and `/api/ready` passed read-back.
+- The separately tracked YouTube failed-startup recovery in `MW-BUG-003`
+  remains open for affected-participant QA; it does not reopen TASK-021's
+  accepted Listen-room implementation.
 
 ## Safe Checkpoints
 

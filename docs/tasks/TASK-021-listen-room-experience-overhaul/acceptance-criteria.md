@@ -1,8 +1,8 @@
 ---
 id: TASK-021-ACCEPTANCE
-status: proposed
+status: complete
 related: [TASK-021]
-updated: 2026-08-26
+updated: 2026-08-27
 ---
 
 # TASK-021 Acceptance Criteria

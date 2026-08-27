@@ -1,6 +1,6 @@
 # Mistake Watch Roadmap
 
-Snapshot date: 2026-08-26
+Snapshot date: 2026-08-27
 
 This is the compact product-state index. Task packets remain the detailed
 requirements and evidence record.
@@ -71,17 +71,17 @@ than being presented as confirmed root causes.
 - TASK-015 remains active because every animated mode is still experimental.
   Static Artwork remains the safe default and Off remains the lowest-complexity
   option.
-- TASK-015C commit `7951355` is deployed. Siri Ribbon now uses bounded five-lobe
-  geometry, but production QA found insufficient visual prominence and did not
-  complete the affected-laptop performance/timing matrix.
-- The immediate task is a small Siri visibility correction followed by focused
-  CPU/GPU, paused/hidden, 390-pixel, and two-device timing evidence.
-- TASK-021 Batches A-E and its visual-refinement gate are implemented and user
-  accepted in the feature worktree. The immersive shell, multi-shelf Discover
-  surface, Visualizer stage, player artwork, fuller Up Next rail, and
-  MW-QOL-012 participant entry point are awaiting atomic Git checkpoints.
-  Batch F remains open for expanded-queue, safe-area, large-queue,
-  accessibility, and integrated release evidence.
+- TASK-015C commit `7951355` introduced bounded five-lobe Siri geometry. Its
+  visibility refinements are included in the released Listen composition, but
+  the affected-laptop performance/timing matrix remains open.
+- TASK-021 is complete, merged to `main`, and released through `a1f6b1c` as
+  Vercel deployment `dpl_8Qfx6zZ8rLeiDZbT9TAGPnpt8Gwr`. The immersive shell,
+  multi-shelf Discover surface, Visualizer stage, player artwork, fuller Up Next
+  rail, floating queue, responsive states, and MW-QOL-012 participant entry
+  point passed user and integrated regression QA.
+- MW-BUG-003 now has bounded provider-startup recovery in production. The item
+  remains open only until the affected participant verifies the automatic or
+  manual recovery path without queue or authority changes.
 
 ## Account Rooms Lifecycle In Progress
 
@@ -95,9 +95,9 @@ and readiness passing on both public aliases. It is not owner-accepted yet.
 
 ## Planned Product Sequence
 
-1. **Checkpoint and finish TASK-021**
-   Record the accepted implementation atomically, then complete Batch F's open
-   queue, safe-area, large-queue, accessibility, and integrated release gates.
+1. **Verify MW-BUG-003 in the affected profile**
+   Exercise normal YouTube startup and the bounded recovery path on production.
+   Resolve only after confirming no retry loop or room-state mutation.
 2. **Complete TASK-015C evidence**
    Measure active/idle cost and shared timing for experimental Siri Ribbon.
    Keep Static Artwork as default.

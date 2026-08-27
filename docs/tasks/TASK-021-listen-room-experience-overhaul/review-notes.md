@@ -1,8 +1,8 @@
 ---
 id: TASK-021-REVIEW
-status: in-progress
+status: complete
 related: [TASK-021]
-updated: 2026-08-26
+updated: 2026-08-27
 ---
 
 # TASK-021 Review Notes
@@ -441,3 +441,20 @@ accessibility, honesty, and deterministic cross-client checks.
   their controls at narrow widths without changing the surrounding card layout.
 - Focused regression coverage records both visual contracts so the interim
   queue grip and unbounded switch geometry cannot return silently.
+
+## Production Release - 2026-08-27
+
+- TASK-021 implementation and documentation checkpoints are on `main` through
+  `8a534bf`. The subsequent `a1f6b1c` production commit contains the accepted
+  TASK-021 surface plus the separately scoped MW-BUG-003 recovery patch.
+- Vercel deployment `dpl_8Qfx6zZ8rLeiDZbT9TAGPnpt8Gwr` is `Ready` and owns
+  `watch.mistakestudios.com` and `mistake-watch.vercel.app`.
+- `/api/health` returned `200`. `/api/ready` returned `200` with Supabase and
+  SpacetimeDB ready and CloudConvert configured.
+- Prior integrated user QA remains the behavioral release evidence: Opera
+  Listen/Watch switching, two-participant continuity, uploaded playback and
+  guest catalogue denial, owner/member/guest permissions, responsive player
+  and Up Next presentation, Discover actions, Visualizer presentation, and
+  queue disclosure all passed.
+- TASK-021 is complete. MW-BUG-003 remains open only for the affected
+  participant to verify the new automatic/manual provider-startup recovery.
