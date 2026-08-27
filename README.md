@@ -14,6 +14,8 @@ Production:
 ## What Exists
 
 - Guest-first private rooms with optional Google account identity.
+- Account-linked room history, saved-room management, and cross-device room
+  projection with explicit lifecycle controls.
 - Watch and immersive responsive Listen layouts with synchronized host-led
   playback, multi-shelf discovery, visualizer presentation, and bounded Up Next.
 - SpacetimeDB live presence, queue, playback, chat, and permission state.
@@ -26,10 +28,33 @@ Production:
 - Owner upload catalogue with folders, multipart recovery, browser-safety
   inspection, optional CloudConvert processing, and room-scoped playback.
 - Media Session metadata and media-key integration as progressive enhancement.
+- An optional private Chromium audio companion that performs user-invoked local
+  rhythm analysis without uploading or persisting captured audio.
 - Vercel Speed Insights for production performance telemetry.
 
 The detailed product state is in [docs/ROADMAP.md](docs/ROADMAP.md). Do not infer
 that a feature is shipped merely because an older task packet discusses it.
+
+## Current Product State
+
+- TASK-009 private-object hardening, TASK-010 Media Hub performance, and TASK-011
+  first-party recommendation intelligence are complete and released.
+- TASK-018 local companion analysis and TASK-019 bounded shared-rhythm
+  publication passed their production gates. The companion remains a private,
+  explicitly activated enhancement rather than a required website dependency.
+- TASK-021's Listen Room overhaul is released with the immersive player rail,
+  Discover shelves, Visualizer stage, artwork-derived palette, fuller Up Next,
+  participant entry point, and floating queue treatment.
+- TASK-015 visualizer performance work remains active. Static Artwork is the
+  safe default; animated modes remain optional and experimental until their
+  affected-device performance evidence is complete.
+- TASK-014B account-room lifecycle behavior is deployed but still requires its
+  final owner acceptance pass.
+- TASK-022 direct-play action parity is implemented and locally QA-ready on an
+  isolated branch. It is not a released production feature yet.
+
+Use [docs/HANDOFF.md](docs/HANDOFF.md) for the verified working state and next
+release order. Use [docs/ROADMAP.md](docs/ROADMAP.md) for broader sequencing.
 
 ## Product Intake
 
@@ -49,6 +74,10 @@ recommendation events and preferences, and server-managed authorization.
 SpacetimeDB owns active room state: presence, permissions, queue mutations,
 playback authority, chat, synchronized session events, room-scoped preference
 state, and the authoritative recommendation-event outbox.
+
+The optional Watch Audio Companion owns only user-invoked local tab capture and
+bounded audio analysis. Captured PCM remains on-device. Shared room consumers
+receive only bounded rhythm state through the existing room-authority boundary.
 
 Cloudflare R2 stores original, processed, and poster objects. Private catalogue
 responses use application-owned delivery routes and short-lived signed URLs;
@@ -209,7 +238,11 @@ rows when closing account-persistence QA.
 
 - YouTube playback is subject to provider, region, embedding, age, and browser
   autoplay restrictions.
-- YouTube iframe audio cannot feed a true audio-reactive visualizer.
+- The website cannot directly analyse cross-origin YouTube iframe audio. The
+  optional private companion can provide bounded local rhythm data after an
+  explicit user action; Static Artwork remains the no-companion fallback.
+- Animated visualizers are experimental and may use substantially more CPU/GPU
+  than Static Artwork or Off on lower-power devices.
 - Browser Media Session support varies; Opera GX sidebar integration is not the
   same as Opera's built-in service integrations.
 - Multipart upload resume requires reselecting the same local file.
@@ -229,8 +262,8 @@ Read in order:
 7. `docs/ROADMAP.md`
 8. the active task under `docs/tasks/`
 
-TASK-009 security/integrity and TASK-010 Media Hub performance are complete.
-TASK-011 recommendation intelligence is live at 98% release readiness; only the
-scheduled durable-drain and fresh-session account-persistence proof remain.
-Continue from `docs/HANDOFF.md` and `docs/ROADMAP.md` rather than older recovery
-packet status summaries.
+TASK-009 security/integrity, TASK-010 Media Hub performance, TASK-011
+recommendation intelligence, TASK-018 companion analysis, TASK-019 shared
+rhythm, and TASK-021 Listen Room overhaul are complete. Continue from
+`docs/HANDOFF.md` and `docs/ROADMAP.md` rather than older recovery-packet status
+summaries.
