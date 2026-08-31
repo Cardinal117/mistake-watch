@@ -35,6 +35,7 @@ export function ListenContentStage({
   canPlay,
   companion,
   currentItem,
+  preferenceItem,
   currentPosition,
   durationSeconds,
   intensity,
@@ -65,6 +66,7 @@ export function ListenContentStage({
     snapshot: AudioCompanionSnapshot;
   };
   currentItem: RoomQueueItem | null;
+  preferenceItem: RoomQueueItem | null;
   currentPosition: number;
   durationSeconds: number;
   intensity: number;
@@ -149,7 +151,7 @@ export function ListenContentStage({
             ambientFallbackEnabled={ambientFallbackEnabled}
             artist={artist}
             companion={companion}
-            currentItem={currentItem}
+            currentItem={preferenceItem}
             currentPosition={currentPosition}
             durationSeconds={durationSeconds}
             intensity={intensity}

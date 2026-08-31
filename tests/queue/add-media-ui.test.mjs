@@ -20,6 +20,14 @@ const listenAddMediaControllerSource = await readFile(
   path.join(root, "components/room/listen/add-media/add-media-popover.tsx"),
   "utf8",
 );
+const listenAddMediaViewSource = await readFile(
+  path.join(root, "components/room/listen/add-media/add-media-view.tsx"),
+  "utf8",
+);
+const queueAddMediaDialogSource = await readFile(
+  path.join(root, "components/room/shared/add-media/add-media-dialog.tsx"),
+  "utf8",
+);
 const queueAddMediaControllerSource = await readFile(
   path.join(
     root,
@@ -91,6 +99,18 @@ test("add media flow is url-driven instead of manual mode-card driven", () => {
 
   assert.doesNotMatch(listenLayoutSource, /Add single song/);
   assert.doesNotMatch(listenLayoutSource, /Paste a playlist link first/);
+});
+
+test("pasted single media exposes the existing one-shot Play Next path", () => {
+  assert.match(listenAddMediaControllerSource, /queueSingle\(true\)/);
+  assert.match(listenAddMediaControllerSource, /isPlayNext: true/);
+  assert.match(queueAddMediaControllerSource, /queueCurrentInput\(true\)/);
+  assert.match(queueAddMediaControllerSource, /isPlayNext: true/);
+
+  for (const source of [listenAddMediaViewSource, queueAddMediaDialogSource]) {
+    assert.match(source, />\s*Play Next\s*</);
+    assert.match(source, /Queue permission required\./);
+  }
 });
 
 test("playlist review exposes search sort select import and duration controls", () => {

@@ -31,6 +31,57 @@ export function queueItemRecommendationIdentity(
   });
 }
 
+export function activeMediaPreferenceItem({
+  currentItem,
+  sourceTitle,
+  sourceType,
+  sourceUrl,
+}: {
+  currentItem: RoomQueueItem | null;
+  sourceTitle: string | null;
+  sourceType: string | null;
+  sourceUrl: string | null;
+}) {
+  if (!sourceType || !sourceUrl) {
+    return currentItem;
+  }
+
+  if (sourceType !== "youtube") {
+    return currentItem;
+  }
+
+  const activeIdentity = recommendationMediaIdentity({
+    queueItemId: currentItem?.id ?? "active-source",
+    sourceType,
+    sourceUrl,
+  });
+  const currentIdentity = queueItemRecommendationIdentity(currentItem);
+
+  if (
+    activeIdentity &&
+    currentIdentity &&
+    recommendationMediaKey(activeIdentity) ===
+      recommendationMediaKey(currentIdentity)
+  ) {
+    return currentItem;
+  }
+
+  if (!activeIdentity) {
+    return currentItem;
+  }
+
+  return {
+    addedBy: "Direct source",
+    duration: "",
+    id: `active:${activeIdentity.mediaId}`,
+    sourceType: "youtube",
+    sourceUrl,
+    status: "now",
+    title: sourceTitle?.trim() || "YouTube video",
+    videoId: activeIdentity.mediaId,
+  } satisfies RoomQueueItem;
+}
+
 export function buildRoomRecommendationRequest({
   candidates,
   currentItem,

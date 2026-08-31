@@ -1,6 +1,6 @@
 # Mistake Watch Handoff
 
-Updated: 2026-08-27
+Updated: 2026-08-31
 
 ## Current State
 
@@ -66,6 +66,23 @@ TASK-015C remains the next visualizer evidence item. Siri Ribbon's bounded
 five-lobe presentation is part of the released Listen composition, but the
 affected-laptop active/paused/hidden performance and shared-timing matrix is
 still incomplete. Static Artwork remains the safe default.
+
+TASK-022 Direct Play Action Parity is QA ready in the isolated
+`refresh/mw-qol-010` worktree. It gives directly loaded YouTube sources a
+canonical account Like target and adds pasted-link Play Next to both established
+Add Media surfaces using the existing one-shot queue path. Focused tests,
+full tests, TypeScript, ESLint, the Next.js 16.3.3 production build,
+changed-file formatting, file-length policy, and diff checks pass after merging
+the current `main` dependency-security release. Opera desktop and 390x844 Add
+Media QA, guest room/session Like refresh persistence, guest catalogue denial,
+Play Next ordering, and two-participant queue/playback continuity pass. The
+preference control can take approximately five seconds after refresh to
+reconcile to its pressed state. A deployment-scoped Vercel preview authenticated
+the owner but could not load rooms because the local QA environment supplied a
+localhost SpacetimeDB URI; that preview was deleted. Because TASK-022 does not
+change auth or preference persistence, signed-in account Like/Unlike durability
+is now the bounded post-deployment smoke gate. No TASK-022 change has been
+deployed to production.
 
 ## Required Reading
 
@@ -139,6 +156,6 @@ recovery or the bounded manual reload state without queue, authority, or
 canonical-position mutation.
 
 After that, complete TASK-015C's affected-laptop performance and shared-timing
-evidence. Then reconcile the already-released Account Rooms work before choosing
-between MW-QOL-007 artwork composition, MW-QOL-010 Add Media action parity, and
-the broader Add/Discover redesign. Do not combine these into one task.
+evidence. TASK-022 is the prepared compact action-parity checkpoint; release it
+only after full gates and production interaction QA. Then reconcile the
+already-released Account Rooms work before choosing the next independent item.
