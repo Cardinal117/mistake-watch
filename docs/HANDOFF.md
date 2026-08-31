@@ -1,6 +1,6 @@
 # Mistake Watch Handoff
 
-Updated: 2026-08-27
+Updated: 2026-08-31
 
 ## Current State
 
@@ -73,8 +73,15 @@ canonical account Like target and adds pasted-link Play Next to both established
 Add Media surfaces using the existing one-shot queue path. Focused tests,
 full tests, TypeScript, ESLint, the Next.js 16.3.3 production build,
 changed-file formatting, file-length policy, and diff checks pass after merging
-the current `main` dependency-security release. Production interaction QA
-remains. No TASK-022 change has been deployed to production.
+the current `main` dependency-security release. Opera desktop and 390x844 Add
+Media QA, guest room/session Like refresh persistence, guest catalogue denial,
+Play Next ordering, and two-participant queue/playback continuity pass. The
+preference control can take approximately five seconds after refresh to
+reconcile to its pressed state. A READY Vercel preview cannot boot because the
+Preview environment lacks `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; production
+configuration was deliberately left unchanged. Signed-in account Like/Unlike
+durability is the remaining interaction gate. No TASK-022 change has been
+deployed to production.
 
 ## Required Reading
 

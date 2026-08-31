@@ -89,4 +89,23 @@ Media or changing queue authority.
   threshold, including one newly warned 511-line Add Media component. The
   repository policy reports zero violations; decomposition remains follow-up
   work outside this compact behavior change.
-- Production interaction QA remains pending.
+- Local Opera QA passed the desktop Add Media flow and the compact 390x844
+  layout without horizontal overflow. Pasted Play Next inserted the requested
+  item at the front of Up Next and closed the dialog with confirmation feedback.
+- A directly loaded YouTube source exposed the correct preference target. Its
+  guest room/session Like persisted through refresh and reconciled to the
+  pressed Remove Like state after approximately five seconds of preference
+  hydration; no second toggle was used.
+- Two-participant QA converged at two connected participants, the same active
+  source, and queue state `177 / 10h 12m` after a second Play Next insertion.
+  Playback continuity held on both clients.
+- The guest Add Media surface exposed no uploaded catalogue entry point, while
+  permitted YouTube Play Next remained available. Guest catalogue denial
+  therefore remained intact during the interaction pass.
+- A Vercel preview deployment reached READY, but the application could not boot
+  because the Preview environment does not define
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Production configuration was not
+  copied or changed to bypass that release boundary.
+- Signed-in account Like/Unlike durability remains the final interaction gate.
+  Guest preferences are intentionally room/session scoped and are not expected
+  to behave as durable account preferences.
