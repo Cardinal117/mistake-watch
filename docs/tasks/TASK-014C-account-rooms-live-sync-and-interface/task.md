@@ -2,7 +2,7 @@
 
 Status: Implemented - production QA passed, guest footer refinement pending release
 Documentation level: Compact task
-Updated: 2026-08-18
+Updated: 2026-08-31
 
 ## Objective
 
@@ -192,6 +192,9 @@ changing room lifecycle authority.
   `429` responses. A SpacetimeDB client cache warning also appeared after guest
   admission. These are tracked as separate follow-ups because this task does
   not change recommendation or live-room synchronization behavior.
-- Authorized uploaded-playback regression QA remains unavailable while the
-  revoked CloudConvert credential prevents preparing new uploaded media. Guest
-  catalogue denial still passed, and no uploaded-media behavior changed here.
+- On 2026-08-31 the owner reattached the CloudConvert API token in Vercel and
+  redeployed production. Live owner QA confirmed that conversion runs again and
+  that the conversion and converting labels accurately represent the active
+  processing state through completion. This clears the revoked-credential
+  uploaded-media regression blocker; the earlier guest catalogue denial remains
+  passed.
