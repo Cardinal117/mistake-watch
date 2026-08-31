@@ -1,10 +1,10 @@
 ---
 id: TASK-022
-status: qa-ready
+status: complete
 type: compact-task
 related: [MW-QOL-010, TASK-002, TASK-011]
 created: 2026-08-27
-updated: 2026-08-27
+updated: 2026-08-31
 ---
 
 # Direct Play Action Parity
@@ -71,9 +71,12 @@ Media or changing queue authority.
   three canonical active-media cases and the two-surface Play Next contract.
 - The focused post-implementation suite passes 18/18 tests, including the
   queue-backed fallback while session source metadata is hydrating.
-- Full `npm test` passes 512/512 tests.
-- TypeScript, ESLint, production build, changed-file Prettier, file-length policy,
-  and `git diff --check` pass on the refreshed current-main worktree.
+- After merging the current `main` dependency-security release, the focused
+  suite still passes 18/18 tests and full `npm test` passes 512/512 tests.
+- TypeScript, ESLint, the Next.js 16.3.3 production build, changed-file Prettier,
+  file-length policy, and `git diff --check` pass on the refreshed worktree.
+- ESLint reports one pre-existing warning in `room-experience.tsx` and zero
+  errors. The file-length policy reports 17 review warnings and zero violations.
 - A credential-safe Playwright rerun loaded the existing ignored local
   environment in memory without copying it. Account personalization,
   health/readiness sanitation, and visualizer startup passed; one application
@@ -86,4 +89,37 @@ Media or changing queue authority.
   threshold, including one newly warned 511-line Add Media component. The
   repository policy reports zero violations; decomposition remains follow-up
   work outside this compact behavior change.
-- Production interaction QA remains pending.
+- Local Opera QA passed the desktop Add Media flow and the compact 390x844
+  layout without horizontal overflow. Pasted Play Next inserted the requested
+  item at the front of Up Next and closed the dialog with confirmation feedback.
+- A directly loaded YouTube source exposed the correct preference target. Its
+  guest room/session Like persisted through refresh and reconciled to the
+  pressed Remove Like state after approximately five seconds of preference
+  hydration; no second toggle was used.
+- Two-participant QA converged at two connected participants, the same active
+  source, and queue state `177 / 10h 12m` after a second Play Next insertion.
+  Playback continuity held on both clients.
+- The guest Add Media surface exposed no uploaded catalogue entry point, while
+  permitted YouTube Play Next remained available. Guest catalogue denial
+  therefore remained intact during the interaction pass.
+- A deployment-scoped Vercel preview reached READY and authenticated the owner
+  after receiving the minimum Supabase configuration. Room loading then failed
+  because the ignored local QA environment pointed SpacetimeDB at
+  `ws://127.0.0.1:5372`; the unusable preview was deleted. This is recorded as a
+  preview-environment mismatch, not TASK-022 product evidence.
+- Signed-in account Like/Unlike durability was the bounded post-deployment smoke
+  gate and passed. TASK-022 changes only canonical media identity selection at
+  the existing preference boundary; it does not change authentication, durable
+  preference storage, or account authorization. Guest preferences remain
+  intentionally room/session scoped.
+- PR #3 merged to `main` as `bbe77e605dcbeed8aabe156da6f6d5b3c5f188cb`
+  on 2026-08-31 and was deployed to Vercel production as
+  `dpl_DNQVK18gyshf5AiPZ7oJoTCFLBn4`.
+- Both production aliases returned `200` from `/api/health` and `/api/ready`;
+  Supabase and SpacetimeDB reported ready and CloudConvert reported configured.
+- Signed-in owner production QA loaded a direct YouTube source, confirmed the
+  initial Like state was unpressed, liked it, refreshed, and observed the
+  pressed Remove Like state after seven seconds. Unlike then persisted through
+  a second refresh with the direct source and title unchanged.
+- One tab retained an old Server Action hash during deployment turnover, but a
+  fresh reload and the required interactions passed. No rollback was required.

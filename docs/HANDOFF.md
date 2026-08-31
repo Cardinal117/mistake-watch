@@ -1,6 +1,6 @@
 # Mistake Watch Handoff
 
-Updated: 2026-08-27
+Updated: 2026-08-31
 
 ## Current State
 
@@ -67,12 +67,15 @@ five-lobe presentation is part of the released Listen composition, but the
 affected-laptop active/paused/hidden performance and shared-timing matrix is
 still incomplete. Static Artwork remains the safe default.
 
-TASK-022 Direct Play Action Parity is QA ready in the isolated
-`refresh/mw-qol-010` worktree. It gives directly loaded YouTube sources a
-canonical account Like target and adds pasted-link Play Next to both established
-Add Media surfaces using the existing one-shot queue path. Focused tests,
-TypeScript, and ESLint pass; full gates, commit review, and production
-interaction QA remain. No TASK-022 change has been published or deployed.
+TASK-022 Direct Play Action Parity is complete on `main`. PR #3 merged as
+`bbe77e605dcbeed8aabe156da6f6d5b3c5f188cb` and was deployed to production as
+`dpl_DNQVK18gyshf5AiPZ7oJoTCFLBn4`. Both production aliases passed health and
+readiness with Supabase and SpacetimeDB ready. Opera desktop and 390x844 Add
+Media QA, guest catalogue denial, pasted-link Play Next ordering,
+two-participant queue/playback continuity, and guest room/session Like refresh
+persistence passed before release. Signed-in owner production QA then confirmed
+that a direct-source Like persisted through refresh after seven seconds and an
+Unlike persisted through a second refresh. No rollback was required.
 
 ## Required Reading
 
@@ -146,6 +149,6 @@ recovery or the bounded manual reload state without queue, authority, or
 canonical-position mutation.
 
 After that, complete TASK-015C's affected-laptop performance and shared-timing
-evidence. TASK-022 is the prepared compact action-parity checkpoint; release it
-only after full gates and production interaction QA. Then reconcile the
-already-released Account Rooms work before choosing the next independent item.
+evidence. TASK-022 is complete and no longer blocks the release order. Refresh
+and review PR #4 against current `main`, then reconcile the already-released
+Account Rooms work before choosing the next independent item.
