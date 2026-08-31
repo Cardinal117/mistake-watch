@@ -50,8 +50,9 @@ that a feature is shipped merely because an older task packet discusses it.
   affected-device performance evidence is complete.
 - TASK-014B account-room lifecycle behavior is deployed but still requires its
   final owner acceptance pass.
-- TASK-022 direct-play action parity is implemented and locally QA-ready on an
-  isolated branch. It is not a released production feature yet.
+- TASK-022 direct-play action parity is released. Directly loaded YouTube media
+  now has canonical Like identity and pasted-link Play Next parity; signed-in
+  Like and Unlike persistence passed production QA.
 
 Use [docs/HANDOFF.md](docs/HANDOFF.md) for the verified working state and next
 release order. Use [docs/ROADMAP.md](docs/ROADMAP.md) for broader sequencing.

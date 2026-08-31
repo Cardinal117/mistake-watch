@@ -1,6 +1,6 @@
 ---
 id: TASK-022
-status: qa-ready
+status: complete
 type: compact-task
 related: [MW-QOL-010, TASK-002, TASK-011]
 created: 2026-08-27
@@ -107,8 +107,19 @@ Media or changing queue authority.
   because the ignored local QA environment pointed SpacetimeDB at
   `ws://127.0.0.1:5372`; the unusable preview was deleted. This is recorded as a
   preview-environment mismatch, not TASK-022 product evidence.
-- Signed-in account Like/Unlike durability is a bounded post-deployment smoke
-  gate. TASK-022 changes only canonical media identity selection at the existing
-  preference boundary; it does not change authentication, durable preference
-  storage, or account authorization. Guest preferences remain intentionally
-  room/session scoped.
+- Signed-in account Like/Unlike durability was the bounded post-deployment smoke
+  gate and passed. TASK-022 changes only canonical media identity selection at
+  the existing preference boundary; it does not change authentication, durable
+  preference storage, or account authorization. Guest preferences remain
+  intentionally room/session scoped.
+- PR #3 merged to `main` as `bbe77e605dcbeed8aabe156da6f6d5b3c5f188cb`
+  on 2026-08-31 and was deployed to Vercel production as
+  `dpl_DNQVK18gyshf5AiPZ7oJoTCFLBn4`.
+- Both production aliases returned `200` from `/api/health` and `/api/ready`;
+  Supabase and SpacetimeDB reported ready and CloudConvert reported configured.
+- Signed-in owner production QA loaded a direct YouTube source, confirmed the
+  initial Like state was unpressed, liked it, refreshed, and observed the
+  pressed Remove Like state after seven seconds. Unlike then persisted through
+  a second refresh with the direct source and title unchanged.
+- One tab retained an old Server Action hash during deployment turnover, but a
+  fresh reload and the required interactions passed. No rollback was required.

@@ -1,17 +1,17 @@
 ---
 id: MW-QOL-010
 type: qol
-status: in-progress
+status: complete
 priority: P1
 area: add-media
 related: [TASK-002, TASK-011, TASK-022]
 created: 2026-08-19
-updated: 2026-08-27
+updated: 2026-08-31
 ---
 
 # Direct Play Now action parity
 
-> [!todo] Implementation QA ready - P1 owner priority
+> [!success] Complete - released with TASK-022
 
 - **Expected:** A YouTube item loaded directly from Add Media should expose Like
   while active and offer Play Next before playback, even when it was not first
@@ -25,9 +25,15 @@ updated: 2026-08-27
   queue contract.
 - **Related work:** [[../../tasks/TASK-022-direct-play-action-parity/task|TASK-022]],
   TASK-011 media preferences, and TASK-002 Add Media behavior.
-- **Current state:** The refreshed current-main implementation and focused tests
-  pass. Full gates and production interaction QA remain before completion.
-- **Next action:** Complete TASK-022 release gates, then verify direct-source
-  Like persistence and pasted-link Play Next ordering in production.
+- **Completion evidence:** Focused tests pass 18/18 and the refreshed full suite
+  passes 512/512 alongside typecheck, lint, build, formatting, file-length, and
+  diff gates. Opera desktop and compact Add Media QA, guest catalogue denial,
+  pasted-link Play Next ordering, and two-participant continuity passed.
+- **Release:** PR #3 merged as
+  `bbe77e605dcbeed8aabe156da6f6d5b3c5f188cb`; Vercel deployment
+  `dpl_DNQVK18gyshf5AiPZ7oJoTCFLBn4`; released 2026-08-31.
+- **Production acceptance:** Signed-in owner direct-source Like persisted after
+  refresh and seven-second reconciliation. Unlike then persisted through a
+  second refresh without changing the active source or title.
 - **Original report:**
-  [[../archive/quick-capture-2026-08-19#Raw Quick Capture]]
+  [[quick-capture-2026-08-19#Raw Quick Capture]]

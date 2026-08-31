@@ -30,7 +30,6 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 | [MW-QOL-007](items/MW-QOL-007-configurable-listen-artwork.md)           | QoL         | P2       | Ready for planning | Listen visuals    | Configure artwork per visualization and improve framing   | TASK-015           |
 | [MW-QOL-008](items/MW-QOL-008-tv-mode-settings-access.md)               | QoL         | P2       | Ready for planning | TV mode           | Open TV settings without leaving TV mode                  | TASK-002.5G        |
 | [MW-QOL-009](items/MW-QOL-009-suicide-mode-visualization.md)            | QoL         | P3       | Ready for planning | Listen visuals    | Add an optional owner-named visualization                 | TASK-015           |
-| [MW-QOL-010](items/MW-QOL-010-direct-play-action-parity.md)             | QoL         | P1       | In progress        | Add Media         | Give direct Play Now media Like and Play Next parity      | TASK-002, 011, 022 |
 | [MW-OPS-001](items/MW-OPS-001-controlled-conversion-prep.md)            | Operations  | P1       | Planned            | Media processing  | Restore CloudConvert safely and plan local preparation    | Incident follow-up |
 | [MW-OPS-002](items/MW-OPS-002-living-documentation-refresh.md)          | Operations  | P2       | Ready for planning | Documentation     | Keep concise product and architecture docs current        | TASK-009, 013      |
 | [MW-OBS-001](items/MW-OBS-001-spacetime-participant-cache-warning.md)   | Observation | P3       | Needs reproduction | Live room sync    | Participant update can target a missing cached row        | TASK-009, 012      |
@@ -54,11 +53,9 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
    [[items/MW-FEAT-003-account-rooms-surface|MW-FEAT-003]],
    [[items/MW-BUG-002-saved-room-dashboard-gap|MW-BUG-002]], and
    [[items/MW-BUG-007-signed-in-room-remains-browser-scoped|MW-BUG-007]].
-6. Complete [[items/MW-QOL-010-direct-play-action-parity|MW-QOL-010]] through
-   TASK-022 production interaction QA before release.
-7. Prepare a research/prototype packet for
+6. Prepare a research/prototype packet for
    [[items/MW-FEAT-005-local-ai-dj-intent-router|MW-FEAT-005]]. Preserve server
    authority and do not connect experimental inference directly to room
    mutations.
-8. Schedule [[items/MW-QOL-008-tv-mode-settings-access|MW-QOL-008]] as a compact
+7. Schedule [[items/MW-QOL-008-tv-mode-settings-access|MW-QOL-008]] as a compact
    UI task; keep optional TV-mode motion behind current reliability work.

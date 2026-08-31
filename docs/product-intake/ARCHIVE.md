@@ -4,6 +4,19 @@ Move an entry here only after it is resolved, deliberately not planned, or
 superseded. Preserve its ID, original-report link, decision reason, verification
 evidence, commit, and deployment reference where applicable.
 
+## MW-QOL-010 Direct Play Now action parity
+
+- **Final status:** Resolved
+- **Decision date:** 2026-08-31
+- **Task:** TASK-022
+- **Evidence:** Focused tests 18/18; refreshed full suite 512/512; Opera desktop
+  and compact Add Media QA; guest catalogue denial; pasted-link Play Next
+  ordering; two-participant continuity; signed-in direct-source Like and Unlike
+  refresh persistence; merge commit `bbe77e6`; production deployment
+  `dpl_DNQVK18gyshf5AiPZ7oJoTCFLBn4`.
+- **Original report:**
+  [[archive/MW-QOL-010-direct-play-action-parity|Archived item]]
+
 ## MW-FEAT-006 Private local audio companion extension
 
 - **Final status:** Resolved
