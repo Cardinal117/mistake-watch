@@ -71,8 +71,10 @@ TASK-022 Direct Play Action Parity is QA ready in the isolated
 `refresh/mw-qol-010` worktree. It gives directly loaded YouTube sources a
 canonical account Like target and adds pasted-link Play Next to both established
 Add Media surfaces using the existing one-shot queue path. Focused tests,
-TypeScript, and ESLint pass; full gates, commit review, and production
-interaction QA remain. No TASK-022 change has been published or deployed.
+full tests, TypeScript, ESLint, the Next.js 16.3.3 production build,
+changed-file formatting, file-length policy, and diff checks pass after merging
+the current `main` dependency-security release. Production interaction QA
+remains. No TASK-022 change has been deployed to production.
 
 ## Required Reading
 

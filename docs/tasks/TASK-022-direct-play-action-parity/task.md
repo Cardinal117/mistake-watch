@@ -4,7 +4,7 @@ status: qa-ready
 type: compact-task
 related: [MW-QOL-010, TASK-002, TASK-011]
 created: 2026-08-27
-updated: 2026-08-27
+updated: 2026-08-31
 ---
 
 # Direct Play Action Parity
@@ -71,9 +71,12 @@ Media or changing queue authority.
   three canonical active-media cases and the two-surface Play Next contract.
 - The focused post-implementation suite passes 18/18 tests, including the
   queue-backed fallback while session source metadata is hydrating.
-- Full `npm test` passes 512/512 tests.
-- TypeScript, ESLint, production build, changed-file Prettier, file-length policy,
-  and `git diff --check` pass on the refreshed current-main worktree.
+- After merging the current `main` dependency-security release, the focused
+  suite still passes 18/18 tests and full `npm test` passes 512/512 tests.
+- TypeScript, ESLint, the Next.js 16.3.3 production build, changed-file Prettier,
+  file-length policy, and `git diff --check` pass on the refreshed worktree.
+- ESLint reports one pre-existing warning in `room-experience.tsx` and zero
+  errors. The file-length policy reports 17 review warnings and zero violations.
 - A credential-safe Playwright rerun loaded the existing ignored local
   environment in memory without copying it. Account personalization,
   health/readiness sanitation, and visualizer startup passed; one application
