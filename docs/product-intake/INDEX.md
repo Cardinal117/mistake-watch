@@ -11,7 +11,7 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 | [MW-BUG-004](items/MW-BUG-004-uploaded-session-renewal-freeze.md)       | Bug         | P1       | Needs reproduction | Uploaded playback | One participant can freeze while room progress continues  | TASK-009           |
 | [MW-BUG-006](items/MW-BUG-006-host-refresh-playback-drift.md)           | Bug         | P1       | Needs reproduction | Playback sync     | Resume can start far from authoritative room position     | Playback stability |
 | [MW-BUG-007](items/MW-BUG-007-signed-in-room-remains-browser-scoped.md) | Bug         | P1       | In progress        | Account rooms     | Signed-in room can remain browser-scoped                  | TASK-014B          |
-| [MW-BUG-008](items/MW-BUG-008-tv-mode-like-control-missing.md)          | Bug         | P2       | Needs verification | TV mode           | Like control is missing from TV mode                      | TASK-002.5G, 011   |
+| [MW-BUG-008](items/MW-BUG-008-tv-mode-like-control-missing.md)          | Bug         | P2       | In progress        | TV mode           | Like control is missing from TV mode                      | TASK-020           |
 | [MW-BUG-009](items/MW-BUG-009-high-browser-resource-usage.md)           | Bug         | P1       | In progress        | Performance       | Room playback consumes excessive browser resources        | TASK-015           |
 | [MW-BUG-011](items/MW-BUG-011-room-picks-actions-permission-toast.md)   | Bug         | P2       | Needs verification | Recommendations   | Room Picks actions may reject permitted members           | TASK-011           |
 | [MW-BUG-014](items/MW-BUG-014-youtube-embed-too-many-requests.md)       | Bug         | P1       | Needs reproduction | YouTube playback  | One user repeatedly receives provider throttling          | TASK-004           |
@@ -28,7 +28,7 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 | [MW-QOL-005](items/MW-QOL-005-persist-local-volume.md)                  | QoL         | P2       | Needs verification | Player settings   | Preserve chosen volume through refresh                    | Personalization    |
 | [MW-QOL-006](items/MW-QOL-006-tv-mode-card-transitions.md)              | QoL         | P3       | Ready for planning | TV mode           | Add restrained card-deck transitions                      | TASK-002.5G        |
 | [MW-QOL-007](items/MW-QOL-007-configurable-listen-artwork.md)           | QoL         | P2       | Ready for planning | Listen visuals    | Configure artwork per visualization and improve framing   | TASK-015           |
-| [MW-QOL-008](items/MW-QOL-008-tv-mode-settings-access.md)               | QoL         | P2       | Ready for planning | TV mode           | Open TV settings without leaving TV mode                  | TASK-002.5G        |
+| [MW-QOL-008](items/MW-QOL-008-tv-mode-settings-access.md)               | QoL         | P2       | In progress        | TV mode           | Open TV settings without leaving TV mode                  | TASK-020           |
 | [MW-QOL-009](items/MW-QOL-009-suicide-mode-visualization.md)            | QoL         | P3       | Ready for planning | Listen visuals    | Add an optional owner-named visualization                 | TASK-015           |
 | [MW-OPS-001](items/MW-OPS-001-controlled-conversion-prep.md)            | Operations  | P1       | Planned            | Media processing  | Restore CloudConvert safely and plan local preparation    | Incident follow-up |
 | [MW-OPS-002](items/MW-OPS-002-living-documentation-refresh.md)          | Operations  | P2       | Ready for planning | Documentation     | Keep concise product and architecture docs current        | TASK-009, 013      |
@@ -57,5 +57,7 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
    [[items/MW-FEAT-005-local-ai-dj-intent-router|MW-FEAT-005]]. Preserve server
    authority and do not connect experimental inference directly to room
    mutations.
-7. Schedule [[items/MW-QOL-008-tv-mode-settings-access|MW-QOL-008]] as a compact
-   UI task; keep optional TV-mode motion behind current reliability work.
+7. Complete refreshed TASK-020 review and interaction QA for
+   [[items/MW-BUG-008-tv-mode-like-control-missing|MW-BUG-008]] and
+   [[items/MW-QOL-008-tv-mode-settings-access|MW-QOL-008]] now that TASK-022 is
+   released. Keep optional TV-mode motion outside this parity bundle.

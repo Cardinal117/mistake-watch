@@ -1,17 +1,17 @@
 ---
 id: MW-QOL-008
 type: qol
-status: ready-for-planning
+status: in-progress
 priority: P2
 area: tv-mode
-related: [TASK-002.5G, MW-QOL-006]
+related: [TASK-002.5G, TASK-020, MW-QOL-006]
 created: 2026-08-18
-updated: 2026-08-18
+updated: 2026-08-31
 ---
 
 # Open TV settings without leaving TV mode
 
-> [!qol] Ready for planning - P2
+> [!qol] In progress - P2
 
 - **Request:** Add a compact three-dot settings control inside TV mode so users
   can adjust TV presentation settings without exiting and returning.
@@ -34,7 +34,16 @@ updated: 2026-08-18
 - **Related work:** TASK-002.5G Listen/TV presentation work and
   [[MW-QOL-006-tv-mode-card-transitions|MW-QOL-006]]. This access improvement is
   independent from optional TV-mode transition animation.
-- **Next action:** Create a compact implementation task with focused interaction,
-  persistence, accessibility, responsive, and playback-continuity checks.
+- **Implementation:** TASK-020 reuses the existing TV settings dialog and
+  browser-local persistent state inside TV mode.
+- **Automated evidence:** Focused TV, preference, and direct-source tests pass
+  alongside the 516-test suite, typecheck, lint, file-length policy, and
+  production build on the refreshed TASK-020 branch.
+- **Interaction evidence:** Desktop and 390 x 844 QA confirmed the dialog opens
+  over TV mode, updates values immediately, preserves playback progression,
+  closes before TV mode on Escape, restores focus to the trigger, remains free
+  of horizontal overflow, and returns after idle hiding on keyboard activity.
+- **Next action:** Confirm browser-restart persistence and repeat the flow with a
+  genuinely separate second participant before resolving this item.
 - **Original report:**
   [[../archive/quick-capture-2026-08-18#Capture 10]].

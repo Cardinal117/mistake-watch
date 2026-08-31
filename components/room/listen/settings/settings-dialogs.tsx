@@ -56,6 +56,7 @@ export function ListenRoomSettingsDialog({
   return createPortal(
     <div className="fixed inset-0 z-[120] grid place-items-center bg-black/48 px-4 backdrop-blur-md">
       <div
+        id="listen-room-settings-dialog"
         className="w-full max-w-2xl overflow-hidden rounded-md border border-white/10 bg-surface/94 shadow-[0_28px_80px_rgb(0_0_0_/_0.58),0_0_46px_rgb(var(--listen-shadow)/0.16)]"
         role="dialog"
         aria-modal="true"
@@ -74,6 +75,7 @@ export function ListenRoomSettingsDialog({
             </h2>
           </div>
           <IconButton
+            autoFocus
             label="Close room settings"
             onClick={onClose}
             variant="ghost"

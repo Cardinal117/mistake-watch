@@ -58,16 +58,22 @@ test("Like hook reconciles active clients without overriding newer local state",
 });
 
 test("Listen surfaces use the same room preference controller", async () => {
-  const [layout, nowPlaying, cards] = await Promise.all([
+  const [layout, nowPlaying, cards, tvNowPlaying] = await Promise.all([
     read("components/room/listen/listen-mode-layout.tsx"),
     read("components/room/listen/now-playing/now-playing-panel.tsx"),
     read("components/room/listen/discovery/media-cards.tsx"),
+    read("components/room/listen/tv/tv-mode-now-playing.tsx"),
   ]);
 
   assert.match(layout, /useMediaPreferences/);
   assert.match(layout, /allowUploaded: account\.status === "signed-in"/);
   assert.match(nowPlaying, /PreferenceHeartButton/);
   assert.match(cards, /PreferenceHeartButton/);
+  assert.match(tvNowPlaying, /PreferenceHeartButton/);
+  assert.match(
+    tvNowPlaying,
+    /mediaPreferences\.togglePreference\(preferenceItem\)/,
+  );
 });
 
 test("first-party ranking preserves provider order as the safe fallback", async () => {
