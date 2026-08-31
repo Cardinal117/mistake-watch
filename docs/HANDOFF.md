@@ -77,10 +77,11 @@ the current `main` dependency-security release. Opera desktop and 390x844 Add
 Media QA, guest room/session Like refresh persistence, guest catalogue denial,
 Play Next ordering, and two-participant queue/playback continuity pass. The
 preference control can take approximately five seconds after refresh to
-reconcile to its pressed state. A READY Vercel preview cannot boot because the
-Preview environment lacks `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; production
-configuration was deliberately left unchanged. Signed-in account Like/Unlike
-durability is the remaining interaction gate. No TASK-022 change has been
+reconcile to its pressed state. A deployment-scoped Vercel preview authenticated
+the owner but could not load rooms because the local QA environment supplied a
+localhost SpacetimeDB URI; that preview was deleted. Because TASK-022 does not
+change auth or preference persistence, signed-in account Like/Unlike durability
+is now the bounded post-deployment smoke gate. No TASK-022 change has been
 deployed to production.
 
 ## Required Reading

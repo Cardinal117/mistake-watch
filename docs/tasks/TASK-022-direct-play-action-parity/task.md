@@ -102,10 +102,13 @@ Media or changing queue authority.
 - The guest Add Media surface exposed no uploaded catalogue entry point, while
   permitted YouTube Play Next remained available. Guest catalogue denial
   therefore remained intact during the interaction pass.
-- A Vercel preview deployment reached READY, but the application could not boot
-  because the Preview environment does not define
-  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Production configuration was not
-  copied or changed to bypass that release boundary.
-- Signed-in account Like/Unlike durability remains the final interaction gate.
-  Guest preferences are intentionally room/session scoped and are not expected
-  to behave as durable account preferences.
+- A deployment-scoped Vercel preview reached READY and authenticated the owner
+  after receiving the minimum Supabase configuration. Room loading then failed
+  because the ignored local QA environment pointed SpacetimeDB at
+  `ws://127.0.0.1:5372`; the unusable preview was deleted. This is recorded as a
+  preview-environment mismatch, not TASK-022 product evidence.
+- Signed-in account Like/Unlike durability is a bounded post-deployment smoke
+  gate. TASK-022 changes only canonical media identity selection at the existing
+  preference boundary; it does not change authentication, durable preference
+  storage, or account authorization. Guest preferences remain intentionally
+  room/session scoped.
