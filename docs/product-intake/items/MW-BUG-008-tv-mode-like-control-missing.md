@@ -6,7 +6,7 @@ priority: P2
 area: tv-mode
 related: [TASK-002.5G, TASK-011, TASK-020]
 created: 2026-08-18
-updated: 2026-08-27
+updated: 2026-08-31
 ---
 
 # Like control is missing from TV mode
@@ -28,7 +28,11 @@ updated: 2026-08-27
 - **Automated evidence:** Focused TV, preference, and direct-source tests pass
   alongside the 516-test suite, typecheck, lint, file-length policy, and
   production build on the refreshed TASK-020 branch.
-- **Next action:** Complete signed-in/guest browser QA before resolving this
-  item; interaction QA remains a draft-PR gate.
+- **Interaction evidence:** A fresh local throwaway room confirmed that a direct
+  YouTube source exposes the Like control in TV mode and that changing the state
+  is reflected immediately by the normal Listen control. The test restored the
+  source to unliked.
+- **Next action:** Repeat Like/Unlike with a signed-in account and verify the
+  state after a full browser restart before resolving this item.
 - **Original report:**
   [[../archive/quick-capture-2026-08-18#Capture 1]]

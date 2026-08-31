@@ -2,7 +2,7 @@
 
 Status: QA ready
 Documentation level: Compact task
-Updated: 2026-08-27
+Updated: 2026-08-31
 
 ## Objective
 
@@ -76,14 +76,32 @@ display settings without leaving the cinematic presentation.
 ## Evidence
 
 - Linked intake items: MW-BUG-008 and MW-QOL-008.
+- Refreshed against released `main` commit `860f2aa` in merge commit `50cfb85`;
+  the only merge conflict was the product-intake index and was resolved by
+  preserving TASK-022 closure while keeping both TASK-020 items active.
 - Focused TV/preference/direct-source tests: 16 passed.
 - Full `npm test`: 516 passed.
 - Typecheck, ESLint, production build, targeted Prettier, diff checks, and the
-  file-length policy passed with no new architecture warning.
-- The configured local app started and rendered successfully in the in-app
-  browser. Interactive room QA was not forced because the available environment
-  combines the cloud Supabase project with local SpacetimeDB; creating test room
-  data there would cross the non-production-mutation boundary.
-- Manual draft-PR gates: signed-in Like/Unlike, guest unavailable behavior,
-  settings focus and Escape ordering, narrow/mobile layout, idle reveal,
-  persistence, playback continuity, and two-participant synchronization.
+  file-length policy passed with zero violations. ESLint retains the pre-existing
+  `window.location.href` warning in `room-experience.tsx`.
+- Vercel Preview deployment `dpl_Fpiqz7VRZDU2dwbgJoRJSWZdZ861` reached Ready
+  and returned 200 from `/api/health` through authenticated Vercel CLI access.
+  It is access-protected and has no Preview runtime integrations, so `/api/ready`
+  correctly returns 503 and it is not a room-interaction QA environment.
+- A fresh throwaway Listen room on the matching local Supabase plus local
+  SpacetimeDB stack passed desktop and 390 x 844 interaction QA: TV settings
+  opened without leaving TV mode, values updated immediately, Escape closed the
+  dialog before TV mode, focus returned to the settings trigger, and the compact
+  overlay and dialog had no horizontal overflow.
+- Idle hiding reached zero overlay opacity after its timer and keyboard activity
+  restored the controls. The test restored the idle preference afterward.
+- A directly loaded embeddable YouTube source advanced from 0 to 3 seconds in
+  Listen, to 6 seconds in TV mode, and to 9 seconds while settings were open.
+  A clean-tab room reload produced no console warnings or errors.
+- The TV Like control changed the shared source state to `Remove Like`; exiting
+  TV mode showed the same state in normal Listen mode, and the test restored the
+  source to unliked afterward.
+- Remaining draft-PR gates: repeat Like/Unlike with a signed-in account, confirm
+  persistence after a full browser restart, and verify playback/control state
+  with a genuinely separate second participant. Production deployment remains a
+  separate release decision.
