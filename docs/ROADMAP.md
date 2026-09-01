@@ -82,6 +82,21 @@ than being presented as confirmed root causes.
 - MW-BUG-003 now has bounded provider-startup recovery in production. The item
   remains open only until the affected participant verifies the automatic or
   manual recovery path without queue or authority changes.
+- TASK-020 TV mode control parity is complete on `main`. TV mode now reuses the
+  canonical active-media Like state and established display settings; signed-in
+  owner persistence and two-participant continuity passed production QA.
+
+## Uploaded Playback Reliability Blocked
+
+MW-BUG-004 is confirmed and promoted to TASK-023. Uploaded room playback issues
+one 30-minute R2 signature while the room-media session remains valid for 12
+hours. TASK-023 must keep the visible media source stable and renew future or
+previous byte-range authorization without page refresh, permanent object URLs,
+or canonical playback mutation. Accelerated-expiry evidence rejected the stable
+redirect candidate: Chromium and Opera GX reused the expired redirected object
+for later Range requests instead of revisiting the stable route. No production
+code changed. A Cloudflare R2 Range gateway requires separate architecture and
+security approval before work can continue.
 
 ## Account Rooms Lifecycle In Progress
 
@@ -95,35 +110,38 @@ and readiness passing on both public aliases. It is not owner-accepted yet.
 
 ## Planned Product Sequence
 
-1. **Verify MW-BUG-003 in the affected profile**
+1. **Decide whether to scope the MW-BUG-004 Range gateway**
+   Candidate A failed. Candidate B needs a separate Cloudflare R2 architecture,
+   authorization, cost, deployment, and security review before implementation.
+2. **Verify MW-BUG-003 in the affected profile**
    Exercise normal YouTube startup and the bounded recovery path on production.
    Resolve only after confirming no retry loop or room-state mutation.
-2. **Complete TASK-015C evidence**
+3. **Complete TASK-015C evidence**
    Measure active/idle cost and shared timing for experimental Siri Ribbon.
    Keep Static Artwork as default.
-3. **Plan MW-QOL-007 artwork composition**
+4. **Plan MW-QOL-007 artwork composition**
    Define per-mode artwork enablement, clarity bounds, right-side framing, and
    browser-local persistence without weakening the safe rendering budget.
-4. **Account Rooms release reconciliation**
+5. **Account Rooms release reconciliation**
    Verify signed-in create, invite join, save, lifecycle controls, cross-browser
    discovery, dashboard persistence, and room re-entry before resolving
    `MW-FEAT-003`, `MW-BUG-002`, and `MW-BUG-007`.
-5. **Consented YouTube account signals**
+6. **Consented YouTube account signals**
    Add incremental OAuth only for approved playlist/subscription capabilities.
    Provider tokens remain server-only and revocable. Do not claim access to the
    private YouTube home recommendation feed.
-6. **Add/Discover redesign**
+7. **Add/Discover redesign**
    Turn Add Media into a fast search/import/discovery workspace using the
    recommendation foundation, clear source states, and compact mobile flows.
-7. **Watch discovery overhaul**
+8. **Watch discovery overhaul**
    Evolve the Watch room media surface toward a streaming-style browse and
    recommendation experience without weakening the synchronized room focus.
-8. **AI DJ / session intelligence**
+9. **AI DJ / session intelligence**
    Explain session patterns and offer host-approved suggestions. AI output is
    advisory and cannot mutate the queue without an explicit action.
-9. **Social graph and incremental provider features**
-   Friends, invites, notifications, and provider-aware features remain separate
-   permission and privacy work.
+10. **Social graph and incremental provider features**
+    Friends, invites, notifications, and provider-aware features remain separate
+    permission and privacy work.
 
 TASK-008 Spatial Cinema remains a separate unapproved draft and is not part of
 this sequence until explicitly activated.

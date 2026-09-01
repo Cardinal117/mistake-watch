@@ -53,6 +53,13 @@ that a feature is shipped merely because an older task packet discusses it.
 - TASK-022 direct-play action parity is released. Directly loaded YouTube media
   now has canonical Like identity and pasted-link Play Next parity; signed-in
   Like and Unlike persistence passed production QA.
+- TASK-020 TV mode control parity is released. TV mode reuses the canonical Like
+  state and established display settings, with signed-in production persistence
+  and two-participant continuity verified.
+- TASK-023 proved that the stable-redirect candidate is not browser-reliable:
+  Chromium and Opera GX reused the expired redirect target for later Range
+  requests. Production implementation is blocked pending a separately approved
+  Cloudflare R2 Range-gateway architecture and security review.
 
 Use [docs/HANDOFF.md](docs/HANDOFF.md) for the verified working state and next
 release order. Use [docs/ROADMAP.md](docs/ROADMAP.md) for broader sequencing.

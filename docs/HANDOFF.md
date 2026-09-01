@@ -1,6 +1,6 @@
 # Mistake Watch Handoff
 
-Updated: 2026-08-31
+Updated: 2026-09-01
 
 ## Current State
 
@@ -77,6 +77,26 @@ persistence passed before release. Signed-in owner production QA then confirmed
 that a direct-source Like persisted through refresh after seven seconds and an
 Unlike persisted through a second refresh. No rollback was required.
 
+TASK-020 TV Mode Control Parity is complete on `main`. PR #4 merged as
+`a6747f8b8792987db06c0aee42969dc05dfe4e3a` and was deployed to production as
+`dpl_79vfekpDWSrzBr1mqivyYdUbAFL7`. Signed-in owner QA confirmed TV mode Like
+and Unlike persistence across normal Listen, reload, tab close/reopen, and TV
+re-entry. The existing display settings, Escape ordering, focus restoration,
+idle-control reveal, direct-source identity, and two-participant continuity
+passed their release gates. Closure documentation is on `main` as `eeb456c`.
+
+MW-BUG-004 remains a confirmed P1 playback defect, but TASK-023 is blocked after
+Candidate A feasibility testing. With a 1.2-second lease, Playwright Chromium
+149.0.7827.55 and Opera GX 150.0.7871.187 each requested the stable URL once,
+then sent later Range requests directly to the redirected object. The first
+post-expiry request (`bytes=524288-`) received `403`; neither browser revisited
+the stable route, and both media elements entered network error state. The
+result reproduced twice. No production route or player code changed. A
+Cloudflare R2 Range gateway now requires a separate architecture/security scope
+revision. Do not lengthen signatures, expose permanent R2 URLs, proxy media
+through Vercel, remount the player, use a hidden second player, or publish
+renewal as canonical room state.
+
 ## Required Reading
 
 1. `AGENTS.md`
@@ -91,7 +111,8 @@ Unlike persisted through a second refresh. No rollback was required.
 10. `docs/tasks/TASK-010-watch-media-hub-performance/`
 11. `docs/tasks/TASK-009-project-integrity/`
 12. `supabase/MIGRATION_HISTORY.md`
-13. `docs/tasks/TASK-002-incomplete-work-recovery/` for historical detail
+13. `docs/tasks/TASK-023-uploaded-playback-url-renewal/task.md`
+14. `docs/tasks/TASK-002-incomplete-work-recovery/` for historical detail
 
 TASK-001 is historical MVP context. TASK-007 records completed modularization
 work and discovered issues. TASK-008 Spatial Cinema is an unapproved draft.
@@ -143,12 +164,11 @@ verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
 
-First, verify MW-BUG-003 in the affected participant profile on production.
-Normal playback should remain unchanged; if startup stalls, prove one automatic
-recovery or the bounded manual reload state without queue, authority, or
-canonical-position mutation.
+Decide whether to approve a separate Cloudflare R2 Range-gateway architecture
+and security task for MW-BUG-004. Candidate A is rejected and TASK-023 must not
+proceed into production integration.
 
-After that, complete TASK-015C's affected-laptop performance and shared-timing
-evidence. TASK-022 is complete and no longer blocks the release order. Refresh
-and review PR #4 against current `main`, then reconcile the already-released
-Account Rooms work before choosing the next independent item.
+Meanwhile, verify MW-BUG-003 in the affected participant profile, complete
+TASK-015C's affected-laptop performance and shared-timing evidence, and
+reconcile the already-released Account Rooms owner QA. TASK-020 and TASK-022
+are complete and no longer block the release order.

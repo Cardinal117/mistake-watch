@@ -8,7 +8,7 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 | [MW-BUG-001](items/MW-BUG-001-long-participant-names.md)                | Bug         | P1       | Needs reproduction | Room admission    | Long names may prevent joining or normal room use         | TASK-012           |
 | [MW-BUG-002](items/MW-BUG-002-saved-room-dashboard-gap.md)              | Bug         | P1       | In progress        | Account rooms     | Attached room can disappear from dashboard after sign-out | TASK-014           |
 | [MW-BUG-003](items/MW-BUG-003-google-redirect-black-player.md)          | Bug         | P1       | In progress        | YouTube playback  | Failed provider frame needs bounded startup recovery      | TASK-004, 021      |
-| [MW-BUG-004](items/MW-BUG-004-uploaded-session-renewal-freeze.md)       | Bug         | P1       | Needs reproduction | Uploaded playback | One participant can freeze while room progress continues  | TASK-009           |
+| [MW-BUG-004](items/MW-BUG-004-uploaded-session-renewal-freeze.md)       | Bug         | P1       | Blocked            | Uploaded playback | Signed playback expires without seamless Range renewal    | TASK-009, 023      |
 | [MW-BUG-006](items/MW-BUG-006-host-refresh-playback-drift.md)           | Bug         | P1       | Needs reproduction | Playback sync     | Resume can start far from authoritative room position     | Playback stability |
 | [MW-BUG-007](items/MW-BUG-007-signed-in-room-remains-browser-scoped.md) | Bug         | P1       | In progress        | Account rooms     | Signed-in room can remain browser-scoped                  | TASK-014B          |
 | [MW-BUG-009](items/MW-BUG-009-high-browser-resource-usage.md)           | Bug         | P1       | In progress        | Performance       | Room playback consumes excessive browser resources        | TASK-015           |
@@ -34,24 +34,29 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 
 ## Current Focus
 
-1. Verify the deployed
+1. Decide whether to approve a separate architecture/security task for the
+   [[items/MW-BUG-004-uploaded-session-renewal-freeze|MW-BUG-004]]
+   Range gateway. [[../tasks/TASK-023-uploaded-playback-url-renewal/task|TASK-023]]
+   rejected the stable-redirect candidate in Chromium and Opera GX and stopped
+   before production implementation.
+2. Verify the deployed
    [[items/MW-BUG-003-google-redirect-black-player|MW-BUG-003]] recovery in the
    affected participant profile. Confirm normal startup, one automatic recovery
    or the bounded manual reload state, unchanged queue/authority, and no retry
    loop before resolving it.
-2. Complete TASK-015C's affected-laptop performance and shared-timing evidence.
+3. Complete TASK-015C's affected-laptop performance and shared-timing evidence.
    Static Artwork remains the safe default while animated modes are
    experimental.
-3. Keep [[items/MW-QOL-007-configurable-listen-artwork|MW-QOL-007]] as related
+4. Keep [[items/MW-QOL-007-configurable-listen-artwork|MW-QOL-007]] as related
    composition work without expanding TASK-015C's performance correction.
-4. Collect an affected-versus-working evidence bundle for
+5. Collect an affected-versus-working evidence bundle for
    [[items/MW-BUG-014-youtube-embed-too-many-requests|MW-BUG-014]] before
    changing provider or player behavior.
-5. Reconcile the released Account Rooms work and owner QA before closing
+6. Reconcile the released Account Rooms work and owner QA before closing
    [[items/MW-FEAT-003-account-rooms-surface|MW-FEAT-003]],
    [[items/MW-BUG-002-saved-room-dashboard-gap|MW-BUG-002]], and
    [[items/MW-BUG-007-signed-in-room-remains-browser-scoped|MW-BUG-007]].
-6. Prepare a research/prototype packet for
+7. Prepare a research/prototype packet for
    [[items/MW-FEAT-005-local-ai-dj-intent-router|MW-FEAT-005]]. Preserve server
    authority and do not connect experimental inference directly to room
    mutations.
