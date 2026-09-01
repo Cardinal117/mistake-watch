@@ -4,6 +4,31 @@ Move an entry here only after it is resolved, deliberately not planned, or
 superseded. Preserve its ID, original-report link, decision reason, verification
 evidence, commit, and deployment reference where applicable.
 
+## MW-BUG-008 Like control is missing from TV mode
+
+- **Final status:** Resolved
+- **Decision date:** 2026-09-01
+- **Task:** TASK-020
+- **Evidence:** Focused TV/preference/direct-source tests; 516-test full suite;
+  desktop and compact interaction QA; separate two-participant continuity;
+  signed-in production Like/Unlike reload and tab-reopen persistence; merge
+  commit `a6747f8`; production deployment
+  `dpl_79vfekpDWSrzBr1mqivyYdUbAFL7`.
+- **Original report:**
+  [[archive/MW-BUG-008-tv-mode-like-control-missing|Archived item]]
+
+## MW-QOL-008 Open TV settings without leaving TV mode
+
+- **Final status:** Resolved
+- **Decision date:** 2026-09-01
+- **Task:** TASK-020
+- **Evidence:** TV settings overlay, immediate presentation updates, Escape
+  ordering, focus restoration, idle reveal, desktop and compact layout,
+  separate-participant playback continuity; merge commit `a6747f8`; production
+  deployment `dpl_79vfekpDWSrzBr1mqivyYdUbAFL7`.
+- **Original report:**
+  [[archive/MW-QOL-008-tv-mode-settings-access|Archived item]]
+
 ## MW-QOL-010 Direct Play Now action parity
 
 - **Final status:** Resolved

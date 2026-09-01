@@ -1,8 +1,8 @@
 # TASK-020: TV Mode Control Parity
 
-Status: QA ready
+Status: Complete
 Documentation level: Compact task
-Updated: 2026-08-31
+Updated: 2026-09-01
 
 ## Objective
 
@@ -84,10 +84,12 @@ display settings without leaving the cinematic presentation.
 - Typecheck, ESLint, production build, targeted Prettier, diff checks, and the
   file-length policy passed with zero violations. ESLint retains the pre-existing
   `window.location.href` warning in `room-experience.tsx`.
-- Vercel Preview deployment `dpl_Fpiqz7VRZDU2dwbgJoRJSWZdZ861` reached Ready
-  and returned 200 from `/api/health` through authenticated Vercel CLI access.
-  It is access-protected and has no Preview runtime integrations, so `/api/ready`
-  correctly returns 503 and it is not a room-interaction QA environment.
+- Configured Vercel Preview deployment `dpl_YeruNwphVxqGqvuN2eTQhWV4MG3k`
+  reached Ready with the minimum production-equivalent Supabase and SpacetimeDB
+  runtime values. `/api/health` and `/api/ready` returned 200, then Preview
+  targeting was removed from all six variables. Supabase OAuth returned the
+  temporary Preview login to the canonical production origin, so signed-in
+  persistence remained the bounded post-deployment smoke gate.
 - A fresh throwaway Listen room on the matching local Supabase plus local
   SpacetimeDB stack passed desktop and 390 x 844 interaction QA: TV settings
   opened without leaving TV mode, values updated immediately, Escape closed the
@@ -101,7 +103,19 @@ display settings without leaving the cinematic presentation.
 - The TV Like control changed the shared source state to `Remove Like`; exiting
   TV mode showed the same state in normal Listen mode, and the test restored the
   source to unliked afterward.
-- Remaining draft-PR gates: repeat Like/Unlike with a signed-in account, confirm
-  persistence after a full browser restart, and verify playback/control state
-  with a genuinely separate second participant. Production deployment remains a
-  separate release decision.
+- Independent Opera and in-app browser profiles joined one fresh local room as
+  separate participants. Both showed two connected participants, stayed
+  synchronized from 0:09 through 1:30, and preserved playback while the second
+  participant entered TV mode and changed its browser-local display preference.
+  Fresh diagnostics contained no errors or redirect/postMessage loop.
+- PR #4 merged to `main` as `a6747f8b8792987db06c0aee42969dc05dfe4e3a`
+  on 2026-08-31. Vercel production deployment
+  `dpl_79vfekpDWSrzBr1mqivyYdUbAFL7` reached Ready and aliased
+  `watch.mistakestudios.com`; canonical `/api/health` and `/api/ready` returned
+  200 with Supabase and SpacetimeDB ready and CloudConvert configured.
+- Signed-in owner production QA used the existing `Me at the zoo` source. Like
+  changed to Remove Like in TV mode, synchronized to normal Listen, survived a
+  reload and tab close/reopen, and remained present in reopened TV mode. The
+  temporary Like was removed and the original unliked baseline persisted after
+  returning to Listen and reloading. Production browser diagnostics contained
+  no errors.
