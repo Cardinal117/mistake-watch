@@ -8,7 +8,7 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 | [MW-BUG-001](items/MW-BUG-001-long-participant-names.md)                | Bug         | P1       | Needs reproduction | Room admission    | Long names may prevent joining or normal room use         | TASK-012           |
 | [MW-BUG-002](items/MW-BUG-002-saved-room-dashboard-gap.md)              | Bug         | P1       | In progress        | Account rooms     | Attached room can disappear from dashboard after sign-out | TASK-014           |
 | [MW-BUG-003](items/MW-BUG-003-google-redirect-black-player.md)          | Bug         | P1       | In progress        | YouTube playback  | Failed provider frame needs bounded startup recovery      | TASK-004, 021      |
-| [MW-BUG-004](items/MW-BUG-004-uploaded-session-renewal-freeze.md)       | Bug         | P1       | Blocked            | Uploaded playback | Signed playback expires without seamless Range renewal    | TASK-009, 023      |
+| [MW-BUG-004](items/MW-BUG-004-uploaded-session-renewal-freeze.md)       | Bug         | P1       | In progress        | Uploaded playback | Private Range gateway is in controlled release QA         | TASK-009, 023, 024 |
 | [MW-BUG-006](items/MW-BUG-006-host-refresh-playback-drift.md)           | Bug         | P1       | Needs reproduction | Playback sync     | Resume can start far from authoritative room position     | Playback stability |
 | [MW-BUG-007](items/MW-BUG-007-signed-in-room-remains-browser-scoped.md) | Bug         | P1       | In progress        | Account rooms     | Signed-in room can remain browser-scoped                  | TASK-014B          |
 | [MW-BUG-009](items/MW-BUG-009-high-browser-resource-usage.md)           | Bug         | P1       | In progress        | Performance       | Room playback consumes excessive browser resources        | TASK-015           |
@@ -34,11 +34,11 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 
 ## Current Focus
 
-1. Decide whether to approve a separate architecture/security task for the
+1. Complete controlled release QA for the
    [[items/MW-BUG-004-uploaded-session-renewal-freeze|MW-BUG-004]]
    Range gateway. [[../tasks/TASK-023-uploaded-playback-url-renewal/task|TASK-023]]
-   rejected the stable-redirect candidate in Chromium and Opera GX and stopped
-   before production implementation.
+   rejected redirects; TASK-024's private Worker/Vercel authorization design has
+   passed local Chromium, Opera GX, automated security, and build gates.
 2. Verify the deployed
    [[items/MW-BUG-003-google-redirect-black-player|MW-BUG-003]] recovery in the
    affected participant profile. Confirm normal startup, one automatic recovery

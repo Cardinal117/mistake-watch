@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "mistake-watch-uploaded-media-gateway",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "media.watch.mistakestudios.com",
+      "custom_domain": true,
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA_BUCKET",
+      "bucket_name": "watch2bucket",
+    },
+  ],
+  "vars": {
+    "AUTHORIZATION_ORIGIN": "https://watch.mistakestudios.com",
+  },
+  "secrets": {
+    "required": ["MEDIA_GATEWAY_ORIGIN_SECRET"],
+  },
+  "observability": {
+    "enabled": true,
+  },
+}

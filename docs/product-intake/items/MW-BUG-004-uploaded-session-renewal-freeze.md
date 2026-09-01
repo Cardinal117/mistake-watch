@@ -1,17 +1,17 @@
 ---
 id: MW-BUG-004
 type: bug
-status: blocked
+status: in-progress
 priority: P1
 area: uploaded-playback
-related: [TASK-009, TASK-023]
+related: [TASK-009, TASK-023, TASK-024]
 created: 2026-08-17
 updated: 2026-09-01
 ---
 
 # Uploaded playback can freeze after signed URL expiry
 
-> [!warning] Blocked - P1
+> [!bug] In progress - P1
 
 - **Observed:** After roughly 30 minutes, an older client can freeze while room progress continues.
 - **Security constraint:** Do not lengthen signatures or expose permanent R2 URLs.
@@ -29,10 +29,14 @@ updated: 2026-09-01
   and did not revisit the stable route. The result reproduced twice.
 - **Implementation state:** No production route, player, provider, queue,
   canonical playback, or authorization code changed.
-- **Next action:** Decide whether to approve a separate Cloudflare R2 Range
-  gateway architecture/security task. Retain short-lived authorization and do
-  not use the excluded Vercel proxy, longer signature, remount, or dual-player
-  workarounds.
+- **Candidate B:** TASK-024 implements a stable Cloudflare Worker Range gateway
+  with a private R2 binding and per-request Vercel authorization. Local Chromium
+  and Opera GX cookie/range feasibility plus automated security and build gates
+  pass.
+- **Next action:** Complete the reviewed PR, controlled provider configuration,
+  production deployment, long-play/seek, revocation, and two-participant QA.
+  Retain the excluded Vercel proxy, longer signature, remount, and dual-player
+  boundaries.
 
 ## Original Report
 

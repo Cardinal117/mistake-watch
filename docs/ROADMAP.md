@@ -86,7 +86,7 @@ than being presented as confirmed root causes.
   canonical active-media Like state and established display settings; signed-in
   owner persistence and two-participant continuity passed production QA.
 
-## Uploaded Playback Reliability Blocked
+## Uploaded Playback Reliability In Release QA
 
 MW-BUG-004 is confirmed and promoted to TASK-023. Uploaded room playback issues
 one 30-minute R2 signature while the room-media session remains valid for 12
@@ -95,8 +95,10 @@ previous byte-range authorization without page refresh, permanent object URLs,
 or canonical playback mutation. Accelerated-expiry evidence rejected the stable
 redirect candidate: Chromium and Opera GX reused the expired redirected object
 for later Range requests instead of revisiting the stable route. No production
-code changed. A Cloudflare R2 Range gateway requires separate architecture and
-security approval before work can continue.
+code changed. TASK-024 now implements the approved private Cloudflare R2 Range
+gateway with per-request Vercel authorization. Local Chromium and Opera GX
+feasibility, automated security tests, and build gates pass; controlled
+production interaction QA remains.
 
 ## Account Rooms Lifecycle In Progress
 
@@ -110,9 +112,9 @@ and readiness passing on both public aliases. It is not owner-accepted yet.
 
 ## Planned Product Sequence
 
-1. **Decide whether to scope the MW-BUG-004 Range gateway**
-   Candidate A failed. Candidate B needs a separate Cloudflare R2 architecture,
-   authorization, cost, deployment, and security review before implementation.
+1. **Complete MW-BUG-004 Range-gateway release QA**
+   Candidate A failed. Candidate B is implemented locally and must pass reviewed
+   PR, provider read-back, long-play/seek, revocation, and two-participant gates.
 2. **Verify MW-BUG-003 in the affected profile**
    Exercise normal YouTube startup and the bounded recovery path on production.
    Resolve only after confirming no retry loop or room-state mutation.

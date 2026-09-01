@@ -26,6 +26,8 @@
     "test:sync": "node --test tests/player/*.test.mjs",
     "test:youtube": "node --test tests/youtube/*.test.mjs",
     "test:e2e": "playwright test",
+    "worker:check": "npm --prefix workers/uploaded-media-gateway run check",
+    "worker:deploy": "npm --prefix workers/uploaded-media-gateway run deploy",
     "lint": "eslint .",
     "format": "prettier --check \"app/**/*.{ts,tsx,css}\" \"lib/**/*.ts\" \"scripts/**/*.mjs\" \"*.{json,mjs,ts}\"",
     "format:batch2": "prettier --check components/room/queue-panel.tsx components/room/queue components/room/shared components/room/listen/add-media lib/media/assets.ts lib/media/contracts.ts lib/media/shared.ts lib/media/folders lib/media/library lib/media/processing lib/media/source-matches lib/media/uploads scripts/check-file-lengths.mjs tests/dev/file-length-policy.test.mjs tests/media/source-match-access.test.mjs tests/media/uploaded-catalogue-policy.test.mjs tests/media/uploaded-playback-reference.test.mjs tests/queue/add-media-ui.test.mjs tests/queue/derived.test.mjs",

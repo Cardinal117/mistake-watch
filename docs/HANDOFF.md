@@ -97,6 +97,16 @@ revision. Do not lengthen signatures, expose permanent R2 URLs, proxy media
 through Vercel, remount the player, use a hidden second player, or publish
 renewal as canonical room state.
 
+TASK-024 implements the separately approved private Range gateway and is in
+release QA. A dedicated Worker custom domain keeps the stable media URL while a
+path-scoped HttpOnly credential and Worker-origin secret require Vercel to
+revalidate current room membership, session, and ready asset before every R2
+read. Chromium and Opera GX feasibility passed with two isolated session paths;
+the focused 11 tests, all 523 tests, TypeScript, ESLint, file-length policy,
+Next.js build, and Worker dry-run compile pass. No schema change or public R2
+domain is involved. PR, provider configuration, deployment, long-play/seek,
+revocation, and two-participant production QA remain.
+
 ## Required Reading
 
 1. `AGENTS.md`
@@ -112,7 +122,8 @@ renewal as canonical room state.
 11. `docs/tasks/TASK-009-project-integrity/`
 12. `supabase/MIGRATION_HISTORY.md`
 13. `docs/tasks/TASK-023-uploaded-playback-url-renewal/task.md`
-14. `docs/tasks/TASK-002-incomplete-work-recovery/` for historical detail
+14. `docs/tasks/TASK-024-uploaded-playback-range-gateway/`
+15. `docs/tasks/TASK-002-incomplete-work-recovery/` for historical detail
 
 TASK-001 is historical MVP context. TASK-007 records completed modularization
 work and discovered issues. TASK-008 Spatial Cinema is an unapproved draft.
@@ -164,9 +175,8 @@ verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
 
-Decide whether to approve a separate Cloudflare R2 Range-gateway architecture
-and security task for MW-BUG-004. Candidate A is rejected and TASK-023 must not
-proceed into production integration.
+Complete TASK-024's reviewed PR and controlled production QA for MW-BUG-004.
+Candidate A remains rejected; do not restore its redirect approach.
 
 Meanwhile, verify MW-BUG-003 in the affected participant profile, complete
 TASK-015C's affected-laptop performance and shared-timing evidence, and
