@@ -1,6 +1,6 @@
 # Proposal: Authorized Uploaded Playback Range Gateway
 
-Status: Approved and implemented locally; release pending
+Status: Implementation reviewed; release blocked by Opera GX
 Updated: 2026-09-02
 
 ## Problem
@@ -58,9 +58,8 @@ weakening current room access rules.
 
 ## Recommended Approach
 
-Use `mw-gateway.mistakestudios.com` as a Worker Custom Domain. Opera GX blocked
-the provisional nested and playback-labelled hostnames before requests reached
-Cloudflare, while the neutral first-level hostname was accepted. The existing
+Use a dedicated Worker Custom Domain only if the supported Opera GX profile can
+reach it with normal privacy protections enabled. The existing
 Vercel playback route continues to establish participant authority, then sets a
 new `__Secure-` media credential scoped to the session path and returns the
 clean Worker URL. The Worker sends that opaque credential to an internal Vercel
@@ -68,13 +67,18 @@ authorization endpoint for every request. Only an allowed response returns the
 private object key server-to-server. The Worker then reads the requested range
 through its R2 binding and streams it to the browser.
 
-The approved first-level hostname requires `Domain=mistakestudios.com`. This is
+Any first-level hostname would require `Domain=mistakestudios.com`. This is
 a broader cookie scope than the provisional child-host design, but the
 credential remains Secure, HttpOnly, SameSite=Strict, session-path-scoped,
 short-lived, signed, and revalidated on every request.
 
 This leaves Vercel as the policy authority, avoids a broad DNS migration, and
 keeps large response bodies off Vercel.
+
+Production feasibility is currently negative. Opera GX returned
+`ERR_BLOCKED_BY_CLIENT` for every activated Worker custom-domain candidate,
+including the minimal `mw.mistakestudios.com`, while the existing app hostname
+worked in the same restarted VPN session. No hostname is approved for release.
 
 ## Major Risks And Mitigations
 

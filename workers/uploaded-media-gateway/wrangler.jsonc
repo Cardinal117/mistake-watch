@@ -4,12 +4,7 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-09-01",
   "workers_dev": false,
-  "routes": [
-    {
-      "pattern": "mw-gateway.mistakestudios.com",
-      "custom_domain": true,
-    },
-  ],
+  "routes": [],
   "r2_buckets": [
     {
       "binding": "MEDIA_BUCKET",

@@ -1,6 +1,6 @@
 # Review Notes: Authorized Uploaded Playback Range Gateway
 
-Status: Implementation complete locally; release gated
+Status: Release blocked; provider rollback complete
 Updated: 2026-09-02
 
 ## Evidence Dependency
@@ -13,7 +13,8 @@ branch must then be created or refreshed from the resulting `origin/main`.
 
 - Candidate A is rejected: later browser ranges do not revisit a stable redirect.
 - Keep the app hostname directly on Vercel.
-- Prefer a dedicated Worker Custom Domain over a Worker Route on the app host.
+- Candidate B provisionally preferred a dedicated Worker Custom Domain over a
+  Worker Route on the app host; its Opera GX production hostname gate failed.
 - Keep Vercel/Supabase as the authorization authority and the Worker as the
   byte-serving boundary.
 - Revalidate on every request; do not optimize with an authorization cache yet.
@@ -38,16 +39,16 @@ unrelated product documentation.
 - The Cloudflare account controls a zone suitable for the proposed custom domain.
 - The existing R2 bucket can be bound privately to a Worker without enabling a
   public domain.
-- A Vercel response on `watch.mistakestudios.com` can set the approved domain and
-  path-scoped cookie, and the supported media elements will send it to
-  `mw-gateway.mistakestudios.com`.
+- A Vercel response on `watch.mistakestudios.com` can set a candidate domain and
+  path-scoped cookie, but the supported Opera GX profile must first be able to
+  reach that gateway hostname.
 - Current `room_members`, `room_media_sessions`, and `media_assets` state is
   sufficient for per-request revocation without a new grant table.
 - Browser request patterns can be supported with single-range R2 reads.
 
 ## Review Decisions And Open Questions
 
-1. `mw-gateway.mistakestudios.com` and the corresponding
+1. A neutral first-level hostname and the corresponding
    `Domain=mistakestudios.com` cookie scope were approved on 2026-09-02.
 2. The Cloudflare Worker/custom-domain/R2 production test was approved for this
    personal deployment.
@@ -66,15 +67,19 @@ unrelated product documentation.
   `mw-gateway.watch.mistakestudios.com`, and
   `mw-playback.mistakestudios.com` with `ERR_BLOCKED_BY_CLIENT` before the
   Worker received a request.
-- `mw-gateway.mistakestudios.com` avoids the blocked hostname tokens. Public
-  DNS, TLS, and the Worker 401 response passed; final Opera verification remains
-  the release gate after the primary ISP resolver's stale NXDOMAIN cache expires.
-  Windows reported roughly 25 hours remaining despite the ISP's secondary
-  resolver already returning the correct Cloudflare addresses.
-- The revised Worker deployment now exposes only
-  `mw-gateway.mistakestudios.com`. Cloudflare removed the rejected custom-domain
-  triggers and their managed certificates; the remaining advanced certificate
-  is active for the approved hostname.
+- Public DNS, TLS, and the Worker 401 response passed for
+  `mw-gateway.mistakestudios.com`, but the final Opera GX VPN test showed that
+  the gateway-labelled hostname is also blocked. `watch.mistakestudios.com`
+  passed as the same-session control.
+- `mw.mistakestudios.com` was the final bounded minimal candidate. After public
+  DNS and TLS activation, a complete Opera restart, and an active Opera VPN,
+  both its root and exact gateway path returned `ERR_BLOCKED_BY_CLIENT`.
+- `watch.mistakestudios.com` loaded normally in the same restarted Opera session,
+  isolating the failure to the Worker custom-domain path rather than Opera or
+  the VPN generally.
+- Verdict: Candidate B is not releasable for the supported Opera GX profile.
+  Further hostname guessing, blocker allowlisting, or privacy-setting changes
+  require a separately approved design revision.
 
 ## Implementation Evidence
 
@@ -91,9 +96,12 @@ unrelated product documentation.
   `room-experience.tsx` navigation warning and reports no errors.
 - The private Worker binding targets existing bucket `watch2bucket`; no public
   bucket domain or Vercel media-body proxy is introduced.
-- No schema or RLS change is required. The Worker route and the two approved
-  Vercel production variables are configured; application merge/deployment and
-  live interaction QA remain release steps.
+- No schema or RLS change is required. After the failed Opera gate, Cloudflare
+  was rolled back to no Worker custom domains and the two Vercel production
+  variables were restored to their previous values. No application merge or
+  deployment occurred.
+- Cloudflare certificate read-back shows only the zone's baseline Universal and
+  Backup certificates; the failed gateway certificates were removed.
 - Review found that Kick is not a durable membership mutation. The gateway does
   not claim otherwise; changing that room-lifecycle contract is deferred rather
   than folded into this playback fix.

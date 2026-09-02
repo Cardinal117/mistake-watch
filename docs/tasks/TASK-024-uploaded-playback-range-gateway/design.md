@@ -1,6 +1,6 @@
 # Design: Authorized Uploaded Playback Range Gateway
 
-Status: Approved and implemented locally; release pending
+Status: Implementation reviewed; release blocked by Opera GX
 Updated: 2026-09-02
 
 ## Architecture
@@ -9,9 +9,9 @@ Updated: 2026-09-02
 Browser on watch.mistakestudios.com
   1. GET current Vercel playback bootstrap route with normal app credentials
   2. Receive a session-path-scoped HttpOnly media credential and clean URL
-  3. Set <video|audio>.src to mw-gateway.mistakestudios.com/.../content
+  3. Set <video|audio>.src to <approved-worker-host>/.../content
 
-Cloudflare Worker on mw-gateway.mistakestudios.com
+Cloudflare Worker on <approved-worker-host>
   4. Receive every initial and later Range request at the same stable URL
   5. Send the opaque media credential plus Worker-origin secret to Vercel
 
@@ -29,8 +29,8 @@ Cloudflare Worker
 ## Host And DNS Boundary
 
 - Keep `watch.mistakestudios.com` directly on Vercel.
-- Create a dedicated Worker Custom Domain at
-  `mw-gateway.mistakestudios.com`.
+- Create a dedicated Worker Custom Domain only after the supported Opera GX
+  profile passes the hostname gate.
 - Do not use a Worker Route on the app hostname: that requires Cloudflare-proxied
   DNS and expands the task into an application-edge migration.
 - Do not reuse the disabled public R2 custom domain.

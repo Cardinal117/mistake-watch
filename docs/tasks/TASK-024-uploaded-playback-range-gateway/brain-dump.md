@@ -1,8 +1,8 @@
 # TASK-024: Uploaded Playback Range Gateway
 
-Status: Feasibility passed; implementation in release QA
+Status: Release blocked by Opera GX custom-domain filtering
 Documentation level: Full packet
-Updated: 2026-09-01
+Updated: 2026-09-02
 Related: MW-BUG-004, TASK-009, TASK-023
 
 ## Why This Exists
@@ -17,6 +17,10 @@ the media source.
 Candidate B keeps one stable media URL but makes every media request reach an
 authorized Cloudflare Worker. The Worker may read the private R2 object only
 after Vercel confirms current room-session access.
+
+The production hostname gate later failed: Opera GX blocked every activated
+Worker custom-domain candidate. Provider test configuration was rolled back and
+Candidate B is not approved for release.
 
 ## Constraints
 

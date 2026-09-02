@@ -1,7 +1,7 @@
 # Tasks: Authorized Uploaded Playback Range Gateway
 
-Status: Tasks 1-5 complete locally; production QA and release pending
-Updated: 2026-09-01
+Status: Tasks 1-5 complete locally; Task 6 failed at the Opera GX hostname gate
+Updated: 2026-09-02
 
 ## Preconditions
 

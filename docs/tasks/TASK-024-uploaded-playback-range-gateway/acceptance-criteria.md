@@ -1,7 +1,7 @@
 # Acceptance Criteria: Authorized Uploaded Playback Range Gateway
 
-Status: Local gates passed; production interaction QA pending
-Updated: 2026-09-01
+Status: Release blocked; Opera GX hostname gate failed
+Updated: 2026-09-02
 
 ## Feasibility Gate
 
