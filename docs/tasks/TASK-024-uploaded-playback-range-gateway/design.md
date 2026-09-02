@@ -1,7 +1,7 @@
 # Design: Authorized Uploaded Playback Range Gateway
 
-Status: Proposed
-Updated: 2026-09-01
+Status: Approved and implemented locally; release pending
+Updated: 2026-09-02
 
 ## Architecture
 
@@ -9,9 +9,9 @@ Updated: 2026-09-01
 Browser on watch.mistakestudios.com
   1. GET current Vercel playback bootstrap route with normal app credentials
   2. Receive a session-path-scoped HttpOnly media credential and clean URL
-  3. Set <video|audio>.src to media.watch.mistakestudios.com/.../content
+  3. Set <video|audio>.src to mw-gateway.mistakestudios.com/.../content
 
-Cloudflare Worker on media.watch.mistakestudios.com
+Cloudflare Worker on mw-gateway.mistakestudios.com
   4. Receive every initial and later Range request at the same stable URL
   5. Send the opaque media credential plus Worker-origin secret to Vercel
 
@@ -29,8 +29,8 @@ Cloudflare Worker
 ## Host And DNS Boundary
 
 - Keep `watch.mistakestudios.com` directly on Vercel.
-- Create a dedicated Worker Custom Domain, provisionally
-  `media.watch.mistakestudios.com`.
+- Create a dedicated Worker Custom Domain at
+  `mw-gateway.mistakestudios.com`.
 - Do not use a Worker Route on the app hostname: that requires Cloudflare-proxied
   DNS and expands the task into an application-edge migration.
 - Do not reuse the disabled public R2 custom domain.
@@ -41,7 +41,7 @@ The bootstrap route should set a new cookie with these properties:
 
 - dedicated name such as `__Secure-mw_media_access`;
 - `Secure`, `HttpOnly`, and `SameSite=Strict`;
-- `Domain=watch.mistakestudios.com`, so the media child host can receive it;
+- `Domain=mistakestudios.com`, so the first-level gateway host can receive it;
 - `Path=/room-sessions/{sessionId}/`, so simultaneous sessions do not collide;
 - expiry no later than the room-media session expiry;
 - signed versioned payload bound to `roomId`, `sessionId`, `memberId`, expiry,

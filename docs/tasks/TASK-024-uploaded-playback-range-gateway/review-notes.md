@@ -1,7 +1,7 @@
 # Review Notes: Authorized Uploaded Playback Range Gateway
 
 Status: Implementation complete locally; release gated
-Updated: 2026-09-01
+Updated: 2026-09-02
 
 ## Evidence Dependency
 
@@ -38,24 +38,43 @@ unrelated product documentation.
 - The Cloudflare account controls a zone suitable for the proposed custom domain.
 - The existing R2 bucket can be bound privately to a Worker without enabling a
   public domain.
-- A Vercel response on `watch.mistakestudios.com` can set the proposed domain and
+- A Vercel response on `watch.mistakestudios.com` can set the approved domain and
   path-scoped cookie, and the supported media elements will send it to
-  `media.watch.mistakestudios.com`.
+  `mw-gateway.mistakestudios.com`.
 - Current `room_members`, `room_media_sessions`, and `media_assets` state is
   sufficient for per-request revocation without a new grant table.
 - Browser request patterns can be supported with single-range R2 reads.
 
-## Questions Requiring Review
+## Review Decisions And Open Questions
 
-1. Approve `media.watch.mistakestudios.com` as the provisional production
-   hostname, or nominate another dedicated child of the app hostname.
-2. Approve a non-production Cloudflare Worker/custom-domain/R2 test setup for the
-   feasibility spike.
+1. `mw-gateway.mistakestudios.com` and the corresponding
+   `Domain=mistakestudios.com` cookie scope were approved on 2026-09-02.
+2. The Cloudflare Worker/custom-domain/R2 production test was approved for this
+   personal deployment.
 3. Confirm whether the preferred no-schema signed credential is acceptable after
    security review; a persisted opaque-grant table would be a separate scope
    revision.
 4. Define acceptable per-range authorization latency and monthly request budget
    after the spike supplies real counts.
+
+## Opera GX Hostname Evidence
+
+- The original `media.watch.mistakestudios.com` certificate was recovered and
+  reached `Active`; the Worker then returned the expected fail-closed HTTP 401.
+- Opera GX blocked `media.watch.mistakestudios.com`,
+  `playback.watch.mistakestudios.com`,
+  `mw-gateway.watch.mistakestudios.com`, and
+  `mw-playback.mistakestudios.com` with `ERR_BLOCKED_BY_CLIENT` before the
+  Worker received a request.
+- `mw-gateway.mistakestudios.com` avoids the blocked hostname tokens. Public
+  DNS, TLS, and the Worker 401 response passed; final Opera verification remains
+  the release gate after the primary ISP resolver's stale NXDOMAIN cache expires.
+  Windows reported roughly 25 hours remaining despite the ISP's secondary
+  resolver already returning the correct Cloudflare addresses.
+- The revised Worker deployment now exposes only
+  `mw-gateway.mistakestudios.com`. Cloudflare removed the rejected custom-domain
+  triggers and their managed certificates; the remaining advanced certificate
+  is active for the approved hostname.
 
 ## Implementation Evidence
 
@@ -72,8 +91,9 @@ unrelated product documentation.
   `room-experience.tsx` navigation warning and reports no errors.
 - The private Worker binding targets existing bucket `watch2bucket`; no public
   bucket domain or Vercel media-body proxy is introduced.
-- No schema or RLS change is required. Provider secrets, Worker publication,
-  Vercel production deployment, and live interaction QA remain release steps.
+- No schema or RLS change is required. The Worker route and the two approved
+  Vercel production variables are configured; application merge/deployment and
+  live interaction QA remain release steps.
 - Review found that Kick is not a durable membership mutation. The gateway does
   not claim otherwise; changing that room-lifecycle contract is deferred rather
   than folded into this playback fix.
