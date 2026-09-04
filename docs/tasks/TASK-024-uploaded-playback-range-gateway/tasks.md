@@ -205,6 +205,13 @@ never promoted, and all rollback checks passed. Remove the flag before review;
 the next candidate is a Worker-only fetch to the stable `vercel.app` project
 domain with a fake credential.
 
+The Vercel-origin candidate is complete locally with test-first evidence at
+baseline `b15dc7e`. The focused test failed while the Worker targeted the custom
+domain and passed after changing only `AUTHORIZATION_ORIGIN` to
+`https://mistake-watch.vercel.app`. The focused suite passes 12/12 and full suite
+528/528; typecheck, build, Worker dry-run, and lint pass. The origin's public
+health route returns `200`; provider state remained unchanged.
+
 ## Task 7: Controlled Release And Rollback
 
 The owner approved a controlled production deployment on 2026-09-01, subject to

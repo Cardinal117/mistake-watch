@@ -239,6 +239,12 @@ documentation.
   fix. The Worker was restored to `8637e61a-0d98-49ab-a217-af3252c969c3`;
   Vercel remained on `dpl_79vfekpDWSrzBr1mqivyYdUbAFL7`, and rollback health,
   readiness, and inactive-route checks passed.
+- Origin test-first evidence at clean baseline `b15dc7e`: the focused test failed
+  while Wrangler still targeted `watch.mistakestudios.com`, then passed after
+  changing only `AUTHORIZATION_ORIGIN` to the public, stable
+  `https://mistake-watch.vercel.app` project domain. The focused suite passes
+  12/12 and full suite 528/528; typecheck, build, Worker dry-run, and lint pass.
+  No provider state changed during implementation.
 
 ## Required Handoff Order
 

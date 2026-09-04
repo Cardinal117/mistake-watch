@@ -78,9 +78,12 @@ updated: 2026-09-04
   `e230d302-a017-4d5f-a03d-782480e8738b` still reported `unknown` /
   `fetch_exception` for authorization and public health. The flag is rejected;
   the Worker was restored and Vercel was never changed.
-- **Next action:** Test the stable `vercel.app` project domain as the Worker's
-  authorization origin with a fake credential before another Opera canary. Do
-  not merge, rotate secrets, expose raw errors, or rename the route.
+- **Vercel-origin candidate:** A test-first local patch changes only the Worker's
+  authorization origin to `https://mistake-watch.vercel.app`; its public health
+  route and all 528 local tests pass.
+- **Next action:** Checkpoint the exact origin patch, then run the approved
+  Worker-only fake-credential canary before another Opera canary. Do not merge,
+  rotate secrets, expose raw errors, or rename the route.
 
 ## Original Report
 

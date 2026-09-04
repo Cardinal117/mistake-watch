@@ -12,7 +12,7 @@
     },
   ],
   "vars": {
-    "AUTHORIZATION_ORIGIN": "https://watch.mistakestudios.com",
+    "AUTHORIZATION_ORIGIN": "https://mistake-watch.vercel.app",
   },
   "secrets": {
     "required": ["MEDIA_GATEWAY_ORIGIN_SECRET"],

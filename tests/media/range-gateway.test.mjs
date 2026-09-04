@@ -262,6 +262,19 @@ test("Next rewrites the same-origin media path to the configured Worker upstream
   }
 });
 
+test("range gateway authorizes through the stable Vercel project origin", async () => {
+  const configSource = await readFile(
+    path.join(rootDir, "workers/uploaded-media-gateway/wrangler.jsonc"),
+    "utf8",
+  );
+  const config = JSON.parse(configSource.replace(/,\s*([}\]])/g, "$1"));
+
+  assert.equal(
+    config.vars.AUTHORIZATION_ORIGIN,
+    "https://mistake-watch.vercel.app",
+  );
+});
+
 test("range gateway streams an authorized partial response with private headers", async () => {
   const bucket = createBucketMock();
   const response = await worker.handleRangeGatewayRequest(
