@@ -3,38 +3,39 @@ import "server-only";
 const minimumSecretLength = 32;
 
 export type MediaGatewayConfig = {
-  cookieDomain: string;
-  gatewayOrigin: string;
   originSecret: string;
   signingSecret: string;
+  upstreamOrigin: string;
 };
 
 export function getMediaGatewayConfig(): MediaGatewayConfig {
-  const gatewayOrigin = readRequiredEnv("MEDIA_GATEWAY_ORIGIN");
-  const cookieDomain = readRequiredEnv("MEDIA_GATEWAY_COOKIE_DOMAIN");
+  const upstreamOrigin = readRequiredEnv("MEDIA_GATEWAY_UPSTREAM_ORIGIN");
   const signingSecret = readRequiredSecret("MEDIA_GATEWAY_SIGNING_SECRET");
   const originSecret = readRequiredSecret("MEDIA_GATEWAY_ORIGIN_SECRET");
-  const origin = new URL(gatewayOrigin);
-  const normalizedDomain = cookieDomain.replace(/^\./, "").toLowerCase();
+  const origin = new URL(upstreamOrigin);
 
   if (
-    origin.hostname !== normalizedDomain &&
-    !origin.hostname.endsWith(`.${normalizedDomain}`)
+    origin.pathname !== "/" ||
+    origin.search ||
+    origin.hash ||
+    origin.username ||
+    origin.password
   ) {
     throw new Error(
-      "MEDIA_GATEWAY_ORIGIN must be hosted within MEDIA_GATEWAY_COOKIE_DOMAIN.",
+      "MEDIA_GATEWAY_UPSTREAM_ORIGIN must contain only an origin.",
     );
   }
 
   if (process.env.NODE_ENV === "production" && origin.protocol !== "https:") {
-    throw new Error("MEDIA_GATEWAY_ORIGIN must use HTTPS in production.");
+    throw new Error(
+      "MEDIA_GATEWAY_UPSTREAM_ORIGIN must use HTTPS in production.",
+    );
   }
 
   return {
-    cookieDomain: normalizedDomain,
-    gatewayOrigin: origin.origin,
     originSecret,
     signingSecret,
+    upstreamOrigin: origin.origin,
   };
 }
 

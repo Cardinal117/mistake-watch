@@ -1,36 +1,41 @@
 # Design: Authorized Uploaded Playback Range Gateway
 
-Status: Implementation reviewed; release blocked by Opera GX
-Updated: 2026-09-02
+Status: Candidate C locally complete; preview QA pending
+Updated: 2026-09-04
 
 ## Architecture
 
 ```text
 Browser on watch.mistakestudios.com
   1. GET current Vercel playback bootstrap route with normal app credentials
-  2. Receive a session-path-scoped HttpOnly media credential and clean URL
-  3. Set <video|audio>.src to <approved-worker-host>/.../content
+  2. Receive a host-only, session-path-scoped HttpOnly media credential
+  3. Set <video|audio>.src to /media-gateway/.../content
 
-Cloudflare Worker on <approved-worker-host>
-  4. Receive every initial and later Range request at the same stable URL
-  5. Send the opaque media credential plus Worker-origin secret to Vercel
+Vercel external rewrite
+  4. Preserve the browser URL and forward Cookie, Range, and media responses
+     to the configured Worker upstream
+
+Cloudflare Worker upstream
+  5. Receive every initial and later request at one stable upstream path
+  6. Send the opaque media credential plus Worker-origin secret to Vercel
 
 Vercel internal authorization route
-  6. Verify origin secret and signed credential
-  7. Recheck active participant, matching active/unexpired room-media session,
+  7. Verify origin secret and signed credential
+  8. Recheck active participant, matching active/unexpired room-media session,
      room identity, and ready asset in Supabase
-  8. Return the selected private object key and safe metadata server-to-server
+  9. Return the selected private object key and safe metadata server-to-server
 
 Cloudflare Worker
-  9. Read the authorized range through the private R2 binding
- 10. Stream 200/206 or return a precise fail-closed error
+ 10. Read the authorized range through the private R2 binding
+ 11. Stream 200/206 or return a precise fail-closed error through the rewrite
 ```
 
 ## Host And DNS Boundary
 
 - Keep `watch.mistakestudios.com` directly on Vercel.
-- Create a dedicated Worker Custom Domain only after the supported Opera GX
-  profile passes the hostname gate.
+- Expose the gateway only as a same-origin path on that hostname.
+- Configure the Worker origin as a server-side external-rewrite destination;
+  never return it in client JSON or canonical state.
 - Do not use a Worker Route on the app hostname: that requires Cloudflare-proxied
   DNS and expands the task into an application-edge migration.
 - Do not reuse the disabled public R2 custom domain.
@@ -41,8 +46,9 @@ The bootstrap route should set a new cookie with these properties:
 
 - dedicated name such as `__Secure-mw_media_access`;
 - `Secure`, `HttpOnly`, and `SameSite=Strict`;
-- `Domain=mistakestudios.com`, so the first-level gateway host can receive it;
-- `Path=/room-sessions/{sessionId}/`, so simultaneous sessions do not collide;
+- no `Domain` attribute, so the cookie is host-only;
+- `Path=/media-gateway/room-sessions/{sessionId}/content`, so simultaneous
+  sessions do not collide;
 - expiry no later than the room-media session expiry;
 - signed versioned payload bound to `roomId`, `sessionId`, `memberId`, expiry,
   and a random token identifier;
@@ -52,9 +58,9 @@ The cookie is a capability to request a fresh authorization decision, not proof
 that access is still allowed. Vercel must verify the signature and current
 database state for each range. Use constant-time secret/signature comparison.
 
-The feasibility spike must prove that the real media element sends this cookie
-on repeated cross-origin requests. If not, stop. Query-string credentials are
-not an approved fallback.
+The feasibility spike must prove that Vercel forwards this cookie and each Range
+request to the Worker without exposing the upstream URL. If not, stop.
+Query-string credentials are not an approved fallback.
 
 ## Vercel Authorization Boundary
 
@@ -109,6 +115,8 @@ participant IDs.
 - Store the Worker-origin credential as a Cloudflare Worker secret and a Vercel
   server-only environment variable.
 - Store the media-credential signing secret only in Vercel.
+- Store the external-rewrite Worker origin in a server/build-time variable that
+  is never serialized into client responses.
 - Declare required secret names in Worker configuration but never values.
 - Use separate test and production Workers, R2 bindings, secrets, and hostnames.
 - Pin Wrangler and commit the lockfile if implementation introduces it.
@@ -118,8 +126,8 @@ participant IDs.
 ## Client Integration
 
 - Keep `mw-uploaded-session:{sessionId}` as canonical realtime state.
-- Change only `resolveUploadedPlaybackUrl` and the uploaded-session source setup
-  to receive the stable gateway URL and media cookie.
+- Change only the uploaded-session bootstrap transport so
+  `resolveUploadedPlaybackUrl` receives the stable same-origin URL and cookie.
 - Do not change `media.src` during renewal because renewal happens per request.
 - Preserve current load, playback, error reporting, and synchronization logic.
 - Ensure next-item metadata preloading never attempts to bypass gateway

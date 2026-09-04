@@ -1,12 +1,12 @@
 # Acceptance Criteria: Authorized Uploaded Playback Range Gateway
 
-Status: Release blocked; Opera GX hostname gate failed
-Updated: 2026-09-02
+Status: Candidate C local gates pass; preview interaction QA pending
+Updated: 2026-09-04
 
 ## Feasibility Gate
 
-- Supported Chromium and Opera GX send the dedicated session-scoped credential
-  on the initial and all observed later media requests to the stable Worker URL.
+- Opera GX sends the dedicated host-only session credential and Range header to
+  the stable app-origin URL, and the external rewrite preserves both upstream.
 - Initial load, seek, resume, replay, and two concurrent session paths use the
   expected request forms.
 - If this gate fails, implementation stops without using a long-lived URL token,
@@ -14,7 +14,7 @@ Updated: 2026-09-02
 
 ## Functional Requirements
 
-- Authorized uploaded media loads through one stable gateway URL.
+- Authorized uploaded media loads through one stable same-origin gateway URL.
 - Later byte ranges still succeed after the former presigned-URL expiry window.
 - Forward/back seeking and pause/resume do not replace the media source.
 - A refresh obtains a new scoped credential through current room authority.
@@ -30,9 +30,9 @@ Updated: 2026-09-02
 - Durably removed participants and ended/expired/mismatched sessions are denied
   on the next unbuffered request, before any R2 read.
 - R2 remains private and no public fallback is configured.
-- Media credentials are `Secure`, `HttpOnly`, `SameSite=Strict`, session-path
-  scoped, expire no later than the media session, and contain no account/guest
-  token or object key.
+- Media credentials are host-only, `Secure`, `HttpOnly`, `SameSite=Strict`,
+  session-path scoped, expire no later than the media session, and contain no
+  account/guest token or object key.
 - Provider credentials, origin secrets, media credentials, object keys, room and
   participant identifiers do not appear in client JSON, canonical state,
   analytics, browser console, or ordinary provider/application logs.
@@ -55,6 +55,8 @@ Updated: 2026-09-02
 
 - Worker-to-Vercel timeouts and provider errors fail closed with bounded errors.
 - Browser retries do not create an authorization bypass or corrupt range output.
+- The rewrite preserves `200`, `206`, `416`, `Range`, `Content-Range`, and
+  private no-store behavior without exposing the Worker origin.
 - Representative playback records range count, authorization latency, Worker
   failures, and R2 reads without sensitive identifiers.
 - Estimated Cloudflare, R2, and Vercel usage is reviewed against current limits

@@ -149,8 +149,7 @@ CLOUDFLARE_R2_BUCKET
 CLOUDFLARE_R2_ACCESS_KEY_ID
 CLOUDFLARE_R2_SECRET_ACCESS_KEY
 CLOUDFLARE_R2_ENDPOINT
-MEDIA_GATEWAY_ORIGIN
-MEDIA_GATEWAY_COOKIE_DOMAIN
+MEDIA_GATEWAY_UPSTREAM_ORIGIN
 MEDIA_GATEWAY_SIGNING_SECRET
 MEDIA_GATEWAY_ORIGIN_SECRET
 CLOUDCONVERT_API_TOKEN
@@ -165,12 +164,14 @@ CloudConvert is optional while conversion is disabled. Scripts may also use
 Never commit environment files or provider credentials. R2 public-base
 configuration is not part of the private-media contract.
 
-Uploaded room playback uses the dedicated private Range gateway when the four
-`MEDIA_GATEWAY_*` values are configured. The Worker configuration lives under
-`workers/uploaded-media-gateway/`; it reauthorizes every request through Vercel
-before reading the private R2 binding. Run `npm run worker:check` before an
-approved Worker deployment. Never expose the Worker-origin or signing secret to
-the browser or reuse them for another provider.
+Uploaded room playback uses the dedicated private Range gateway when the three
+`MEDIA_GATEWAY_*` values are configured. The browser receives only a same-origin
+`/media-gateway/...` URL; Vercel externally rewrites it to the server-only Worker
+origin. The Worker configuration lives under `workers/uploaded-media-gateway/`;
+it reauthorizes every request through Vercel before reading the private R2
+binding. Run `npm run worker:check` before an approved Worker deployment. Never
+expose the Worker origin, Worker-origin secret, or signing secret to the browser
+or reuse them for another provider.
 
 Google OAuth callback:
 

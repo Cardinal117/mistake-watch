@@ -31,7 +31,51 @@ const nextConfig = {
       },
     ];
   },
+  async rewrites() {
+    const upstreamOrigin = readMediaGatewayUpstreamOrigin();
+
+    if (!upstreamOrigin) {
+      return [];
+    }
+
+    return [
+      {
+        destination: `${upstreamOrigin}/room-sessions/:sessionId/content`,
+        source: "/media-gateway/room-sessions/:sessionId/content",
+      },
+    ];
+  },
   reactStrictMode: true,
 };
+
+function readMediaGatewayUpstreamOrigin() {
+  const value = process.env.MEDIA_GATEWAY_UPSTREAM_ORIGIN?.trim();
+
+  if (!value) {
+    return null;
+  }
+
+  const url = new URL(value);
+
+  if (
+    url.pathname !== "/" ||
+    url.search ||
+    url.hash ||
+    url.username ||
+    url.password
+  ) {
+    throw new Error(
+      "MEDIA_GATEWAY_UPSTREAM_ORIGIN must contain only an origin.",
+    );
+  }
+
+  if (process.env.NODE_ENV === "production" && url.protocol !== "https:") {
+    throw new Error(
+      "MEDIA_GATEWAY_UPSTREAM_ORIGIN must use HTTPS in production.",
+    );
+  }
+
+  return url.origin;
+}
 
 export default nextConfig;

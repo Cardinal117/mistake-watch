@@ -1,7 +1,7 @@
 # Proposal: Authorized Uploaded Playback Range Gateway
 
-Status: Implementation reviewed; release blocked by Opera GX
-Updated: 2026-09-02
+Status: Candidate C locally complete; preview QA pending
+Updated: 2026-09-04
 
 ## Problem
 
@@ -30,7 +30,8 @@ weakening current room access rules.
 
 ## Scope
 
-- Add a dedicated Cloudflare Worker Custom Domain for uploaded playback only.
+- Expose uploaded playback through a same-origin app path and forward it to the
+  Worker with an external rewrite.
 - Bind the Worker to the existing private R2 bucket.
 - Mint a dedicated, signed, path-scoped media credential only after the existing
   Vercel playback authorization succeeds.
@@ -41,15 +42,15 @@ weakening current room access rules.
   `DirectMediaPlayer`; preserve its canonical uploaded-session reference.
 - Add automated authorization/range tests and controlled Chromium plus Opera GX
   playback, seek, expiry, revocation, and synchronization QA.
-- Add provider configuration and release documentation only if implementation is
-  separately approved and verified.
+- Add provider configuration only after local review and separate approval.
 
 ## Non-Goals
 
 - No Worker in front of the main Vercel application hostname.
 - No public R2 domain, permanent URL, or unauthenticated media delivery.
-- No Vercel media-byte proxy, caching CDN redesign, HLS conversion, DRM, or
-  catalogue redesign.
+- No Vercel Function media-byte proxy, caching redesign, HLS conversion, DRM,
+  or catalogue redesign. The Candidate C external rewrite/CDN hop is the only
+  approved proxy exception.
 - No longer-lived presigned URL, automatic player remount, hidden second player,
   or playback-state mutation.
 - No Supabase schema or RLS change in the preferred design.
@@ -58,27 +59,19 @@ weakening current room access rules.
 
 ## Recommended Approach
 
-Use a dedicated Worker Custom Domain only if the supported Opera GX profile can
-reach it with normal privacy protections enabled. The existing
-Vercel playback route continues to establish participant authority, then sets a
-new `__Secure-` media credential scoped to the session path and returns the
-clean Worker URL. The Worker sends that opaque credential to an internal Vercel
-authorization endpoint for every request. Only an allowed response returns the
-private object key server-to-server. The Worker then reads the requested range
-through its R2 binding and streams it to the browser.
+Candidate C keeps the existing Worker and private R2 binding, but the playback
+route returns only
+`/media-gateway/room-sessions/{sessionId}/content` on the current app origin.
+Vercel externally rewrites that request to a separately configured Worker
+upstream. The Worker still sends the opaque credential to the internal Vercel
+authorization endpoint for every request and reads R2 only after approval.
 
-Any first-level hostname would require `Domain=mistakestudios.com`. This is
-a broader cookie scope than the provisional child-host design, but the
-credential remains Secure, HttpOnly, SameSite=Strict, session-path-scoped,
-short-lived, signed, and revalidated on every request.
-
-This leaves Vercel as the policy authority, avoids a broad DNS migration, and
-keeps large response bodies off Vercel.
-
-Production feasibility is currently negative. Opera GX returned
-`ERR_BLOCKED_BY_CLIENT` for every activated Worker custom-domain candidate,
-including the minimal `mw.mistakestudios.com`, while the existing app hostname
-worked in the same restarted VPN session. No hostname is approved for release.
+The credential becomes host-only and is scoped to the same browser-visible
+session path. This removes the broad cookie domain and prevents Opera from
+navigating directly to the custom gateway hostname. Vercel remains policy
+authority; the Worker remains the R2 byte-serving authority. Production remains
+blocked until a preview proves Range forwarding, long responses, seeking,
+revocation, and two-participant behavior in Opera GX.
 
 ## Major Risks And Mitigations
 
@@ -97,7 +90,10 @@ worked in the same restarted VPN session. No hostname is approved for release.
 - **Multiple tabs:** path-scope the credential to the session URL and test two
   concurrent sessions.
 - **Cost amplification:** measure actual range counts; each range may incur one
-  Worker request, one Vercel authorization call, and one R2 Class B read.
+  Vercel edge/proxy request, one Worker request, one Vercel authorization call,
+  and one R2 Class B read.
+- **Rewrite behavior:** prove Cookie and Range forwarding, `200`/`206`/`416`
+  preservation, no shared caching, and response duration before release.
 - **Secret leakage:** use provider secret stores, redact logs, and never serialize
   tokens or object keys into client or realtime state.
 - **Operational coupling:** deploy and validate a non-production Worker and test
@@ -105,8 +101,8 @@ worked in the same restarted VPN session. No hostname is approved for release.
 
 ## Success Criteria
 
-- The same stable Worker URL serves initial load and later ranges after the old
-  signed-URL expiry window.
+- The same stable app-origin URL serves initial load and later ranges after the
+  old signed-URL expiry window.
 - Seeking and resuming work in Chromium and Opera GX without changing the media
   element source or canonical playback state.
 - Ended sessions, removed participants, invalid credentials, and unavailable

@@ -1,7 +1,7 @@
 # Review Notes: Authorized Uploaded Playback Range Gateway
 
-Status: Release blocked; provider rollback complete
-Updated: 2026-09-02
+Status: Candidate C locally complete; preview QA pending
+Updated: 2026-09-04
 
 ## Evidence Dependency
 
@@ -15,6 +15,9 @@ branch must then be created or refreshed from the resulting `origin/main`.
 - Keep the app hostname directly on Vercel.
 - Candidate B provisionally preferred a dedicated Worker Custom Domain over a
   Worker Route on the app host; its Opera GX production hostname gate failed.
+- Candidate C retains the Worker but places a Vercel external rewrite in front
+  so Opera sees only the existing app hostname. The owner approved this bounded
+  revision on 2026-09-04.
 - Keep Vercel/Supabase as the authorization authority and the Worker as the
   byte-serving boundary.
 - Revalidate on every request; do not optimize with an authorization cache yet.
@@ -29,10 +32,10 @@ branch must then be created or refreshed from the resulting `origin/main`.
 ## Why A Full Packet Is Proportional
 
 Although the user-facing fix is narrow, it introduces a new provider runtime,
-custom hostname, cross-origin credential boundary, private-object delivery path,
-per-range authorization hop, and metered request flow. Separate design, security,
-test, release, and rollback gates are necessary; the packet intentionally avoids
-unrelated product documentation.
+external media proxy, private-object delivery path, per-range authorization hop,
+and metered request flow. Separate design, security, test, release, and rollback
+gates are necessary; the packet intentionally avoids unrelated product
+documentation.
 
 ## Assumptions To Validate
 
@@ -106,12 +109,40 @@ unrelated product documentation.
   not claim otherwise; changing that room-lifecycle contract is deferred rather
   than folded into this playback fix.
 
+## Candidate C Gate
+
+- The existing provider rollback remains untouched during local implementation.
+- The browser-visible route must be same-origin and the credential host-only.
+- A preview must prove Vercel forwards Cookie and Range headers and preserves
+  streamed media statuses before any production approval.
+- The Worker upstream, secrets, and object identifiers must remain absent from
+  browser JSON, canonical room state, and logs.
+
+## Candidate C Local Evidence
+
+- Baseline: clean `f81aa3f` on the dedicated TASK-024 branch; no Candidate C
+  transport implementation was present.
+- Test-first red: focused gateway tests failed 2/9 because bootstrap still
+  required a cross-origin URL and `next.config.mjs` had no rewrite.
+- Green: focused gateway/reference tests pass 13/13; the full suite passes
+  525/525; typecheck and production build pass.
+- The production build manifest contains the exact same-origin rewrite to the
+  configured server-side Worker origin.
+- Worker dry-run, file-length policy, targeted Prettier, and `git diff --check`
+  pass. ESLint has zero errors and one unrelated existing navigation warning.
+- The repository-wide format script reports 214 pre-existing formatting files;
+  no unrelated formatting rewrite was performed.
+- No commit, push, Worker deployment, Vercel deployment, environment mutation,
+  DNS change, R2 change, merge, or production change was performed.
+- Refreshed `origin/main` contains one TASK-023 merge commit not in this branch's
+  ancestry, but its tree matches the branch's TASK-023 base. Reconcile that
+  ancestry after commit approval and before refreshing the draft PR.
+
 ## Required Handoff Order
 
-1. Review/checkpoint TASK-023 evidence.
-2. Review and approve or revise TASK-024 architecture.
-3. Authorize the isolated provider feasibility spike.
-4. Continue only if the spike passes.
-5. Approve implementation on a fresh dedicated branch.
-6. Review a draft, unmerged PR after all non-production gates pass.
-7. Treat merge and production deployment as separate approvals.
+1. Review the Candidate C local diff and automated evidence.
+2. Obtain separate approval before commit, push, or draft-PR refresh.
+3. Obtain separate provider approval for a Worker upstream and Vercel preview.
+4. Continue only if exact-path Opera GX Range QA passes.
+5. Review the updated draft, unmerged PR after all preview gates pass.
+6. Treat merge and production deployment as separate approvals.

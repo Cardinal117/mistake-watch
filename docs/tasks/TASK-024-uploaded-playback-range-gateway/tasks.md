@@ -1,13 +1,14 @@
 # Tasks: Authorized Uploaded Playback Range Gateway
 
-Status: Tasks 1-5 complete locally; Task 6 failed at the Opera GX hostname gate
-Updated: 2026-09-02
+Status: Tasks 1-6A complete locally; Candidate C preview QA pending
+Updated: 2026-09-04
 
 ## Preconditions
 
 - Merge or otherwise establish the reviewed TASK-023 evidence checkpoint first.
 - Refresh this branch from the resulting `origin/main` before implementation.
 - Review and explicitly approve this architecture and provider scope.
+- Candidate C same-origin rewrite scope was approved by the owner on 2026-09-04.
 - Confirm a dedicated Cloudflare test Worker, test hostname, and non-production
   R2 object can be used without touching production.
 
@@ -98,7 +99,20 @@ Update uploaded-session playback resolution only.
 Review gate: focused player tests green and the media source is not replaced
 during simulated later ranges.
 
-## Task 6: Non-Production End-To-End QA
+## Task 6A: Same-Origin Rewrite Revision
+
+- Add test-first coverage for a host-only credential and browser-visible
+  `/media-gateway/room-sessions/{sessionId}/content` URL.
+- Add a narrowly configured external rewrite to the Worker upstream.
+- Keep the upstream URL out of client JSON and require HTTPS in production.
+- Prove the production build includes the expected rewrite without changing
+  provider state.
+
+Review gate: focused tests, typecheck, lint, build, Worker check, formatting,
+file-length policy, and diff checks pass. Provider mutation remains separately
+approved.
+
+## Task 6B: Non-Production End-To-End QA
 
 Use a test Worker hostname, test R2 object, and Vercel preview/staging authority.
 
@@ -128,7 +142,7 @@ Release order:
 1. deploy the Worker version without switching production playback;
 2. verify required secrets and private R2 binding by read-back;
 3. deploy the pinned Vercel commit;
-4. add/verify the dedicated media custom domain;
+4. configure and verify the same-origin external rewrite to the Worker upstream;
 5. enable the app transport change with a bounded rollback path;
 6. run owner plus guest production playback, seek, and revocation smoke tests;
 7. monitor denial/error rate, latency, invocations, and R2 reads;

@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 const credentialVersion = 1;
 
 export const mediaGatewayCookieName = "__Secure-mw_media_access";
+export const mediaGatewayPublicPathPrefix = "/media-gateway";
 
 export type MediaGatewayCredentialPayload = {
   expiresAt: number;
@@ -120,9 +121,7 @@ export async function authorizeMediaGatewayRequest(input: {
 }
 
 export function createMediaGatewayBootstrap(input: {
-  cookieDomain: string;
   expiresAt: Date;
-  gatewayOrigin: string;
   memberId: string;
   roomId: string;
   sessionId: string;
@@ -142,7 +141,6 @@ export function createMediaGatewayBootstrap(input: {
 
   return {
     cookie: {
-      domain: input.cookieDomain,
       expires: input.expiresAt,
       httpOnly: true as const,
       name: mediaGatewayCookieName,
@@ -151,28 +149,16 @@ export function createMediaGatewayBootstrap(input: {
       secure: true as const,
       value: credential,
     },
-    playbackUrl: buildMediaGatewayPlaybackUrl({
-      origin: input.gatewayOrigin,
-      sessionId: input.sessionId,
-    }),
+    playbackUrl: buildMediaGatewayPlaybackUrl(input.sessionId),
   };
 }
 
-export function buildMediaGatewayPlaybackUrl(input: {
-  origin: string;
-  sessionId: string;
-}) {
-  const url = new URL(input.origin);
-
-  url.pathname = getMediaGatewayCookiePath(input.sessionId);
-  url.search = "";
-  url.hash = "";
-
-  return url.toString();
+export function buildMediaGatewayPlaybackUrl(sessionId: string) {
+  return getMediaGatewayCookiePath(sessionId);
 }
 
 export function getMediaGatewayCookiePath(sessionId: string) {
-  return `/room-sessions/${encodeURIComponent(sessionId)}/content`;
+  return `${mediaGatewayPublicPathPrefix}/room-sessions/${encodeURIComponent(sessionId)}/content`;
 }
 
 export function constantTimeStringEqual(left: string, right: string) {

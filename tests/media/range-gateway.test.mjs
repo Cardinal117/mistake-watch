@@ -181,9 +181,7 @@ test("gateway authorization requires both origin and current room access", async
 test("playback bootstrap creates a clean stable URL and session-scoped cookie", () => {
   const createBootstrap = contract.createMediaGatewayBootstrap ?? (() => null);
   const bootstrap = createBootstrap({
-    cookieDomain: "watch.example",
     expiresAt: new Date("2026-09-01T11:00:00.000Z"),
-    gatewayOrigin: "https://media.watch.example",
     memberId: "member-1",
     roomId: "room-1",
     sessionId: "session-1",
@@ -194,7 +192,7 @@ test("playback bootstrap creates a clean stable URL and session-scoped cookie", 
   assert.ok(bootstrap);
   assert.equal(
     bootstrap.playbackUrl,
-    "https://media.watch.example/room-sessions/session-1/content",
+    "/media-gateway/room-sessions/session-1/content",
   );
   assert.deepEqual(
     {
@@ -207,11 +205,11 @@ test("playback bootstrap creates a clean stable URL and session-scoped cookie", 
       secure: bootstrap.cookie.secure,
     },
     {
-      domain: "watch.example",
+      domain: undefined,
       expires: new Date("2026-09-01T11:00:00.000Z"),
       httpOnly: true,
       name: "__Secure-mw_media_access",
-      path: "/room-sessions/session-1/content",
+      path: "/media-gateway/room-sessions/session-1/content",
       sameSite: "strict",
       secure: true,
     },
@@ -225,6 +223,43 @@ test("playback bootstrap creates a clean stable URL and session-scoped cookie", 
     "session-1",
   );
   assert.doesNotMatch(JSON.stringify(bootstrap), /objectKey|private\/object/);
+});
+
+test("Next rewrites the same-origin media path to the configured Worker upstream", async () => {
+  const variableName = "MEDIA_GATEWAY_UPSTREAM_ORIGIN";
+  const previousValue = process.env[variableName];
+
+  process.env[variableName] = "https://gateway.example.workers.dev";
+
+  try {
+    const configUrl = pathToFileURL(path.join(rootDir, "next.config.mjs"));
+
+    configUrl.searchParams.set("range-gateway-test", String(Date.now()));
+
+    const nextConfig = (await import(configUrl)).default;
+
+    assert.equal(typeof nextConfig.rewrites, "function");
+    assert.deepEqual(await nextConfig.rewrites(), [
+      {
+        destination:
+          "https://gateway.example.workers.dev/room-sessions/:sessionId/content",
+        source: "/media-gateway/room-sessions/:sessionId/content",
+      },
+    ]);
+
+    process.env[variableName] =
+      "https://gateway.example.workers.dev/unapproved-path";
+    await assert.rejects(
+      () => nextConfig.rewrites(),
+      /must contain only an origin/,
+    );
+  } finally {
+    if (previousValue === undefined) {
+      delete process.env[variableName];
+    } else {
+      process.env[variableName] = previousValue;
+    }
+  }
 });
 
 test("range gateway streams an authorized partial response with private headers", async () => {

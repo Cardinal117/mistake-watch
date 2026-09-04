@@ -6,7 +6,7 @@ priority: P1
 area: uploaded-playback
 related: [TASK-009, TASK-023, TASK-024]
 created: 2026-08-17
-updated: 2026-09-01
+updated: 2026-09-04
 ---
 
 # Uploaded playback can freeze after signed URL expiry
@@ -31,12 +31,17 @@ updated: 2026-09-01
   canonical playback, or authorization code changed.
 - **Candidate B:** TASK-024 implements a stable Cloudflare Worker Range gateway
   with a private R2 binding and per-request Vercel authorization. Local Chromium
-  and Opera GX cookie/range feasibility plus automated security and build gates
-  pass.
-- **Next action:** Complete the reviewed PR, controlled provider configuration,
-  production deployment, long-play/seek, revocation, and two-participant QA.
-  Retain the excluded Vercel proxy, longer signature, remount, and dual-player
-  boundaries.
+  cookie/range feasibility plus automated security and build gates passed, but
+  Opera blocked the activated custom gateway hostnames. Provider state was
+  rolled back.
+- **Candidate C:** Approved on 2026-09-04 for a bounded same-origin Vercel
+  external-rewrite experiment that retains the Worker/private-R2 boundary and
+  uses a host-only credential. This does not authorize deployment.
+- **Candidate C local evidence:** Test-first transport coverage, the full suite,
+  typecheck, build, Worker dry-run, and changed-file quality gates pass. No
+  provider or production state changed.
+- **Next action:** Review and approve the local commit/PR refresh, then separately
+  approve a preview Worker/Vercel feasibility test in Opera GX.
 
 ## Original Report
 

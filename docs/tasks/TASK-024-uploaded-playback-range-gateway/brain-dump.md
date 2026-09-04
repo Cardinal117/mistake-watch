@@ -1,8 +1,8 @@
 # TASK-024: Uploaded Playback Range Gateway
 
-Status: Release blocked by Opera GX custom-domain filtering
+Status: Candidate C locally complete; preview QA pending
 Documentation level: Full packet
-Updated: 2026-09-02
+Updated: 2026-09-04
 Related: MW-BUG-004, TASK-009, TASK-023
 
 ## Why This Exists
@@ -22,10 +22,16 @@ The production hostname gate later failed: Opera GX blocked every activated
 Worker custom-domain candidate. Provider test configuration was rolled back and
 Candidate B is not approved for release.
 
+On 2026-09-04 the owner approved Candidate C: retain the Worker/R2 authorization
+boundary, but expose playback only through a same-origin path on
+`watch.mistakestudios.com`. A Vercel external rewrite may forward that path to a
+Worker upstream. This is a bounded transport revision, not release approval.
+
 ## Constraints
 
 - Keep R2 private. Do not restore the disabled public bucket domain.
-- Do not proxy media bytes through Vercel.
+- Do not proxy media bytes through a Vercel Function. Candidate C may use a
+  reviewed external rewrite/CDN proxy only after Range and timeout evidence.
 - Do not lengthen R2 signatures, remount the player, or add a hidden player.
 - Do not mutate canonical playback merely to renew transport access.
 - Preserve host-authoritative playback and two-participant synchronization.
@@ -50,29 +56,32 @@ Candidate B is not approved for release.
 ## Proposed Boundary
 
 - App/auth authority: Vercel and the existing Supabase-backed room checks.
-- Byte-serving boundary: a dedicated Worker Custom Domain such as
-  `media.watch.mistakestudios.com` with a private R2 bucket binding.
-- Browser credential: a dedicated signed, session-scoped, HttpOnly cookie; never
-  the existing account or guest cookie.
+- Browser-visible boundary: `/media-gateway/room-sessions/{sessionId}/content`
+  on the existing Vercel app origin.
+- Byte-serving boundary: a Worker upstream behind a Vercel external rewrite,
+  with a private R2 bucket binding.
+- Browser credential: a dedicated signed, host-only, session-scoped, HttpOnly
+  cookie; never the existing account or guest cookie.
 - Origin credential: a separate Worker-to-Vercel secret stored only in provider
   secret stores.
-- Stable media path: `/room-sessions/{sessionId}/content`.
+- Stable browser media path:
+  `/media-gateway/room-sessions/{sessionId}/content`.
 
 ## Unknowns To Prove First
 
-1. Do supported Chromium and Opera GX send the dedicated cookie on repeated
-   cross-origin media range requests to the media subdomain?
-2. Does a path-scoped cookie allow two room-media sessions in separate tabs
-   without overwriting one another?
-3. Which request forms do the browsers emit for load, seek, resume, and replay
-   (`GET`, `HEAD`, single range, suffix range, conditional request)?
-4. Can the Worker stream correct `200`, `206`, and `416` responses without
-   buffering the object or exposing the object key?
-5. What range-request count and authorization latency occur in a representative
-   full playback and seek session?
+1. Does the Vercel rewrite preserve the host-only cookie and repeated Range
+   headers when proxying real Opera GX media requests?
+2. Does it preserve `200`, `206`, `416`, content headers, and private no-store
+   responses without buffering or exposing the Worker origin?
+3. Do representative playback ranges complete within Vercel's external-proxy
+   duration limits?
+4. Does the session-specific path allow two room-media sessions in separate
+   tabs without overwriting credentials?
+5. What Vercel transfer, edge request, Worker, authorization, and R2 request
+   volume occurs in a representative playback and seek session?
 
-If the cookie is not reliably sent, stop and request a scope revision. Do not
-silently place a long-lived grant in the stable URL.
+If the rewrite contract is unreliable, stop and request a scope revision. Do
+not silently place a long-lived grant in the stable URL.
 
 ## Sources
 

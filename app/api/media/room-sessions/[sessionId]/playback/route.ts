@@ -57,9 +57,7 @@ export async function GET(request: Request, context: PlaybackRouteContext) {
     const config = getMediaGatewayConfig();
     const expiresAt = new Date(access.session.expires_at);
     const bootstrap = createMediaGatewayBootstrap({
-      cookieDomain: config.cookieDomain,
       expiresAt,
-      gatewayOrigin: config.gatewayOrigin,
       memberId: access.participant.memberId,
       roomId: access.session.room_id,
       sessionId: access.session.id,
