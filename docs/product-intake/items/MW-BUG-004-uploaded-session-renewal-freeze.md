@@ -40,8 +40,17 @@ updated: 2026-09-04
 - **Candidate C local evidence:** Test-first transport coverage, the full suite,
   typecheck, build, Worker dry-run, and changed-file quality gates pass. No
   provider or production state changed.
-- **Next action:** Review and approve the local commit/PR refresh, then separately
-  approve a preview Worker/Vercel feasibility test in Opera GX.
+- **Candidate C canary:** The Vercel rewrite forwarded Range and Cookie headers,
+  and sanitized live Worker tails proved that Opera's real media request reached
+  the Worker with both headers. The required `__Secure-mw_media_access` cookie
+  was absent, so the Worker correctly returned before calling the internal
+  authorization route. The rollback-ready production canary was restored to the
+  prior known-good deployment; health and readiness passed after rollback. PR
+  #11 remains draft and unmerged.
+- **Next action:** During a separately coordinated short canary, inspect Opera's
+  playback-bootstrap response in DevTools for the `Set-Cookie` header and any
+  browser-reported rejection reason. Do not expose cookie values, merge, rotate
+  secrets, rename the route, or redeploy speculatively.
 
 ## Original Report
 

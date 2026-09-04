@@ -1,6 +1,6 @@
 # Review Notes: Authorized Uploaded Playback Range Gateway
 
-Status: Candidate C locally complete; preview QA pending
+Status: Candidate C Opera canary failed; production rolled back
 Updated: 2026-09-04
 
 ## Evidence Dependency
@@ -137,6 +137,42 @@ documentation.
 - Refreshed `origin/main` contains one TASK-023 merge commit not in this branch's
   ancestry, but its tree matches the branch's TASK-023 base. Reconcile that
   ancestry after commit approval and before refreshing the draft PR.
+
+## Candidate C Canary Evidence
+
+- Cloudflare Worker version `8637e61a-0d98-49ab-a217-af3252c969c3` deployed on
+  the correct account with the private `watch2bucket` binding and existing
+  origin-secret binding. Its exact route failed closed with `401`.
+- Preview deployment `dpl_6KL6qdqXiLF81NfuYkmfeG8h7Vqs` proved the external
+  rewrite preserved an ordinary Range request (`401` without a credential), an
+  unsupported multi-range request (`416`), and a fake non-secret cookie (`503`
+  after the Worker attempted upstream authorization). No persistent Preview
+  variables were created.
+- Because Opera GX could not use the protected Vercel preview hostname, the
+  owner approved a rollback-ready production canary at exact branch commit
+  `96d66ff899d32db68b1ab745cb4637179f041a9c`.
+- Canary deployment `dpl_GhvNQkgHHaXJkdjFwAEwMEsjn8gy` passed health and
+  readiness. The exact same-origin gateway path reached the Worker and failed
+  closed when probed without a credential.
+- In the normal Opera GX profile, a fresh uploaded-media session returned the
+  same-origin gateway URL, but the video failed when Play was pressed and the UI
+  reported that the browser could not load the source.
+- A repeated canary with three sanitized Worker tails proved that the real Opera
+  media request reached the Worker with a Range header and a generic Cookie
+  header. A tail filtered for the exact `__Secure-mw_media_access` cookie did not
+  match, and the canary Vercel logs contained no internal authorization callback.
+  Because the Worker returns before that callback when the media cookie is
+  missing, the failure boundary is now the browser's storage or transmission of
+  the media-access cookie, not a pre-Worker client block.
+- The release gate therefore failed. Vercel was immediately rolled back to
+  `dpl_79vfekpDWSrzBr1mqivyYdUbAFL7`. Both public aliases, health, readiness,
+  and the prior gateway-path `404` were verified after rollback. R2 remained
+  private, the Worker remained inert, and PR #11 remained draft and unmerged.
+- Verdict: Candidate C is not release-ready. During a separately coordinated
+  short canary, inspect the authenticated playback-bootstrap response in Opera
+  DevTools for the `Set-Cookie` header and browser-reported rejection reason.
+  Never capture or publish the cookie value. Do not rotate secrets, rename
+  paths, merge, or redeploy speculatively.
 
 ## Required Handoff Order
 

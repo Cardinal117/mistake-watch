@@ -1,6 +1,6 @@
 # Tasks: Authorized Uploaded Playback Range Gateway
 
-Status: Tasks 1-6A complete locally; Candidate C preview QA pending
+Status: Tasks 1-6A complete locally; Candidate C Opera canary failed and rolled back
 Updated: 2026-09-04
 
 ## Preconditions
@@ -132,6 +132,20 @@ Review gate: use `qa-release-gate`; obtain independent code/security review and
 explicit production approval. Automated tests and GitHub mergeability do not
 replace this interaction QA.
 
+2026-09-04 evidence: the protected Vercel preview preserved ordinary and
+unsupported Range requests, and a fake non-secret cookie changed the Worker
+response from missing-credential `401` to authorization-upstream `503`, proving
+the external rewrite forwards both headers. Opera GX could not use the protected
+preview hostname, so the owner approved a rollback-ready production canary.
+The real uploaded-media attempt created a fresh session and resolved to the
+same-origin gateway path, but the media element failed when Play was pressed.
+During a repeated canary, sanitized Worker tails proved that this Opera request
+reached the Worker with a Range header and a generic Cookie header, while the
+exact `__Secure-mw_media_access` cookie did not match and no internal Worker
+authorization callback appeared. The remaining boundary is therefore the
+browser's storage or transmission of the media-access cookie. The canary was
+rolled back after the failed interaction gate.
+
 ## Task 7: Controlled Release And Rollback
 
 The owner approved a controlled production deployment on 2026-09-01, subject to
@@ -147,6 +161,14 @@ Release order:
 6. run owner plus guest production playback, seek, and revocation smoke tests;
 7. monitor denial/error rate, latency, invocations, and R2 reads;
 8. roll back the app transport if the gate fails; do not make the bucket public.
+
+The first Candidate C canary used Vercel deployment
+`dpl_GhvNQkgHHaXJkdjFwAEwMEsjn8gy` and failed the Opera media gate. Production
+was restored to `dpl_79vfekpDWSrzBr1mqivyYdUbAFL7`; health and readiness passed,
+and the gateway path returned to the prior `404`. PR #11 remains draft and must
+not be merged or redeployed until Opera DevTools confirms whether the playback
+bootstrap emits the media `Set-Cookie` header and why Opera does not return that
+cookie to the gateway route.
 
 No commit, push, PR, merge, provider mutation, or deployment occurs without its
 applicable approval.
