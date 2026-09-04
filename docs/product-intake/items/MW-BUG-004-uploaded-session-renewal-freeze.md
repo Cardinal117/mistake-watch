@@ -65,8 +65,10 @@ updated: 2026-09-04
   reproduced the Opera failure and reported `unknown` / `fetch_exception`.
   Vercel again received no internal authorization callback. Both providers were
   restored and the ordinary Opera player returned.
-- **Next action:** Design one bounded differential probe that distinguishes a
-  host-wide outbound fetch failure from an authorization-route-specific failure.
+- **Differential probe:** A test-first local patch now compares the failed
+  authorization request with one credential-free `/api/health` fetch and emits
+  only its HTTP status or sanitized exception category. All local gates pass.
+- **Next action:** Review and checkpoint the exact probe patch before any canary.
   Do not merge, rotate secrets, expose raw errors, rename the route, or apply a
   speculative compatibility flag.
 

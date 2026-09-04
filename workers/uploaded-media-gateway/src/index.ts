@@ -39,10 +39,21 @@ type GatewayDependencies = {
 type AuthorizationFailureDiagnostic =
   | {
       kind: AuthorizationFetchExceptionKind;
+      originHealth: AuthorizationOriginHealthDiagnostic;
       reason: "fetch_exception";
     }
   | { reason: "upstream_status"; status: number }
   | { reason: "malformed_success"; status: number };
+
+type AuthorizationOriginHealthDiagnostic =
+  | {
+      outcome: "response";
+      status: number;
+    }
+  | {
+      kind: AuthorizationFetchExceptionKind;
+      outcome: "fetch_exception";
+    };
 
 type AuthorizationFetchExceptionKind =
   | "network_connection_lost"
@@ -225,6 +236,10 @@ async function authorizeRequest(input: {
   } catch (error) {
     input.dependencies.reportAuthorizationFailure?.({
       kind: classifyAuthorizationFetchException(error),
+      originHealth: await probeAuthorizationOriginHealth({
+        dependencies: input.dependencies,
+        origin: input.env.AUTHORIZATION_ORIGIN,
+      }),
       reason: "fetch_exception",
     });
 
@@ -267,6 +282,25 @@ async function authorizeRequest(input: {
         : null,
     objectKey: payload.objectKey,
   };
+}
+
+async function probeAuthorizationOriginHealth(input: {
+  dependencies: GatewayDependencies;
+  origin: string;
+}): Promise<AuthorizationOriginHealthDiagnostic> {
+  try {
+    const response = await input.dependencies.fetch(
+      new URL("/api/health", input.origin),
+      { method: "GET" },
+    );
+
+    return { outcome: "response", status: response.status };
+  } catch (error) {
+    return {
+      kind: classifyAuthorizationFetchException(error),
+      outcome: "fetch_exception",
+    };
+  }
 }
 
 function parseRangeHeader(value: string | null): R2Range | "invalid" | null {

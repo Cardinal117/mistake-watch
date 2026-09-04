@@ -408,12 +408,68 @@ test("range gateway reports sanitized authorization failure diagnostics", async 
 
     assert.equal(response.status, 503);
     assert.equal(bucket.getCalls, 0);
-    assert.deepEqual(diagnostics, [scenario.diagnostic]);
+    assert.deepEqual(diagnostics, [
+      scenario.diagnostic.reason === "fetch_exception"
+        ? {
+            ...scenario.diagnostic,
+            originHealth: {
+              kind: scenario.diagnostic.kind,
+              outcome: "fetch_exception",
+            },
+          }
+        : scenario.diagnostic,
+    ]);
     assert.doesNotMatch(
       JSON.stringify(diagnostics),
       /credential-value|session-1|private upstream body/,
     );
   }
+});
+
+test("range gateway compares a failed authorization fetch with public origin health", async () => {
+  const bucket = createBucketMock();
+  const diagnostics = [];
+  const fetchCalls = [];
+  const response = await worker.handleRangeGatewayRequest(
+    new Request("https://media.watch.example/room-sessions/session-1/content", {
+      headers: {
+        Cookie: "__Secure-mw_media_access=credential-value",
+        Range: "bytes=0-",
+      },
+    }),
+    createWorkerEnv(bucket),
+    {
+      async fetch(input, init) {
+        fetchCalls.push({ init, url: String(input) });
+
+        if (fetchCalls.length === 1) {
+          throw new Error("private authorization failure for session-1");
+        }
+
+        return new Response(null, { status: 204 });
+      },
+      reportAuthorizationFailure(diagnostic) {
+        diagnostics.push(diagnostic);
+      },
+    },
+  );
+
+  assert.equal(response.status, 503);
+  assert.equal(bucket.getCalls, 0);
+  assert.equal(fetchCalls.length, 2);
+  assert.equal(fetchCalls[1].url, "https://watch.example/api/health");
+  assert.deepEqual(fetchCalls[1].init, { method: "GET" });
+  assert.deepEqual(diagnostics, [
+    {
+      kind: "unknown",
+      originHealth: { outcome: "response", status: 204 },
+      reason: "fetch_exception",
+    },
+  ]);
+  assert.doesNotMatch(
+    JSON.stringify(diagnostics),
+    /credential-value|session-1|private authorization failure/,
+  );
 });
 
 test("range gateway rejects invalid and multi-range input without reading R2", async () => {

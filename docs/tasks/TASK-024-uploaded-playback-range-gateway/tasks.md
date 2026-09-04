@@ -175,6 +175,13 @@ their prior versions, health/readiness and the inactive gateway route passed,
 and the ordinary Opera player returned after reload. The next experiment must
 be a separately reviewed differential probe, not a guessed compatibility flag.
 
+The bounded differential probe is now complete locally with test-first evidence
+at baseline `ba7f47c`. It runs one credential-free `/api/health` control fetch
+only after the authorization fetch throws, records only its numeric status or a
+sanitized exception category, preserves the same fail-closed `503`, and performs
+no R2 read. The focused suite passes 11/11 and the full suite passes 527/527;
+typecheck, build, Worker dry-run, file-length, and lint gates pass.
+
 ## Task 7: Controlled Release And Rollback
 
 The owner approved a controlled production deployment on 2026-09-01, subject to

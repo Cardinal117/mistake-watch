@@ -210,6 +210,13 @@ documentation.
   `8637e61a-0d98-49ab-a217-af3252c969c3`. Health and readiness returned `200`,
   the inactive gateway route returned `404`, and an Opera reload restored the
   ordinary synced player. No compatibility flag or speculative fix was applied.
+- Differential-probe red/green evidence at clean baseline `ba7f47c`: the focused
+  test failed because the Worker made only the authorization fetch (`1 !== 2`),
+  then passed after adding one credential-free `/api/health` control fetch on
+  that failure path. R2 remains unread and diagnostics contain only an HTTP
+  status or sanitized category. The focused suite passes 11/11 and the full
+  suite passes 527/527; typecheck, build, Worker dry-run, file-length, and lint
+  gates pass. Lint retains the unrelated existing navigation warning.
 
 ## Required Handoff Order
 
