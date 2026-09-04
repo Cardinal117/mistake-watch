@@ -233,6 +233,12 @@ documentation.
   adding exactly `global_fetch_strictly_public`. The focused suite passes 12/12
   and the full suite passes 528/528; typecheck, build, Worker dry-run, and lint
   pass. Lint retains the unrelated existing navigation warning.
+- Flag commit `3403e54` was pushed to draft PR #11. Worker-only version
+  `e230d302-a017-4d5f-a03d-782480e8738b` returned the same sanitized exception
+  for authorization and `/api/health`, disproving the public-routing flag as a
+  fix. The Worker was restored to `8637e61a-0d98-49ab-a217-af3252c969c3`;
+  Vercel remained on `dpl_79vfekpDWSrzBr1mqivyYdUbAFL7`, and rollback health,
+  readiness, and inactive-route checks passed.
 
 ## Required Handoff Order
 

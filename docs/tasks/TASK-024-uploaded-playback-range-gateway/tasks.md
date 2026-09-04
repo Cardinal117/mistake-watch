@@ -197,6 +197,14 @@ passed after adding only `global_fetch_strictly_public`. The focused suite passe
 12/12 and the full suite passes 528/528; typecheck, build, Worker dry-run, and
 lint pass. No provider state changed during implementation.
 
+Commit `3403e54` was pushed and tested as Worker-only version
+`e230d302-a017-4d5f-a03d-782480e8738b`. Both authorization and `/api/health`
+still produced `unknown` / `fetch_exception`, so
+`global_fetch_strictly_public` is rejected. The Worker was restored, Vercel was
+never promoted, and all rollback checks passed. Remove the flag before review;
+the next candidate is a Worker-only fetch to the stable `vercel.app` project
+domain with a fake credential.
+
 ## Task 7: Controlled Release And Rollback
 
 The owner approved a controlled production deployment on 2026-09-01, subject to
