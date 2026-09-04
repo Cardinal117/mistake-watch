@@ -217,6 +217,17 @@ documentation.
   status or sanitized category. The focused suite passes 11/11 and the full
   suite passes 527/527; typecheck, build, Worker dry-run, file-length, and lint
   gates pass. Lint retains the unrelated existing navigation warning.
+- Differential commit `ed2c05f` was pushed to draft PR #11. Worker version
+  `99284990-7e5c-4468-9755-7d4d64f3b210` reproduced the Opera failure and emitted
+  `unknown` / `fetch_exception` for both the authorization request and the
+  credential-free `/api/health` control. This isolates a host-wide Worker fetch
+  routing failure before Vercel, rather than request method, body, or headers.
+- Vercel and the Worker were restored to their prior versions; health/readiness
+  returned `200`, the inactive gateway route returned `404`, and Opera restored
+  the ordinary player. Cloudflare documents `global_fetch_strictly_public` as
+  public-Internet routing for same-zone global fetches. Test it first with a
+  Worker-only fake-credential probe; do not enable it in release configuration
+  until that result is known.
 
 ## Required Handoff Order
 

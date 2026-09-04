@@ -67,10 +67,15 @@ updated: 2026-09-04
   restored and the ordinary Opera player returned.
 - **Differential probe:** A test-first local patch now compares the failed
   authorization request with one credential-free `/api/health` fetch and emits
-  only its HTTP status or sanitized exception category. All local gates pass.
-- **Next action:** Review and checkpoint the exact probe patch before any canary.
-  Do not merge, rotate secrets, expose raw errors, rename the route, or apply a
-  speculative compatibility flag.
+  only its HTTP status or sanitized exception category. Commit `ed2c05f` updated
+  draft PR #11 and all local gates passed.
+- **Differential canary:** Worker version `99284990-7e5c-4468-9755-7d4d64f3b210`
+  reported `unknown` / `fetch_exception` for both authorization and public
+  `/api/health`. The failure is host-wide Worker-to-Vercel fetch routing, not the
+  authorization request shape. Both providers were restored and verified.
+- **Next action:** Review a Worker-only `global_fetch_strictly_public` canary
+  against restored Vercel with a fake credential before another Opera canary.
+  Do not merge, rotate secrets, expose raw errors, or rename the route.
 
 ## Original Report
 

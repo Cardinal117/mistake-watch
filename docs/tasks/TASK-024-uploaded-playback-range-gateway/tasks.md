@@ -182,6 +182,15 @@ sanitized exception category, preserves the same fail-closed `503`, and performs
 no R2 read. The focused suite passes 11/11 and the full suite passes 527/527;
 typecheck, build, Worker dry-run, file-length, and lint gates pass.
 
+Commit `ed2c05f` was pushed to draft PR #11 and used for the approved differential
+canary. Worker version `99284990-7e5c-4468-9755-7d4d64f3b210` classified both the
+authorization request and credential-free `/api/health` control as `unknown` /
+`fetch_exception`. This proves a host-wide Worker-to-Vercel fetch-routing failure
+before Vercel receives either request. Both providers were restored and all
+rollback checks passed. The next gate is a Worker-only
+`global_fetch_strictly_public` canary against restored Vercel with a fake
+credential, before any further Opera or Vercel canary.
+
 ## Task 7: Controlled Release And Rollback
 
 The owner approved a controlled production deployment on 2026-09-01, subject to
