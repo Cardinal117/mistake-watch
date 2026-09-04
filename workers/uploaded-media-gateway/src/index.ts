@@ -31,7 +31,15 @@ export type UploadedMediaGatewayEnv = {
 
 type GatewayDependencies = {
   fetch: typeof fetch;
+  reportAuthorizationFailure?: (
+    diagnostic: AuthorizationFailureDiagnostic,
+  ) => void;
 };
+
+type AuthorizationFailureDiagnostic =
+  | { reason: "fetch_exception" }
+  | { reason: "upstream_status"; status: number }
+  | { reason: "malformed_success"; status: number };
 
 const mediaCookieName = "__Secure-mw_media_access";
 
@@ -46,7 +54,10 @@ export default uploadedMediaGateway;
 export async function handleRangeGatewayRequest(
   request: Request,
   env: UploadedMediaGatewayEnv,
-  dependencies: GatewayDependencies = { fetch },
+  dependencies: GatewayDependencies = {
+    fetch,
+    reportAuthorizationFailure,
+  },
 ) {
   if (request.method !== "GET") {
     return privateResponse("Method not allowed.", 405, {
@@ -199,10 +210,21 @@ async function authorizeRequest(input: {
       },
     );
   } catch {
+    input.dependencies.reportAuthorizationFailure?.({
+      reason: "fetch_exception",
+    });
+
     return { allowed: false, status: 503 };
   }
 
   if (!response.ok) {
+    if (response.status !== 401 && response.status !== 403) {
+      input.dependencies.reportAuthorizationFailure?.({
+        reason: "upstream_status",
+        status: response.status,
+      });
+    }
+
     return {
       allowed: false,
       status: response.status === 401 || response.status === 403 ? 403 : 503,
@@ -215,6 +237,11 @@ async function authorizeRequest(input: {
   } | null;
 
   if (!payload || typeof payload.objectKey !== "string" || !payload.objectKey) {
+    input.dependencies.reportAuthorizationFailure?.({
+      reason: "malformed_success",
+      status: response.status,
+    });
+
     return { allowed: false, status: 503 };
   }
 
@@ -310,6 +337,12 @@ function privateHeaders() {
     "Referrer-Policy": "no-referrer",
     Vary: "Cookie, Range",
   });
+}
+
+function reportAuthorizationFailure(
+  diagnostic: AuthorizationFailureDiagnostic,
+) {
+  console.warn("[media-gateway] authorization unavailable", diagnostic);
 }
 
 function isInvalidRangeError(error: unknown) {

@@ -139,12 +139,20 @@ the external rewrite forwards both headers. Opera GX could not use the protected
 preview hostname, so the owner approved a rollback-ready production canary.
 The real uploaded-media attempt created a fresh session and resolved to the
 same-origin gateway path, but the media element failed when Play was pressed.
-During a repeated canary, sanitized Worker tails proved that this Opera request
-reached the Worker with a Range header and a generic Cookie header, while the
-exact `__Secure-mw_media_access` cookie did not match and no internal Worker
-authorization callback appeared. The remaining boundary is therefore the
-browser's storage or transmission of the media-access cookie. The canary was
-rolled back after the failed interaction gate.
+During a subsequent canary, preserved Opera DevTools evidence proved that the
+bootstrap set `__Secure-mw_media_access` without a browser warning and that the
+gateway request sent it. The request reached the Worker through Vercel and
+returned the Worker's fail-closed `503` authorization-unavailable response. No
+internal authorization callback appeared in either relevant Vercel deployment's
+logs. The remaining boundary is the Worker's outbound authorization fetch or
+its normalized upstream response. The canary was rolled back after the failed
+interaction gate.
+
+Test-first diagnostic evidence: on baseline `f97cf1f`, the focused test failed
+because no safe authorization-failure classification was emitted. The Worker now
+reports only `fetch_exception`, `upstream_status` with numeric status, or
+`malformed_success`; the test proves that identifiers, credentials, and response
+bodies are absent. The full 526-test suite and all local quality gates pass.
 
 ## Task 7: Controlled Release And Rollback
 
@@ -166,9 +174,9 @@ The first Candidate C canary used Vercel deployment
 `dpl_GhvNQkgHHaXJkdjFwAEwMEsjn8gy` and failed the Opera media gate. Production
 was restored to `dpl_79vfekpDWSrzBr1mqivyYdUbAFL7`; health and readiness passed,
 and the gateway path returned to the prior `404`. PR #11 remains draft and must
-not be merged or redeployed until Opera DevTools confirms whether the playback
-bootstrap emits the media `Set-Cookie` header and why Opera does not return that
-cookie to the gateway route.
+not be merged or redeployed until test-covered, sanitized Worker diagnostics
+distinguish an authorization fetch exception, upstream status class, or malformed
+success response and the resulting defect is corrected.
 
 No commit, push, PR, merge, provider mutation, or deployment occurs without its
 applicable approval.

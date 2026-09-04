@@ -157,22 +157,33 @@ documentation.
 - In the normal Opera GX profile, a fresh uploaded-media session returned the
   same-origin gateway URL, but the video failed when Play was pressed and the UI
   reported that the browser could not load the source.
-- A repeated canary with three sanitized Worker tails proved that the real Opera
-  media request reached the Worker with a Range header and a generic Cookie
-  header. A tail filtered for the exact `__Secure-mw_media_access` cookie did not
-  match, and the canary Vercel logs contained no internal authorization callback.
-  Because the Worker returns before that callback when the media cookie is
-  missing, the failure boundary is now the browser's storage or transmission of
-  the media-access cookie, not a pre-Worker client block.
+- A repeated canary with sanitized Worker tails initially left the exact cookie
+  boundary unresolved. A subsequent preserved Opera DevTools capture proved
+  that the `200` playback bootstrap set `__Secure-mw_media_access` without a
+  browser warning and that Opera included it in the gateway request. The request
+  reached the Cloudflare-backed Worker through Vercel and returned `503` with
+  the Worker's 35-byte fail-closed authorization-unavailable response.
+- Direct log reads of both the pinned canary deployment and the rollback
+  deployment found no internal authorization callback. The current Worker
+  deliberately normalizes fetch exceptions, non-authorization upstream errors,
+  and malformed successful payloads to the same `503`, so the remaining boundary
+  cannot be narrowed safely without sanitized Worker-side classification.
 - The release gate therefore failed. Vercel was immediately rolled back to
   `dpl_79vfekpDWSrzBr1mqivyYdUbAFL7`. Both public aliases, health, readiness,
   and the prior gateway-path `404` were verified after rollback. R2 remained
   private, the Worker remained inert, and PR #11 remained draft and unmerged.
-- Verdict: Candidate C is not release-ready. During a separately coordinated
-  short canary, inspect the authenticated playback-bootstrap response in Opera
-  DevTools for the `Set-Cookie` header and browser-reported rejection reason.
-  Never capture or publish the cookie value. Do not rotate secrets, rename
+- Verdict: Candidate C is not release-ready. Add test-covered Worker diagnostics
+  that record only `fetch_exception`, upstream status class, or
+  `malformed_success`; never log request URLs, identifiers, cookies, secrets,
+  object keys, or response bodies. Obtain separate approval before deploying
+  that Worker revision or repeating the canary. Do not rotate secrets, rename
   paths, merge, or redeploy speculatively.
+- Diagnostic test-first evidence at baseline `f97cf1f`: the focused test failed
+  because the Worker emitted no classification, then passed after adding only
+  `fetch_exception`, `upstream_status` with numeric status, and
+  `malformed_success` diagnostics. The full suite passes 526/526; typecheck,
+  production build, Worker dry-run, Prettier, file-length policy, and diff check
+  pass. Lint has zero errors and the existing unrelated navigation warning.
 
 ## Required Handoff Order
 

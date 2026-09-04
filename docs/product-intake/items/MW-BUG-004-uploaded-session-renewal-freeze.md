@@ -41,16 +41,21 @@ updated: 2026-09-04
   typecheck, build, Worker dry-run, and changed-file quality gates pass. No
   provider or production state changed.
 - **Candidate C canary:** The Vercel rewrite forwarded Range and Cookie headers,
-  and sanitized live Worker tails proved that Opera's real media request reached
-  the Worker with both headers. The required `__Secure-mw_media_access` cookie
-  was absent, so the Worker correctly returned before calling the internal
-  authorization route. The rollback-ready production canary was restored to the
-  prior known-good deployment; health and readiness passed after rollback. PR
-  #11 remains draft and unmerged.
-- **Next action:** During a separately coordinated short canary, inspect Opera's
-  playback-bootstrap response in DevTools for the `Set-Cookie` header and any
-  browser-reported rejection reason. Do not expose cookie values, merge, rotate
-  secrets, rename the route, or redeploy speculatively.
+  and Opera DevTools proved that the playback bootstrap set the exact
+  `__Secure-mw_media_access` cookie and the gateway request sent it. The gateway
+  returned the Worker's fail-closed `503` response, while neither the canary nor
+  rollback Vercel deployment recorded the internal authorization callback. The
+  remaining boundary is the Worker's outbound authorization fetch or its
+  normalized upstream response, not browser cookie handling. Production was
+  restored to the prior known-good deployment; health and readiness passed
+  after rollback. PR #11 remains draft and unmerged.
+- **Diagnostic patch:** Test-first local coverage now distinguishes a fetch
+  exception, exact upstream HTTP status, and malformed success response while
+  proving that credentials, identifiers, and response bodies stay out of the
+  diagnostic. All local gates pass.
+- **Next action:** Review and approve the diagnostic commit/PR refresh, then
+  separately approve a Worker-only deployment and short canary. Do not merge,
+  rotate secrets, rename the route, or redeploy speculatively.
 
 ## Original Report
 

@@ -312,6 +312,56 @@ test("range gateway denies before reading R2", async () => {
   assert.equal(bucket.getCalls, 0);
 });
 
+test("range gateway reports sanitized authorization failure diagnostics", async () => {
+  const scenarios = [
+    {
+      diagnostic: { reason: "fetch_exception" },
+      fetch: async () => {
+        throw new Error("credential-value for session-1");
+      },
+    },
+    {
+      diagnostic: { reason: "upstream_status", status: 404 },
+      fetch: async () => new Response("private upstream body", { status: 404 }),
+    },
+    {
+      diagnostic: { reason: "malformed_success", status: 200 },
+      fetch: async () => Response.json({ objectKey: "" }),
+    },
+  ];
+
+  for (const scenario of scenarios) {
+    const bucket = createBucketMock();
+    const diagnostics = [];
+    const response = await worker.handleRangeGatewayRequest(
+      new Request(
+        "https://media.watch.example/room-sessions/session-1/content",
+        {
+          headers: {
+            Cookie: "__Secure-mw_media_access=credential-value",
+            Range: "bytes=0-",
+          },
+        },
+      ),
+      createWorkerEnv(bucket),
+      {
+        fetch: scenario.fetch,
+        reportAuthorizationFailure(diagnostic) {
+          diagnostics.push(diagnostic);
+        },
+      },
+    );
+
+    assert.equal(response.status, 503);
+    assert.equal(bucket.getCalls, 0);
+    assert.deepEqual(diagnostics, [scenario.diagnostic]);
+    assert.doesNotMatch(
+      JSON.stringify(diagnostics),
+      /credential-value|session-1|private upstream body/,
+    );
+  }
+});
+
 test("range gateway rejects invalid and multi-range input without reading R2", async () => {
   for (const range of ["bytes=nope", "bytes=0-1,3-4", "items=0-1"]) {
     const bucket = createBucketMock();
