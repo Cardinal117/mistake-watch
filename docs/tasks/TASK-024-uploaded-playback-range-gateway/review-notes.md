@@ -202,6 +202,14 @@ documentation.
   unknown message remains unreported. The full suite passes 526/526; typecheck,
   build, Worker dry-run, Prettier, file-length policy, lint, and diff checks pass.
   Lint retains the unrelated existing navigation warning.
+- Classifier commit `4f6622a` was pushed to draft PR #11. Worker version
+  `51607b57-9905-419c-85ba-17bb23c0f02f` reproduced the Opera failure and emitted
+  only `{ kind: 'unknown', reason: 'fetch_exception' }`. A narrowly filtered
+  Vercel log read-back again found no internal authorization callback.
+- Vercel was restored to `dpl_79vfekpDWSrzBr1mqivyYdUbAFL7` and the Worker to
+  `8637e61a-0d98-49ab-a217-af3252c969c3`. Health and readiness returned `200`,
+  the inactive gateway route returned `404`, and an Opera reload restored the
+  ordinary synced player. No compatibility flag or speculative fix was applied.
 
 ## Required Handoff Order
 

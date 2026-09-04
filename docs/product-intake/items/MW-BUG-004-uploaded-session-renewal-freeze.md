@@ -59,10 +59,16 @@ updated: 2026-09-04
   rolled back on both providers.
 - **Fetch classifier:** A test-first local patch now maps only documented fetch
   exception families to fixed categories and defaults to `unknown`. It never
-  logs the raw exception. The full suite and local quality gates pass.
-- **Next action:** Review and checkpoint the exact classifier patch, then repeat
-  the already-approved rollback-ready diagnostic canary. Do not merge, rotate
-  secrets, rename the route, or apply a speculative compatibility flag.
+  logs the raw exception. The full suite and local quality gates passed; commit
+  `4f6622a` updated draft PR #11.
+- **Classifier canary:** Worker version `51607b57-9905-419c-85ba-17bb23c0f02f`
+  reproduced the Opera failure and reported `unknown` / `fetch_exception`.
+  Vercel again received no internal authorization callback. Both providers were
+  restored and the ordinary Opera player returned.
+- **Next action:** Design one bounded differential probe that distinguishes a
+  host-wide outbound fetch failure from an authorization-route-specific failure.
+  Do not merge, rotate secrets, expose raw errors, rename the route, or apply a
+  speculative compatibility flag.
 
 ## Original Report
 

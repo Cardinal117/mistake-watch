@@ -167,6 +167,14 @@ suite pass, together with typecheck, build, Worker dry-run, formatting,
 file-length, lint, and diff checks. It remains uncommitted and undeployed pending
 the exact Git checkpoint approval.
 
+Commit `4f6622a` was pushed to draft PR #11 and used for the approved classifier
+canary. Worker version `51607b57-9905-419c-85ba-17bb23c0f02f` reproduced the
+Opera failure and classified it as `unknown` / `fetch_exception`; Vercel again
+recorded no internal authorization callback. Both providers were restored to
+their prior versions, health/readiness and the inactive gateway route passed,
+and the ordinary Opera player returned after reload. The next experiment must
+be a separately reviewed differential probe, not a guessed compatibility flag.
+
 ## Task 7: Controlled Release And Rollback
 
 The owner approved a controlled production deployment on 2026-09-01, subject to
