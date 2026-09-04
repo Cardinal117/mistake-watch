@@ -37,9 +37,22 @@ type GatewayDependencies = {
 };
 
 type AuthorizationFailureDiagnostic =
-  | { reason: "fetch_exception" }
+  | {
+      kind: AuthorizationFetchExceptionKind;
+      reason: "fetch_exception";
+    }
   | { reason: "upstream_status"; status: number }
   | { reason: "malformed_success"; status: number };
+
+type AuthorizationFetchExceptionKind =
+  | "network_connection_lost"
+  | "worker_loop"
+  | "same_zone_worker_fetch"
+  | "host_access_denied"
+  | "cloudflare_ip_blocked"
+  | "runtime_unavailable"
+  | "unsupported_cache_mode"
+  | "unknown";
 
 const mediaCookieName = "__Secure-mw_media_access";
 
@@ -209,8 +222,9 @@ async function authorizeRequest(input: {
         method: "POST",
       },
     );
-  } catch {
+  } catch (error) {
     input.dependencies.reportAuthorizationFailure?.({
+      kind: classifyAuthorizationFetchException(error),
       reason: "fetch_exception",
     });
 
@@ -343,6 +357,47 @@ function reportAuthorizationFailure(
   diagnostic: AuthorizationFailureDiagnostic,
 ) {
   console.warn("[media-gateway] authorization unavailable", diagnostic);
+}
+
+function classifyAuthorizationFetchException(
+  error: unknown,
+): AuthorizationFetchExceptionKind {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : "";
+
+  if (/network connection lost/i.test(message)) {
+    return "network_connection_lost";
+  }
+
+  if (/\b1019\b|loop limit/i.test(message)) {
+    return "worker_loop";
+  }
+
+  if (/\b1042\b|same[- ]zone.+worker/i.test(message)) {
+    return "same_zone_worker_fetch";
+  }
+
+  if (/\b1021\b|host (?:it )?cannot access/i.test(message)) {
+    return "host_access_denied";
+  }
+
+  if (/\b1024\b|cloudflare-owned ip/i.test(message)) {
+    return "cloudflare_ip_blocked";
+  }
+
+  if (/daemondown/i.test(message)) {
+    return "runtime_unavailable";
+  }
+
+  if (/unsupported cache mode/i.test(message)) {
+    return "unsupported_cache_mode";
+  }
+
+  return "unknown";
 }
 
 function isInvalidRangeError(error: unknown) {

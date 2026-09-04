@@ -315,7 +315,61 @@ test("range gateway denies before reading R2", async () => {
 test("range gateway reports sanitized authorization failure diagnostics", async () => {
   const scenarios = [
     {
-      diagnostic: { reason: "fetch_exception" },
+      diagnostic: {
+        kind: "network_connection_lost",
+        reason: "fetch_exception",
+      },
+      fetch: async () => {
+        throw new Error("Network connection lost");
+      },
+    },
+    {
+      diagnostic: { kind: "worker_loop", reason: "fetch_exception" },
+      fetch: async () => {
+        throw new Error("1019: Worker hit loop limit");
+      },
+    },
+    {
+      diagnostic: {
+        kind: "same_zone_worker_fetch",
+        reason: "fetch_exception",
+      },
+      fetch: async () => {
+        throw new Error("1042: Worker cannot fetch another same-zone Worker");
+      },
+    },
+    {
+      diagnostic: { kind: "host_access_denied", reason: "fetch_exception" },
+      fetch: async () => {
+        throw new Error("1021: Worker requested a host it cannot access");
+      },
+    },
+    {
+      diagnostic: {
+        kind: "cloudflare_ip_blocked",
+        reason: "fetch_exception",
+      },
+      fetch: async () => {
+        throw new Error("1024: Worker cannot request a Cloudflare-owned IP");
+      },
+    },
+    {
+      diagnostic: { kind: "runtime_unavailable", reason: "fetch_exception" },
+      fetch: async () => {
+        throw new Error("daemonDown");
+      },
+    },
+    {
+      diagnostic: {
+        kind: "unsupported_cache_mode",
+        reason: "fetch_exception",
+      },
+      fetch: async () => {
+        throw new TypeError("Unsupported cache mode: reload");
+      },
+    },
+    {
+      diagnostic: { kind: "unknown", reason: "fetch_exception" },
       fetch: async () => {
         throw new Error("credential-value for session-1");
       },

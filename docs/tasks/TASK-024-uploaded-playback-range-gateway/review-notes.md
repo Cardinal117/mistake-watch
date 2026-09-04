@@ -184,6 +184,24 @@ documentation.
   `malformed_success` diagnostics. The full suite passes 526/526; typecheck,
   production build, Worker dry-run, Prettier, file-length policy, and diff check
   pass. Lint has zero errors and the existing unrelated navigation warning.
+- Diagnostic commit `fb87908` was pushed to draft PR #11. Worker version
+  `9e84161a-88e7-413f-928f-5d8c7f6ce858` and the pinned Vercel canary reproduced
+  the Opera failure and emitted `fetch_exception`, proving that no HTTP response
+  returned from the Worker's outbound authorization request.
+- Vercel was restored to `dpl_79vfekpDWSrzBr1mqivyYdUbAFL7` and the Worker was
+  restored to `8637e61a-0d98-49ab-a217-af3252c969c3`. Health and readiness
+  returned `200`, the same-origin gateway route returned to `404`, and the
+  diagnostic tail was stopped.
+- Current Cloudflare documentation identifies several distinct runtime fetch
+  exception families, so a compatibility change is not justified from the broad
+  `fetch_exception` result alone. The next diagnostic may map only documented,
+  allowlisted exception families; it must not log the raw exception.
+- Classifier red/green evidence: the focused diagnostic test first failed because
+  the fetch exception lacked a category, then passed after adding only fixed
+  categories for the documented families plus `unknown`. A secret-bearing
+  unknown message remains unreported. The full suite passes 526/526; typecheck,
+  build, Worker dry-run, Prettier, file-length policy, lint, and diff checks pass.
+  Lint retains the unrelated existing navigation warning.
 
 ## Required Handoff Order
 

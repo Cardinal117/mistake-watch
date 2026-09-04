@@ -154,6 +154,19 @@ reports only `fetch_exception`, `upstream_status` with numeric status, or
 `malformed_success`; the test proves that identifiers, credentials, and response
 bodies are absent. The full 526-test suite and all local quality gates pass.
 
+The approved diagnostic canary deployed Worker version
+`9e84161a-88e7-413f-928f-5d8c7f6ce858` and reproduced the failure in Opera. The
+sanitized outcome was `fetch_exception`, so the Worker received no HTTP response
+from its Vercel authorization request. Vercel and the Worker were immediately
+restored to their prior versions, and the public health/rollback checks passed.
+
+The next diagnostic classifier is complete locally with test-first evidence. It
+maps only allowlisted Cloudflare fetch families to fixed categories, defaults to
+`unknown`, and never logs the raw exception. The focused test and full 526-test
+suite pass, together with typecheck, build, Worker dry-run, formatting,
+file-length, lint, and diff checks. It remains uncommitted and undeployed pending
+the exact Git checkpoint approval.
+
 ## Task 7: Controlled Release And Rollback
 
 The owner approved a controlled production deployment on 2026-09-01, subject to

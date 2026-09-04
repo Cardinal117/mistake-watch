@@ -52,10 +52,17 @@ updated: 2026-09-04
 - **Diagnostic patch:** Test-first local coverage now distinguishes a fetch
   exception, exact upstream HTTP status, and malformed success response while
   proving that credentials, identifiers, and response bodies stay out of the
-  diagnostic. All local gates pass.
-- **Next action:** Review and approve the diagnostic commit/PR refresh, then
-  separately approve a Worker-only deployment and short canary. Do not merge,
-  rotate secrets, rename the route, or redeploy speculatively.
+  diagnostic. All local gates passed and commit `fb87908` updated draft PR #11.
+- **Diagnostic canary:** Worker version `9e84161a-88e7-413f-928f-5d8c7f6ce858`
+  classified the failure as `fetch_exception`: the Worker could not complete
+  its outbound request to the Vercel authorization route. The canary was then
+  rolled back on both providers.
+- **Fetch classifier:** A test-first local patch now maps only documented fetch
+  exception families to fixed categories and defaults to `unknown`. It never
+  logs the raw exception. The full suite and local quality gates pass.
+- **Next action:** Review and checkpoint the exact classifier patch, then repeat
+  the already-approved rollback-ready diagnostic canary. Do not merge, rotate
+  secrets, rename the route, or apply a speculative compatibility flag.
 
 ## Original Report
 
