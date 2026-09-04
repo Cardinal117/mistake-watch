@@ -191,6 +191,12 @@ rollback checks passed. The next gate is a Worker-only
 `global_fetch_strictly_public` canary against restored Vercel with a fake
 credential, before any further Opera or Vercel canary.
 
+The flag candidate is complete locally with test-first evidence at baseline
+`bf9275d`. The focused test failed while Wrangler had no compatibility flag and
+passed after adding only `global_fetch_strictly_public`. The focused suite passes
+12/12 and the full suite passes 528/528; typecheck, build, Worker dry-run, and
+lint pass. No provider state changed during implementation.
+
 ## Task 7: Controlled Release And Rollback
 
 The owner approved a controlled production deployment on 2026-09-01, subject to

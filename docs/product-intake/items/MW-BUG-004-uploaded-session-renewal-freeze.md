@@ -73,9 +73,11 @@ updated: 2026-09-04
   reported `unknown` / `fetch_exception` for both authorization and public
   `/api/health`. The failure is host-wide Worker-to-Vercel fetch routing, not the
   authorization request shape. Both providers were restored and verified.
-- **Next action:** Review a Worker-only `global_fetch_strictly_public` canary
-  against restored Vercel with a fake credential before another Opera canary.
-  Do not merge, rotate secrets, expose raw errors, or rename the route.
+- **Flag candidate:** A test-first local patch adds only
+  `global_fetch_strictly_public`; the full 528-test suite and quality gates pass.
+- **Next action:** Checkpoint the exact flag patch, then run the approved
+  Worker-only canary against restored Vercel with a fake credential. Do not
+  merge, rotate secrets, expose raw errors, or rename the route.
 
 ## Original Report
 

@@ -262,6 +262,18 @@ test("Next rewrites the same-origin media path to the configured Worker upstream
   }
 });
 
+test("range gateway routes same-zone fetches through the public Internet", async () => {
+  const configSource = await readFile(
+    path.join(rootDir, "workers/uploaded-media-gateway/wrangler.jsonc"),
+    "utf8",
+  );
+  const config = JSON.parse(configSource.replace(/,\s*([}\]])/g, "$1"));
+
+  assert.deepEqual(config.compatibility_flags, [
+    "global_fetch_strictly_public",
+  ]);
+});
+
 test("range gateway streams an authorized partial response with private headers", async () => {
   const bucket = createBucketMock();
   const response = await worker.handleRangeGatewayRequest(

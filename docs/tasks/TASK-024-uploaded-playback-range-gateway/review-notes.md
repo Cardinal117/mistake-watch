@@ -228,6 +228,11 @@ documentation.
   public-Internet routing for same-zone global fetches. Test it first with a
   Worker-only fake-credential probe; do not enable it in release configuration
   until that result is known.
+- Flag test-first evidence at clean baseline `bf9275d`: the focused configuration
+  test failed because no compatibility flag was present, then passed after
+  adding exactly `global_fetch_strictly_public`. The focused suite passes 12/12
+  and the full suite passes 528/528; typecheck, build, Worker dry-run, and lint
+  pass. Lint retains the unrelated existing navigation warning.
 
 ## Required Handoff Order
 
