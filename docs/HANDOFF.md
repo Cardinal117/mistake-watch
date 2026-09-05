@@ -1,8 +1,20 @@
 # Mistake Watch Handoff
 
-Updated: 2026-09-01
+Updated: 2026-09-05
 
 ## Current State
+
+TASK-024's uploaded Range gateway, reconnect/replay repairs and private
+authorization logging are deployed from aa54354 as Vercel
+dpl_1hQwBD9otKqAL4ouYrb4irogFShy. Telemetry commit 517766a is deployed as
+Worker c801d51a at 100%, with persisted Worker logs disabled.
+All 572 tests and local gates pass. Real Opera playback, background switch-away,
+room/session denial and separate Chromium guest-removal checks passed.
+The bounded operational sample passed: 13 authorized ranges, median 784 ms,
+sample p95 895 ms and zero R2 attempts on denial. Existing budget alerts were
+verified; this is not a load/SLO or notification-delivery test.
+TASK-024 is complete and MW-BUG-004 is resolved/archived. The owner approved PR #11 integration on 2026-09-05. See the [closure checkpoint](tasks/TASK-024-uploaded-playback-range-gateway/review-notes.md#2026-09-05-final-review-and-task-closure).
+The deployment entries below are historical milestones, not current aliases.
 
 The production application includes guest and Google identity, Watch/Listen
 rooms, SpacetimeDB live authority, YouTube and uploaded-media playback,
@@ -85,17 +97,27 @@ re-entry. The existing display settings, Escape ordering, focus restoration,
 idle-control reveal, direct-source identity, and two-participant continuity
 passed their release gates. Closure documentation is on `main` as `eeb456c`.
 
-MW-BUG-004 remains a confirmed P1 playback defect, but TASK-023 is blocked after
-Candidate A feasibility testing. With a 1.2-second lease, Playwright Chromium
+MW-BUG-004's original P1 defect led to TASK-023's rejected Candidate A.
+With a 1.2-second lease, Playwright Chromium
 149.0.7827.55 and Opera GX 150.0.7871.187 each requested the stable URL once,
 then sent later Range requests directly to the redirected object. The first
 post-expiry request (`bytes=524288-`) received `403`; neither browser revisited
 the stable route, and both media elements entered network error state. The
-result reproduced twice. No production route or player code changed. A
-Cloudflare R2 Range gateway now requires a separate architecture/security scope
-revision. Do not lengthen signatures, expose permanent R2 URLs, proxy media
-through Vercel, remount the player, use a hidden second player, or publish
-renewal as canonical room state.
+result reproduced twice. TASK-024 supersedes that experiment; do not restore
+redirect renewal, lengthen signatures, expose permanent R2 URLs, remount the
+player, use a hidden second player, or publish renewal as canonical room state.
+
+TASK-024 delivers a stable same-origin media URL through a Vercel external
+rewrite to the private R2 Worker. Direct custom Worker hostnames were rejected
+by Opera. A path-scoped HttpOnly credential and Worker-origin secret require
+current room, membership, session and asset authorization before each R2 read.
+The Worker fetch failure was a native fetch receiver-binding error, corrected
+with a wrapper and verified in workerd. No schema or R2 privacy change was
+needed. The owner approved the existing opaque media-session reference in
+canonical state; credentials and object addresses remain excluded. Playback
+and revocation evidence passed, as did the bounded latency/operation sample and
+monitoring review. Final task review and intake closure are complete; PR #11
+has explicit owner approval for undrafting and merging.
 
 ## Required Reading
 
@@ -112,7 +134,8 @@ renewal as canonical room state.
 11. `docs/tasks/TASK-009-project-integrity/`
 12. `supabase/MIGRATION_HISTORY.md`
 13. `docs/tasks/TASK-023-uploaded-playback-url-renewal/task.md`
-14. `docs/tasks/TASK-002-incomplete-work-recovery/` for historical detail
+14. `docs/tasks/TASK-024-uploaded-playback-range-gateway/`
+15. `docs/tasks/TASK-002-incomplete-work-recovery/` for historical detail
 
 TASK-001 is historical MVP context. TASK-007 records completed modularization
 work and discovered issues. TASK-008 Spatial Cinema is an unapproved draft.
@@ -164,11 +187,10 @@ verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
 
-Decide whether to approve a separate Cloudflare R2 Range-gateway architecture
-and security task for MW-BUG-004. Candidate A is rejected and TASK-023 must not
-proceed into production integration.
+TASK-024 is closed with its deployed QA evidence retained. The owner approved PR #11
+integration; do not redeploy older main over the verified candidate. Candidate A remains rejected.
 
-Meanwhile, verify MW-BUG-003 in the affected participant profile, complete
-TASK-015C's affected-laptop performance and shared-timing evidence, and
-reconcile the already-released Account Rooms owner QA. TASK-020 and TASK-022
+The next existing backlog priority is to verify MW-BUG-003 in the affected
+participant profile. Later evidence work covers TASK-015C performance/shared
+timing and reconciliation of the already-released Account Rooms owner QA. TASK-020 and TASK-022
 are complete and no longer block the release order.

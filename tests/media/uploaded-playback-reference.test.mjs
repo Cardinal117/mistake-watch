@@ -115,7 +115,8 @@ test("uploaded media queue and play paths do not persist public asset URLs", asy
 
   assert.match(directPlayerSource, /parseUploadedSessionReference/);
   assert.match(directPlayerSource, /resolveUploadedPlaybackUrl/);
-  assert.match(playbackRouteSource, /createPresignedR2GetUrl/);
+  assert.match(playbackRouteSource, /createMediaGatewayBootstrap/);
+  assert.doesNotMatch(playbackRouteSource, /createPresignedR2GetUrl/);
   assert.match(playbackRouteSource, /getRoomMediaPlaybackAccess/);
 });
 

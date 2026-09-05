@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "mistake-watch-uploaded-media-gateway",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": true,
+  "routes": [],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA_BUCKET",
+      "bucket_name": "watch2bucket",
+    },
+  ],
+  "vars": {
+    "AUTHORIZATION_ORIGIN": "https://mistake-watch.vercel.app",
+  },
+  "secrets": {
+    "required": ["MEDIA_GATEWAY_ORIGIN_SECRET"],
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": false,
+      "persist": false,
+    },
+  },
+}

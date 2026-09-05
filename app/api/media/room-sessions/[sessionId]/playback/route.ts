@@ -1,12 +1,13 @@
+import { randomBytes } from "node:crypto";
+
 import { NextResponse } from "next/server";
 
-import { createPresignedR2GetUrl } from "@/lib/media/r2";
+import { createMediaGatewayBootstrap } from "@/lib/media/range-gateway";
+import { getMediaGatewayConfig } from "@/lib/media/range-gateway-config";
 import {
   getRoomMediaPlaybackAccess,
   RoomMediaSessionError,
 } from "@/lib/media/room-media-sessions";
-
-const playbackUrlExpiresSeconds = 30 * 60;
 
 type PlaybackRouteContext = {
   params: Promise<{
@@ -20,7 +21,10 @@ export async function GET(request: Request, context: PlaybackRouteContext) {
     const roomId = new URL(request.url).searchParams.get("roomId")?.trim();
 
     if (!roomId) {
-      return NextResponse.json({ error: "Room id is required." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Room id is required." },
+        { status: 400 },
+      );
     }
 
     const access = await getRoomMediaPlaybackAccess({
@@ -28,7 +32,12 @@ export async function GET(request: Request, context: PlaybackRouteContext) {
       sessionId,
     });
 
-    if (!access.decision.allowed || !access.session || !access.asset) {
+    if (
+      !access.decision.allowed ||
+      !access.session ||
+      !access.asset ||
+      !access.participant
+    ) {
       return NextResponse.json(
         { error: "No permission to play uploaded media in this room." },
         { status: 403 },
@@ -45,14 +54,23 @@ export async function GET(request: Request, context: PlaybackRouteContext) {
       );
     }
 
-    const playbackUrl = createPresignedR2GetUrl({
-      expiresSeconds: playbackUrlExpiresSeconds,
-      objectKey,
+    const config = getMediaGatewayConfig();
+    const expiresAt = new Date(access.session.expires_at);
+    const bootstrap = createMediaGatewayBootstrap({
+      expiresAt,
+      memberId: access.participant.memberId,
+      roomId: access.session.room_id,
+      sessionId: access.session.id,
+      signingSecret: config.signingSecret,
+      tokenId: randomBytes(18).toString("base64url"),
     });
-
-    return NextResponse.json({
-      expiresInSeconds: playbackUrlExpiresSeconds,
-      playbackUrl,
+    const expiresInSeconds = Math.max(
+      0,
+      Math.floor((expiresAt.getTime() - Date.now()) / 1000),
+    );
+    const response = NextResponse.json({
+      expiresInSeconds,
+      playbackUrl: bootstrap.playbackUrl,
       session: {
         assetId: access.session.media_asset_id,
         expiresAt: access.session.expires_at,
@@ -60,10 +78,18 @@ export async function GET(request: Request, context: PlaybackRouteContext) {
         roomId: access.session.room_id,
         status: access.session.status,
       },
+      transport: "range-gateway",
     });
+
+    response.cookies.set(bootstrap.cookie);
+
+    return response;
   } catch (error) {
     if (error instanceof RoomMediaSessionError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status },
+      );
     }
 
     console.error("[media-room-sessions:playback]", error);

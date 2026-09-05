@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type Hls from "hls.js";
+import { boundDirectPlaybackState } from "@/lib/player/direct-media-sync";
 import type { LiveRoomState } from "@/lib/spacetime";
 import {
   chooseSyncCorrection,
@@ -63,6 +64,7 @@ function DirectMediaPlayerCore({
   const mediaRef = useRef<HTMLMediaElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const applyingRemoteState = useRef(false);
+  const handleEndedRef = useRef<() => void>(() => {});
   const advanceToNextQueueItemRef = useRef(liveRoom.advanceToNextQueueItem);
   const autoplayAdvanceInFlightKeyRef = useRef<string | null>(null);
   const autoplayAdvanceInFlightAtMsRef = useRef(0);
@@ -86,6 +88,10 @@ function DirectMediaPlayerCore({
   const sourceKind = source?.kind ?? null;
   const sourceUrl = source?.url ?? null;
   const roomId = canonicalState?.roomId ?? null;
+
+  useLayoutEffect(() => {
+    handleEndedRef.current = handleEnded;
+  });
 
   useLayoutEffect(() => {
     advanceToNextQueueItemRef.current = liveRoom.advanceToNextQueueItem;
@@ -283,7 +289,9 @@ function DirectMediaPlayerCore({
     if (parseUploadedAssetReference(sourceUrl)) {
       window.setTimeout(() => {
         if (!disposed) {
-          setLocalError("Uploaded media must be started through a room session.");
+          setLocalError(
+            "Uploaded media must be started through a room session.",
+          );
         }
       }, 0);
       setPlaybackStateRef.current({
@@ -328,9 +336,8 @@ function DirectMediaPlayerCore({
         mode === "watch" &&
           Boolean(
             media &&
-              fullscreenElement &&
-              (fullscreenElement === media ||
-                fullscreenElement.contains(media)),
+            fullscreenElement &&
+            (fullscreenElement === media || fullscreenElement.contains(media)),
           ),
       );
     }
@@ -361,7 +368,11 @@ function DirectMediaPlayerCore({
           playbackRate: media.playbackRate,
           positionSeconds: media.currentTime,
         },
-        state: canonicalState,
+        state: boundDirectPlaybackState(
+          canonicalState,
+          media.duration,
+          Date.now(),
+        ),
       });
 
       applyingRemoteState.current = true;
@@ -393,6 +404,12 @@ function DirectMediaPlayerCore({
           break;
       }
 
+      // Seeking to the end can consume the native ended event. Reconcile the
+      // actual terminal element as well, using the same authority/queue guards.
+      if (media.ended) {
+        handleEndedRef.current();
+      }
+
       window.setTimeout(() => {
         applyingRemoteState.current = false;
       }, 50);
@@ -417,7 +434,7 @@ function DirectMediaPlayerCore({
       !mediaSourceUrlRef.current ||
       activeSourceUrlRef.current !== mediaSourceUrlRef.current ||
       !canControlPlaybackRef.current ||
-      applyingRemoteState.current
+      (applyingRemoteState.current && status !== "ended")
     ) {
       return;
     }
@@ -450,6 +467,15 @@ function DirectMediaPlayerCore({
   }
 
   function handleEnded() {
+    // A queued native event may arrive after the host has already rewound.
+    // A real end is not an echo of play/pause and must survive sync correction.
+    if (
+      !mediaRef.current?.ended ||
+      canonicalStateRef.current?.status !== "playing"
+    ) {
+      return;
+    }
+
     if (requestAutoplayAdvance()) {
       return;
     }
@@ -556,7 +582,17 @@ async function playMedia(
   try {
     await media.play();
     setAutoplayBlocked(false);
-  } catch {
+  } catch (error) {
+    // pause(), seeking and load() can interrupt a pending play promise. The
+    // next sync tick may retry; this is not a browser permission denial.
+    if (
+      error &&
+      typeof error === "object" &&
+      "name" in error &&
+      error.name === "AbortError"
+    ) {
+      return;
+    }
     setAutoplayBlocked(true);
   }
 }

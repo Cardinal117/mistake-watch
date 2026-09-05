@@ -210,10 +210,18 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       return;
     }
 
+    const session = snapshot.session;
+    const replayCompletedMedia =
+      (session?.sourceType === "direct" || session?.sourceType === "hls") &&
+      session.status === "ended" &&
+      input.status === "playing" &&
+      session.positionSeconds > 0 &&
+      input.positionSeconds >= session.positionSeconds;
+
     void reducers.setPlaybackState({
       actorMemberId: currentMember.id,
       playbackRate: input.playbackRate ?? 1,
-      positionSeconds: input.positionSeconds,
+      positionSeconds: replayCompletedMedia ? 0 : input.positionSeconds,
       roomId: room.id,
       status: input.status,
     });
