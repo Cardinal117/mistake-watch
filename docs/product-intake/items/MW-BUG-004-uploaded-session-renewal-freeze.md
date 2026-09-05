@@ -14,11 +14,14 @@ updated: 2026-09-05
 > [!bug] In progress - P1
 
 - **Latest checkpoint (2026-09-05):** Gateway, reconnect and end-of-file replay
-  fixes are deployed from source 9227d73. Real Opera expiry evidence exceeds
+  fixes plus private authorization logging are deployed from aa54354. Opera expiry evidence exceeds
   33 minutes on the unchanged gateway; final-head replay and guest reconnect
-  QA pass, with 557 automated tests passing. Full task sign-off still needs
-  live revocation and background-resume evidence. PR #11 stays draft/unmerged.
-  See [current QA evidence](../../tasks/TASK-024-uploaded-playback-range-gateway/review-notes.md#2026-09-05-final-replay-deployment-and-qa).
+  QA pass, with 558 automated tests passing. Separate room/session/member
+  revocation and switch-away/resume checks pass. Full sign-off still needs
+  representative operational measurements and alert verification; provider
+  usage snapshots are recorded in the current QA evidence.
+  PR #11 stays draft/unmerged.
+  See [current QA evidence](../../tasks/TASK-024-uploaded-playback-range-gateway/review-notes.md#2026-09-05-release-sign-off-checkpoint).
   This checkpoint supersedes the historical implementation/canary states below.
 
 - **Observed:** After roughly 30 minutes, an older client can freeze while room progress continues.

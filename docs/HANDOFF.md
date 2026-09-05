@@ -1,8 +1,17 @@
 # Mistake Watch Handoff
 
-Updated: 2026-09-01
+Updated: 2026-09-05
 
 ## Current State
+
+TASK-024's uploaded Range gateway, reconnect/replay repairs and private
+authorization logging are deployed from aa54354 as Vercel
+dpl_1hQwBD9otKqAL4ouYrb4irogFShy, with Worker 461a7708 at 100%.
+All 558 tests and local gates pass. Real Opera playback, background switch-away,
+room/session denial and separate Chromium guest-removal checks passed.
+PR #11 remains draft/unmerged; operational measurements and alert verification
+remain open. See the [current checkpoint](tasks/TASK-024-uploaded-playback-range-gateway/review-notes.md#2026-09-05-release-sign-off-checkpoint).
+The deployment entries below are historical milestones, not current aliases.
 
 The production application includes guest and Google identity, Watch/Listen
 rooms, SpacetimeDB live authority, YouTube and uploaded-media playback,
@@ -85,27 +94,26 @@ re-entry. The existing display settings, Escape ordering, focus restoration,
 idle-control reveal, direct-source identity, and two-participant continuity
 passed their release gates. Closure documentation is on `main` as `eeb456c`.
 
-MW-BUG-004 remains a confirmed P1 playback defect, but TASK-023 is blocked after
-Candidate A feasibility testing. With a 1.2-second lease, Playwright Chromium
+MW-BUG-004's original P1 defect led to TASK-023's rejected Candidate A.
+With a 1.2-second lease, Playwright Chromium
 149.0.7827.55 and Opera GX 150.0.7871.187 each requested the stable URL once,
 then sent later Range requests directly to the redirected object. The first
 post-expiry request (`bytes=524288-`) received `403`; neither browser revisited
 the stable route, and both media elements entered network error state. The
-result reproduced twice. No production route or player code changed. A
-Cloudflare R2 Range gateway now requires a separate architecture/security scope
-revision. Do not lengthen signatures, expose permanent R2 URLs, proxy media
-through Vercel, remount the player, use a hidden second player, or publish
-renewal as canonical room state.
+result reproduced twice. TASK-024 supersedes that experiment; do not restore
+redirect renewal, lengthen signatures, expose permanent R2 URLs, remount the
+player, use a hidden second player, or publish renewal as canonical room state.
 
-TASK-024 implements the separately approved private Range gateway and is in
-release QA. A dedicated Worker custom domain keeps the stable media URL while a
-path-scoped HttpOnly credential and Worker-origin secret require Vercel to
-revalidate current room membership, session, and ready asset before every R2
-read. Chromium and Opera GX feasibility passed with two isolated session paths;
-the focused 11 tests, all 523 tests, TypeScript, ESLint, file-length policy,
-Next.js build, and Worker dry-run compile pass. No schema change or public R2
-domain is involved. PR, provider configuration, deployment, long-play/seek,
-revocation, and two-participant production QA remain.
+TASK-024 delivers a stable same-origin media URL through a Vercel external
+rewrite to the private R2 Worker. Direct custom Worker hostnames were rejected
+by Opera. A path-scoped HttpOnly credential and Worker-origin secret require
+current room, membership, session and asset authorization before each R2 read.
+The Worker fetch failure was a native fetch receiver-binding error, corrected
+with a wrapper and verified in workerd. No schema or R2 privacy change was
+needed. The owner approved the existing opaque media-session reference in
+canonical state; credentials and object addresses remain excluded. Playback
+and revocation evidence passed; representative latency, operation accounting
+and monitoring remain before task closure.
 
 ## Required Reading
 
@@ -175,7 +183,8 @@ verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
 
-Complete TASK-024's reviewed PR and controlled production QA for MW-BUG-004.
+Complete TASK-024's operational sign-off for MW-BUG-004; keep PR #11 draft
+and unmerged until separately approved.
 Candidate A remains rejected; do not restore its redirect approach.
 
 Meanwhile, verify MW-BUG-003 in the affected participant profile, complete

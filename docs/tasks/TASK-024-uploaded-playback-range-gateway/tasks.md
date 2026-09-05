@@ -1,16 +1,15 @@
 # Tasks: Authorized Uploaded Playback Range Gateway
 
-Status: Replay repair deployed and QA passed; wider sign-off pending
+Status: Playback and revocation QA passed; operational sign-off pending
 Updated: 2026-09-05
 
 ## Current Runtime Checkpoint
 
-Replay commits 2a47932 and 9227d73 are pushed. Source 9227d73 is active on
-Vercel dpl_Fz4hYx1vnEWRwKDFsgiqck5ct3tH with Worker 461a7708 at 100%.
-557 tests and local gates pass; real Opera plus guest completion, replay,
-rewind, pause and reconnect pass. See the final replay checkpoint in
-[review-notes.md](review-notes.md#2026-09-05-final-replay-deployment-and-qa).
-Full TASK-024 sign-off retains live revocation/background verification gaps;
+Source aa54354 is active on Vercel dpl_1hQwBD9otKqAL4ouYrb4irogFShy with
+Worker 461a7708 at 100%. 558 tests and local gates pass. Playback, reconnect,
+replay, switch-away/resume and room/session/member revocation checks are in
+[review-notes.md](review-notes.md#2026-09-05-release-sign-off-checkpoint).
+Full TASK-024 sign-off retains the representative operational measurement gate;
 PR #11 is draft/unmerged and MW-BUG-004 remains in progress. This current
 checkpoint supersedes the historical restored/pending states below.
 

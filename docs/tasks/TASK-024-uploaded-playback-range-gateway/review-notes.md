@@ -1,7 +1,104 @@
 # Review Notes: Authorized Uploaded Playback Range Gateway
 
-Status: Replay QA passed and deployed; wider TASK-024 sign-off pending
+Status: Playback and revocation QA passed; operational sign-off pending
 Updated: 2026-09-05
+
+## 2026-09-05: Release Sign-Off Checkpoint
+
+This checkpoint supersedes deployment and pending-QA states in older entries.
+
+Source aa54354 is pushed and deployed as Vercel
+dpl_1hQwBD9otKqAL4ouYrb4irogFShy. The public hostname was read back to that
+deployment; health/readiness are 200 and unauthenticated gateway access is 401.
+Worker 461a7708 is unchanged. Deployment used an exact Git export with zero
+private environment/temporary files in its manifest. Direct CLI upload from
+the QA worktree would include .tmp under the current .vercelignore: use a clean
+Git export. The existing pinned rollback remains prepared; its Vercel target
+was verified Ready before promotion. PR #11 stays draft and unmerged.
+
+Post-promotion Opera smoke on the exact uploaded-media route reached 5787
+seconds with readyState 4 and no error; pause and rewind also passed. The
+intentional reload cleared the earlier revocation-test network error and is
+not invisible-renewal evidence. Both disposable QA rooms were closed, the
+session fixture was restored, and the removed test membership remained absent.
+The private memory-vault checkpoint was saved without a vault commit or push.
+
+Additional live QA on the unchanged gateway:
+
+- Windows Computer Use activated File Explorer and observed another Opera tab
+  during the interval. Uploaded playback continued over three minutes away
+  from its foreground surface; return and forward/back controls worked with
+  one media element, unchanged source, readyState 4 and no error. Other desktop
+  activity switched tabs during the interval. This is switch-away/resume smoke
+  evidence, not controlled tab-discard or OS-sleep proof.
+- Ending only the disposable QA media session through a guarded database
+  fixture caused its next unbuffered Opera range to return 403 (692 ms Worker
+  wall time). The prepared restoration returned exactly one session to its
+  original active/null-ended state.
+- An independent in-app guest loaded authorized bytes (readyState 4). Removing
+  only that newly created disposable membership, which had no started sessions
+  or account migration links, caused its next unbuffered request to return 403
+  (638 ms Worker wall time). The room and owner remained authorized. This case
+  is Chromium evidence; room/session denial was checked in real Opera.
+
+The independent reviewer cleared the logging fix; 558 tests and local gates
+pass. The full packet remains open for representative authorization timings,
+success/denial counters, per-request R2 accounting and alert verification.
+Provider usage readback is below. Tail wall time is not authorization latency,
+and these tiny samples are not representative error rates.
+Do not archive MW-BUG-004 or merge PR #11
+until this operational gate passes or the owner accepts a scope revision.
+
+### Operational Cost Review
+
+Official documentation checked on 2026-09-05:
+
+- [Workers](https://developers.cloudflare.com/workers/platform/pricing/): Free
+  includes 100,000 requests/day and 10 ms CPU/invocation. Standard starts at
+  $5/month, including 10 million requests and 30 million CPU-ms; additional
+  million requests cost $0.30 and million CPU-ms $0.02. The actual Worker plan
+  remains unverified; observed gateway usage is recorded below.
+- [R2](https://developers.cloudflare.com/r2/pricing/): Standard includes 10
+  million Class B reads/month, then $0.36/million; R2 egress is free. Ordinary
+  successful ranges use one get, denied requests none, and unsatisfiable-range
+  metadata handling can add a head. These are code-derived operation counts.
+- [Vercel CDN](https://vercel.com/docs/manage-cdn-usage) and
+  [rewrites](https://vercel.com/docs/routing/rewrites): media still traverses
+  Vercel and consumes Fast Data Transfer/CDN requests. Hobby includes 100 GB;
+  Pro includes 1 TB with regional overage rates. Authorization adds a function
+  invocation and database queries. The dashboard identifies the team as Hobby.
+
+Live dashboard readback on 2026-09-05 (different reporting windows):
+
+- Vercel billing window Aug 6-Sep 5: 4.32 GB/100 GB Fast Data Transfer,
+  123K/1M function invocations and 1h 46m/4h active CPU. These are displayed
+  account totals, not gateway-only consumption.
+- Vercel production authorization route, last 12 hours: 141 invocations,
+  0% errors and 0% timeouts. Its duration chart is explicitly Demo Data and
+  cannot establish measured latency or p95.
+- Worker, last 24 hours, all deployed versions: 174 invocations, zero runtime
+  errors and 101 client cancellations. The active version accounts for 172
+  invocations. Cancellations are not classified here as playback failures.
+  Its outbound Vercel host table shows 161 2xx, six 4xx and 720.4 ms request
+  duration; this host aggregate includes QA and is not authorization p95.
+- R2 billing window Aug 6-Sep 6: 41.39 GB stored, 1.05K Class A operations,
+  860 Class B operations and $0.39 displayed billable usage. These totals
+  include other media activity and cannot prove zero reads for a denied range.
+
+These snapshots show modest current consumption but are not a load test.
+No alert configuration was verified or changed. Representative authorization
+p95, reason-specific outcomes and per-request R2 accounting remain open.
+
+Illustration: a 1 GB video downloaded once by two viewers consumes about 2 GB
+Vercel transfer, plus page/API traffic and repeat ranges. About 50 such sessions
+alone reach 100 GB. This is a capacity estimate, not measured user traffic.
+
+Proposed thresholds, not configured alerts: review at 80% allowance or forecast
+exhaustion within seven days; investigate authorization p95 above 2 seconds;
+roll back for any authorization bypass/private-cache hit, repeated authorized
+player failures, or gateway 5xx above 1% over five minutes with at least 100
+requests. Evaluate tiny samples individually. No billing plan, alert, cache,
+DNS or secret configuration changed during this review.
 
 ## 2026-09-05: Final Security Review And Room Revocation
 
