@@ -1,7 +1,60 @@
 # Review Notes: Authorized Uploaded Playback Range Gateway
 
-Status: Production restored; approved reconnect repair in progress
+Status: Expiry/reconnect checks passed; replay gate failed; production restored
 Updated: 2026-09-05
+
+## 2026-09-05: Final QA Result And Restoration
+
+This final checkpoint supersedes the interim deployment state below. The exact
+Git diff was reviewed after automatic approval review questioned owner-work
+preservation: only this agent's 14-line runtime checkpoint and status were dirty;
+tasks.md and the intake item were clean. Their historical content is preserved.
+
+Passed: real Opera host and independent in-app guest reconnected in sync without
+a host action (138.58/138.56 seconds). The original Opera source stayed unchanged
+with one media element. A second session in the same Opera profile loaded and
+sought independently; that temporary second room was closed normally.
+
+Post-expiry evidence: at 32.5 minutes the buffer covered 0-356.797 and
+3159.933333-4700.118. At 33.8 minutes a backward seek to 3157 added
+3151.6-3159.36; both participants reached 3157 with readyState 4 and no media
+error. A forward seek added the previously unbuffered 6326.6-6333.2 end segment,
+again ready/error-free in both participants. Both bootstraps were older than
+30 minutes. The original source was not refreshed or replaced.
+
+Replay gate FAILED: seek-to-end, back and Play produced an Opera autoplay prompt
+and stopped media at 6316.236 while the guest reached 6333.233333. Canonical UI
+continued playing past duration; no media network error was reported. After
+returning to mid-file, the visible autoplay prompt and Play recovered both
+participants (3188.20/3188.24) without refresh, roughly 38 minutes into the run.
+Do not equate this end-of-file observation with signed-URL expiry or claim its
+cause/pre-existence is proven. No speculative player change was made.
+
+Live revocation denial remains inconclusive: Opera blocked direct navigation to
+the closed second room's old media path. Background/resume was not established.
+The full release gate is NOT PASSED; PR #11 stays draft and unmerged and
+MW-BUG-004 is not closed. The prepared rollback restored Vercel
+dpl_79vfekpDWSrzBr1mqivyYdUbAFL7, then Worker
+8637e61a-0d98-49ab-a217-af3252c969c3 at 100%. Health/readiness returned 200;
+gateway control returned 404. Temporary playback tabs were closed.
+
+Recommended next scope: reproduce end/back/resume with pending play and ended
+events, then validate duration clamping and autoplay-error classification before
+any player/queue repair. That implementation is outside this clock-only slice.
+
+## 2026-09-05: Reconnect Candidate Runtime Checkpoint
+
+Commit 1249b19 is pushed and deployed as Vercel
+dpl_4sfsNqq2yXjvmbf9X99MzHhLKFdV, paired with the unchanged verified Worker
+461a7708-2d46-4a56-8533-9b91f2cdd316 at 100%. Candidate and production
+health/readiness pass; unauthenticated gateway access returns 401. Exact
+production deployment and draft/unmerged PR head were read back.
+
+Real Opera host plus an independent in-app browser guest now pass the formerly
+failing guest reload: after accepting the autoplay prompt, the guest caught up
+without a host action (138.58/138.56 seconds), with no media errors. The original
+Opera source remained unchanged. Long-session/post-expiry ranges are still
+under test; this checkpoint is not completion or permission to merge PR #11.
 
 ## 2026-09-05: Approved Reconnect Clock Repair
 
