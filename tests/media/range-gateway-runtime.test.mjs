@@ -36,7 +36,14 @@ import gateway from "./gateway.js";
 export default {
   async fetch(request, env) {
     let reads = 0;
-    const response = await gateway.fetch(request, {
+    const metrics = [];
+    const originalInfo = console.info;
+    console.info = (label, metric) => {
+      if (label === "[media-gateway] request") metrics.push(metric);
+    };
+    let response;
+    try {
+      response = await gateway.fetch(request, {
       ...env,
       MEDIA_BUCKET: {
         async get(key, options) {
@@ -59,9 +66,13 @@ export default {
           throw new Error("Unexpected head");
         },
       },
-    });
+      });
+    } finally {
+      console.info = originalInfo;
+    }
     const headers = new Headers(response.headers);
     headers.set("X-Test-Storage-Reads", String(reads));
+    headers.set("X-Test-Metrics", JSON.stringify(metrics));
     return new Response(response.body, { status: response.status, headers });
   },
 };
@@ -125,6 +136,11 @@ test("native Worker fetch reaches authorization and enforces denial before stora
     assert.equal(allowed.headers.get("Content-Length"), "100");
     assert.equal(allowed.headers.get("Cache-Control"), "private, no-store");
     assert.equal(allowed.headers.get("X-Test-Storage-Reads"), "1");
+    const [allowedMetric] = JSON.parse(allowed.headers.get("X-Test-Metrics"));
+    assert.equal(allowedMetric.authorizationOutcome, "allowed");
+    assert.equal(allowedMetric.r2GetAttempts, 1);
+    assert.ok(Number.isFinite(allowedMetric.authorizationMs));
+    assert.ok(allowedMetric.authorizationMs >= 0);
     assert.deepEqual(allowedBody, new Uint8Array(100).fill(7));
     assert.deepEqual(outboundCalls, [
       {
@@ -145,6 +161,10 @@ test("native Worker fetch reaches authorization and enforces denial before stora
       await denied.text();
       assert.equal(denied.status, 403);
       assert.equal(denied.headers.get("X-Test-Storage-Reads"), "0");
+      const [deniedMetric] = JSON.parse(denied.headers.get("X-Test-Metrics"));
+      assert.equal(deniedMetric.authorizationOutcome, "denied");
+      assert.equal(deniedMetric.r2GetAttempts, 0);
+      assert.equal(deniedMetric.status, 403);
       assert.equal(denied.headers.get("Cache-Control"), "private, no-store");
     }
     assert.equal(outboundCalls.length, 3, "each request must reauthorize");

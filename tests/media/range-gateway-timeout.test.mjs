@@ -39,6 +39,7 @@ function createWorkerEnv(bucket) {
 for (const stalledStage of ["headers", "body"]) {
   test("authorization timeout bounds stalled " + stalledStage, async () => {
     const bucket = createBucketMock();
+    const metrics = [];
     let timer;
     const pending = worker.handleRangeGatewayRequest(
       new Request(
@@ -49,6 +50,7 @@ for (const stalledStage of ["headers", "body"]) {
       ),
       createWorkerEnv(bucket),
       {
+        reportRequest: (metric) => metrics.push(metric),
         fetch: async (url, init) => {
           if (new URL(url).pathname === "/api/health") {
             return new Response(null, { status: 200 });
@@ -89,6 +91,12 @@ for (const stalledStage of ["headers", "body"]) {
       );
       assert.equal(result.status, 503);
       assert.equal(bucket.getCalls, 0);
+      assert.equal(metrics.length, 1);
+      assert.equal(metrics[0].authorizationOutcome, "timeout");
+      assert.equal(metrics[0].r2GetAttempts, 0);
+      assert.equal(metrics[0].r2HeadAttempts, 0);
+      assert.ok(metrics[0].authorizationMs >= 4500);
+      assert.ok(metrics[0].authorizationMs < 6500);
     } finally {
       clearTimeout(timer);
     }

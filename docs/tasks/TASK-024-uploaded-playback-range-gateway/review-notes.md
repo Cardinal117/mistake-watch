@@ -3,6 +3,54 @@
 Status: Playback and revocation QA passed; operational sign-off pending
 Updated: 2026-09-05
 
+## 2026-09-05: Operational Metrics Local Verification
+
+Baseline 49335d7 was clean. Fourteen new behavioral tests failed because no
+per-request metrics were emitted (exit 1); the same tests pass after the Worker
+change. Metrics record authorization duration including response-body parsing,
+but exclude the diagnostic health probe, R2 I/O and media streaming. They emit
+only numeric fields and fixed classifications. Missing credentials and denied
+authorization record zero R2 attempts; an unsatisfiable range records one get
+and one head. A throwing reporter cannot change the response or consume its body.
+
+Additional post-implementation assertions exercise the actual default reporter
+in native workerd and classify real header/body abort deadlines as timeouts.
+Focused gateway coverage passes 30/30 and full tests pass 572/572. Typecheck,
+lint (the existing navigation warning), production build, Worker dry-run and file-length checks
+pass. The Worker is 545 lines, above the advisory 500-line review threshold but
+below the 700-line ceiling; independent review found no concrete regression.
+No new dependency or authorization policy is introduced.
+
+The response status measures response creation, not complete stream delivery;
+R2 counters measure API attempts, not a provider billing guarantee. Combine
+them with provider invocation outcomes for later streaming errors/cancellations.
+Authorization denial is deliberately generic: do not infer a particular member
+or session revocation cause from it. These local results are not production p95.
+
+Read-only alert verification found two enabled Cloudflare email Budget Alerts
+at $5 and $8. Both use total-spend filters; the R2-labelled alert must not be
+assumed to cover only R2. Vercel's anomaly-alert surface requires Pro. No alert
+was changed or test notification sent; delivery to the recipient is untested.
+
+The candidate Wrangler configuration sets invocation_logs=false and
+persist=false. Cloudflare's [invocation logs](https://developers.cloudflare.com/workers/observability/logs/workers-logs/)
+include request URLs; custom-payload sanitization alone does not establish
+envelope privacy. Disabling persistence avoids retaining those envelopes in
+Worker log search. This sacrifices historical Worker log queries; the proposed
+bounded tail retains only numeric metrics and fixed categories, never raw
+events/URLs/cookies. The configuration passed dry-run but is NOT deployed.
+
+Next approval covers committing/pushing this candidate and a Worker-only
+canary. Deployment-list readback confirms Worker 461a7708 is still active at
+100%; the exact rollback script is prepared in .tmp/task024-telemetry-rollback.ps1.
+Recheck it before deployment, read back log-persistence settings,
+then use the exact Opera uploaded path for a measured play/seek sample and
+guarded denial. Preserve the existing Vercel deployment and R2 privacy.
+Record sample size, latency distribution, range/full counts, get/head attempts,
+and delivery outcomes; label small or incomplete samples. Restore 461a7708 for
+any privacy, delivery or accounting failure. No hosted mutation occurred during
+this preparation; PR #11 remains draft and the operational gate stays open.
+
 ## 2026-09-05: Release Sign-Off Checkpoint
 
 This checkpoint supersedes deployment and pending-QA states in older entries.

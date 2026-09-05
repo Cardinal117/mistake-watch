@@ -31,9 +31,27 @@ export type UploadedMediaGatewayEnv = {
 
 type GatewayDependencies = {
   fetch: typeof fetch;
+  now?: () => number;
+  reportRequest?: (metric: GatewayRequestMetric) => void;
   reportAuthorizationFailure?: (
     diagnostic: AuthorizationFailureDiagnostic,
   ) => void;
+};
+
+type GatewayRequestMetric = {
+  authorizationMs: number | null;
+  authorizationOutcome:
+    | "not_attempted"
+    | "allowed"
+    | "denied"
+    | "timeout"
+    | "fetch_exception"
+    | "upstream_status"
+    | "malformed_success";
+  requestKind: "full" | "range" | "invalid";
+  r2GetAttempts: number;
+  r2HeadAttempts: number;
+  status: number;
 };
 
 type AuthorizationFailureDiagnostic =
@@ -86,7 +104,42 @@ export async function handleRangeGatewayRequest(
     // Native Worker fetch requires the global receiver, not this object.
     fetch: (...args) => globalThis.fetch(...args),
     reportAuthorizationFailure,
+    reportRequest: (metric) => console.info("[media-gateway] request", metric),
   },
+) {
+  const range = parseRangeHeader(request.headers.get("Range"));
+  const metric: GatewayRequestMetric = {
+    authorizationMs: null,
+    authorizationOutcome: "not_attempted",
+    requestKind: range === "invalid" ? "invalid" : range ? "range" : "full",
+    r2GetAttempts: 0,
+    r2HeadAttempts: 0,
+    status: 500,
+  };
+  try {
+    const response = await serveRangeGatewayRequest(
+      request,
+      env,
+      dependencies,
+      metric,
+    );
+    metric.status = response.status;
+    return response;
+  } finally {
+    // Record response creation, never wait for or consume the media stream.
+    try {
+      dependencies.reportRequest?.({ ...metric });
+    } catch {
+      // Observability must not alter delivery or expose a reporter exception.
+    }
+  }
+}
+
+async function serveRangeGatewayRequest(
+  request: Request,
+  env: UploadedMediaGatewayEnv,
+  dependencies: GatewayDependencies,
+  metric: GatewayRequestMetric,
 ) {
   if (request.method !== "GET") {
     return privateResponse("Method not allowed.", 405, {
@@ -131,6 +184,7 @@ export async function handleRangeGatewayRequest(
     credential,
     dependencies,
     env,
+    metric,
     sessionId,
   });
 
@@ -146,11 +200,13 @@ export async function handleRangeGatewayRequest(
   let object: R2ObjectBodyLike | null;
 
   try {
+    metric.r2GetAttempts += 1;
     object = await env.MEDIA_BUCKET.get(authorization.objectKey, {
       range: requestedRange ?? undefined,
     });
   } catch (error) {
     if (requestedRange && isInvalidRangeError(error)) {
+      metric.r2HeadAttempts += 1;
       const metadata = await env.MEDIA_BUCKET.head(
         authorization.objectKey,
       ).catch(() => null);
@@ -210,6 +266,7 @@ async function authorizeRequest(input: {
   credential: string;
   dependencies: GatewayDependencies;
   env: UploadedMediaGatewayEnv;
+  metric: GatewayRequestMetric;
   sessionId: string;
 }): Promise<
   | {
@@ -223,6 +280,13 @@ async function authorizeRequest(input: {
     }
 > {
   let response: Response;
+  const now = input.dependencies.now ?? (() => performance.now());
+  const startedAt = now();
+  const signal = AbortSignal.timeout(authorizationTimeoutMs);
+  const record = (outcome: GatewayRequestMetric["authorizationOutcome"]) => {
+    input.metric.authorizationMs = Math.max(0, Math.round(now() - startedAt));
+    input.metric.authorizationOutcome = outcome;
+  };
 
   try {
     response = await input.dependencies.fetch(
@@ -240,10 +304,13 @@ async function authorizeRequest(input: {
           "Content-Type": "application/json",
         },
         method: "POST",
-        signal: AbortSignal.timeout(authorizationTimeoutMs),
+        signal,
       },
     );
   } catch (error) {
+    record(
+      signal.aborted || isTimeoutError(error) ? "timeout" : "fetch_exception",
+    );
     input.dependencies.reportAuthorizationFailure?.({
       kind: classifyAuthorizationFetchException(error),
       originHealth: await probeAuthorizationOriginHealth({
@@ -257,6 +324,11 @@ async function authorizeRequest(input: {
   }
 
   if (!response.ok) {
+    record(
+      response.status === 401 || response.status === 403
+        ? "denied"
+        : "upstream_status",
+    );
     if (response.status !== 401 && response.status !== 403) {
       input.dependencies.reportAuthorizationFailure?.({
         reason: "upstream_status",
@@ -270,12 +342,17 @@ async function authorizeRequest(input: {
     };
   }
 
-  const payload = (await response.json().catch(() => null)) as {
+  let bodyTimedOut = false;
+  const payload = (await response.json().catch((error: unknown) => {
+    bodyTimedOut = signal.aborted || isTimeoutError(error);
+    return null;
+  })) as {
     contentType?: unknown;
     objectKey?: unknown;
   } | null;
 
   if (!payload || typeof payload.objectKey !== "string" || !payload.objectKey) {
+    record(bodyTimedOut ? "timeout" : "malformed_success");
     input.dependencies.reportAuthorizationFailure?.({
       reason: "malformed_success",
       status: response.status,
@@ -284,6 +361,7 @@ async function authorizeRequest(input: {
     return { allowed: false, status: 503 };
   }
 
+  record("allowed");
   return {
     allowed: true,
     contentType:
@@ -292,6 +370,10 @@ async function authorizeRequest(input: {
         : null,
     objectKey: payload.objectKey,
   };
+}
+
+function isTimeoutError(error: unknown) {
+  return error instanceof Error && error.name === "TimeoutError";
 }
 
 async function probeAuthorizationOriginHealth(input: {
