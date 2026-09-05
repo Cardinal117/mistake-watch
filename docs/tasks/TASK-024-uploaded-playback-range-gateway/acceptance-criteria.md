@@ -1,11 +1,11 @@
 # Acceptance Criteria: Authorized Uploaded Playback Range Gateway
 
-Status: Complete and deployed; PR #11 draft/unmerged
+Status: Complete and deployed; owner approved PR #11 integration
 Updated: 2026-09-05
 
 Required implementation and QA gates are complete. Results and bounded evidence
 limitations are in [the closure checkpoint](review-notes.md#2026-09-05-final-review-and-task-closure).
-PR #11 remains draft/unmerged; repository integration is separately gated.
+The owner explicitly approved PR #11 integration after this QA checkpoint.
 The owner approved retaining the established opaque uploaded-media session
 reference in canonical state. This narrow identifier exception does not permit
 media credentials, secrets or object addresses in room state.

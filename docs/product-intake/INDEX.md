@@ -34,7 +34,7 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 ## Current Focus
 
 TASK-024 is complete and deployed; [[archive/MW-BUG-004-uploaded-session-renewal-freeze|MW-BUG-004]]
-is resolved. PR #11 remains draft/unmerged pending separate approval.
+is resolved. The owner approved PR #11 integration on 2026-09-05.
 
 1. Verify the deployed
    [[items/MW-BUG-003-google-redirect-black-player|MW-BUG-003]] recovery in the

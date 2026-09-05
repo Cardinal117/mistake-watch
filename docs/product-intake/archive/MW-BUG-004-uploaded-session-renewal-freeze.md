@@ -11,7 +11,7 @@ updated: 2026-09-05
 
 # Uploaded playback can freeze after signed URL expiry
 
-> [!success] Complete - deployed with TASK-024; PR #11 draft/unmerged
+> [!success] Complete - deployed with TASK-024; PR #11 integration approved
 
 - **Latest checkpoint (2026-09-05):** Gateway, reconnect and end-of-file replay
   fixes plus private authorization logging are deployed from aa54354. Opera expiry evidence exceeds
@@ -22,7 +22,7 @@ updated: 2026-09-05
   recorded 13 authorized ranges, median 784 ms, sample p95 895 ms and zero R2
   attempts on denial. Budget alerts were verified; this is not a load test.
   Implementation and required QA are complete; the owner approved formal
-  closure on 2026-09-05. PR #11 stays draft/unmerged pending separate merge approval.
+  closure on 2026-09-05. The owner subsequently approved PR #11 integration on the same date.
   See [current QA evidence](../../tasks/TASK-024-uploaded-playback-range-gateway/review-notes.md#2026-09-05-operational-canary-passed).
   This checkpoint supersedes the historical implementation/canary states below.
 

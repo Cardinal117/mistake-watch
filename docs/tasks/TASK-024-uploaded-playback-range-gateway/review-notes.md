@@ -1,7 +1,17 @@
 # Review Notes: Authorized Uploaded Playback Range Gateway
 
-Status: Complete and deployed; PR #11 draft/unmerged
+Status: Complete and deployed; owner approved PR #11 integration
 Updated: 2026-09-05
+
+## 2026-09-05: Owner-Approved Integration
+
+After closure commit 4b6c522, the owner explicitly approved merging PR #11 and
+completing integration. This supersedes earlier draft/unmerged approval gates.
+The worktree was clean, the branch was zero behind main, and GitHub reported
+MERGEABLE/CLEAN with no checks or review decision. Existing local and live QA
+remain the release evidence; this integration checkpoint changes documentation
+only. Vercel dpl_1hQwBD9otKqAL4ouYrb4irogFShy and Worker c801d51a at 100% were
+verified before merge. The merged PR records the final merge commit and time.
 
 ## 2026-09-05: Final Review And Task Closure
 

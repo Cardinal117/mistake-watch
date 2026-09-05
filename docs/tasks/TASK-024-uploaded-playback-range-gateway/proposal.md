@@ -1,6 +1,6 @@
 # Proposal: Authorized Uploaded Playback Range Gateway
 
-Status: Complete and deployed; PR #11 draft/unmerged
+Status: Complete and deployed; owner approved PR #11 integration
 Updated: 2026-09-05
 
 This approved planning record is retained as history. Final scope, deployed

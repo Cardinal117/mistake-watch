@@ -13,8 +13,7 @@ room/session denial and separate Chromium guest-removal checks passed.
 The bounded operational sample passed: 13 authorized ranges, median 784 ms,
 sample p95 895 ms and zero R2 attempts on denial. Existing budget alerts were
 verified; this is not a load/SLO or notification-delivery test.
-TASK-024 is complete and MW-BUG-004 is resolved/archived. PR #11 remains
-draft/unmerged pending separate integration approval. See the [closure checkpoint](tasks/TASK-024-uploaded-playback-range-gateway/review-notes.md#2026-09-05-final-review-and-task-closure).
+TASK-024 is complete and MW-BUG-004 is resolved/archived. The owner approved PR #11 integration on 2026-09-05. See the [closure checkpoint](tasks/TASK-024-uploaded-playback-range-gateway/review-notes.md#2026-09-05-final-review-and-task-closure).
 The deployment entries below are historical milestones, not current aliases.
 
 The production application includes guest and Google identity, Watch/Listen
@@ -118,7 +117,7 @@ needed. The owner approved the existing opaque media-session reference in
 canonical state; credentials and object addresses remain excluded. Playback
 and revocation evidence passed, as did the bounded latency/operation sample and
 monitoring review. Final task review and intake closure are complete; PR #11
-still requires owner approval before undrafting or merging.
+has explicit owner approval for undrafting and merging.
 
 ## Required Reading
 
@@ -188,9 +187,8 @@ verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
 
-TASK-024 is closed with its deployed QA evidence retained. Keep PR #11 draft
-and unmerged until separately approved; do not redeploy older main over the
-verified candidate. Candidate A remains rejected.
+TASK-024 is closed with its deployed QA evidence retained. The owner approved PR #11
+integration; do not redeploy older main over the verified candidate. Candidate A remains rejected.
 
 The next existing backlog priority is to verify MW-BUG-003 in the affected
 participant profile. Later evidence work covers TASK-015C performance/shared

@@ -95,7 +95,7 @@ redirect candidate remains rejected. The approved reconnect/replay repairs and
 security guards are also deployed; 572 tests, local gates, real Opera playback
 beyond 33 minutes and bounded operational/revocation QA pass.
 See [final evidence](tasks/TASK-024-uploaded-playback-range-gateway/review-notes.md#2026-09-05-final-review-and-task-closure).
-PR #11 remains draft/unmerged; integration requires separate owner approval.
+The owner approved PR #11 integration on 2026-09-05 after final QA and closure.
 
 ## Account Rooms Lifecycle In Progress
 

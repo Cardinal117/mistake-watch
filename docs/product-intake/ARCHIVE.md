@@ -15,7 +15,7 @@ evidence, commit, and deployment reference where applicable.
   authorized ranges, median 784 ms, sample p95 895 ms, and zero R2 attempts on denial.
 - **Deployment:** Application aa54354 / Vercel dpl_1hQwBD9otKqAL4ouYrb4irogFShy;
   telemetry 517766a / Worker c801d51a at 100%.
-- **Integration:** PR #11 remains draft/unmerged; merge approval is separate.
+- **Integration:** The owner approved PR #11 integration on 2026-09-05.
 - **Original report:**
   [[archive/MW-BUG-004-uploaded-session-renewal-freeze|Archived item]]
 
