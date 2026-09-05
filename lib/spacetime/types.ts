@@ -17,6 +17,7 @@ export type LiveRoomSession = {
   queueAutoplayEnabled: boolean;
   queueMode: "autoplayRelated" | "loop" | "normal" | "shuffle" | "smartShuffle";
   serverUpdatedMs: number;
+  serverRevisionMs?: number;
   roomName: string;
   sourceTitle: string | null;
   sourceType: "direct" | "hls" | "youtube" | null;

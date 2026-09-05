@@ -164,8 +164,11 @@ export function getMemberAccentColor(memberId: string) {
 }
 
 export function formatDuration(totalSeconds: number) {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
+  const wholeSeconds = Number.isFinite(totalSeconds)
+    ? Math.max(0, Math.floor(totalSeconds))
+    : 0;
+  const minutes = Math.floor(wholeSeconds / 60);
+  const seconds = wholeSeconds % 60;
 
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }

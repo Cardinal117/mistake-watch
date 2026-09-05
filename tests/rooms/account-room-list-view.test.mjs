@@ -241,5 +241,5 @@ test("guest accounts retain one persistent sign-in footer", async () => {
   assert.match(panel, /grid-rows-\[auto_minmax\(0,1fr\)\]/);
   assert.match(panel, /Continue with Google/);
   assert.match(panel, /href=\{signInHref\}/);
-  assert.match(panel, /identity, rooms, and preferences available/);
+  assert.match(panel, /identity, rooms, and preferences\s+available/);
 });

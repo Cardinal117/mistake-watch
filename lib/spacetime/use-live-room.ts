@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 
 import { renameRoomAction, setRoomModeAction } from "@/lib/rooms/actions";
 import type { QueueMode } from "@/lib/queue/model";
 import type { RoomParticipant, RoomSnapshot } from "@/lib/rooms";
 import { parseUploadedAssetReference } from "@/lib/media/uploaded-playback-reference";
 import { createUploadedPlaybackSessionReference } from "@/lib/media/uploaded-room-session-client";
+import { PreparedYouTubeAutoplay } from "@/lib/youtube/prepared-autoplay";
 import { predictNextQueueItem } from "@/lib/player/next-item-preparation";
 import type { LiveRoomState } from "./live-room/client-types";
 import { hasLiveRoomAdmission } from "./live-room/admission";
@@ -52,6 +53,25 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       (currentLiveParticipant?.status === "online" &&
         currentLivePermission?.canControlPlayback),
     );
+  const [youtubeAutoplayPreparation] = useState(
+    () => new PreparedYouTubeAutoplay(),
+  );
+  useLayoutEffect(() => {
+    youtubeAutoplayPreparation.observe(
+      snapshot.session,
+      canControlPlayback,
+      connectionStatus === "connected",
+    );
+  }, [
+    youtubeAutoplayPreparation,
+    snapshot.session,
+    canControlPlayback,
+    connectionStatus,
+  ]);
+  useEffect(
+    () => () => youtubeAutoplayPreparation.cancel(),
+    [youtubeAutoplayPreparation],
+  );
   const canAddQueue =
     hasCurrentLiveAuthority &&
     Boolean(
@@ -392,14 +412,67 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       return;
     }
 
-    await reducers.advanceQueueItem({
-      actorMemberId: currentMember.id,
-      autoplay: input?.autoplay ?? false,
-      expectedActiveQueueItemId: session.activeQueueItemId ?? undefined,
-      expectedPlaybackOccurrenceId: session.playbackOccurrenceId ?? undefined,
-      expectedSourceUrl: session.sourceUrl ?? undefined,
-      roomId: room.id,
-    });
+    const prepareYouTube =
+      input?.autoplay === true && nextQueueItem?.sourceType === "youtube";
+    if (prepareYouTube && nextQueueItem?.sourceUrl) {
+      youtubeAutoplayPreparation.arm({
+        queueItemId: nextQueueItem.queueItemId,
+        sourceUrl: nextQueueItem.sourceUrl,
+        commit: (positionSeconds, expected) => {
+          void reducers
+            .startPreparedYoutube({
+              actorMemberId: currentMember.id,
+              positionSeconds,
+              roomId: room.id,
+              expectedSourceUrl: expected.sourceUrl ?? "",
+              expectedActiveQueueItemId: expected.activeQueueItemId ?? "",
+              expectedPlaybackOccurrenceId:
+                expected.playbackOccurrenceId ?? undefined,
+              expectedServerUpdatedMs:
+                expected.serverRevisionMs ?? expected.serverUpdatedMs,
+            })
+            .catch(() => {
+              youtubeAutoplayPreparation.cancel();
+              setErrorMessage(
+                "YouTube could not start. Press play to try again.",
+              );
+            });
+        },
+        fail: setErrorMessage,
+      });
+    }
+    try {
+      if (prepareYouTube && nextQueueItem) {
+        await reducers.prepareYoutubeAutoplay({
+          actorMemberId: currentMember.id,
+          roomId: room.id,
+          expectedNextQueueItemId: nextQueueItem.queueItemId,
+          expectedServerUpdatedMs:
+            session.serverRevisionMs ?? session.serverUpdatedMs,
+          expectedActiveQueueItemId: session.activeQueueItemId ?? undefined,
+          expectedPlaybackOccurrenceId:
+            session.playbackOccurrenceId ?? undefined,
+          expectedSourceUrl: session.sourceUrl ?? "",
+        });
+      } else {
+        await reducers.advanceQueueItem({
+          actorMemberId: currentMember.id,
+          autoplay: input?.autoplay ?? false,
+          expectedActiveQueueItemId: session.activeQueueItemId ?? undefined,
+          expectedPlaybackOccurrenceId:
+            session.playbackOccurrenceId ?? undefined,
+          expectedSourceUrl: session.sourceUrl ?? undefined,
+          roomId: room.id,
+        });
+      }
+    } catch (error) {
+      youtubeAutoplayPreparation.cancel();
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "The next song could not start.",
+      );
+    }
   }
 
   function reportMediaFailure(input: {
@@ -639,6 +712,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
   }
 
   return {
+    youtubeAutoplayPreparation,
     addQueueItem,
     advanceToNextQueueItem,
     canAddQueue,

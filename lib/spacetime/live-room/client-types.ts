@@ -1,3 +1,8 @@
+import type {
+  PrepareYoutubeAutoplayParams,
+  StartPreparedYoutubeParams,
+} from "../generated/types/reducers";
+import type { PreparedYouTubeAutoplay } from "@/lib/youtube/prepared-autoplay";
 import type { QueueMode } from "@/lib/queue/model";
 import type { RoomParticipant } from "@/lib/rooms";
 import type { SpacetimeConnectionStatus } from "../adapter";
@@ -46,6 +51,8 @@ export type LiveDb = {
 };
 
 export type LiveReducers = {
+  prepareYoutubeAutoplay(params: PrepareYoutubeAutoplayParams): Promise<void>;
+  startPreparedYoutube(params: StartPreparedYoutubeParams): Promise<void>;
   addQueueItem(params: {
     actorMemberId: string;
     artist: string;
@@ -239,6 +246,7 @@ export type LiveReducers = {
 };
 
 export type LiveRoomState = {
+  youtubeAutoplayPreparation?: PreparedYouTubeAutoplay;
   addQueueItem(input: {
     artist?: string;
     channelName?: string;

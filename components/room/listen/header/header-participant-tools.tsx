@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Star } from "lucide-react";
 import { Avatar } from "@/components/ui";
 import { setRoomSavedAction } from "@/lib/rooms/actions";
@@ -14,7 +14,11 @@ export function ListenMemberAvatarRow({
   currentMemberId,
   liveRoom,
   participants,
+  maxVisibleParticipants,
+  themeStyle,
 }: {
+  maxVisibleParticipants?: number;
+  themeStyle?: CSSProperties;
   controllerMemberId: string | null;
   currentMemberId?: string | null;
   liveRoom: LiveRoomState;
@@ -25,6 +29,7 @@ export function ListenMemberAvatarRow({
   const presentation = deriveListenHeaderPresentation({
     canManageAuthority: liveRoom.canManageAuthority,
     participants,
+    maxVisibleParticipants,
   });
 
   useEffect(() => {
@@ -104,6 +109,7 @@ export function ListenMemberAvatarRow({
           window.requestAnimationFrame(() => triggerRef.current?.focus());
         }}
         open={open}
+        themeStyle={themeStyle}
       />
     </>
   );

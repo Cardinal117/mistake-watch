@@ -128,7 +128,7 @@ export function WatchSignalBand({
   );
 }
 
-function WatchSavedRoomToggle({
+export function WatchSavedRoomToggle({
   canSave,
   initialSaved,
   roomId,

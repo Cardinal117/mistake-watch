@@ -18,7 +18,6 @@ import { IconButton, Slider } from "@/components/ui";
 import {
   expectedPositionAt,
   resolveWaveformSource,
-  type CanonicalPlaybackState,
   type WaveformSourcePlan,
 } from "@/lib/player";
 import {
@@ -35,11 +34,13 @@ import type { LiveRoomState } from "@/lib/spacetime";
 import { cx } from "@/lib/ui";
 import { useWaveformEnvironment } from "./use-waveform-environment";
 import { useRoomMediaSession } from "./use-room-media-session";
+import { buildCanonicalState, formatSeconds } from "./transport-state";
+import { WatchTransportView } from "./watch/watch-transport-view";
 import { YouTubeMetadataLine } from "./youtube-metadata-line";
 
 type TransportControlsProps = {
   liveRoom: LiveRoomState;
-  presentation?: "cinematic" | "standard";
+  presentation?: "cinematic" | "standard" | "watch";
   room: RoomSnapshot;
 };
 
@@ -55,7 +56,9 @@ export function TransportControls({
   const waveformEnvironment = useWaveformEnvironment();
   const session = liveRoom.snapshot.session;
   const awaitingMedia = !session?.sourceUrl;
-  const canControl = liveRoom.canControlPlayback;
+  const canControl =
+    liveRoom.canControlPlayback &&
+    (presentation !== "watch" || liveRoom.connectionStatus === "connected");
   const queueAutoplayEnabled = session?.queueAutoplayEnabled ?? true;
   const currentPosition = useMemo(() => {
     const canonicalState = buildCanonicalState(liveRoom, room.mode);
@@ -63,23 +66,25 @@ export function TransportControls({
     return canonicalState ? expectedPositionAt(canonicalState, clockMs) : 0;
   }, [clockMs, liveRoom, room.mode]);
   const currentQueueItem = session?.activeQueueItemId
-    ? liveRoom.snapshot.queue.find(
+    ? (liveRoom.snapshot.queue.find(
         (item) => item.queueItemId === session.activeQueueItemId,
-      ) ?? null
+      ) ?? null)
     : null;
   const title = session?.sourceTitle ?? room.nowPlaying.title;
   const durationSeconds =
     currentQueueItem?.durationSeconds ?? session?.sourceDurationSeconds ?? 0;
-  const nextQueueItem = liveRoom.snapshot.queue
-    .filter((item) => item.status === "queued")
-    .sort((left, right) => left.position - right.position)[0] ?? null;
-  const previousQueueItem = liveRoom.snapshot.queue
-    .filter((item) => item.status === "played")
-    .sort(
-      (left, right) =>
-        (left.playedSequence ?? 0) - (right.playedSequence ?? 0),
-    )
-    .at(-1) ?? null;
+  const nextQueueItem =
+    liveRoom.snapshot.queue
+      .filter((item) => item.status === "queued")
+      .sort((left, right) => left.position - right.position)[0] ?? null;
+  const previousQueueItem =
+    liveRoom.snapshot.queue
+      .filter((item) => item.status === "played")
+      .sort(
+        (left, right) =>
+          (left.playedSequence ?? 0) - (right.playedSequence ?? 0),
+      )
+      .at(-1) ?? null;
   const nextTitle = nextQueueItem
     ? getSourceDisplayTitle({
         sourceType: nextQueueItem.sourceType,
@@ -98,8 +103,7 @@ export function TransportControls({
     (nextQueueItem?.durationSeconds
       ? formatSeconds(nextQueueItem.durationSeconds)
       : "Queue preview");
-  const progressClass =
-    awaitingMedia ? "opacity-55" : undefined;
+  const progressClass = awaitingMedia ? "opacity-55" : undefined;
   const cinematic = presentation === "cinematic" && room.mode === "watch";
   const waveformPlan = useMemo(
     () =>
@@ -121,7 +125,7 @@ export function TransportControls({
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
-      setVolume(readStoredVolume());
+      setVolume(Math.round(readStoredPlayerVolume() * 100));
     });
 
     return () => window.cancelAnimationFrame(frame);
@@ -195,6 +199,43 @@ export function TransportControls({
     setVolume(safeVolume);
     window.localStorage.setItem("mw_player_volume", String(safeVolume));
     dispatchPlayerVolume(safeVolume / 100);
+  }
+
+  if (presentation === "watch") {
+    return (
+      <WatchTransportView
+        title={title}
+        awaitingMedia={awaitingMedia}
+        canControl={canControl}
+        currentPosition={currentPosition}
+        durationSeconds={durationSeconds}
+        playing={session?.status === "playing"}
+        previous={Boolean(previousQueueItem)}
+        next={Boolean(nextQueueItem)}
+        volume={volume}
+        autoplay={queueAutoplayEnabled}
+        onPlayback={() => {
+          if (canControl)
+            setPlayback(session?.status === "playing" ? "paused" : "playing");
+        }}
+        onSeek={(value) => {
+          if (canControl) seekTo(value);
+        }}
+        onRelative={(value) => {
+          if (canControl) seekRelative(value);
+        }}
+        onPrevious={() => {
+          if (canControl) playPreviousQueueItem();
+        }}
+        onNext={() => {
+          if (canControl) playNextQueueItem();
+        }}
+        onVolume={setLocalVolume}
+        onAutoplay={() => {
+          if (canControl) liveRoom.setQueueAutoplay(!queueAutoplayEnabled);
+        }}
+      />
+    );
   }
 
   if (cinematic) {
@@ -410,7 +451,9 @@ export function TransportControls({
                     : currentPosition
               }
             />
-            <span>{durationSeconds ? formatSeconds(durationSeconds) : "--:--"}</span>
+            <span>
+              {durationSeconds ? formatSeconds(durationSeconds) : "--:--"}
+            </span>
           </div>
         </div>
       </section>
@@ -853,47 +896,4 @@ function SkipAmountIcon({
       </span>
     </span>
   );
-}
-
-function buildCanonicalState(
-  liveRoom: LiveRoomState,
-  mode: "listen" | "watch",
-): CanonicalPlaybackState | null {
-  const session = liveRoom.snapshot.session;
-
-  if (!session?.sourceUrl || !session.sourceType) {
-    return null;
-  }
-
-  return {
-    activeQueueItemId: session.activeQueueItemId,
-    controllerMemberId: null,
-    hostMemberId: session.hostMemberId,
-    mode,
-    playbackRate: 1,
-    positionSeconds: session.positionSeconds,
-    roomId: session.roomId,
-    serverUpdatedAtMs: session.serverUpdatedMs,
-    source: {
-      kind:
-        session.sourceType === "hls" || session.sourceType === "youtube"
-          ? session.sourceType
-          : "direct",
-      title: session.sourceTitle ?? undefined,
-      url: session.sourceUrl,
-    },
-    status: session.status,
-  };
-}
-
-function formatSeconds(value: number) {
-  const safeValue = Number.isFinite(value) && value > 0 ? value : 0;
-  const minutes = Math.floor(safeValue / 60);
-  const seconds = Math.floor(safeValue % 60);
-
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}
-
-function readStoredVolume() {
-  return Math.round(readStoredPlayerVolume() * 100);
 }

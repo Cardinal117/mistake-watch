@@ -14,6 +14,7 @@ import {
   Trash2,
 } from "lucide-react";
 
+import { CompactQueueRow } from "./compact-queue-row";
 import { Badge } from "@/components/ui";
 import { MetadataPlaceholderChips } from "../metadata-placeholder-chips";
 import { getQueueMetadataPriority } from "@/lib/queue/metadata-priority";
@@ -23,6 +24,7 @@ import { useYouTubeMetadata } from "@/lib/youtube/use-youtube-metadata";
 import { formatDuration } from "./queue-utils";
 
 export function QueueRow({
+  compact = false,
   item,
   manageDisabled,
   mode,
@@ -35,6 +37,7 @@ export function QueueRow({
   queuedIndex,
   queuedItemsLength,
 }: {
+  compact?: boolean;
   item: RoomQueueItem;
   manageDisabled: boolean;
   mode: "listen" | "watch";
@@ -73,6 +76,27 @@ export function QueueRow({
     mode === "listen"
       ? "border-secondary-fixed-dim/40 bg-secondary-fixed-dim/10 shadow-[0_0_24px_rgba(255,186,32,0.08)]"
       : "border-primary-fixed-dim/40 bg-primary-fixed-dim/10 shadow-[0_0_24px_rgba(0,219,233,0.08)]";
+
+  if (compact)
+    return (
+      <CompactQueueRow
+        item={item}
+        title={title}
+        channel={channel}
+        thumbnailUrl={thumbnailUrl}
+        duration={duration}
+        blocked={Boolean(isBlocked)}
+        disabled={manageDisabled}
+        onMove={onMoveQueueItem}
+        onPin={onPin}
+        onNext={onPlayNext}
+        onPlay={onPlayQueueItem}
+        onRemove={onRemoveQueueItem}
+        onRequeue={onRequeue}
+        index={queuedIndex}
+        count={queuedItemsLength}
+      />
+    );
 
   return (
     <li
@@ -188,7 +212,7 @@ export function QueueRow({
           ) : null}
           {item.status !== "now" ? (
             <IconQueueButton
-              disabled={manageDisabled || isBlocked}
+              disabled={manageDisabled || isBlocked || !onPlayQueueItem}
               icon={<Play className="h-4 w-4" aria-hidden />}
               label={
                 item.status === "played"

@@ -9,9 +9,14 @@ import { YoutubeMediaPlayer } from "./youtube-media-player";
 type MediaStageProps = {
   liveRoom: LiveRoomState;
   room: RoomSnapshot;
+  showYouTubeControls?: boolean;
 };
 
-export function MediaStage({ liveRoom, room }: MediaStageProps) {
+export function MediaStage({
+  liveRoom,
+  room,
+  showYouTubeControls = true,
+}: MediaStageProps) {
   const liveSource = liveRoom.snapshot.session?.sourceUrl;
   const liveSourceType = liveRoom.snapshot.session?.sourceType;
   const awaitingMedia = !liveSource;
@@ -48,6 +53,7 @@ export function MediaStage({ liveRoom, room }: MediaStageProps) {
             className="absolute inset-0 z-10 h-full w-full bg-black"
             liveRoom={liveRoom}
             mode="watch"
+            showNativeControls={showYouTubeControls}
           />
         ) : liveSource ? (
           <DirectMediaPlayer

@@ -16,7 +16,7 @@ type PreferenceRouteDependencies = {
   updatePreference: typeof updateAuthorizedPreference;
 };
 
-export function createRecommendationPreferenceRoutes(
+function createRecommendationPreferenceRoutes(
   dependencies: PreferenceRouteDependencies = {
     authorize: requireRecommendationRoomAccess,
     listPreferences: listAuthorizedPreferences,

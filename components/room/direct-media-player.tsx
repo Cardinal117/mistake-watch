@@ -337,6 +337,7 @@ function DirectMediaPlayerCore({
           Boolean(
             media &&
             fullscreenElement &&
+            !fullscreenElement.hasAttribute("data-watch-fullscreen") &&
             (fullscreenElement === media || fullscreenElement.contains(media)),
           ),
       );

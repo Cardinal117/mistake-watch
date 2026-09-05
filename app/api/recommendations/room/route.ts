@@ -12,7 +12,7 @@ type RoomRouteDependencies = {
   getRecommendations: typeof getRoomRecommendations;
 };
 
-export function createRoomRecommendationRoute(
+function createRoomRecommendationRoute(
   dependencies: RoomRouteDependencies = {
     authorize: requireRecommendationRoomAccess,
     getRecommendations: getRoomRecommendations,

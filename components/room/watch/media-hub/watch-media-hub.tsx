@@ -54,6 +54,7 @@ import { WatchMediaHubView } from "./watch-media-hub-view";
 import { useOwnerUploadManager } from "../uploads/use-owner-upload-manager";
 
 type WatchMediaHubDiscoveryProps = {
+  initialTab?: WatchMediaHubTab;
   canAddQueue?: boolean;
   canLoadSource?: boolean;
   canManageQueue?: boolean;
@@ -67,6 +68,7 @@ type WatchMediaHubDiscoveryProps = {
 };
 
 export function WatchMediaHubDiscovery({
+  initialTab = "discover",
   canAddQueue,
   canLoadSource,
   canManageQueue,
@@ -88,7 +90,7 @@ export function WatchMediaHubDiscovery({
     setFolders,
   } = useMediaLibrary();
   const [activeHubTab, setActiveHubTab] =
-    useState<WatchMediaHubTab>("discover");
+    useState<WatchMediaHubTab>(initialTab);
   const [dragActive, setDragActive] = useState(false);
   const [folderCreateStatus, setFolderCreateStatus] = useState<{
     detail: string;

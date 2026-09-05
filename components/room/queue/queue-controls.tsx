@@ -16,6 +16,7 @@ const queueModeOptions: Array<{ label: string; mode: QueueMode }> = [
 ];
 
 export function QueueControls({
+  compact = false,
   canManageQueue,
   hub,
   manageDisabled,
@@ -26,6 +27,7 @@ export function QueueControls({
   queuedItemsLength,
   queueMode,
 }: {
+  compact?: boolean;
   canManageQueue: boolean;
   hub: boolean;
   manageDisabled: boolean;
@@ -43,11 +45,21 @@ export function QueueControls({
       className={cx(
         "overflow-hidden rounded-md border border-white/10 bg-surface-container-low/80 transition-[max-height,background-color,border-color] duration-200",
         open ? (hub ? "max-h-56" : "max-h-72") : "max-h-9",
+        compact && "watch-queue-controls",
       )}
     >
       {open ? (
-        <div className={cx("grid gap-3 p-3 pb-2", hub && "gap-2 p-2")}>
-          <div className="flex items-center justify-between gap-2">
+        <div
+          className={cx(
+            "grid gap-3 p-3 pb-2",
+            hub && "gap-2 p-2",
+            compact && "watch-queue-toolbar",
+          )}
+        >
+          <div
+            hidden={compact}
+            className="flex items-center justify-between gap-2"
+          >
             <span className="technical-label text-on-surface-variant">
               Queue controls
             </span>
@@ -61,6 +73,7 @@ export function QueueControls({
           </div>
           <div className={cx("grid gap-2", hub && "gap-1.5")}>
             <select
+              aria-label="Queue mode"
               className={cx(
                 "rounded-md border border-white/10 bg-surface-container px-3 text-on-surface outline-none focus:border-primary-fixed-dim disabled:opacity-45",
                 hub ? "h-9 text-label-sm" : "h-10 text-body-md",
@@ -127,6 +140,7 @@ export function QueueControls({
         </div>
       ) : null}
       <button
+        hidden={compact}
         aria-expanded={open}
         aria-label={open ? "Hide queue controls" : "Show queue controls"}
         className={cx(

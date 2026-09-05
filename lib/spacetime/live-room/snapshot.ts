@@ -244,6 +244,7 @@ export function readLiveSnapshot(liveDb: LiveDb): LiveRoomSnapshot {
           roomId: session.roomId,
           roomName: session.roomName,
           serverUpdatedMs: toNumber(session.serverUpdatedMs),
+          serverRevisionMs: toNumber(session.serverUpdatedMs),
           sourceTitle: session.sourceTitle ?? null,
           sourceType: toSourceType(session.sourceType),
           sourceUrl: session.sourceUrl ?? null,
@@ -335,8 +336,9 @@ export function mapLiveParticipants(
             participant.memberId === snapshot.session?.hostMemberId;
           const hasQueueAuthority =
             isHost ||
-            permissions?.canAddQueue === true ||
-            fallback?.permissions.queue === true;
+            (permissions
+              ? permissions.canAddQueue === true
+              : fallback?.permissions.queue === true);
 
           return {
             id: participant.memberId,
