@@ -81,9 +81,15 @@ updated: 2026-09-04
 - **Vercel-origin candidate:** A test-first local patch changes only the Worker's
   authorization origin to `https://mistake-watch.vercel.app`; its public health
   route and all 528 local tests pass.
-- **Next action:** Checkpoint the exact origin patch, then run the approved
-  Worker-only fake-credential canary before another Opera canary. Do not merge,
-  rotate secrets, expose raw errors, or rename the route.
+- **Vercel-origin canary:** Commit `0364d10` and Worker version
+  `6cfc0ef3-ae01-4d73-9933-bcaf99202f8a` still produced `unknown` /
+  `fetch_exception` for both authorization and public health. The alternate
+  project domain is rejected; the Worker was restored to `8637e61a`, Vercel
+  remained on `dpl_79vfekpDWSrzBr1mqivyYdUbAFL7`, and rollback checks passed.
+- **Next action:** Pause Candidate C and investigate the broader Cloudflare
+  Worker-to-Vercel transport boundary before proposing another architecture.
+  Do not run another Opera canary, merge, rotate secrets, expose raw errors, or
+  rename the route without a reviewed scope revision.
 
 ## Original Report
 

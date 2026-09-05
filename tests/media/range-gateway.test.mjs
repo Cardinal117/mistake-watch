@@ -382,6 +382,14 @@ test("range gateway reports sanitized authorization failure diagnostics", async 
       },
     },
     {
+      diagnostic: { kind: "invalid_fetch_receiver", reason: "fetch_exception" },
+      fetch: async () => {
+        throw new TypeError(
+          "Illegal invocation: function called with incorrect this reference; credential-value for session-1",
+        );
+      },
+    },
+    {
       diagnostic: { kind: "unknown", reason: "fetch_exception" },
       fetch: async () => {
         throw new Error("credential-value for session-1");

@@ -1,7 +1,18 @@
 # Tasks: Authorized Uploaded Playback Range Gateway
 
-Status: Tasks 1-6A complete locally; Candidate C Opera canary failed and rolled back
-Updated: 2026-09-04
+Status: Native fetch repair verified locally; release remains blocked
+Updated: 2026-09-05
+
+## Current Checkpoint: Native Fetch Receiver Repair
+
+Owner-approved local repair is complete with test-first native workerd evidence:
+13/13 focused and 529/529 full tests pass. See
+[the current review checkpoint](review-notes.md#2026-09-05-native-fetch-receiver-repair-local-only)
+for exact red/green evidence, remaining release gaps, and the next approval gate.
+This supersedes older transport-cause and next-experiment conclusions below;
+the canary observations remain historical evidence. Production remains rolled
+back, and PR #11 must remain draft. No provider experiment is approved by this
+local implementation checkpoint.
 
 ## Preconditions
 
@@ -211,6 +222,15 @@ domain and passed after changing only `AUTHORIZATION_ORIGIN` to
 `https://mistake-watch.vercel.app`. The focused suite passes 12/12 and full suite
 528/528; typecheck, build, Worker dry-run, and lint pass. The origin's public
 health route returns `200`; provider state remained unchanged.
+
+Commit `0364d10` updated draft PR #11 and Worker-only version
+`6cfc0ef3-ae01-4d73-9933-bcaf99202f8a` tested the stable Vercel project origin.
+The fake-credential request failed closed with `503`, while both authorization
+and the public-health control again emitted `unknown` / `fetch_exception`. This
+rejects the alternate origin as a fix. The Worker was restored to `8637e61a`;
+Vercel remained on `dpl_79vfekpDWSrzBr1mqivyYdUbAFL7`; health, readiness, and
+the inactive gateway checks passed. Do not run another Opera canary until a
+reviewed scope revision addresses the broader Worker-to-Vercel transport issue.
 
 ## Task 7: Controlled Release And Rollback
 

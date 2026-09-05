@@ -56,6 +56,7 @@ type AuthorizationOriginHealthDiagnostic =
     };
 
 type AuthorizationFetchExceptionKind =
+  | "invalid_fetch_receiver"
   | "network_connection_lost"
   | "worker_loop"
   | "same_zone_worker_fetch"
@@ -79,7 +80,8 @@ export async function handleRangeGatewayRequest(
   request: Request,
   env: UploadedMediaGatewayEnv,
   dependencies: GatewayDependencies = {
-    fetch,
+    // Native Worker fetch requires the global receiver, not this object.
+    fetch: (...args) => globalThis.fetch(...args),
     reportAuthorizationFailure,
   },
 ) {
@@ -402,6 +404,10 @@ function classifyAuthorizationFetchException(
       : typeof error === "string"
         ? error
         : "";
+
+  if (/illegal invocation/i.test(message)) {
+    return "invalid_fetch_receiver";
+  }
 
   if (/network connection lost/i.test(message)) {
     return "network_connection_lost";

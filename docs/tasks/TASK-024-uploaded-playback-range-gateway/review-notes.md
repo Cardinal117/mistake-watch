@@ -1,7 +1,60 @@
 # Review Notes: Authorized Uploaded Playback Range Gateway
 
-Status: Candidate C Opera canary failed; production rolled back
-Updated: 2026-09-04
+Status: Native fetch repair verified locally; cloud and Opera QA pending
+Updated: 2026-09-05
+
+## 2026-09-05: Native Fetch Receiver Repair (Local Only)
+
+This checkpoint supersedes older claims below that the differential probe
+proved a host-wide Worker-to-Vercel transport failure. Both authorization and
+health used native fetch as a dependency-object method; workerd throws before
+outbound I/O for that receiver. Historical canary observations and rollback
+records are preserved. Cloud success is still unverified.
+
+Owner-approved scope: correct the native fetch receiver, add native-runtime
+regression coverage and a sanitized diagnostic category, and record evidence.
+No architecture, origin, cookie, player, permission, or provider change.
+
+- Baseline: `0364d105feca5af36a059bf12363254324ddd6da`; production fix absent.
+  Three pre-existing dirty documents were reviewed and preserved; the intake
+  item was not edited in this repair.
+- Test-first command:
+  `node --test tests/media/range-gateway-runtime.test.mjs tests/media/range-gateway.test.mjs`.
+- Red: exit 1, 11/13 passed. The new native-runtime test returned 503 where
+  authorized 206 was required. The diagnostic case returned `unknown` where
+  `invalid_fetch_receiver` was required.
+- Green: the same command exited 0, 13/13 passed after replacing raw fetch with
+  a wrapper calling `globalThis.fetch` and adding the allowlisted category.
+- Runtime: Miniflare `5.20260828.0-alpha`, workerd `1.20260828.1`, compatibility
+  date `2026-09-01`. Reuses the existing pinned Worker dependency tree;
+  prerequisite is `npm ci --prefix workers/uploaded-media-gateway`.
+- The runtime test imports the production entrypoint unchanged, uses its default
+  fetch dependency, and intercepts outbound I/O below the native fetch boundary.
+  Synthetic storage verifies exact partial bytes/headers and zero reads after
+  upstream 401/403; each request reauthorizes. No external calls or live R2.
+  Existing Node coverage checks sanitized diagnostics without fixture leakage.
+- Regression: `npm test` 529/529; typecheck, lint, build, Worker dry-run,
+  changed-file Prettier, file-length policy, and diff check pass. Lint retains
+  the existing navigation warning; file-length policy has 0 violations.
+  Initial sandboxed typecheck/Worker dry-run hit filesystem restrictions;
+  reruns with authorized worktree/cache access passed.
+- QA gate: this local repair is verified; TASK-024 is not release-ready.
+  No commit, push, PR mutation, deployment, or hosted configuration change.
+
+Next gate: separately approve a credential-free isolated cloud runtime/egress
+control with a fixed destination allowlist and prepared cleanup. Then review a
+matched Worker/Vercel candidate and rollback before exact-path Opera GX playback
+QA (former expiry boundary, seek, background/resume, two participants, stable
+media element and no duplicate audio). Preview deployment protection must be
+handled through an approved server-side access path.
+
+Still outside this repair: explicit authorization timeout, private cache-header
+precedence over object metadata, the handoff/canonical-session-reference
+specification conflict, and existing live-only Kick versus durable revocation.
+Do not close MW-BUG-004 or treat local tests as proof of production playback.
+
+References: [Cloudflare receiver errors](https://developers.cloudflare.com/workers/observability/errors/#illegal-invocation-errors)
+and [the matching workerd report](https://github.com/cloudflare/workerd/issues/6904).
 
 ## Evidence Dependency
 
@@ -245,6 +298,13 @@ documentation.
   `https://mistake-watch.vercel.app` project domain. The focused suite passes
   12/12 and full suite 528/528; typecheck, build, Worker dry-run, and lint pass.
   No provider state changed during implementation.
+- Origin commit `0364d10` updated draft PR #11. Worker-only version
+  `6cfc0ef3-ae01-4d73-9933-bcaf99202f8a` returned the same fail-closed `503`
+  and emitted `unknown` / `fetch_exception` for both authorization and the
+  credential-free public-health control. This rejects the stable Vercel project
+  domain as a transport fix. The Worker was restored to `8637e61a`; Vercel
+  remained on `dpl_79vfekpDWSrzBr1mqivyYdUbAFL7`. Health and readiness returned
+  `200`, and the inactive same-origin gateway route returned `404`.
 
 ## Required Handoff Order
 
