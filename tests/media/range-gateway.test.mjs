@@ -479,7 +479,8 @@ test("range gateway compares a failed authorization fetch with public origin hea
   assert.equal(bucket.getCalls, 0);
   assert.equal(fetchCalls.length, 2);
   assert.equal(fetchCalls[1].url, "https://watch.example/api/health");
-  assert.deepEqual(fetchCalls[1].init, { method: "GET" });
+  const { signal: _healthSignal, ...healthRequest } = fetchCalls[1].init;
+  assert.deepEqual(healthRequest, { method: "GET" });
   assert.deepEqual(diagnostics, [
     {
       kind: "unknown",
@@ -597,6 +598,7 @@ function createBucketMock() {
         size: 1000,
         writeHttpMetadata(headers) {
           headers.set("Content-Type", "video/mp4");
+          headers.set("Cache-Control", "public, max-age=86400");
         },
       };
     },

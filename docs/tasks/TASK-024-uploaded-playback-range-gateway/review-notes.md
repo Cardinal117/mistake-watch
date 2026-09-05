@@ -3,6 +3,33 @@
 Status: Native fetch repair verified locally; cloud and Opera QA pending
 Updated: 2026-09-05
 
+## 2026-09-05: Approved Release Preparation
+
+The owner approved commit, push, controlled deployment and subsequent QA, then
+explicitly approved timeout/cache-header hardening as a separate test-first
+commit. The established opaque uploaded-session reference is retained by owner
+agreement; it remains an identifier rather than an access credential.
+
+- Fetch repair committed and pushed as 7a8e592; PR #11 stays draft and unmerged.
+- Hardening baseline: 7a8e592. Focused red: exit 1, 11/16 passed; object
+  metadata overrode private caching in both native and Node tests, and stalled
+  authorization headers/body and diagnostic health exceeded bounded deadlines.
+- Guards: authorization signal expires after 5 seconds (including response-body
+  consumption); diagnostic health after 2 seconds. Private response headers are
+  reapplied after R2 metadata. No permission or media-source change.
+- Focused green: 16/16. Full suite: 532/532. Typecheck, lint, build, Worker
+  dry-run, formatting and file-length policy pass (existing warnings only).
+  Timeout cases live in range-gateway-timeout.test.mjs to stay below file limits.
+- The initial automatic approval review rejected these adjacent guards; the
+  owner then explicitly approved both before any corresponding code mutation.
+- Rollback targets reverified: Vercel dpl_79vfekpDWSrzBr1mqivyYdUbAFL7 and Worker
+  8637e61a-0d98-49ab-a217-af3252c969c3 at 100%. Both must remain recoverable.
+- Deployment sequence: Worker-only fake-credential check with application path
+  inactive; build a pinned Vercel production candidate without domain promotion;
+  verify candidate health/protection, then promote and run exact-path Opera QA.
+  Any failed runtime/media gate restores Vercel first, then the Worker.
+- Production playback and long-session QA are pending at this checkpoint.
+
 ## 2026-09-05: Native Fetch Receiver Repair (Local Only)
 
 This checkpoint supersedes older claims below that the differential probe

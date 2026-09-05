@@ -66,6 +66,9 @@ type AuthorizationFetchExceptionKind =
   | "unsupported_cache_mode"
   | "unknown";
 
+const authorizationTimeoutMs = 5_000;
+const healthProbeTimeoutMs = 2_000;
+
 const mediaCookieName = "__Secure-mw_media_access";
 
 const uploadedMediaGateway = {
@@ -167,6 +170,10 @@ export async function handleRangeGatewayRequest(
   const headers = privateHeaders();
 
   object.writeHttpMetadata(headers);
+  // Stored object metadata must never make private media cacheable.
+  for (const [name, value] of privateHeaders()) {
+    headers.set(name, value);
+  }
   headers.set("Accept-Ranges", "bytes");
   headers.set("Content-Length", String(object.range?.length ?? object.size));
   headers.set("X-Content-Type-Options", "nosniff");
@@ -233,6 +240,7 @@ async function authorizeRequest(input: {
           "Content-Type": "application/json",
         },
         method: "POST",
+        signal: AbortSignal.timeout(authorizationTimeoutMs),
       },
     );
   } catch (error) {
@@ -293,7 +301,7 @@ async function probeAuthorizationOriginHealth(input: {
   try {
     const response = await input.dependencies.fetch(
       new URL("/api/health", input.origin),
-      { method: "GET" },
+      { method: "GET", signal: AbortSignal.timeout(healthProbeTimeoutMs) },
     );
 
     return { outcome: "response", status: response.status };

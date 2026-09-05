@@ -50,6 +50,7 @@ export default {
             body: new Uint8Array(length).fill(7),
             writeHttpMetadata(headers) {
               headers.set("Content-Type", "video/mp4");
+              headers.set("Cache-Control", "public, max-age=86400");
             },
           };
         },
