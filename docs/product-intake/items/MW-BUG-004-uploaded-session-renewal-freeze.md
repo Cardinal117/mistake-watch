@@ -6,12 +6,20 @@ priority: P1
 area: uploaded-playback
 related: [TASK-009, TASK-023, TASK-024]
 created: 2026-08-17
-updated: 2026-09-04
+updated: 2026-09-05
 ---
 
 # Uploaded playback can freeze after signed URL expiry
 
 > [!bug] In progress - P1
+
+- **Latest checkpoint (2026-09-05):** Gateway, reconnect and end-of-file replay
+  fixes are deployed from source 9227d73. Real Opera expiry evidence exceeds
+  33 minutes on the unchanged gateway; final-head replay and guest reconnect
+  QA pass, with 557 automated tests passing. Full task sign-off still needs
+  live revocation and background-resume evidence. PR #11 stays draft/unmerged.
+  See [current QA evidence](../../tasks/TASK-024-uploaded-playback-range-gateway/review-notes.md#2026-09-05-final-replay-deployment-and-qa).
+  This checkpoint supersedes the historical implementation/canary states below.
 
 - **Observed:** After roughly 30 minutes, an older client can freeze while room progress continues.
 - **Security constraint:** Do not lengthen signatures or expose permanent R2 URLs.

@@ -1,7 +1,18 @@
 # Tasks: Authorized Uploaded Playback Range Gateway
 
-Status: Approved end-of-file replay repair; production restored
+Status: Replay repair deployed and QA passed; wider sign-off pending
 Updated: 2026-09-05
+
+## Current Runtime Checkpoint
+
+Replay commits 2a47932 and 9227d73 are pushed. Source 9227d73 is active on
+Vercel dpl_Fz4hYx1vnEWRwKDFsgiqck5ct3tH with Worker 461a7708 at 100%.
+557 tests and local gates pass; real Opera plus guest completion, replay,
+rewind, pause and reconnect pass. See the final replay checkpoint in
+[review-notes.md](review-notes.md#2026-09-05-final-replay-deployment-and-qa).
+Full TASK-024 sign-off retains live revocation/background verification gaps;
+PR #11 is draft/unmerged and MW-BUG-004 remains in progress. This current
+checkpoint supersedes the historical restored/pending states below.
 
 ## Approved End-Of-File Replay Repair
 

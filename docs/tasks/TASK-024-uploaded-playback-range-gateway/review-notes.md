@@ -1,7 +1,43 @@
 # Review Notes: Authorized Uploaded Playback Range Gateway
 
-Status: Replay repair passes local gates; controlled Opera QA pending
+Status: Replay QA passed and deployed; wider TASK-024 sign-off pending
 Updated: 2026-09-05
+
+## 2026-09-05: Final Replay Deployment And QA
+
+The final source commit 9227d73584d8d47bdc740606d6d61fa772915c14 is deployed as
+Vercel dpl_Fz4hYx1vnEWRwKDFsgiqck5ct3tH with unchanged Worker
+461a7708-2d46-4a56-8533-9b91f2cdd316 at 100%. Candidate and public health and
+readiness returned 200; unauthenticated gateway control returned 401. The
+production hostname was read back to this exact deployment. This checkpoint
+supersedes the restored state of earlier canaries. PR #11 remains draft and
+unmerged. The prepared old-version rollback remains available.
+
+Scoped replay QA PASSED in the real Opera profile with an independent in-app
+guest, on the exact uploaded-media path:
+
+- Play at completion restarted at the beginning; the initial replay converged
+  at 20.21/20.05 seconds after the guest's normal first-play gesture.
+- Midpoint seek loaded readyState 4, followed by end/back-20/Play. Both reached
+  exactly 6333.233333 seconds and stopped, with no false autoplay prompt or
+  media error. Canonical controls stopped at 105:33.
+- Play after that natural completion replayed again (12.20/12.27 seconds).
+- Guest reload caught up without a host action after its normal gesture:
+  63.58/63.63 seconds. Pause plus backward seek converged at 56.161 seconds.
+- The Opera source stayed unchanged, with one media element per participant.
+  Final state was paused/readyState 4/error-free; temporary playback tabs closed.
+
+The replay slice is complete. Full TASK-024 sign-off is still pending: true
+background visibility/resume could not be established through the browser tool,
+and a live post-revocation range denial remains unverified. A server-side probe
+was attempted only against the QA room, but its configuration precondition
+failed before an authorized range request: Vercel environment export supplies
+[SENSITIVE] placeholders for secrets. No credentials were logged or rotated,
+no database writes were made, and the QA room was not closed by that probe.
+Automated authorization-denial/no-R2-read tests pass, but are not mislabeled as
+live revocation evidence. The earlier 33.8-minute real Opera range check applies
+to the unchanged gateway; no new 30-minute run is claimed for this player head.
+The intake item remains in progress. No broader task closure or merge occurs.
 
 ## 2026-09-05: Replay Command Follow-Up Within Approved Scope
 
