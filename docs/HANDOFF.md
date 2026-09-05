@@ -5,9 +5,10 @@ Updated: 2026-09-05
 ## Current State
 
 TASK-026 Watch redesign is owner-accepted after the final Huawei production QA
-on 2026-09-05. The owner authorized atomic commits, PR/main integration and
-final deployment. The accepted candidate remains live while that integration
-completes: dpl_8ayFXZG5sE2fUoR2W2iZk2z5MmuG, application tree
+on 2026-09-05. PR #12 merged as
+662597a1bda7ec458017303644874353d672d462 with atomic commits c4f58a6, c98b8da
+and f337792. Production was verified after merge; its application code matches
+main, so the accepted deployment remains live: dpl_8ayFXZG5sE2fUoR2W2iZk2z5MmuG, application tree
 0fb144fd9569146eb808f477180c5835249508cc. The prepared-YouTube additive backend
 is also live; prior temporary restore instructions are superseded by acceptance.
 [Release status and exact integration evidence](tasks/TASK-026-watch-room-redesign/release.md)

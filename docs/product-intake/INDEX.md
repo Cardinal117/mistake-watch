@@ -33,8 +33,8 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 
 ## Current Focus
 
-TASK-026 Watch redesign passed owner physical Huawei QA on 2026-09-05; release
-integration is authorized. [Release evidence](../tasks/TASK-026-watch-room-redesign/release.md)
+TASK-026 Watch redesign passed owner physical Huawei QA on 2026-09-05; PR #12 is merged
+and production is verified. [Release evidence](../tasks/TASK-026-watch-room-redesign/release.md)
 and [report-by-report reconciliation](../tasks/TASK-026-watch-room-redesign/bug-reconciliation.md)
 record its accepted fixes. MW-QOL-002's Watch portion is delivered; the Listen
 portion stays active. No unrelated provider/performance/security report is closed.

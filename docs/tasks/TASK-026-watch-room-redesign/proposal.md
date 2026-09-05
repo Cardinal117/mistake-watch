@@ -1,6 +1,6 @@
 # TASK-026: Watch room browsing and cinema
 
-Status: implemented and owner-accepted after physical-phone production QA, 2026-09-05; final Git integration authorized.
+Status: implemented and owner-accepted after physical-phone production QA, 2026-09-05; merged to main through PR #12; production verified.
 
 Build the agreed Watch room with persistent left player, artwork-led browsing, collections, media details, independent Queue/Social/Add/More workspaces, Cinema view, and responsive mobile dock. Implements the Watch portion of TASK-002.10F, aligned to the TASK-025 navigation/dock contract.
 
@@ -21,4 +21,4 @@ Vercel env export returns placeholders for protected secrets. Local QA therefore
 
 Owner physical Huawei Y9 Prime QA passed: "This is perfect, I will pass QA, it all works as requested." The owner explicitly approved documentation, atomic commits, push/PR merge to main and final production deployment. This supersedes the temporary-window restoration requirement: retain the accepted candidate while completing Git integration. Earlier limitations and deployment states below are chronological evidence, not the current release status.
 
-Accepted application tree: `0fb144fd9569146eb808f477180c5835249508cc`; Vercel `dpl_8ayFXZG5sE2fUoR2W2iZk2z5MmuG`. The additive prepared-YouTube backend is deployed. See [release summary](release.md) and [bug reconciliation](bug-reconciliation.md). Final Git/deployment identifiers will be recorded in the release summary after merge.
+Accepted application tree: `0fb144fd9569146eb808f477180c5835249508cc`; Vercel `dpl_8ayFXZG5sE2fUoR2W2iZk2z5MmuG`. The additive prepared-YouTube backend is deployed. See [release summary](release.md) and [bug reconciliation](bug-reconciliation.md). Merged through [PR #12](https://github.com/Cardinal117/mistake-watch/pull/12), merge 662597a1bda7ec458017303644874353d672d462. Final production/frontend/backend identities are verified in release.md.

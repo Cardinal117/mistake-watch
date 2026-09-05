@@ -1,6 +1,6 @@
 # TASK-026 accepted Watch release
 
-Status: owner-accepted in production on 2026-09-05; atomic Git integration and final main deployment verification in progress.
+Status: complete, owner-accepted, merged to main and production-verified on 2026-09-05.
 
 ## What ships
 
@@ -30,4 +30,12 @@ See bug-reconciliation.md for intentionally open reports. No outstanding accepte
 
 ## Git integration
 
-Approved plan: additive backend commit, Watch frontend/integration commit, documentation/QA commit; merge by PR with a merge commit to preserve atomic history. Final commit/PR/deployment evidence follows after execution.
+Merged [PR #12](https://github.com/Cardinal117/mistake-watch/pull/12) at 2026-09-05 20:29 UTC using merge commit 662597a1bda7ec458017303644874353d672d462. Atomic commits preserved:
+
+- c4f58a6: additive YouTube readiness reducers, generated bindings and runtime tests.
+- c98b8da: persistent Watch UI, touch queue, player/integration fixes and tests.
+- f337792: accepted QA packet, root documentation and report reconciliation.
+
+Final read-back: the public domain resolves to Ready production deployment dpl_8ayFXZG5sE2fUoR2W2iZk2z5MmuG; health and Supabase/Spacetime readiness pass. Every non-documentation file in merged main matches the owner-accepted deployment tree. The live backend bytes exactly match the accepted compiled artifact; current program hash 0x7d8b24e21730a7e9a31bb3b3d76c147a722cb391a523334a156085096e723e63. Therefore retain this accepted production deployment rather than rebuild unchanged application code. This final release-record commit changes documentation only.
+
+The isolated release worktree is clean after committing this record. The original checkout remains on its previous local main with unrelated dirty work; it was not reset or pulled over those changes. Remote main contains the release. No production rollback, credential commit, Worker update or unrelated bug closure occurred.
