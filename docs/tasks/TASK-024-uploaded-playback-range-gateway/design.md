@@ -1,7 +1,10 @@
 # Design: Authorized Uploaded Playback Range Gateway
 
-Status: Candidate C locally complete; preview QA pending
-Updated: 2026-09-04
+Status: Complete and deployed; PR #11 draft/unmerged
+Updated: 2026-09-05
+
+This approved planning record is retained as history. Final scope, deployed
+state and verification are in [the closure checkpoint](review-notes.md#2026-09-05-final-review-and-task-closure).
 
 ## Architecture
 

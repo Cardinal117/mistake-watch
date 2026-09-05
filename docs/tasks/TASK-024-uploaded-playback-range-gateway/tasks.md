@@ -1,6 +1,6 @@
 # Tasks: Authorized Uploaded Playback Range Gateway
 
-Status: Deployed; operational QA passed; draft PR review pending
+Status: Complete and deployed; PR #11 draft/unmerged
 Updated: 2026-09-05
 
 ## Current Runtime Checkpoint
@@ -11,8 +11,9 @@ Worker c801d51a at 100%, deployed from telemetry commit 517766a.
 revocation and measured operational checks are in
 [review-notes.md](review-notes.md#2026-09-05-operational-canary-passed).
 The bounded operational gate passed; PR #11 is draft/unmerged for owner review.
-MW-BUG-004 remains in progress pending formal closure. This current
-checkpoint supersedes the historical restored/pending states below.
+MW-BUG-004 is resolved and archived. Implementation, required QA and task
+closure are complete; integration into main still requires explicit merge
+approval. This checkpoint supersedes the historical restored/pending states below.
 
 ## Operational Measurement Checkpoint
 

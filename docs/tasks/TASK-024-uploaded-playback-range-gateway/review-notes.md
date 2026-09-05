@@ -1,7 +1,41 @@
 # Review Notes: Authorized Uploaded Playback Range Gateway
 
-Status: Deployed; operational QA passed; draft PR review pending
+Status: Complete and deployed; PR #11 draft/unmerged
 Updated: 2026-09-05
+
+## 2026-09-05: Final Review And Task Closure
+
+The owner approved final review and formal closure after the operational canary.
+The completed scope covers stable private Range delivery, the native fetch
+receiver correction, separately approved reconnect-clock and end-of-file replay
+repairs, timeout/cache-header guards, sanitized authorization errors and bounded
+operational metrics. Independent security and telemetry reviews have no remaining
+concrete findings; their fixes and evidence are recorded below.
+
+Required implementation and QA gates pass: 572 tests, typecheck, build, Worker
+dry-run and quality checks (one existing lint warning), plus real Opera expiry,
+seek, replay, reconnect, switch-away/resume and room/session revocation checks.
+Durable guest-membership removal was checked separately in Chromium. The latest
+13-range Opera operational sample and provider logging readback are recorded below.
+No code changed during closure, so automated behavior suites were not repeated.
+
+MW-BUG-004 is resolved and its original report/history are preserved in the
+[intake archive](../../product-intake/archive/MW-BUG-004-uploaded-session-renewal-freeze.md).
+TASK-024 implementation and required QA are complete and deployed. Vercel remains
+on aa54354 / dpl_1hQwBD9otKqAL4ouYrb4irogFShy; Worker c801d51a remains at 100%
+from 517766a. Closure does not deploy or change either provider.
+
+PR #11 remains open, draft and unmerged. The branch is zero behind main at this
+review; GitHub reports no checks or review decision. Local/independent review and
+live QA evidence must not be represented as GitHub CI or a submitted PR approval.
+Owner approval to merge/undraft is still required before repository integration.
+This checkpoint supersedes historical pending-QA and do-not-archive notes below.
+
+Operational limits remain explicit: the small sample is not a production SLO;
+budget notification delivery was not tested; persisted Worker log search is
+unavailable; Vercel CDN transfer remains metered; live-only Kick does not durably
+revoke membership. These established limits do not invalidate the tested durable
+room/session/member authorization boundary or authorize additional implementation.
 
 ## 2026-09-05: Operational Canary Passed
 

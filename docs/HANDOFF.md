@@ -13,7 +13,8 @@ room/session denial and separate Chromium guest-removal checks passed.
 The bounded operational sample passed: 13 authorized ranges, median 784 ms,
 sample p95 895 ms and zero R2 attempts on denial. Existing budget alerts were
 verified; this is not a load/SLO or notification-delivery test.
-PR #11 remains draft/unmerged for owner review. See the [current checkpoint](tasks/TASK-024-uploaded-playback-range-gateway/review-notes.md#2026-09-05-operational-canary-passed).
+TASK-024 is complete and MW-BUG-004 is resolved/archived. PR #11 remains
+draft/unmerged pending separate integration approval. See the [closure checkpoint](tasks/TASK-024-uploaded-playback-range-gateway/review-notes.md#2026-09-05-final-review-and-task-closure).
 The deployment entries below are historical milestones, not current aliases.
 
 The production application includes guest and Google identity, Watch/Listen
@@ -116,7 +117,8 @@ with a wrapper and verified in workerd. No schema or R2 privacy change was
 needed. The owner approved the existing opaque media-session reference in
 canonical state; credentials and object addresses remain excluded. Playback
 and revocation evidence passed, as did the bounded latency/operation sample and
-monitoring review. Formal PR review and task closure remain.
+monitoring review. Final task review and intake closure are complete; PR #11
+still requires owner approval before undrafting or merging.
 
 ## Required Reading
 
@@ -186,11 +188,11 @@ verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
 
-Review TASK-024's passed QA checkpoint for MW-BUG-004 and prepare formal closure;
-keep PR #11 draft and unmerged until separately approved.
-Candidate A remains rejected; do not restore its redirect approach.
+TASK-024 is closed with its deployed QA evidence retained. Keep PR #11 draft
+and unmerged until separately approved; do not redeploy older main over the
+verified candidate. Candidate A remains rejected.
 
-Meanwhile, verify MW-BUG-003 in the affected participant profile, complete
-TASK-015C's affected-laptop performance and shared-timing evidence, and
-reconcile the already-released Account Rooms owner QA. TASK-020 and TASK-022
+The next existing backlog priority is to verify MW-BUG-003 in the affected
+participant profile. Later evidence work covers TASK-015C performance/shared
+timing and reconciliation of the already-released Account Rooms owner QA. TASK-020 and TASK-022
 are complete and no longer block the release order.

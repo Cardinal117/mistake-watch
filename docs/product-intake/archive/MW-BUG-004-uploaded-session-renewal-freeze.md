@@ -1,7 +1,7 @@
 ---
 id: MW-BUG-004
 type: bug
-status: in-progress
+status: complete
 priority: P1
 area: uploaded-playback
 related: [TASK-009, TASK-023, TASK-024]
@@ -11,7 +11,7 @@ updated: 2026-09-05
 
 # Uploaded playback can freeze after signed URL expiry
 
-> [!bug] In progress - P1
+> [!success] Complete - deployed with TASK-024; PR #11 draft/unmerged
 
 - **Latest checkpoint (2026-09-05):** Gateway, reconnect and end-of-file replay
   fixes plus private authorization logging are deployed from aa54354. Opera expiry evidence exceeds
@@ -21,9 +21,17 @@ updated: 2026-09-05
   and measured Opera play/seek checks pass. The bounded operational sample
   recorded 13 authorized ranges, median 784 ms, sample p95 895 ms and zero R2
   attempts on denial. Budget alerts were verified; this is not a load test.
-  PR #11 stays draft/unmerged for owner review and formal closure.
+  Implementation and required QA are complete; the owner approved formal
+  closure on 2026-09-05. PR #11 stays draft/unmerged pending separate merge approval.
   See [current QA evidence](../../tasks/TASK-024-uploaded-playback-range-gateway/review-notes.md#2026-09-05-operational-canary-passed).
   This checkpoint supersedes the historical implementation/canary states below.
+
+## Historical Investigation
+
+The entries below preserve the investigation sequence. The completed checkpoint
+above supersedes their old implementation states and next actions. The eventual
+Worker transport cause was native fetch receiver binding, corrected with a
+wrapper and verified in workerd; it was not a proven provider network block.
 
 - **Observed:** After roughly 30 minutes, an older client can freeze while room progress continues.
 - **Security constraint:** Do not lengthen signatures or expose permanent R2 URLs.

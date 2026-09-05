@@ -4,6 +4,21 @@ Move an entry here only after it is resolved, deliberately not planned, or
 superseded. Preserve its ID, original-report link, decision reason, verification
 evidence, commit, and deployment reference where applicable.
 
+## MW-BUG-004 Uploaded playback can freeze after signed URL expiry
+
+- **Final status:** Resolved
+- **Decision date:** 2026-09-05
+- **Task:** TASK-024
+- **Evidence:** 572 tests and local gates; real Opera playback beyond 33 minutes,
+  seek, replay, reconnect, switch-away/resume and room/session denial; separate
+  Chromium durable guest-removal check. The operational sample recorded 13
+  authorized ranges, median 784 ms, sample p95 895 ms, and zero R2 attempts on denial.
+- **Deployment:** Application aa54354 / Vercel dpl_1hQwBD9otKqAL4ouYrb4irogFShy;
+  telemetry 517766a / Worker c801d51a at 100%.
+- **Integration:** PR #11 remains draft/unmerged; merge approval is separate.
+- **Original report:**
+  [[archive/MW-BUG-004-uploaded-session-renewal-freeze|Archived item]]
+
 ## MW-BUG-008 Like control is missing from TV mode
 
 - **Final status:** Resolved
