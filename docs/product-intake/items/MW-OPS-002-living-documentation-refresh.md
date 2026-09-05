@@ -28,3 +28,7 @@ updated: 2026-08-19
   navigation map and update cadence, then edit only confirmed stale documents.
 - **Original report:**
   [[../archive/quick-capture-2026-08-19#Raw Quick Capture]]
+
+## TASK-026 reconciliation - 2026-09-05
+
+Related Watch presentation/playback/documentation improvements passed owner QA. This entry retains its current status because its full original affected-case or broader Listen/account/operations scope was not verified by that acceptance. See [[../../tasks/TASK-026-watch-room-redesign/bug-reconciliation|evidence and remaining scope]].

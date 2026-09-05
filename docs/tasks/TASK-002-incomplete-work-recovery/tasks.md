@@ -1607,6 +1607,13 @@ Safe commit point:
 
 ## TASK-002.10F: Add/Discover and Watch Discovery Overhaul
 
+2026-09-05 checkpoint: the Watch browsing/Cinema/mobile portion is implemented
+and owner-accepted through TASK-026. Its catalogue/link switch, compact queue,
+persistent media, shared identity controls and autoplay refinements passed local,
+real-provider and physical-phone QA. See ../TASK-026-watch-room-redesign/release.md.
+Keep this umbrella direction open for broader Add/Discover and recommendation
+integration; no provider-account feed or new Watch ranking algorithm shipped.
+
 Source task: deferred product direction for a faster Add Media workspace and a
 streaming-style Watch discovery surface.
 

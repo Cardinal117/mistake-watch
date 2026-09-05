@@ -30,6 +30,7 @@ type AccountCommandPanelProps = {
   account: AccountSummary;
   className?: string;
   compact?: boolean;
+  embedded?: boolean;
   nextPath: string;
   notice?: "guest-room-attached";
   personalizationArtworkUrl?: string | null;
@@ -52,6 +53,7 @@ export function AccountCommandPanel({
   account,
   className,
   compact = false,
+  embedded = false,
   nextPath,
   notice,
   personalizationArtworkUrl,
@@ -80,12 +82,13 @@ export function AccountCommandPanel({
   const safeNextPath = nextPath.startsWith("/") ? nextPath : "/";
   const signInHref = `/auth/sign-in?next=${encodeURIComponent(safeNextPath)}`;
   const signOutHref = `/auth/sign-out?next=${encodeURIComponent(safeNextPath)}`;
-  const accountModal = open ? (
+  const showPanel = open || embedded;
+  const accountModal = showPanel ? (
     <div
       aria-labelledby="account-command-title"
-      aria-modal="true"
+      aria-modal={embedded ? undefined : true}
       className="fixed inset-0 z-[160] grid place-items-center bg-surface-container-lowest/62 px-4 py-4 backdrop-blur-md sm:px-6"
-      role="dialog"
+      role={embedded ? "region" : "dialog"}
     >
       <section className="grid h-[calc(100dvh-2rem)] min-h-0 w-full max-w-5xl overflow-clip rounded-lg border border-white/10 bg-surface/78 shadow-screen-glow backdrop-blur-xl md:h-[min(760px,calc(100dvh-2rem))] md:grid-cols-[15rem_minmax(0,1fr)]">
         <aside className="border-b border-white/10 bg-surface-container-lowest/45 p-4 md:border-b-0 md:border-r">
@@ -112,6 +115,7 @@ export function AccountCommandPanel({
               </div>
             </div>
             <button
+              hidden={embedded}
               aria-label="Close account panel"
               className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-white/10 text-on-surface-variant transition hover:bg-surface-variant/35 hover:text-on-surface md:hidden"
               onClick={() => setOpen(false)}
@@ -186,6 +190,7 @@ export function AccountCommandPanel({
               ) : null}
             </div>
             <button
+              hidden={embedded}
               aria-label="Close account panel"
               className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-white/10 text-on-surface-variant transition hover:bg-surface-variant/35 hover:text-on-surface md:inline-flex"
               onClick={() => setOpen(false)}
@@ -232,6 +237,8 @@ export function AccountCommandPanel({
     </div>
   ) : null;
 
+  if (embedded)
+    return <div className="watch-account-embedded">{accountModal}</div>;
   return (
     <>
       <button

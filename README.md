@@ -16,8 +16,10 @@ Production:
 - Guest-first private rooms with optional Google account identity.
 - Account-linked room history, saved-room management, and cross-device room
   projection with explicit lifecycle controls.
-- Watch and immersive responsive Listen layouts with synchronized host-led
-  playback, multi-shelf discovery, visualizer presentation, and bounded Up Next.
+- Persistent responsive Watch browsing/Cinema/fullscreen and immersive Listen,
+  with synchronized host-led playback, artwork themes and bounded Up Next.
+- Compact Watch touch queues (drag, Play next, swipe removal), a four-corner
+  mobile player, live room identity controls and leave confirmation.
 - SpacetimeDB live presence, queue, playback, chat, and permission state.
 - Supabase durable rooms, accounts, media records, uploads, and authorization.
 - YouTube, direct media, HLS, and first-party uploaded playback.
@@ -56,10 +58,15 @@ that a feature is shipped merely because an older task packet discusses it.
 - TASK-020 TV mode control parity is released. TV mode reuses the canonical Like
   state and established display settings, with signed-in production persistence
   and two-participant continuity verified.
-- TASK-023 proved that the stable-redirect candidate is not browser-reliable.
-  TASK-024 now implements the approved private Cloudflare R2 Range gateway with
-  per-request Vercel authorization; local browser, security, and build gates pass
-  while controlled production interaction QA remains pending.
+- TASK-023's stable-redirect candidate remains rejected. TASK-024 is complete
+  and merged through PR #11: the private R2 Range gateway and reconnect/replay
+  repairs passed real expiry-boundary, denial and operational QA.
+- TASK-026 Watch redesign is owner-accepted after Huawei production QA. It
+  preserves one player across browsing/docking/Cinema, adds compact touch
+  queues and fixes viewport/loading/correction issues. YouTube automatic next
+  waits for provider readiness before the canonical room clock starts.
+  See [release evidence](docs/tasks/TASK-026-watch-room-redesign/release.md) and
+  [bug reconciliation](docs/tasks/TASK-026-watch-room-redesign/bug-reconciliation.md).
 
 Use [docs/HANDOFF.md](docs/HANDOFF.md) for the verified working state and next
 release order. Use [docs/ROADMAP.md](docs/ROADMAP.md) for broader sequencing.

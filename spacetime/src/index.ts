@@ -1,4 +1,5 @@
 import { t } from "spacetimedb/server";
+import { registerPreparedYouTubeReducers } from "./prepared-youtube";
 import {
   createMediaFailureEvent,
   isPermanentMediaFailureCode,
@@ -985,64 +986,80 @@ export const set_playback_state = spacetimedb.reducer(
     status: t.string(),
   },
   (ctx, { actor_member_id, position_seconds, room_id, status }) => {
-    const authority = getAuthorizedPlaybackActor(ctx, room_id, actor_member_id);
-
-    if (!authority) {
-      return;
-    }
-
-    const nextStatus = normalizePlaybackStatus(status);
-
-    ctx.db.room_session.delete(authority.session);
-    const updatedSession = ctx.db.room_session.insert({
-      ...authority.session,
-      playback_rate: 1,
-      position_seconds: clampPositionSeconds(position_seconds),
-      server_updated_ms: nowMs(),
-      status: nextStatus,
-    });
-
-    const activeQueueItem = authority.session.active_queue_item_id
-      ? ctx.db.live_queue_item.queue_item_id.find(
-          authority.session.active_queue_item_id,
-        )
-      : undefined;
-    const media = activeQueueItem
-      ? recommendationMediaIdentity({
-          queueItemId: activeQueueItem.queue_item_id,
-          sourceType: activeQueueItem.source_type,
-          sourceUrl: activeQueueItem.source_url,
-        })
-      : null;
-
-    if (nextStatus === "playing" && activeQueueItem && media) {
-      const occurrence = beginPlaybackOccurrenceIfMissing(
-        recommendationContext(ctx),
-        {
-          actorMemberId: actor_member_id,
-          contributorMemberId: activeQueueItem.added_by_member_id,
-          durationSeconds: activeQueueItem.duration_seconds,
-          mediaId: media.mediaId,
-          queueItemId: activeQueueItem.queue_item_id,
-          roomId: room_id,
-          sourceType: media.sourceType,
-        },
-        nowMs(),
-      );
-
-      if (
-        updatedSession.playback_occurrence_id !==
-        occurrence.playback_occurrence_id
-      ) {
-        ctx.db.room_session.delete(updatedSession);
-        ctx.db.room_session.insert({
-          ...updatedSession,
-          playback_occurrence_id: occurrence.playback_occurrence_id,
-        });
-      }
-    }
+    applyPlaybackUpdate(
+      ctx,
+      actor_member_id,
+      position_seconds,
+      room_id,
+      status,
+    );
   },
 );
+
+function applyPlaybackUpdate(
+  ctx: Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0],
+  actor_member_id: string,
+  position_seconds: number,
+  room_id: string,
+  status: string,
+) {
+  const authority = getAuthorizedPlaybackActor(ctx, room_id, actor_member_id);
+
+  if (!authority) {
+    return;
+  }
+
+  const nextStatus = normalizePlaybackStatus(status);
+
+  ctx.db.room_session.delete(authority.session);
+  const updatedSession = ctx.db.room_session.insert({
+    ...authority.session,
+    playback_rate: 1,
+    position_seconds: clampPositionSeconds(position_seconds),
+    server_updated_ms: nowMs(),
+    status: nextStatus,
+  });
+
+  const activeQueueItem = authority.session.active_queue_item_id
+    ? ctx.db.live_queue_item.queue_item_id.find(
+        authority.session.active_queue_item_id,
+      )
+    : undefined;
+  const media = activeQueueItem
+    ? recommendationMediaIdentity({
+        queueItemId: activeQueueItem.queue_item_id,
+        sourceType: activeQueueItem.source_type,
+        sourceUrl: activeQueueItem.source_url,
+      })
+    : null;
+
+  if (nextStatus === "playing" && activeQueueItem && media) {
+    const occurrence = beginPlaybackOccurrenceIfMissing(
+      recommendationContext(ctx),
+      {
+        actorMemberId: actor_member_id,
+        contributorMemberId: activeQueueItem.added_by_member_id,
+        durationSeconds: activeQueueItem.duration_seconds,
+        mediaId: media.mediaId,
+        queueItemId: activeQueueItem.queue_item_id,
+        roomId: room_id,
+        sourceType: media.sourceType,
+      },
+      nowMs(),
+    );
+
+    if (
+      updatedSession.playback_occurrence_id !==
+      occurrence.playback_occurrence_id
+    ) {
+      ctx.db.room_session.delete(updatedSession);
+      ctx.db.room_session.insert({
+        ...updatedSession,
+        playback_occurrence_id: occurrence.playback_occurrence_id,
+      });
+    }
+  }
+}
 
 export const update_media_title = spacetimedb.reducer(
   {
@@ -2086,3 +2103,12 @@ export const revoke_room_control = spacetimedb.reducer(
     });
   },
 );
+
+const preparedYouTube = registerPreparedYouTubeReducers({
+  getAuthorizedPlaybackActor,
+  nextPlaybackQueueItem,
+  commitQueueAdvance,
+  applyPlaybackUpdate,
+});
+export const prepare_youtube_autoplay = preparedYouTube.prepare;
+export const start_prepared_youtube = preparedYouTube.start;

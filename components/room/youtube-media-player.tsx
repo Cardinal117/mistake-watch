@@ -17,7 +17,6 @@ import {
 import {
   chooseSyncCorrection,
   type CanonicalPlaybackState,
-  type PlaybackMode,
   type PlaybackStatus,
 } from "@/lib/player";
 import {
@@ -31,7 +30,7 @@ import {
   isNearYouTubeEnd,
   shouldFallbackAdvanceYouTubeQueue,
 } from "@/lib/player/youtube-autoplay-continuity";
-import type { LiveRoomState } from "@/lib/spacetime";
+import type { YoutubeMediaPlayerProps } from "./youtube-player-contracts";
 import {
   loadYouTubeIframeApi,
   type YoutubeNamespace,
@@ -41,11 +40,10 @@ import {
 import {
   destroyYouTubePlayer,
   isUsableYouTubePlayer,
+  safeNumber,
+  safeDurationSeconds,
 } from "@/lib/youtube/player-instance";
-import {
-  classifyYouTubeIframeError,
-  type YouTubeAvailability,
-} from "@/lib/youtube/availability";
+import { classifyYouTubeIframeError } from "@/lib/youtube/availability";
 import {
   releaseYouTubePlayerLifecycleSafely,
   youtubePlayerLifecycle,
@@ -56,13 +54,13 @@ import {
   buildYouTubeCanonicalPlaybackState,
   expectedYouTubePositionAt,
 } from "@/lib/youtube/canonical-state";
-
-type YoutubeMediaPlayerProps = {
-  className?: string;
-  liveRoom: LiveRoomState;
-  mode: PlaybackMode;
-  showNativeControls?: boolean;
-};
+import {
+  isYouTubePlaying,
+  shouldAutoSkipYouTubeRuntimeError,
+  getActivePlaybackKey,
+  isAbortError,
+} from "@/lib/youtube/player-state-helpers";
+import { YouTubeCorrectionGate } from "@/lib/youtube/correction-gate";
 
 const AUTOPLAY_ADVANCE_IN_FLIGHT_TIMEOUT_MS = 6_000;
 
@@ -74,6 +72,9 @@ export function YoutubeMediaPlayer({
 }: YoutubeMediaPlayerProps) {
   const elementId = useId().replaceAll(":", "");
   const playerRef = useRef<YoutubePlayer | null>(null);
+  const preparation = useRef(liveRoom.youtubeAutoplayPreparation);
+  const preparedSession = useRef(liveRoom.snapshot.session);
+  const correctionGate = useRef(new YouTubeCorrectionGate());
   const applyingRemoteState = useRef(false);
   const advanceToNextQueueItemRef = useRef(liveRoom.advanceToNextQueueItem);
   const autoplayAdvanceInFlightKeyRef = useRef<string | null>(null);
@@ -128,6 +129,8 @@ export function YoutubeMediaPlayer({
   const hasVideo = Boolean(videoId);
 
   useLayoutEffect(() => {
+    preparation.current = liveRoom.youtubeAutoplayPreparation;
+    preparedSession.current = liveRoom.snapshot.session;
     advanceToNextQueueItemRef.current = liveRoom.advanceToNextQueueItem;
     canControlPlaybackRef.current = liveRoom.canControlPlayback;
     canonicalStateRef.current = canonicalState;
@@ -160,6 +163,8 @@ export function YoutubeMediaPlayer({
     liveRoom.setPlaybackState,
     canonicalState,
     liveRoom.snapshot.queue,
+    liveRoom.snapshot.session,
+    liveRoom.youtubeAutoplayPreparation,
     liveRoom.snapshot.session?.queueMode,
     liveRoom.snapshot.session?.sourceUrl,
     liveRoom.snapshot.session?.queueAutoplayEnabled,
@@ -293,11 +298,25 @@ export function YoutubeMediaPlayer({
         return;
       }
 
+      if (
+        preparedSession.current &&
+        preparation.current?.apply(
+          player,
+          preparedSession.current,
+          Date.now(),
+          currentVideoId,
+        )
+      ) {
+        playerSourceUrlRef.current = currentSourceUrl;
+        playerVideoIdRef.current = currentVideoId;
+        return;
+      }
       const alreadyLoaded =
         playerSourceUrlRef.current === currentSourceUrl &&
         playerVideoIdRef.current === currentVideoId;
 
       if (alreadyLoaded) {
+        correctionGate.current.applied(state, Date.now());
         const expectedPositionSeconds = expectedYouTubePositionAt(
           state,
           Date.now(),
@@ -328,6 +347,7 @@ export function YoutubeMediaPlayer({
       }
 
       const startSeconds = expectedYouTubePositionAt(state, Date.now());
+      correctionGate.current.applied(state, Date.now());
 
       applyingRemoteState.current = true;
       setAutoplayBlocked(false);
@@ -464,6 +484,8 @@ export function YoutubeMediaPlayer({
 
   const handlePlayerStateChange = useCallback(
     (yt: YoutubeNamespace, event: YoutubePlayerEvent) => {
+      if (event.data === yt.PlayerState.PLAYING)
+        preparation.current?.ready(event.target);
       if (applyingRemoteState.current) {
         return;
       }
@@ -534,6 +556,7 @@ export function YoutubeMediaPlayer({
         playerRef.current = new yt.Player(elementId, {
           events: {
             onAutoplayBlocked: () => {
+              preparation.current?.cancel();
               setAutoplayBlocked(true);
             },
             onError: (event: YoutubePlayerEvent) => {
@@ -706,18 +729,21 @@ export function YoutubeMediaPlayer({
       }
 
       applyCanonicalVideoToPlayer(player);
-      resyncPlayerToCanonicalState(player, { forcePlayAttempt: true });
     }
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () =>
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [applyCanonicalVideoToPlayer, resyncPlayerToCanonicalState]);
+  }, [applyCanonicalVideoToPlayer]);
 
   useEffect(() => {
     const syncTimer = window.setInterval(() => {
       const player = playerRef.current;
+      // Room/presence updates must not restart the correction deadline. Read
+      // the latest committed playback state on the existing timer instead.
+      const canonicalState = canonicalStateRef.current;
+      const source = canonicalState?.source;
 
       if (
         !isUsableYouTubePlayer(player) ||
@@ -728,6 +754,11 @@ export function YoutubeMediaPlayer({
         return;
       }
 
+      if (
+        preparedSession.current &&
+        preparation.current?.apply(player, preparedSession.current)
+      )
+        return;
       const localState = player.getPlayerState();
       const localPositionSeconds = safeNumber(player.getCurrentTime()) ?? 0;
       const durationSeconds = safeNumber(player.getDuration());
@@ -780,6 +811,16 @@ export function YoutubeMediaPlayer({
         state: canonicalState,
       });
 
+      if (
+        !correctionGate.current.allow({
+          state: canonicalState,
+          correction,
+          buffering: localState === window.YT?.PlayerState.BUFFERING,
+          now: Date.now(),
+        })
+      )
+        return;
+
       applyingRemoteState.current = true;
 
       switch (correction.kind) {
@@ -815,17 +856,16 @@ export function YoutubeMediaPlayer({
     }, 750);
 
     return () => window.clearInterval(syncTimer);
-  }, [autoplayBlocked, canonicalState, requestAutoplayAdvance, source]);
+  }, [autoplayBlocked, requestAutoplayAdvance]);
 
   const resumeBlockedPlayback = useCallback(() => {
     const player = playerRef.current;
 
     if (isUsableYouTubePlayer(player)) {
       applyCanonicalVideoToPlayer(player);
-      resyncPlayerToCanonicalState(player, { forcePlayAttempt: true });
     }
     setAutoplayBlocked(false);
-  }, [applyCanonicalVideoToPlayer, resyncPlayerToCanonicalState]);
+  }, [applyCanonicalVideoToPlayer]);
 
   return (
     <>
@@ -847,37 +887,4 @@ export function YoutubeMediaPlayer({
       />
     </>
   );
-}
-
-function isYouTubePlaying(state: number) {
-  return state === window.YT?.PlayerState.PLAYING;
-}
-
-function shouldAutoSkipYouTubeRuntimeError(availability: YouTubeAvailability) {
-  return (
-    availability.status === "removed-private" ||
-    availability.status === "embed-blocked"
-  );
-}
-
-function getActivePlaybackKey(state: CanonicalPlaybackState | null) {
-  if (!state?.source?.url) {
-    return null;
-  }
-
-  return state.activeQueueItemId ?? state.source.url;
-}
-
-function isAbortError(error: unknown) {
-  return error instanceof Error && error.name === "AbortError";
-}
-
-function safeNumber(value: number) {
-  return Number.isFinite(value) ? value : undefined;
-}
-
-function safeDurationSeconds(value: number | undefined) {
-  return typeof value === "number" && Number.isFinite(value) && value > 0
-    ? Math.round(value)
-    : undefined;
 }

@@ -44,7 +44,14 @@ function command({
         exports: mod.exports,
         require(spec) {
           if (spec === "react")
-            return { useMemo: (fn) => fn(), useEffect() {} };
+            return {
+              useMemo: (fn) => fn(),
+              useState: (fn) => [fn()],
+              useLayoutEffect: (fn) => fn(),
+              useEffect() {},
+            };
+          if (spec === "@/lib/youtube/prepared-autoplay")
+            return load("lib/youtube/prepared-autoplay.ts");
           if (spec === "./live-room/use-room-connection")
             return {
               useRoomConnection: () => ({

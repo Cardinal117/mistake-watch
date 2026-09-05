@@ -24,17 +24,17 @@ test("room composition dynamically loads only the active room mode", async () =>
 
 test("hidden watch workflows load only when their surfaces are opened", async () => {
   const layoutSource = await readRoomSource("watch/watch-mode-layout.tsx");
-  const audienceSource = await readRoomSource(
-    "watch/audience/watch-audience-system.tsx",
+  const browseSource = await readRoomSource("watch/browse/watch-browser.tsx");
+  const cardSource = await readRoomSource("watch/library/media-asset-item.ts");
+  assert.ok(layoutSource.includes('import("./watch-workspaces")'));
+  assert.ok(layoutSource.includes('import("./media-hub/watch-media-hub")'));
+  assert.match(layoutSource, /screen !== "home" && screen !== "manage"/);
+  assert.match(layoutSource, /screen === "manage" && isOwner/);
+  assert.doesNotMatch(browseSource, /from ".*(?:upload|media-hub-helpers)/);
+  assert.doesNotMatch(
+    cardSource,
+    /from ".*(?:upload-transport|media-inspection)/,
   );
-
-  assert.ok(layoutSource.includes('import("./queue/watch-queue-surface")'));
-  assert.match(
-    layoutSource,
-    /activeSurface === "queue" \? \(\s*<WatchQueueSurface/,
-  );
-  assert.ok(audienceSource.includes('import("../../room-chat-panel")'));
-  assert.ok(audienceSource.includes('import("../../members-panel")'));
 });
 
 test("listen TV mode keeps its existing state gate around a dynamic boundary", async () => {

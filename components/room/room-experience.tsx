@@ -52,6 +52,8 @@ export function RoomExperience({
     [liveMode, room],
   );
   useEffect(() => {
+    // Watch owns the complete player and its fullscreen transport overlay.
+    if (liveMode === "watch") return;
     function handleFullscreen() {
       const stage = stageRef.current;
 
@@ -71,7 +73,7 @@ export function RoomExperience({
 
     return () =>
       window.removeEventListener(PLAYER_FULLSCREEN_EVENT, handleFullscreen);
-  }, []);
+  }, [liveMode]);
 
   useEffect(() => {
     if (liveRoom.connectionReadiness.status === "ready") {

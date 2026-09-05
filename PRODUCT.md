@@ -25,11 +25,12 @@ The room is the product. Media remains visually primary while participants, queu
 
 ## Product Surfaces
 
-- Standard synchronized watch room.
+- Persistent synchronized Watch room with catalogue browsing, collections,
+  media details, Cinema/fullscreen, mobile player docking and compact touch queues.
 - Host-led listen room and shared queue.
 - Dashboard and room-management surfaces.
 - Uploaded-media management backed by Cloudflare R2 metadata and access controls.
-- Later presentation modes: TV, desktop 3D cinema, and Quest WebXR cinema.
+- TV mode is released; desktop 3D cinema and Quest WebXR remain later work.
 - Later shared remote browser mode as an isolated subsystem.
 
 ## Voice
@@ -41,7 +42,8 @@ Direct, calm, confident, and slightly cinematic. Labels should be concise and op
 - A high-end private screening room: media-first, controlled, intimate, and low-distraction.
 - A futuristic command centre: precise system status, purposeful hierarchy, and clear authority.
 - The established Signal Aperture and Obsidian Lounge direction documented in `DESIGN.md`.
-- Dark cinematic environments with restrained red signal accents and readable spatial controls.
+- Dark cinematic room surfaces with current-media artwork accents, neutral
+  readable content and independent status/host semantics.
 
 Detailed visual tokens, typography, colour, spacing, responsive behaviour, and component rules remain governed by `DESIGN.md`.
 
@@ -70,7 +72,8 @@ Detailed visual tokens, typography, colour, spacing, responsive behaviour, and c
 ## Product Boundaries
 
 - The current product is private and experimental, not represented as a hardened commercial streaming service.
-- Direct media and HLS are the first media foundation; YouTube is the preferred next provider integration.
+- Direct media, HLS, YouTube and private uploaded playback are integrated;
+  provider-account signals and new Watch recommendation shelves remain follow-up work.
 - Spotify remains out of scope.
 - Shared remote browser mode remains a later, isolated phase.
 - Spatial cinema work is planned through `TASK-008` and must not silently change the existing non-spatial room experience.

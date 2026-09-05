@@ -136,6 +136,8 @@ The palette is built on a "Deep Charcoal" foundation to maximize display contras
 2.  **Signal Gold:** The premium/listen/director accent. Use for listen mode, highlights, host/authority emphasis, and warm status details.
 3.  **Deep Charcoal:** The dominant neutral foundation. The app must remain dark and media-first; blue/gold accents should clarify state, not flood the UI.
 
+**Artwork-driven room surfaces (TASK-026, approved 5 September 2026):** Watch reuses Listen's artwork theme and ambient backdrop. Active navigation, search icons, sliders, playback actions and subtle surface accents may follow the currently playing thumbnail. Keep text neutral, host gold and error semantics independent. Lift dark extracted accents for readable control labels; use the stable Listen preset when artwork is missing or unavailable. Browsing a card must not recolor the active room or alter playback.
+
 **Functional Application:**
 - **Backgrounds:** Use `neutral` (#0A0A0B) for the base and `surface` (#121214) for raised panels.
 - **Borders:** Use low-opacity white (8-10%) to create "hairline" definitions that feel technical rather than heavy.

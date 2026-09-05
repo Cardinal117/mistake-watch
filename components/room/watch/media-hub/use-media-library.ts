@@ -1,7 +1,5 @@
 "use client";
-
-import { useEffect, useState } from "react";
-
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   MediaFolder,
   MediaLibraryAccess,
@@ -16,76 +14,56 @@ export function useMediaLibrary() {
     null,
   );
   const [folders, setFolders] = useState<MediaFolder[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadAssets() {
-      setAssetLoading(true);
-      setAssetError(null);
-
-      try {
-        const response = await fetch("/api/media/assets", {
-          cache: "no-store",
-        });
-        const payload = (await response.json()) as {
-          access?: MediaLibraryAccess;
-          assets?: MediaLibraryAsset[];
-          error?: string;
-          folders?: MediaFolder[];
-        };
-
-        if (!response.ok) {
-          throw new Error(payload.error ?? "Media library could not load.");
-        }
-
-        if (!cancelled) {
-          setLibraryAccess(payload.access ?? null);
-          setAssets(payload.assets ?? []);
-          setFolders(payload.folders ?? []);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setAssetError(
-            error instanceof Error
-              ? error.message
-              : "Media library could not load.",
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setAssetLoading(false);
-        }
-      }
+  const generation = useRef(0);
+  const refreshMediaLibrary = useCallback(async () => {
+    const request = ++generation.current;
+    setAssetLoading(true);
+    setAssetError(null);
+    try {
+      const response = await fetch("/api/media/assets", { cache: "no-store" });
+      const payload = (await response.json()) as {
+        access?: MediaLibraryAccess;
+        assets?: MediaLibraryAsset[];
+        folders?: MediaFolder[];
+        error?: string;
+      };
+      if (request !== generation.current) return;
+      if (!response.ok)
+        throw new Error(payload.error ?? "Media library could not load.");
+      setLibraryAccess(payload.access ?? null);
+      setAssets(
+        payload.access?.canAccessUploadedCatalogue
+          ? (payload.assets ?? [])
+          : [],
+      );
+      setFolders(
+        payload.access?.canAccessUploadedCatalogue
+          ? (payload.folders ?? [])
+          : [],
+      );
+    } catch (error) {
+      if (request !== generation.current) return;
+      setAssetError(
+        error instanceof Error
+          ? error.message
+          : "Media library could not load.",
+      );
+      setLibraryAccess(null);
+      setAssets([]);
+      setFolders([]);
+    } finally {
+      if (request === generation.current) setAssetLoading(false);
     }
-
-    void loadAssets();
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
-
-  async function refreshMediaLibrary() {
-    const response = await fetch("/api/media/assets", {
-      cache: "no-store",
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      void refreshMediaLibrary();
     });
-    const payload = (await response.json()) as {
-      access?: MediaLibraryAccess;
-      assets?: MediaLibraryAsset[];
-      error?: string;
-      folders?: MediaFolder[];
+    return () => {
+      cancelAnimationFrame(frame);
+      generation.current += 1;
     };
-
-    if (!response.ok) {
-      throw new Error(payload.error ?? "Media library could not load.");
-    }
-
-    setLibraryAccess(payload.access ?? null);
-    setAssets(payload.assets ?? []);
-    setFolders(payload.folders ?? []);
-  }
-
+  }, [refreshMediaLibrary]);
   return {
     assetError,
     assetLoading,

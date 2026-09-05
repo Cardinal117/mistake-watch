@@ -1,6 +1,6 @@
 # Mistake Watch Roadmap
 
-Snapshot date: 2026-08-27
+Snapshot date: 2026-09-05
 
 This is the compact product-state index. Task packets remain the detailed
 requirements and evidence record.
@@ -17,6 +17,20 @@ requirements and evidence record.
 - Media Session metadata and room transport wiring.
 - Private Mistake Watch Likes, authoritative recommendation events,
   deterministic ranking, and explainable Listen Room Picks.
+
+## Accepted Watch Redesign
+
+TASK-026 passed owner Huawei production QA on 2026-09-05: persistent
+artwork-themed browsing, catalogue/link navigation, Cinema/fullscreen, save and
+live rename, shared audience dialog, compact queue gestures, smaller four-corner
+player, leave confirmation and corrected portrait/landscape scrolling.
+Slow YouTube automatic next now prepares before starting the room clock; stable
+provider correction and panel-local loading preserve playback while browsing.
+See [release evidence](tasks/TASK-026-watch-room-redesign/release.md).
+
+The Watch portion of MW-QOL-002 is delivered. Listen touch parity and the
+remaining TASK-002.10F recommendation/Add workspace scope remain open. This does
+not close affected-profile YouTube or experimental Listen performance reports.
 
 ## Completed Integrity Work
 
@@ -129,9 +143,9 @@ and readiness passing on both public aliases. It is not owner-accepted yet.
 6. **Add/Discover redesign**
    Turn Add Media into a fast search/import/discovery workspace using the
    recommendation foundation, clear source states, and compact mobile flows.
-7. **Watch discovery overhaul**
-   Evolve the Watch room media surface toward a streaming-style browse and
-   recommendation experience without weakening the synchronized room focus.
+7. **Watch recommendation integration**
+   Build recommendation shelves on the accepted TASK-026 browse flow. Preserve
+   room authority, bounded requests, private catalogue access and player continuity.
 8. **AI DJ / session intelligence**
    Explain session patterns and offer host-approved suggestions. AI output is
    advisory and cannot mutate the queue without an explicit action.

@@ -73,3 +73,7 @@ updated: 2026-08-25
 - **Task:** [[../../tasks/TASK-015-listen-visualizer-performance/task|TASK-015]]
 - **Original report:**
   [[../archive/quick-capture-2026-08-18#Capture 3]]
+
+## TASK-026 reconciliation - 2026-09-05
+
+Related Watch presentation/playback/documentation improvements passed owner QA. This entry retains its current status because its full original affected-case or broader Listen/account/operations scope was not verified by that acceptance. See [[../../tasks/TASK-026-watch-room-redesign/bug-reconciliation|evidence and remaining scope]].

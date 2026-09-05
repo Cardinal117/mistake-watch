@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, type Dispatch, type SetStateAction } from "react";
+import {
+  useEffect,
+  type CSSProperties,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { createPortal } from "react-dom";
 import { Pause, X } from "lucide-react";
 import { IconButton } from "@/components/ui";
@@ -213,20 +218,47 @@ export function ListenPermissionsDialog({
   liveRoom,
   onClose,
   open,
+  themeStyle,
 }: {
   controllerMemberId: string | null;
   currentMemberId?: string | null;
   liveRoom: LiveRoomState;
   onClose(): void;
   open: boolean;
+  themeStyle?: CSSProperties;
 }) {
   if (!open || typeof document === "undefined") {
     return null;
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[135] grid place-items-center bg-background/62 p-4 backdrop-blur-xl">
-      <section className="grid max-h-[min(44rem,calc(100dvh-2rem))] w-full max-w-3xl grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-lg border border-white/10 bg-surface/92 shadow-[0_0_56px_rgb(0_0_0_/_0.52),0_0_42px_rgb(var(--listen-shadow)/0.14)] backdrop-blur-xl">
+    <div
+      style={themeStyle}
+      className="fixed inset-0 z-[135] grid place-items-center bg-background/62 p-4 backdrop-blur-xl"
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label="Room members and controls"
+        onKeyDown={(event) => {
+          if (event.key !== "Tab") return;
+          const controls = Array.from(
+            event.currentTarget.querySelectorAll<HTMLElement>(
+              'button:not(:disabled), [href], input:not(:disabled), [tabindex="0"]',
+            ),
+          );
+          const first = controls[0],
+            last = controls.at(-1);
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last?.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first?.focus();
+          }
+        }}
+        className="grid max-h-[min(44rem,calc(100dvh-2rem))] w-full max-w-3xl grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-lg border border-white/10 bg-surface/92 shadow-[0_0_56px_rgb(0_0_0_/_0.52),0_0_42px_rgb(var(--listen-shadow)/0.14)] backdrop-blur-xl"
+      >
         <div className="flex items-start justify-between gap-3 border-b border-white/10 px-4 py-4">
           <div>
             <p className="technical-label border-0 p-0 text-[rgb(var(--listen-primary))]">

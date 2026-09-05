@@ -46,6 +46,7 @@ const nextConfig = {
     ];
   },
   reactStrictMode: true,
+  ...(process.env.WATCH_DESIGN_QA === "1" ? { devIndicators: false } : {}),
 };
 
 function readMediaGatewayUpstreamOrigin() {

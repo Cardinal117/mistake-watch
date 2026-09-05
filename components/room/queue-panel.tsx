@@ -60,6 +60,7 @@ export function QueuePanel({
   const loadDisabled = !canLoadSource || !isConnected;
   const manageDisabled = !canManageQueue || !isConnected;
   const hub = presentation === "hub";
+  const workspace = presentation === "watch-workspace";
 
   function applyQueueShuffle(strategy: "shuffle" | "smart") {
     if (manageDisabled) {
@@ -98,40 +99,42 @@ export function QueuePanel({
 
   return (
     <div className={cx("grid min-w-0", hub ? "gap-3" : "gap-4")} id={id}>
-      <div
-        className={cx(
-          hub
-            ? "flex min-w-0 flex-wrap items-center justify-between gap-3"
-            : undefined,
-        )}
-      >
-        <div className="min-w-0">
-          <Badge tone={mode === "listen" ? "amber" : "cyan"}>Queue</Badge>
-          <h2
-            className={cx(
-              "font-semibold text-on-surface",
-              hub ? "mt-2 text-body-lg" : "mt-3 text-headline-md",
-            )}
-          >
-            Up next
-          </h2>
+      {!workspace && (
+        <div
+          className={cx(
+            hub
+              ? "flex min-w-0 flex-wrap items-center justify-between gap-3"
+              : undefined,
+          )}
+        >
+          <div className="min-w-0">
+            <Badge tone={mode === "listen" ? "amber" : "cyan"}>Queue</Badge>
+            <h2
+              className={cx(
+                "font-semibold text-on-surface",
+                hub ? "mt-2 text-body-lg" : "mt-3 text-headline-md",
+              )}
+            >
+              Up next
+            </h2>
+          </div>
+          {hub ? (
+            <Button
+              className="shrink-0"
+              disabled={!isConnected || (!canAddQueue && !canLoadSource)}
+              onClick={() => setAddMediaOpen(true)}
+              size="sm"
+              type="button"
+              variant={mode === "listen" ? "secondary" : "primary"}
+            >
+              <Plus className="h-4 w-4" aria-hidden />
+              Add Media
+            </Button>
+          ) : null}
         </div>
-        {hub ? (
-          <Button
-            className="shrink-0"
-            disabled={!isConnected || (!canAddQueue && !canLoadSource)}
-            onClick={() => setAddMediaOpen(true)}
-            size="sm"
-            type="button"
-            variant={mode === "listen" ? "secondary" : "primary"}
-          >
-            <Plus className="h-4 w-4" aria-hidden />
-            Add Media
-          </Button>
-        ) : null}
-      </div>
+      )}
 
-      {hub ? null : (
+      {hub || workspace ? null : (
         <Button
           className="w-full"
           disabled={!isConnected || (!canAddQueue && !canLoadSource)}
@@ -144,27 +147,30 @@ export function QueuePanel({
         </Button>
       )}
 
-      <AddMediaDialog
-        addDisabled={addDisabled}
-        canAddQueue={canAddQueue}
-        canLoadSource={canLoadSource}
-        historyItems={historyItems}
-        isConnected={isConnected}
-        items={items}
-        loadDisabled={loadDisabled}
-        mode={mode}
-        notify={notify}
-        onAddQueueItem={onAddQueueItem}
-        onClose={() => setAddMediaOpen(false)}
-        onLoadSource={onLoadSource}
-        open={addMediaOpen}
-        queueMode={queueMode}
-        roomId={roomId}
-      />
+      {!workspace && (
+        <AddMediaDialog
+          addDisabled={addDisabled}
+          canAddQueue={canAddQueue}
+          canLoadSource={canLoadSource}
+          historyItems={historyItems}
+          isConnected={isConnected}
+          items={items}
+          loadDisabled={loadDisabled}
+          mode={mode}
+          notify={notify}
+          onAddQueueItem={onAddQueueItem}
+          onClose={() => setAddMediaOpen(false)}
+          onLoadSource={onLoadSource}
+          open={addMediaOpen}
+          queueMode={queueMode}
+          roomId={roomId}
+        />
+      )}
 
       <QueueNotifications notifications={notifications} />
 
       <QueueControls
+        compact={workspace}
         canManageQueue={canManageQueue}
         hub={hub}
         manageDisabled={manageDisabled}
@@ -177,6 +183,7 @@ export function QueuePanel({
       />
 
       <QueueContent
+        compact={workspace}
         manageDisabled={manageDisabled}
         measureQueueAction={measureQueueAction}
         mode={mode}

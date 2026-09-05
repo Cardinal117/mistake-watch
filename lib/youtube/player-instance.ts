@@ -1,5 +1,15 @@
 import type { YoutubePlayer } from "@/lib/youtube/iframe-api";
 
+export function safeNumber(value: number) {
+  return Number.isFinite(value) ? value : undefined;
+}
+
+export function safeDurationSeconds(value: number | undefined) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? Math.round(value)
+    : undefined;
+}
+
 export function isUsableYouTubePlayer(
   player: Partial<YoutubePlayer> | null,
 ): player is YoutubePlayer {

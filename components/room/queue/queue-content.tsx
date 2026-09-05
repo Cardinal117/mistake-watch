@@ -5,11 +5,13 @@ import { useMemo, useState } from "react";
 import type { RoomQueueItem } from "@/lib/rooms";
 import type { LiveRoomError } from "@/lib/spacetime";
 import type { QueueAddInput } from "./contracts";
+import { useQueueMotion } from "./use-queue-motion";
 import { QueueRow } from "./queue-row";
 
 type MeasureQueueAction = (label: string, action: () => void) => void;
 
 export function QueueContent({
+  compact = false,
   manageDisabled,
   measureQueueAction,
   mode,
@@ -24,6 +26,7 @@ export function QueueContent({
   roomErrors,
   upcomingItems,
 }: {
+  compact?: boolean;
   manageDisabled: boolean;
   measureQueueAction: MeasureQueueAction;
   mode: "listen" | "watch";
@@ -43,6 +46,10 @@ export function QueueContent({
 }) {
   const [activeQueueTab, setActiveQueueTab] = useState<"history" | "up-next">(
     "up-next",
+  );
+  const queueListRef = useQueueMotion(
+    upcomingItems.map((item) => item.id).join("|"),
+    compact,
   );
   const mediaEvents = useMemo(
     () =>
@@ -81,12 +88,13 @@ export function QueueContent({
 
       {activeQueueTab === "up-next" ? (
         upcomingItems.length > 0 ? (
-          <ol className="grid gap-2">
+          <ol className="relative grid gap-2" ref={queueListRef}>
             {upcomingItems.map((item) => {
               const queuedIndex = queuedIndexById.get(item.id) ?? -1;
 
               return (
                 <QueueRow
+                  compact={compact}
                   item={item}
                   key={item.id}
                   manageDisabled={manageDisabled}
@@ -110,10 +118,13 @@ export function QueueContent({
                       }),
                     );
                   }}
-                  onPlayQueueItem={(queueItemId) =>
-                    measureQueueAction("play", () =>
-                      onPlayQueueItem?.(queueItemId),
-                    )
+                  onPlayQueueItem={
+                    onPlayQueueItem
+                      ? (queueItemId) =>
+                          measureQueueAction("play", () =>
+                            onPlayQueueItem(queueItemId),
+                          )
+                      : undefined
                   }
                   onRemoveQueueItem={(queueItemId) =>
                     measureQueueAction("remove", () =>
@@ -135,6 +146,7 @@ export function QueueContent({
         )
       ) : previousItems.length > 0 || mediaEvents.length > 0 ? (
         <QueueHistory
+          compact={compact}
           manageDisabled={manageDisabled}
           measureQueueAction={measureQueueAction}
           mediaEvents={mediaEvents}
@@ -155,6 +167,7 @@ export function QueueContent({
 }
 
 function QueueHistory({
+  compact,
   manageDisabled,
   measureQueueAction,
   mediaEvents,
@@ -165,6 +178,7 @@ function QueueHistory({
   previousItems,
   queuedItemsLength,
 }: {
+  compact?: boolean;
   manageDisabled: boolean;
   measureQueueAction: MeasureQueueAction;
   mediaEvents: LiveRoomError[];
@@ -232,6 +246,7 @@ function QueueHistory({
       <ol className="grid gap-2">
         {previousItems.map((item) => (
           <QueueRow
+            compact={compact}
             item={item}
             key={item.id}
             manageDisabled={manageDisabled}
@@ -244,10 +259,13 @@ function QueueHistory({
                 }),
               );
             }}
-            onPlayQueueItem={(queueItemId) =>
-              measureQueueAction("play-history", () =>
-                onPlayQueueItem?.(queueItemId),
-              )
+            onPlayQueueItem={
+              onPlayQueueItem
+                ? (queueItemId) =>
+                    measureQueueAction("play-history", () =>
+                      onPlayQueueItem(queueItemId),
+                    )
+                : undefined
             }
             onRequeue={(queueItem) => {
               measureQueueAction("history-requeue", () =>

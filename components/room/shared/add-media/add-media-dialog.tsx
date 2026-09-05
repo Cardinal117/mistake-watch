@@ -21,6 +21,7 @@ import {
 import { useAddMediaController } from "./use-add-media-controller";
 
 export function AddMediaDialog({
+  embedded = false,
   addDisabled,
   canAddQueue,
   canLoadSource,
@@ -37,6 +38,7 @@ export function AddMediaDialog({
   queueMode,
   roomId,
 }: {
+  embedded?: boolean;
   addDisabled: boolean;
   canAddQueue: boolean;
   canLoadSource: boolean;
@@ -72,7 +74,7 @@ export function AddMediaDialog({
     return null;
   }
 
-  return createPortal(
+  const content = (
     <div className="fixed inset-0 z-[120] grid place-items-center bg-background/72 p-4 backdrop-blur-xl">
       <form
         className={cx(
@@ -83,17 +85,23 @@ export function AddMediaDialog({
         )}
         onSubmit={controller.handleAddQueueItem}
       >
-        <div className="flex items-start justify-between gap-3">
+        <div
+          hidden={embedded}
+          className="flex items-start justify-between gap-3"
+        >
           <div>
             <Badge tone={mode === "listen" ? "amber" : "cyan"}>Add Media</Badge>
             <h3 className="mt-2 text-body-lg font-semibold text-on-surface">
               Add from link
             </h3>
             <p className="text-label-sm text-on-surface-variant">
-              Preview a song or playlist before changing the queue.
+              {mode === "watch"
+                ? "Preview a video or playlist before adding it to the room."
+                : "Preview a song or playlist before changing the queue."}
             </p>
           </div>
           <button
+            hidden={embedded}
             aria-label="Close add media"
             className="inline-flex h-9 w-9 items-center justify-center rounded-sm border border-white/10 text-on-surface-variant hover:bg-surface-variant/30 hover:text-on-surface"
             onClick={() => {
@@ -135,7 +143,12 @@ export function AddMediaDialog({
             ) : null}
           </span>
         </label>
-        <div className="flex items-center justify-between gap-2">
+        <div
+          className={cx(
+            "flex items-center justify-between gap-2",
+            embedded && "watch-link-actions",
+          )}
+        >
           <p className="min-w-0 text-label-sm text-on-surface-variant">
             {isConnected
               ? "Links preview automatically before changing the queue."
@@ -263,7 +276,11 @@ export function AddMediaDialog({
           />
         ) : null}
       </form>
-    </div>,
-    document.body,
+    </div>
+  );
+  return embedded ? (
+    <div className="watch-add-embedded">{content}</div>
+  ) : (
+    createPortal(content, document.body)
   );
 }
