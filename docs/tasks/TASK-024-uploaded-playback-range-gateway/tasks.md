@@ -1,18 +1,28 @@
 # Tasks: Authorized Uploaded Playback Range Gateway
 
-Status: Native fetch repair verified locally; release remains blocked
+Status: Reconnect repair passes local gates; controlled release QA pending
 Updated: 2026-09-05
 
-## Current Checkpoint: Native Fetch Receiver Repair
+## Current Checkpoint And Approved Reconnect Scope
 
-Owner-approved local repair is complete with test-first native workerd evidence:
-13/13 focused and 529/529 full tests pass. See
-[the current review checkpoint](review-notes.md#2026-09-05-native-fetch-receiver-repair-local-only)
-for exact red/green evidence, remaining release gaps, and the next approval gate.
-This supersedes older transport-cause and next-experiment conclusions below;
-the canary observations remain historical evidence. Production remains rolled
-back, and PR #11 must remain draft. No provider experiment is approved by this
-local implementation checkpoint.
+The approved gateway repair passed local tests and initial Opera delivery but
+failed guest-reload synchronization QA. Both providers are restored; health and
+readiness are 200 and gateway routing is inactive (404). The 30-minute test is
+incomplete. See [rollback evidence](review-notes.md#2026-09-05-failed-reconnect-qa-and-restoration).
+PR #11 remains draft and unmerged. Existing commits are 7a8e592 and d105c8f.
+
+The approved repair is locally complete (8/8 focused, 177/177 affected, 540/540 full).
+See [test chronology](review-notes.md#2026-09-05-approved-reconnect-clock-repair).
+
+The owner approved a separate test-first clock/reconnect repair and completion
+of the rollback report. Reproduce elapsed-time loss on late join and reconnect
+from stale playing snapshots before code changes. Preserve paused position,
+fresh control updates, clock-skew handling and host authority. Use existing
+clock signals if valid; do not derive clock skew from playback snapshot age.
+Limit changes to clock adaptation/connection integration and meaningful tests.
+No provider, schema, player-remount or delivery-architecture change is part of
+this slice. Production stays restored during local verification; repeat the
+full Opera release gate before claiming the original media defect resolved.
 
 ## Preconditions
 

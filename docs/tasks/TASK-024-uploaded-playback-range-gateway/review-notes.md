@@ -1,7 +1,86 @@
 # Review Notes: Authorized Uploaded Playback Range Gateway
 
-Status: Native fetch repair verified locally; cloud and Opera QA pending
+Status: Production restored; approved reconnect repair in progress
 Updated: 2026-09-05
+
+## 2026-09-05: Approved Reconnect Clock Repair
+
+Baseline d105c8f, with only uncommitted report updates and the new tests present.
+The production hook/snapshot/sync regression reproduced lost playback age:
+100 seconds instead of 700 on a ten-minute-late join, and 100 instead of
+548.54 on reconnect. The final eight-case red run passed 1/8 (exit 1), failing
+for those behaviors, unrelated session updates, uncalibrated source exposure
+and invalid/historical clock handling. Paused-state characterization passed.
+Command: `node --test tests/spacetime/room-clock-reconnect.test.mjs`.
+
+The repair reads fresh SDK Reducer event timestamps rather than a session row's
+last playback-update time. Historical SubscribeApplied/Transaction events never
+calibrate the clock. A new client waits for its fresh join-result sample before
+publishing a source; reconnect keeps the previous valid clock until refreshed.
+Existing join/heartbeat events supply samples. No new network call, dependency,
+schema, provider setting, permission, media source or player remount is added.
+
+Green: the same eight tests pass. Connection/player suites pass 177/177; full
+suite 540/540. Typecheck and production build pass. BigInt construction uses the
+existing compilation target. The test harness executes the real production
+hook, snapshot adapter and sync math with simulated React scheduling and SDK
+transport; it does not claim real browser or hosted SDK integration coverage.
+The installed SDK 2.3.0 emits ReducerResult timestamps to row callbacks and
+separates historical subscription events (verified in its source).
+
+One-way clock samples include response transit delay; this bounded repair does
+not add round-trip clock estimation. Hosted reconnect/late-join QA and the full
+30-minute gateway run remain required before release acceptance. The existing
+commit/push/deployment approval is used for this explicitly approved repair;
+PR #11 stays draft and unmerged. Rollback uses the proven promotion of Vercel
+dpl_79vfekpDWSrzBr1mqivyYdUbAFL7, followed by Worker version
+8637e61a-0d98-49ab-a217-af3252c969c3.
+
+## 2026-09-05: Failed Reconnect QA And Restoration
+
+Initial Opera gateway load, unbuffered forward/back seeks, pause/resume and
+synchronization passed. After guest reload and the autoplay gesture, the guest
+remained about 448.54 seconds behind the uninterrupted host (1164.70/716.18,
+then 1282.80/834.26 seconds). Both streams played without media errors. The
+30-minute test stopped before completion; MW-BUG-004 is not verified fixed.
+
+Vercel rollback returned 402 under its previous-deployment plan restriction.
+The exact known-good dpl_79vfekpDWSrzBr1mqivyYdUbAFL7 was instead restored with
+Vercel's documented promote command. Worker 8637e61a-0d98-49ab-a217-af3252c969c3
+was then restored at 100%. Production health/readiness returned 200 and the
+gateway control path returned 404. The baseline reconnect comparison was
+inconclusive because restored direct-R2 playback showed a load error. Temporary
+QA tabs were closed. PR #11 remains draft and unmerged; 7a8e592/d105c8f are pushed.
+
+The initial final-report write and its retry timed out in automatic permission
+review; no outdated interim report was committed. The owner subsequently
+approved finishing this report and a separate test-first reconnect clock repair.
+Source hypothesis: a stale session-update timestamp is incorrectly treated as
+current server time on subscription insertion. Player and clock code are
+unchanged from the former production source; isolate this before changing it.
+
+## 2026-09-05: Deployment And Active Browser QA
+
+- Commits 7a8e592 and d105c8f are pushed; PR #11 is open, draft and unmerged.
+- Worker version 461a7708-2d46-4a56-8533-9b91f2cdd316 is deployed.
+  The Worker-only fake-credential control reached Vercel and returned the
+  expected upstream 404 before application activation. This confirms the
+  receiver repair restores outbound I/O; no generic fetch exception occurred.
+- Vercel dpl_4YAnBKKRaiy5fpuXEtqfdiJj71mB was built from d105c8f with
+  domain promotion disabled, checked, then explicitly promoted under owner
+  approval. The primary production hostname resolves to this Ready deployment.
+- Candidate and production health/readiness returned 200. The active production
+  gateway returned 401 without a cookie and 403 with a fake cookie.
+- Real Opera profile QA uses a separate room and an existing 105-minute uploaded
+  video. A separate in-app browser joined as a room-scoped guest. Both play;
+  host pause synchronized exactly, and resumed snapshots differed by about
+  0.02 seconds. Unbuffered forward/end/backward seeks succeeded without a media
+  error. Opera retains the same same-origin gateway source and one video.
+- The real elapsed-time test beyond the original 30-minute expiry boundary is
+  still running. Do not interpret this checkpoint as completion or bug closure.
+- Rollback remains Vercel dpl_79vfekpDWSrzBr1mqivyYdUbAFL7 first, then Worker
+  8637e61a-0d98-49ab-a217-af3252c969c3. No R2 privacy, DNS, browser protection,
+  secrets, database schema or realtime schema settings were changed.
 
 ## 2026-09-05: Approved Release Preparation
 

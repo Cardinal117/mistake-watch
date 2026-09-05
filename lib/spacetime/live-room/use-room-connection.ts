@@ -15,6 +15,7 @@ import {
   requestLiveRoomAdmission,
 } from "./admission";
 import type { LiveDb, LiveReducers } from "./client-types";
+import { readReducerClockOffset } from "./clock";
 import {
   beginRoomConnectionAttempt,
   getFailedRoomConnectionReadiness,
@@ -46,7 +47,7 @@ export function useRoomConnection(room: RoomSnapshot) {
     buildFallbackSnapshot(room),
   );
   const [reducers, setReducers] = useState<LiveReducers | null>(null);
-  const serverClockOffsetMs = useRef(0);
+  const serverClockOffsetMs = useRef<number | null>(null);
   const reconnectAttemptRef = useRef(0);
   const reconnectTimerRef = useRef<number | null>(null);
   const recoveringConnectionRef = useRef(false);
@@ -83,17 +84,24 @@ export function useRoomConnection(room: RoomSnapshot) {
     const config = getSpacetimeConfig();
     const storedToken = window.localStorage.getItem(tokenStorageKey);
 
-    const refreshSnapshot = (options?: { calibrateClock?: boolean }) => {
+    const refreshSnapshot = (context?: unknown) => {
       if (!liveDb) {
         return;
       }
 
-      const nextSnapshot = readLiveSnapshot(liveDb);
+      const clockOffset = readReducerClockOffset(context, Date.now());
 
-      if (options?.calibrateClock && nextSnapshot.session) {
-        serverClockOffsetMs.current =
-          Date.now() - nextSnapshot.session.serverUpdatedMs;
+      if (clockOffset !== null) {
+        serverClockOffsetMs.current = clockOffset;
       }
+
+      // The initial subscription may contain an old playback update. Wait for
+      // our join result to establish the clock before exposing a new source.
+      if (serverClockOffsetMs.current === null) {
+        return;
+      }
+
+      const nextSnapshot = readLiveSnapshot(liveDb);
 
       const adjustedSnapshot = adjustSnapshotClock(
         nextSnapshot,
@@ -119,8 +127,8 @@ export function useRoomConnection(room: RoomSnapshot) {
       );
     };
 
-    const handleRowChange = () => refreshSnapshot();
-    const handleSessionChange = () => refreshSnapshot({ calibrateClock: true });
+    const handleRowChange = (context: unknown) => refreshSnapshot(context);
+    const handleSessionChange = handleRowChange;
 
     const clearLiveTimers = () => {
       if (heartbeatTimer) {
