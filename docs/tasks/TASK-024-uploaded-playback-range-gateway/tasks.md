@@ -14,7 +14,11 @@ real autoplay denial prompts. Bound the change to direct-media replay and its
 tests; no delivery, schema, privacy or player-remount redesign. Record red/green
 evidence, run affected and full gates, then use the existing approved controlled
 deployment/rollback procedure and real Opera owner plus guest QA. PR #11 stays
-draft and unmerged. The final result in review-notes.md supersedes older
+draft and unmerged. Endpoint QA additionally reproduced Play resending the ended
+position; the shared client command will restart completed direct/HLS media at
+zero while preserving explicit earlier seeks and all authority checks. This is
+part of the approved replay repair, with no server reducer change.
+The final result in review-notes.md supersedes older
 checkpoint text below.
 
 ## Current Checkpoint And Approved Reconnect Scope

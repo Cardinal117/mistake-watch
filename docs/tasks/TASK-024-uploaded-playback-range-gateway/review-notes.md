@@ -3,6 +3,27 @@
 Status: Replay repair passes local gates; controlled Opera QA pending
 Updated: 2026-09-05
 
+## 2026-09-05: Replay Command Follow-Up Within Approved Scope
+
+Commit 2a47932 was deployed as dpl_73PV8eqX8HrCvpVYhA6Xk28dTv8j with Worker
+461a7708. Real Opera end/back-20/Play passed: host and guest reached the exact
+6333.233333-second duration, both paused/ended without error or a false autoplay
+prompt; canonical controls stopped at 105:33. The guest's initial genuine
+interaction prompt was accepted normally. Direct Play at completion then
+remained at the end. Production was restored using the prepared Vercel/Worker
+rollback; health returned 200 and gateway control 404. This command correction
+is inside the owner's approved end-of-file replay scope, not a new architecture.
+
+Before command changes, node --test tests/spacetime/replay-command.test.mjs
+failed 2/6 on baseline 2a47932 (exit 1): direct and HLS commands sent 120 instead
+of zero. The tests execute the actual useLiveRoom hook and admission predicate.
+The shared client command now maps Play at/after the completed native source's
+position to zero. Earlier seeks, paused resume, YouTube behavior and admission/
+playback-authority denials retain their behavior. No server reducer or schema
+changes are needed. Focused tests pass 17/17; the complete suite passes 557/557,
+with typecheck and lint passing (existing navigation warning only). Repeat
+controlled Opera replay QA on the committed follow-up before release claims.
+
 ## 2026-09-05: Approved End-Of-File Replay Repair
 
 Testing is test-first. Baseline 3fdfa3c was clean. The final ten initial
