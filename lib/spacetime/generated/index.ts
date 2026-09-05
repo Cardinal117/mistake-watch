@@ -51,6 +51,7 @@ import LoadMediaSourceReducer from "./load_media_source_reducer";
 import MoveQueueItemReducer from "./move_queue_item_reducer";
 import PlayQueueItemReducer from "./play_queue_item_reducer";
 import PlayUploadedQueueItemReducer from "./play_uploaded_queue_item_reducer";
+import PrepareYoutubeAutoplayReducer from "./prepare_youtube_autoplay_reducer";
 import PublishRoomRhythmProfileReducer from "./publish_room_rhythm_profile_reducer";
 import RemoveIdleMemberReducer from "./remove_idle_member_reducer";
 import RemoveQueueItemReducer from "./remove_queue_item_reducer";
@@ -65,6 +66,7 @@ import SetQueueAutoplayReducer from "./set_queue_autoplay_reducer";
 import SetQueueItemPriorityReducer from "./set_queue_item_priority_reducer";
 import SetQueueModeReducer from "./set_queue_mode_reducer";
 import SetVerifiedRoomMediaPreferenceReducer from "./set_verified_room_media_preference_reducer";
+import StartPreparedYoutubeReducer from "./start_prepared_youtube_reducer";
 import UpdateMediaTitleReducer from "./update_media_title_reducer";
 import UpdateRoomModeReducer from "./update_room_mode_reducer";
 import UpdateRoomNameReducer from "./update_room_name_reducer";
@@ -241,6 +243,7 @@ const reducersSchema = __reducers(
   __reducerSchema("move_queue_item", MoveQueueItemReducer),
   __reducerSchema("play_queue_item", PlayQueueItemReducer),
   __reducerSchema("play_uploaded_queue_item", PlayUploadedQueueItemReducer),
+  __reducerSchema("prepare_youtube_autoplay", PrepareYoutubeAutoplayReducer),
   __reducerSchema("publish_room_rhythm_profile", PublishRoomRhythmProfileReducer),
   __reducerSchema("remove_idle_member", RemoveIdleMemberReducer),
   __reducerSchema("remove_queue_item", RemoveQueueItemReducer),
@@ -255,6 +258,7 @@ const reducersSchema = __reducers(
   __reducerSchema("set_queue_item_priority", SetQueueItemPriorityReducer),
   __reducerSchema("set_queue_mode", SetQueueModeReducer),
   __reducerSchema("set_verified_room_media_preference", SetVerifiedRoomMediaPreferenceReducer),
+  __reducerSchema("start_prepared_youtube", StartPreparedYoutubeReducer),
   __reducerSchema("update_media_title", UpdateMediaTitleReducer),
   __reducerSchema("update_room_mode", UpdateRoomModeReducer),
   __reducerSchema("update_room_name", UpdateRoomNameReducer),
