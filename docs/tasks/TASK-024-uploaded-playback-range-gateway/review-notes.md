@@ -3,6 +3,32 @@
 Status: Replay QA passed and deployed; wider TASK-024 sign-off pending
 Updated: 2026-09-05
 
+## 2026-09-05: Final Security Review And Room Revocation
+
+Independent code/security review found one P2 issue: the internal authorization
+route logged a raw caught database error. The fixed diagnostic now logs no
+exception object. A test executes the actual POST and credential verifier with
+a details-bearing database failure. On clean baseline bc4ad89, the test failed
+with that private fixture in the captured log (exit 1); the same assertion passed
+after the fix. The reviewer independently reran it and cleared the finding.
+No further concrete regression was found in the scoped gateway, clock or replay
+changes. Full tests pass 558/558; typecheck, build, formatting and lint pass
+(the existing navigation warning remains); file-length has zero violations.
+
+Live Opera room-closure revocation passed on source 9227d73: the disposable
+release-QA room played normally; closing only that room from Account Rooms
+preserved buffered playback. A midpoint seek outside its buffered interval then
+returned Worker 403. A bounded sanitized tail recorded the preceding 206 and
+the denied 403; its 1005 ms denial wall time is NOT an authorization latency
+measurement. Zero R2 reads on denial remains source/test evidence, not a live
+storage metric. Durable member removal and media-session end are separate
+verification cases and are not inferred from room closure.
+
+This checkpoint does not close the full packet. Background interaction QA,
+representative authorization timing/read counts, provider usage/alert readback,
+and the other live revocation cases remain explicit gates. The privacy fix is
+locally verified and awaits its Git/deployment checkpoint. PR #11 stays draft.
+
 ## 2026-09-05: Final Replay Deployment And QA
 
 The final source commit 9227d73584d8d47bdc740606d6d61fa772915c14 is deployed as

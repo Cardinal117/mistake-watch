@@ -70,8 +70,8 @@ export async function POST(request: Request) {
       contentType: authorization.contentType,
       objectKey: authorization.objectKey,
     });
-  } catch (error) {
-    console.error("[media-range-authorize] authorization failed", error);
+  } catch {
+    console.error("[media-range-authorize] authorization failed");
 
     return privateJson({ error: "Media authorization is unavailable." }, 503);
   }
