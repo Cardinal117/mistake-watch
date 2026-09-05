@@ -1,7 +1,43 @@
 # Review Notes: Authorized Uploaded Playback Range Gateway
 
-Status: Expiry/reconnect checks passed; replay gate failed; production restored
+Status: Replay repair passes local gates; controlled Opera QA pending
 Updated: 2026-09-05
+
+## 2026-09-05: Approved End-Of-File Replay Repair
+
+Testing is test-first. Baseline 3fdfa3c was clean. The final ten initial
+component tests ran against unchanged production source: 4 passed and 6 failed
+(node --test tests/player/direct-media-replay.test.mjs, test process exit 1).
+They reproduced false autoplay blocking on AbortError in Watch and Listen,
+play() calls at the terminal position, a discarded host end event during sync,
+and a stale end event publishing after rewind. A later eleventh test first
+failed 0-versus-1 terminal publications before adding the end reconciliation.
+The deterministic harness executes the actual component and sync code; only
+React scheduling, browser media operations and room transport are substituted.
+An initial harness promise-drain issue was corrected before recording red.
+
+The fix uses precise native duration for local terminal sync, preserves valid
+host end events during correction, ignores stale events after rewind, and lets
+AbortError retry normally. A real NotAllowedError still requires interaction.
+The timer also reconciles media.ended through the same host/queue guards if a
+seek consumes the native event. No source reload, hidden player, delivery,
+queue reducer, schema or authority redesign was introduced. Other play errors
+retain existing handling. Direct/HLS native media share this path; YouTube is
+unchanged. Native browser event ordering remains the required manual gate.
+
+Green: 11/11 focused, 188/188 affected player/realtime, 551/551 full. Typecheck,
+production build, formatting and diff checks pass. Lint has only the existing
+room-experience navigation warning; file-length policy has zero violations and
+18 existing threshold warnings (direct player now 624 lines). The final small
+ref-update adjustment was followed by fresh full-suite/type/build checks.
+
+Prepared rollback remains Vercel promote dpl_79vfekpDWSrzBr1mqivyYdUbAFL7 plus
+Worker rollback 8637e61a-0d98-49ab-a217-af3252c969c3. Both restored versions were
+read back before release. Reuse unchanged Worker 461a7708 for the controlled
+candidate. Verify real Opera end/back/Play, natural completion/replay, pause,
+seek and independent guest sync; retain the earlier 33-minute range evidence
+as evidence for the unchanged gateway, not new-head browser evidence. No merge
+or undraft is approved. Production QA is pending at this checkpoint.
 
 ## 2026-09-05: Final QA Result And Restoration
 

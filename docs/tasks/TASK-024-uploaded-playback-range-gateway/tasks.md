@@ -1,7 +1,21 @@
 # Tasks: Authorized Uploaded Playback Range Gateway
 
-Status: Reconnect repair passes local gates; controlled release QA pending
+Status: Approved end-of-file replay repair; production restored
 Updated: 2026-09-05
+
+## Approved End-Of-File Replay Repair
+
+The owner approved a separate test-first replay repair after the 33-minute
+expiry and reconnect checks passed but end/back/Play failed. Baseline 3fdfa3c
+is clean. Reproduce interrupted play promises, terminal sync corrections and
+ended-event publication in the production direct player before changing it.
+Preserve host authority, guest behavior, queue autoplay, source identity and
+real autoplay denial prompts. Bound the change to direct-media replay and its
+tests; no delivery, schema, privacy or player-remount redesign. Record red/green
+evidence, run affected and full gates, then use the existing approved controlled
+deployment/rollback procedure and real Opera owner plus guest QA. PR #11 stays
+draft and unmerged. The final result in review-notes.md supersedes older
+checkpoint text below.
 
 ## Current Checkpoint And Approved Reconnect Scope
 
