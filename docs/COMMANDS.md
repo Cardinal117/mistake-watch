@@ -200,3 +200,34 @@ npm run spacetime:server-token
 ```
 
 Store the printed token as `SPACETIME_SERVER_AUTH_TOKEN` in `.env.local` and Vercel. Add the printed identity hex to the private `trusted_seed_issuer` table for the same SpacetimeDB database. The identity hex is an allowlist value, not a secret; the auth token is secret.
+
+## TASK-026 isolated Watch visual QA
+
+The normal application remains on port 5371. The redesign fixture is explicitly
+opt-in and uses port 5381 in its isolated worktree:
+
+```powershell
+$env:WATCH_DESIGN_QA = '1'
+npx.cmd next dev --webpack --hostname 127.0.0.1 --port 5381
+```
+
+In another terminal:
+
+```powershell
+$env:WATCH_DESIGN_QA = '1'
+$env:PLAYWRIGHT_BASE_URL = 'http://127.0.0.1:5381'
+$watchSpecs = Get-ChildItem tests/e2e/watch-*.spec.ts | ForEach-Object { 'tests/e2e/' + $_.Name }
+npx.cmd playwright test $watchSpecs --workers=1
+node --test tests/*/*.test.mjs
+```
+
+`/dev/watch-design` renders the real layout with fictional services; `/rooms/[id]`
+uses actual backends. Do not count fixture playback as live provider or private
+R2 proof. Do not enable WATCH_DESIGN_QA in production; its route must return 404.
+See the TASK-026 integration/release notes for actual backend and phone evidence.
+
+For this Windows machine, a local production check used
+`$env:CIRCLE_NODE_TOTAL='3'; npm.cmd run build -- --webpack` to bound build workers.
+Run lint excluding local archived deployment exports:
+`npm.cmd run lint -- --ignore-pattern '.tmp/**'`. Those exports are QA artifacts,
+not application source. Keep credentials and uploads out of release exports.

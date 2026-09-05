@@ -20,7 +20,7 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 | [MW-FEAT-005](items/MW-FEAT-005-local-ai-dj-intent-router.md)           | Feature     | P1       | Ready for planning | AI DJ            | Route local intent into bounded tools and escalation      | TASK-002.10B, 011  |
 | [MW-FEAT-007](items/MW-FEAT-007-native-web-audio-analysis.md)           | Feature     | P3       | Ready for planning | Media analysis   | Analyse accessible media locally through Web Audio        | TASK-015, 018      |
 | [MW-QOL-001](items/MW-QOL-001-simplify-listen-youtube-embed.md)         | QoL         | P2       | Planned            | Listen player    | Reduce duplicate iframe controls and add copy-link        | Add/Discover       |
-| [MW-QOL-002](items/MW-QOL-002-drag-drop-queue.md)                       | QoL         | P2       | Ready for planning | Queue            | Reorder queue items directly instead of repeated clicks   | Queue UX           |
+| [MW-QOL-002](items/MW-QOL-002-drag-drop-queue.md)                       | QoL         | P2       | In progress        | Queue            | Watch drag accepted; Listen parity remains                 | TASK-026           |
 | [MW-QOL-003](items/MW-QOL-003-media-session-room-authority.md)          | QoL         | P2       | Needs verification | Media Session    | Verify device controls use room-authoritative actions     | TASK-006           |
 | [MW-QOL-004](items/MW-QOL-004-previous-button-behavior.md)              | QoL         | P2       | Ready for planning | Playback         | Restart first, then move to previous on repeated action   | Playback UX        |
 | [MW-QOL-005](items/MW-QOL-005-persist-local-volume.md)                  | QoL         | P2       | Needs verification | Player settings  | Preserve chosen volume through refresh                    | Personalization    |
@@ -32,6 +32,12 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 | [MW-OBS-001](items/MW-OBS-001-spacetime-participant-cache-warning.md)   | Observation | P3       | Needs reproduction | Live room sync   | Participant update can target a missing cached row        | TASK-009, 012      |
 
 ## Current Focus
+
+TASK-026 Watch redesign passed owner physical Huawei QA on 2026-09-05; release
+integration is authorized. [Release evidence](../tasks/TASK-026-watch-room-redesign/release.md)
+and [report-by-report reconciliation](../tasks/TASK-026-watch-room-redesign/bug-reconciliation.md)
+record its accepted fixes. MW-QOL-002's Watch portion is delivered; the Listen
+portion stays active. No unrelated provider/performance/security report is closed.
 
 TASK-024 is complete and deployed; [[archive/MW-BUG-004-uploaded-session-renewal-freeze|MW-BUG-004]]
 is resolved. The owner approved PR #11 integration on 2026-09-05.

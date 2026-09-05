@@ -4,6 +4,24 @@ Updated: 2026-09-05
 
 ## Current State
 
+TASK-026 Watch redesign is owner-accepted after the final Huawei production QA
+on 2026-09-05. The owner authorized atomic commits, PR/main integration and
+final deployment. The accepted candidate remains live while that integration
+completes: dpl_8ayFXZG5sE2fUoR2W2iZk2z5MmuG, application tree
+0fb144fd9569146eb808f477180c5835249508cc. The prepared-YouTube additive backend
+is also live; prior temporary restore instructions are superseded by acceptance.
+[Release status and exact integration evidence](tasks/TASK-026-watch-room-redesign/release.md)
+are canonical. [Bug reconciliation](tasks/TASK-026-watch-room-redesign/bug-reconciliation.md)
+separates accepted fixes from still-open affected-profile/Listen/security work.
+
+The release preserves the merged TASK-024 R2 gateway and all its authorization,
+expiry, replay and reconnect fixes. No Worker/Supabase schema update is included.
+Do not import the original checkout's unfinished Media Session/Listen work,
+untracked TASK-025 packet or new personal/global-room Quick Capture into this
+release. Those owner changes and the redesign safety stash are preserved.
+
+## Earlier release evidence
+
 TASK-024's uploaded Range gateway, reconnect/replay repairs and private
 authorization logging are deployed from aa54354 as Vercel
 dpl_1hQwBD9otKqAL4ouYrb4irogFShy. Telemetry commit 517766a is deployed as
@@ -186,6 +204,10 @@ index is live while its local migration is absent from remote history; the
 verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
+
+TASK-026 Watch browsing/touch flow is accepted. Recommendation shelves and
+provider-account signals remain follow-ups; Watch completion does not close the
+full TASK-002.10F Add/Discover/recommendation direction.
 
 TASK-024 is closed with its deployed QA evidence retained. The owner approved PR #11
 integration; do not redeploy older main over the verified candidate. Candidate A remains rejected.

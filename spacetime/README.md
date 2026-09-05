@@ -35,3 +35,21 @@ NEXT_PUBLIC_SPACETIME_MODULE=mistake-watch-rooms
 ```
 
 Production uses `https://maincloud.spacetimedb.com` with the same module name.
+
+## YouTube automatic-next readiness
+
+TASK-026 adds prepare_youtube_autoplay and start_prepared_youtube. The server
+checks current source/item/occurrence/revision and playback authority; preparation
+selects the next YouTube item paused at zero, then readiness starts the clock.
+Existing reducers and tables remain compatible. See [sync contract](../docs/sync-model.md).
+
+Before a coordinated release, run the focused reducer tests and
+`node scripts/verify-youtube-autoplay.mjs` from the repository root with an
+isolated local Spacetime service on 127.0.0.1:5392. The script creates disposable
+QA databases on that local service only, checks independent host/guest/rejoin
+clients, and can accept a prior generated-bindings directory as its argument to
+verify old-client compatibility. It does not target production.
+
+Publish the additive backend before the new client. Always prohibit data deletion
+for a code-only update (`--delete-data=never`). Preserve the exact deployed module
+artifact before an emergency rollback; restore the previous frontend first.

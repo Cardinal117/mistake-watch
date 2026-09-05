@@ -1,6 +1,38 @@
 # Mistake Watch Sync Model
 
-## Task 11-15.C Scope
+## Current Watch playback contract - TASK-026
+
+Watch browsing, docking, Cinema and fullscreen keep a single provider instance.
+Navigation changes local presentation and never issues a room playback command.
+Normal direct/HLS and manual queue actions retain existing reducers and authority.
+
+YouTube automatic next has an additive two-stage handshake:
+
+1. The initiating authorized controller arms local intent and calls
+   prepare_youtube_autoplay with the expected source/item/occurrence/raw server
+   revision and next queue item. The server independently selects/verifies the
+   next available YouTube item and enabled autoplay, then commits paused at zero.
+2. The initiating browser loads its existing embed at zero. The first PLAYING
+   event acknowledges a bounded observed position (0-2 seconds) through
+   start_prepared_youtube. The server rechecks authority and exact still-paused
+   source/item/occurrence/revision before starting canonical playback.
+3. A newer pause, seek or selection invalidates the acknowledgement. Loss of
+   connection/authority or a bounded provider timeout cancels local intent.
+   Rejoining browsers never create that intent: they follow the room clock.
+
+serverRevisionMs preserves the raw server timestamp separately from the
+client-adjusted serverUpdatedMs used by sync math. Only the raw revision is sent
+for equality checks. No table schema or existing reducer arguments changed;
+previous generated clients were verified against the extended local module.
+Publish the additive backend before the new frontend. For rollback, restore the
+previous frontend before removing the additive reducers, without deleting data.
+
+Provider correction uses a stable cadence across unrelated snapshots, permits
+new explicit canonical commands immediately, and gives buffering/in-flight seeks
+time to settle. Small steady playing drift (up to two seconds) is tolerated to
+avoid audible repeated corrections. Direct/HLS correction thresholds are unchanged.
+
+## Historical Task 11-15.C Scope
 
 Task 11 introduced the SpacetimeDB room engine skeleton. Task 12 adds live
 presence, host authority, permission state, active controller state, generated
