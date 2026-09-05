@@ -1,34 +1,34 @@
 # Tasks: Authorized Uploaded Playback Range Gateway
 
-Status: Playback and revocation QA passed; operational sign-off pending
+Status: Deployed; operational QA passed; draft PR review pending
 Updated: 2026-09-05
 
 ## Current Runtime Checkpoint
 
 Source aa54354 is active on Vercel dpl_1hQwBD9otKqAL4ouYrb4irogFShy with
-Worker 461a7708 at 100%. 558 tests and local gates pass. Playback, reconnect,
-replay, switch-away/resume and room/session/member revocation checks are in
-[review-notes.md](review-notes.md#2026-09-05-release-sign-off-checkpoint).
-Full TASK-024 sign-off retains the representative operational measurement gate;
-PR #11 is draft/unmerged and MW-BUG-004 remains in progress. This current
+Worker c801d51a at 100%, deployed from telemetry commit 517766a.
+572 tests and local gates pass. Playback, reconnect, replay, switch-away/resume,
+revocation and measured operational checks are in
+[review-notes.md](review-notes.md#2026-09-05-operational-canary-passed).
+The bounded operational gate passed; PR #11 is draft/unmerged for owner review.
+MW-BUG-004 remains in progress pending formal closure. This current
 checkpoint supersedes the historical restored/pending states below.
 
 ## Operational Measurement Checkpoint
 
-The remaining Task 4/6B telemetry is implemented locally after the owner asked
-to proceed with operational sign-off. Production still runs aa54354/461a7708.
-See [local evidence and proposed canary](review-notes.md#2026-09-05-operational-metrics-local-verification).
-Commit, push and a Worker-only canary require the next explicit approval.
+The owner approved and completed the Task 4/6B telemetry commit, push and
+Worker-only canary. See [local evidence](review-notes.md#2026-09-05-operational-metrics-local-verification)
+and the current runtime checkpoint above.
 
-The proposed canary also disables persisted Worker logs and automatic
+The deployed candidate disables persisted Worker logs and automatic
 invocation logs because their request metadata includes session URLs. Keep
 numeric provider metrics and collect only allowlisted per-request measurements
 through a bounded local tail. This changes the Worker logging configuration:
 historical Worker log search is unavailable while persistence is disabled.
 There is no Vercel deployment, DNS, secret, storage-privacy or schema change.
-Provider readback must verify persistence settings before exact-path Opera QA;
-rollback to Worker 461a7708 on a privacy, delivery or accounting failure.
-No hosted configuration change is authorized by this local checkpoint alone.
+Provider readback verified persistence settings before exact-path Opera QA.
+Rollback to Worker 461a7708 remains prepared. Further hosted configuration
+changes and merge still require explicit approval.
 
 ## Approved End-Of-File Replay Repair
 

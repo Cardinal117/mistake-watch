@@ -6,11 +6,14 @@ Updated: 2026-09-05
 
 TASK-024's uploaded Range gateway, reconnect/replay repairs and private
 authorization logging are deployed from aa54354 as Vercel
-dpl_1hQwBD9otKqAL4ouYrb4irogFShy, with Worker 461a7708 at 100%.
-All 558 tests and local gates pass. Real Opera playback, background switch-away,
+dpl_1hQwBD9otKqAL4ouYrb4irogFShy. Telemetry commit 517766a is deployed as
+Worker c801d51a at 100%, with persisted Worker logs disabled.
+All 572 tests and local gates pass. Real Opera playback, background switch-away,
 room/session denial and separate Chromium guest-removal checks passed.
-PR #11 remains draft/unmerged; operational measurements and alert verification
-remain open. See the [current checkpoint](tasks/TASK-024-uploaded-playback-range-gateway/review-notes.md#2026-09-05-release-sign-off-checkpoint).
+The bounded operational sample passed: 13 authorized ranges, median 784 ms,
+sample p95 895 ms and zero R2 attempts on denial. Existing budget alerts were
+verified; this is not a load/SLO or notification-delivery test.
+PR #11 remains draft/unmerged for owner review. See the [current checkpoint](tasks/TASK-024-uploaded-playback-range-gateway/review-notes.md#2026-09-05-operational-canary-passed).
 The deployment entries below are historical milestones, not current aliases.
 
 The production application includes guest and Google identity, Watch/Listen
@@ -112,8 +115,8 @@ The Worker fetch failure was a native fetch receiver-binding error, corrected
 with a wrapper and verified in workerd. No schema or R2 privacy change was
 needed. The owner approved the existing opaque media-session reference in
 canonical state; credentials and object addresses remain excluded. Playback
-and revocation evidence passed; representative latency, operation accounting
-and monitoring remain before task closure.
+and revocation evidence passed, as did the bounded latency/operation sample and
+monitoring review. Formal PR review and task closure remain.
 
 ## Required Reading
 
@@ -183,8 +186,8 @@ verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
 
-Complete TASK-024's operational sign-off for MW-BUG-004; keep PR #11 draft
-and unmerged until separately approved.
+Review TASK-024's passed QA checkpoint for MW-BUG-004 and prepare formal closure;
+keep PR #11 draft and unmerged until separately approved.
 Candidate A remains rejected; do not restore its redirect approach.
 
 Meanwhile, verify MW-BUG-003 in the affected participant profile, complete

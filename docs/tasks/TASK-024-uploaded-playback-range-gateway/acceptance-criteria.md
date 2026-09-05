@@ -1,10 +1,10 @@
 # Acceptance Criteria: Authorized Uploaded Playback Range Gateway
 
-Status: Deployed; operational sign-off pending
+Status: Deployed; operational QA passed; draft PR review pending
 Updated: 2026-09-05
 
 Current results and remaining gates are in
-[review-notes.md](review-notes.md#2026-09-05-release-sign-off-checkpoint).
+[review-notes.md](review-notes.md#2026-09-05-operational-canary-passed).
 The owner approved retaining the established opaque uploaded-media session
 reference in canonical state. This narrow identifier exception does not permit
 media credentials, secrets or object addresses in room state.

@@ -1,7 +1,57 @@
 # Review Notes: Authorized Uploaded Playback Range Gateway
 
-Status: Playback and revocation QA passed; operational sign-off pending
+Status: Deployed; operational QA passed; draft PR review pending
 Updated: 2026-09-05
+
+## 2026-09-05: Operational Canary Passed
+
+The owner explicitly approved commit, push, Worker deployment, the logging
+change and Opera QA. Commit 517766a is pushed and Worker
+c801d51a-844b-4356-91e6-cb8366280ead is active at 100%, verified after QA.
+Vercel remains on aa54354 / dpl_1hQwBD9otKqAL4ouYrb4irogFShy. Health and
+readiness returned 200; the missing-credential gateway control returned 401.
+The prior Worker 461a7708 was verified available before deployment and its
+rollback script remains prepared. No rollback was required.
+
+Before media QA, Cloudflare dashboard readback confirmed invocation logs and
+persisted logs unchecked, traces disabled, and no export destinations. This
+prevents new persisted Worker log envelopes; it does not delete historical
+provider logs. A bounded tail saved only allowlisted metrics locally, rejected
+zero metric records, and was stopped after QA. No raw event was printed or saved.
+
+Real Opera used a newly created disposable room and an existing 105-minute
+uploaded video. Initial playback, six distant seeks across roughly 10-93% of
+the item, pause, short rewind and resume passed. Before revocation, one media
+element retained its original source, readyState 4 and no media error.
+
+The recorded window was 14:56:54-15:07:29 UTC (including the control):
+
+| Measurement                                                       | Observed                                           |
+| ----------------------------------------------------------------- | -------------------------------------------------- |
+| Authorized range responses                                        | 13 x 206                                           |
+| Authorized latency, minimum / median / nearest-rank p95 / maximum | 376 / 784 / 895 / 895 ms                           |
+| Authorized R2 operation attempts                                  | 13 get, zero head                                  |
+| Missing credential                                                | 401; authorization not attempted; zero R2 attempts |
+| Closed-room fresh range                                           | 403; 878 ms authorization; zero R2 attempts        |
+| Invocation outcomes                                               | 3 ok, 12 cancelled; no exception outcome captured  |
+
+Closing only the disposable room through Account Rooms preserved buffered
+playback. The next seek outside those buffers returned 403 before any R2 call.
+The room moved from Open rooms to Closed history; all temporary QA tabs and
+the collector were closed. No database fixture mutation was needed in this run.
+
+This is a representative single-viewer play/seek exercise, not a load test or
+a statistically established production SLO. Cancelled streams during seeking
+are not counted as authorization failures; response creation is not proof of
+complete byte delivery. Provider billing remains authoritative for billed R2
+operations. The observed sample is below the proposed 2-second review threshold.
+Existing $5/$8 budget alerts and the Hobby anomaly-alert limitation were read
+back in the local checkpoint below; recipient delivery was not tested.
+
+The remaining bounded operational QA gate passes with these limitations. The
+572-test local gate and independent security review also pass. PR #11 remains
+draft/unmerged for owner review; no merge or intake archival was performed.
+This checkpoint supersedes older pending-QA and provider-state entries below.
 
 ## 2026-09-05: Operational Metrics Local Verification
 
