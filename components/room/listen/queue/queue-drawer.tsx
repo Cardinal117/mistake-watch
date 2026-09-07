@@ -16,10 +16,13 @@ import {
   SlidersHorizontal,
   Sparkles,
 } from "lucide-react";
+import { VirtualQueueList } from "../../queue/virtual-queue-list";
+import { QueueRow } from "../../queue/queue-row";
+import { useOptimisticQueue } from "../../queue/use-optimistic-queue";
+import type { MoveQueueAction } from "@/lib/queue/move-intent";
 import { Button } from "@/components/ui";
 import { type QueueMode } from "@/lib/queue/model";
 import { type DerivedQueueState } from "@/lib/queue/derived";
-import { getQueueMetadataPriority } from "@/lib/queue/metadata-priority";
 import {
   getQueueScrollTopForIndex,
   getQueueVirtualWindow,
@@ -42,7 +45,7 @@ import {
   DENSE_QUEUE_ROW_HEIGHT,
   DEFAULT_LISTEN_DRAWER_HEIGHT,
 } from "@/components/room/listen/shared";
-import { ListenQueueRow } from "@/components/room/listen/queue/queue-row";
+import { ListenHistoryRows } from "./history-rows";
 import {
   useDenseListenQueueRows,
   readStoredDrawerHeight,
@@ -81,7 +84,7 @@ export function ListenQueueDrawer({
   onOpenChange(open: boolean): void;
   onAddQueueItem(input: QueueAddInput): void;
   onClearQueue(): void;
-  onMoveQueueItem(queueItemId: string, position: number): void;
+  onMoveQueueItem: MoveQueueAction;
   onPinnedFirst(): void;
   onPlayQueueItem(queueItemId: string): void;
   onQueueItemPriorityChange(
@@ -118,10 +121,20 @@ export function ListenQueueDrawer({
   const {
     currentItem,
     playedItems: historyItems,
-    queuedIndexById,
     queuedItems,
-    upcomingItems: queueViewItems,
+    upcomingItems: canonicalQueue,
   } = queueState;
+  const optimistic = useOptimisticQueue(
+    canonicalQueue,
+    !canManageQueue || !isConnected,
+    onMoveQueueItem,
+  );
+  const queueViewItems = optimistic.items;
+  const queuedIndexById = new Map(
+    queueViewItems
+      .filter((i) => i.status === "queued")
+      .map((i, index) => [i.id, index]),
+  );
   const baseVisibleItems =
     drawerView === "history" ? historyItems : queueViewItems;
   const visibleItems = useMemo(() => {
@@ -155,9 +168,12 @@ export function ListenQueueDrawer({
   const nextPreview =
     nextPreparation.status !== "idle" ? nextPreparation.target : null;
   const collapsedDrawerHeight = nextPreview ? "4.5rem" : "3rem";
-  const queueRowHeight = denseQueueRows
-    ? DENSE_QUEUE_ROW_HEIGHT
-    : COMPACT_QUEUE_ROW_HEIGHT;
+  const queueRowHeight =
+    drawerView === "queue"
+      ? 82
+      : denseQueueRows
+        ? DENSE_QUEUE_ROW_HEIGHT
+        : COMPACT_QUEUE_ROW_HEIGHT;
   const virtualWindow = useMemo(
     () =>
       getQueueVirtualWindow({
@@ -603,80 +619,71 @@ export function ListenQueueDrawer({
             className="min-h-0 flex-1 overflow-y-auto overscroll-contain [overflow-anchor:none]"
             ref={rowsViewportRef}
           >
+            {optimistic.notice && (
+              <p role="status" className="p-2 text-label-sm text-error">
+                {optimistic.notice}
+              </p>
+            )}
             {visibleItems.length > 0 ? (
-              <div
-                aria-label={
-                  drawerView === "history" ? "Queue history" : "Queue items"
-                }
-                className="relative"
-                role="list"
-                style={{ height: virtualWindow.totalHeight }}
-              >
-                <div
-                  className="absolute inset-x-0 top-0"
-                  style={{
-                    transform: `translateY(${virtualWindow.offsetTop}px)`,
-                  }}
+              drawerView === "queue" ? (
+                <VirtualQueueList
+                  items={visibleItems}
+                  indices={queuedIndexById}
                 >
-                  {virtualItems.map((item, localIndex) => {
-                    const index = virtualWindow.startIndex + localIndex;
-                    const queuedIndex = queuedIndexById.get(item.id) ?? -1;
-
-                    return (
-                      <div
-                        aria-posinset={index + 1}
-                        aria-setsize={visibleItems.length}
-                        data-queue-row-index={index}
-                        key={item.id}
-                        role="listitem"
-                        style={{ height: queueRowHeight }}
-                      >
-                        <ListenQueueRow
-                          canAddQueue={canAddQueue}
-                          current={item.id === currentItem?.id}
-                          desktopShell={desktopShell}
-                          index={index}
-                          item={item}
-                          manageDisabled={manageDisabled}
-                          metadataPriority={getQueueMetadataPriority({
-                            current: item.id === currentItem?.id,
-                            firstVisibleIndex: virtualWindow.firstVisibleIndex,
-                            itemIndex: index,
-                            overscanEndIndex: virtualWindow.endIndex,
-                            overscanStartIndex: virtualWindow.startIndex,
-                            queuedIndex,
-                            visibleEndIndex: virtualWindow.visibleEndIndex,
-                          })}
-                          onAddQueueItem={onAddQueueItem}
-                          onMoveQueueItem={(queueItemId, position) =>
-                            measureQueueAction("move", () =>
-                              onMoveQueueItem(queueItemId, position),
-                            )
-                          }
-                          onPlayQueueItem={(queueItemId) =>
-                            measureQueueAction("play", () =>
-                              onPlayQueueItem(queueItemId),
-                            )
-                          }
-                          playDisabled={playDisabled}
-                          onQueueItemPriorityChange={(queueItemId, input) =>
-                            measureQueueAction("priority", () =>
-                              onQueueItemPriorityChange(queueItemId, input),
-                            )
-                          }
-                          onRemoveQueueItem={(queueItemId) =>
-                            measureQueueAction("remove", () =>
-                              onRemoveQueueItem(queueItemId),
-                            )
-                          }
-                          queuedIndex={queuedIndex}
-                          queuedItemsLength={queuedItems.length}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+                  {(item) => (
+                    <QueueRow
+                      compact
+                      item={item}
+                      mode="listen"
+                      manageDisabled={manageDisabled}
+                      queuedIndex={queuedIndexById.get(item.id) ?? -1}
+                      queuedItemsLength={queuedItems.length}
+                      onMoveQueueItem={optimistic.move}
+                      onPlayQueueItem={onPlayQueueItem}
+                      onRemoveQueueItem={onRemoveQueueItem}
+                      onPin={(row) =>
+                        onQueueItemPriorityChange(row.id, {
+                          isPinned: !row.isPinned,
+                        })
+                      }
+                      onPlayNext={(row) =>
+                        onQueueItemPriorityChange(row.id, {
+                          isPlayNext: !row.isPlayNext,
+                        })
+                      }
+                    />
+                  )}
+                </VirtualQueueList>
+              ) : (
+                <ListenHistoryRows
+                  items={virtualItems}
+                  window={virtualWindow}
+                  total={visibleItems.length}
+                  rowHeight={queueRowHeight}
+                  currentId={currentItem?.id}
+                  indices={queuedIndexById}
+                  rowProps={{
+                    canAddQueue,
+                    desktopShell,
+                    manageDisabled,
+                    playDisabled,
+                    queuedItemsLength: queuedItems.length,
+                    onAddQueueItem,
+                    onMoveQueueItem: (id, position) =>
+                      measureQueueAction("move", () =>
+                        onMoveQueueItem(id, position),
+                      ),
+                    onPlayQueueItem: (id) =>
+                      measureQueueAction("play", () => onPlayQueueItem(id)),
+                    onQueueItemPriorityChange: (id, input) =>
+                      measureQueueAction("priority", () =>
+                        onQueueItemPriorityChange(id, input),
+                      ),
+                    onRemoveQueueItem: (id) =>
+                      measureQueueAction("remove", () => onRemoveQueueItem(id)),
+                  }}
+                />
+              )
             ) : (
               <p className="p-4 text-body-md text-on-surface-variant">
                 {drawerView === "history"

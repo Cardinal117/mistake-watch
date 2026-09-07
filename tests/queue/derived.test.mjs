@@ -117,7 +117,10 @@ test("deriveQueueState preserves canonical upcoming order", () => {
 test("queue surfaces use shared derived indexes instead of per-row scans", () => {
   for (const componentSource of [listenLayoutSource, queuePanelSource]) {
     assert.match(componentSource, /deriveQueueState/);
-    assert.match(componentSource, /queuedIndexById\.get\(item\.id\)/);
+    assert.match(
+      componentSource,
+      /(queuedIndexById|projectedIndices)\.get\(item\.id\)/,
+    );
     assert.doesNotMatch(componentSource, /queuedItems\.findIndex/);
   }
 });

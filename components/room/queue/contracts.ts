@@ -1,3 +1,4 @@
+import type { MoveQueueAction } from "@/lib/queue/move-intent";
 import type { QueueMode } from "@/lib/queue/model";
 import type { RoomQueueItem } from "@/lib/rooms";
 import type { LiveRoomError } from "@/lib/spacetime";
@@ -32,11 +33,7 @@ export type QueuePanelProps = {
   onAddQueueItem?(input: QueueAddInput): void;
   onClearQueue?(): void;
   onLoadSource?(input: SourceLoadInput): void;
-  onMoveQueueItem?(
-    queueItemId: string,
-    position: number,
-    clientActionId?: string,
-  ): void;
+  onMoveQueueItem?: MoveQueueAction;
   onPlayQueueItem?(queueItemId: string): void;
   onQueueItemPriorityChange?(
     queueItemId: string,
