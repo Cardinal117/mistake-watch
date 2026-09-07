@@ -11,14 +11,20 @@ Production:
 - https://watch.mistakestudios.com
 - https://mistake-watch.vercel.app
 
-## Approved Next Work
+## Current Release and Next Acceptance
 
-[TASK-027: room flow and responsive queue](docs/tasks/TASK-027-room-flow-and-queue-response/proposal.md)
-documents the approved follow-up: immediate queue feedback and virtualization,
-playlist-review repairs, catalogue-first Watch and a compact mobile Listen bar
-that expands by dragging upward. 027.1-027.3 have local candidates; 027.4 remains pending. This is not a claim
-about the currently deployed feature set. The packet tracks every requirement,
-concurrency rule, provider constraint and QA gate before code changes.
+[TASK-027](docs/tasks/TASK-027-room-flow-and-queue-response/release-candidate.md)
+is deployed for live acceptance: catalogue-first Watch, compact optimistic and
+virtualized queues, mobile Listen with swipe-up expansion, shared settings and
+Social controls, and repaired playlist review. The owner passed three-device QA
+on Opera, Opera GX and Huawei Chrome, including a participant without catalogue access.
+
+The 2026-09-07 fine-tuning release adds connection continuity during metadata
+updates, retained volume/mute, full-width fullscreen controls, fresher transport
+timing and visible direct video in Listen. Targeted live acceptance of these
+follow-ups remains open; PR #13 is still draft and unmerged. The one-off token
+error is recorded as unreproduced. See the [fine-tuning evidence](docs/tasks/TASK-027-room-flow-and-queue-response/live-qa-fine-tuning.md)
+for exact checks and the [handoff](docs/HANDOFF.md) for deployment/rollback state.
 
 ## What Exists
 
@@ -33,8 +39,7 @@ concurrency rule, provider constraint and QA gate before code changes.
 - Supabase durable rooms, accounts, media records, uploads, and authorization.
 - YouTube, direct media, HLS, and first-party uploaded playback.
 - Search, playlist review/import, queue ordering, play next/now, shuffle,
-  history, auto-advance, and Listen large-queue virtualization. Watch queue
-  virtualization is part of TASK-027.
+  history, auto-advance, and bounded Watch/Listen queue rendering.
 - Private Mistake Watch Likes, authoritative room-event capture, deterministic
   first-party ranking, and explainable Listen Room Picks.
 - Owner upload catalogue with folders, multipart recovery, browser-safety

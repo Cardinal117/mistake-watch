@@ -10,8 +10,8 @@ requirements and evidence record.
 - Guest-first rooms and optional Google identity.
 - Watch and Listen room experiences.
 - SpacetimeDB playback, presence, queue, permission, and chat authority.
-- Large-queue performance and Listen virtualization; Watch queue windowing is
-  pending in TASK-027 rather than already shared across both modes.
+- Large-queue performance and bounded Watch/Listen queue rendering in the live
+  TASK-027 candidate.
 - YouTube search, metadata, playlist review/import, and provider availability.
 - Uploaded-media library, R2 storage, processing, room-scoped playback, and
   owner/allowlist catalogue controls.
@@ -24,8 +24,10 @@ requirements and evidence record.
 Approved follow-up: [TASK-027](tasks/TASK-027-room-flow-and-queue-response/proposal.md)
 captures queue responsiveness/concurrency and Watch virtualization, playlist
 review defects, catalogue-first Watch, header identity/mode access, and mobile
-Listen's compact browsing bar with swipe-up expansion. Local 027.1-027.3 candidates
-are documented in the packet; 027.4 and integrated acceptance remain pending.
+Listen's compact browsing bar with swipe-up expansion. These slices are live and
+passed owner three-device QA. The 2026-09-07 fine-tuning candidate is deployed;
+its targeted live acceptance and draft PR #13 merge remain pending. See
+[fine-tuning evidence](tasks/TASK-027-room-flow-and-queue-response/live-qa-fine-tuning.md).
 Existing TASK-026 production acceptance remains intact.
 
 TASK-026 passed owner Huawei production QA on 2026-09-05: persistent

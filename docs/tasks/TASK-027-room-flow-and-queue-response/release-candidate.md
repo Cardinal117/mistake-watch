@@ -43,3 +43,24 @@ Local dev was restarted on port 5383 after the clean build. The original checkou
 ### Post-live-QA fine tuning
 
 Owner reported successful three-device live playback/queue/mode QA and requested that this working production remain live. The remaining fullscreen, volume, display timing, Listen video, metadata-reconnect and one-off token findings are tracked with local evidence and unresolved boundaries in [live-qa-fine-tuning.md](live-qa-fine-tuning.md). These follow-up changes are not deployed or merged and require the targeted next acceptance round.
+
+
+## Fine-tuning deployment — 2026-09-07
+
+User authorized Git, deployment and documentation updates. Commits `eacaad4`,
+`6342bc0` and `fe7b28c` are pushed on `codex/task-027-room-flow`; PR #13's
+scope/evidence description is updated and remains draft/unmerged. A clean
+1,147-file tracked archive at `fe7b28c` excluded environment files, caches and
+uncommitted/generated noise. Vercel's production Turbopack build passed.
+
+Deployment `dpl_AEkhfVx3PikrQ4e1YPe9HR4SztgE`:
+https://mistake-watch-3h9qude29-cardinal117s-projects.vercel.app
+was promoted and verified at https://watch.mistakestudios.com. Health/readiness
+return 200 (readiness ready); both design-preview routes return 404; dashboard
+browser smoke passed. This is smoke evidence, not new multi-device acceptance.
+
+Rollback frontend: `dpl_2rG6qaf8oMmzbSWm453DTUQqfX8X`. No backend, database,
+Worker or authorization changes were deployed. Keep the new release live while
+targeted owner acceptance is pending. README, handoff and roadmap were reconciled;
+subsequent documentation-only commits do not change the deployed application.
+This checkpoint supersedes the earlier local-only/uncommitted status above.

@@ -35,3 +35,24 @@ MW-BUG-006 (refresh then resume minutes away) remains open: preventing unnecessa
 The current production release must remain live until the fine-tuned replacement is reviewed. All changes here are local and uncommitted; PR #13 remains unmerged. Next acceptance is the actual-room rename/permission sequence during YouTube playback, volume switching, fullscreen and the Huawei display timing. No deployment or rollback was performed during this follow-up.
 
 Build: optimized Next.js Webpack build passed, including TypeScript and route generation. Default Turbopack could not traverse this worktree's external node_modules link; it failed before application compilation. This local infrastructure limitation remains distinct from a clean deployment build, which was not attempted for these changes.
+
+
+## Fine-tuning deployment — 2026-09-07
+
+User authorized Git, deployment and documentation updates. Commits `eacaad4`,
+`6342bc0` and `fe7b28c` are pushed on `codex/task-027-room-flow`; PR #13's
+scope/evidence description is updated and remains draft/unmerged. A clean
+1,147-file tracked archive at `fe7b28c` excluded environment files, caches and
+uncommitted/generated noise. Vercel's production Turbopack build passed.
+
+Deployment `dpl_AEkhfVx3PikrQ4e1YPe9HR4SztgE`:
+https://mistake-watch-3h9qude29-cardinal117s-projects.vercel.app
+was promoted and verified at https://watch.mistakestudios.com. Health/readiness
+return 200 (readiness ready); both design-preview routes return 404; dashboard
+browser smoke passed. This is smoke evidence, not new multi-device acceptance.
+
+Rollback frontend: `dpl_2rG6qaf8oMmzbSWm453DTUQqfX8X`. No backend, database,
+Worker or authorization changes were deployed. Keep the new release live while
+targeted owner acceptance is pending. README, handoff and roadmap were reconciled;
+subsequent documentation-only commits do not change the deployed application.
+This checkpoint supersedes the earlier local-only/uncommitted status above.

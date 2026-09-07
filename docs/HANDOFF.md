@@ -1,15 +1,27 @@
 # Mistake Watch Handoff
 
-## Latest checkpoint — TASK-027 live QA candidate (2026-09-07)
+## Latest checkpoint — TASK-027 fine-tuning live (2026-09-07)
 
-Owner accepted local QA. Atomic commits are pushed to codex/task-027-room-flow; draft PR #13 is unmerged. Candidate dpl_2rG6qaf8oMmzbSWm453DTUQqfX8X is live on watch.mistakestudios.com for two-participant QA. Public health/readiness pass; live acceptance remains pending.
-[Listen evidence](tasks/TASK-027-room-flow-and-queue-response/listen-local-qa.md)
-and preview: http://127.0.0.1:5383/dev/listen-design . Includes shared queue,
-compact/expanded player, visible YouTube fallback, stable responsive provider and
-mobile Discover card refinement. Release preparation is recorded in [release-candidate.md](tasks/TASK-027-room-flow-and-queue-response/release-candidate.md). Reconcile the separate uncommitted
-Media Session work before release; physical-device/live-provider gates remain.
+Owner passed three-device live QA on Opera, Opera GX and Huawei Chrome. The
+follow-up application at `fe7b28c` is now deployed as
+`dpl_AEkhfVx3PikrQ4e1YPe9HR4SztgE` on https://watch.mistakestudios.com.
+Clean Vercel Turbopack build passed; health/readiness return 200, development
+routes return 404, and the dashboard was browser-verified.
 
-Updated: 2026-09-07
+Atomic fixes: `eacaad4` connection lifetime, `6342bc0` player/UI fine tuning;
+`fe7b28c` records local QA. Branch `codex/task-027-room-flow` is pushed; draft
+PR #13 remains unmerged for targeted rename/permission YouTube, volume switching,
+fullscreen and Huawei timing acceptance. The token error remains unreproduced.
+
+The immediately previous working frontend `dpl_2rG6qaf8oMmzbSWm453DTUQqfX8X`
+is retained for rollback. Backend is unchanged by fine tuning; no new Supabase,
+SpacetimeDB or Worker deployment was needed. Keep this release live pending
+acceptance; do not automatically restore an older release.
+
+[Fine-tuning scope and QA](tasks/TASK-027-room-flow-and-queue-response/live-qa-fine-tuning.md)
+and [release record](tasks/TASK-027-room-flow-and-queue-response/release-candidate.md)
+are canonical. Local previews remain on port 5383. Preserve separate owner
+Media Session work and other unrelated checkout changes.
 
 ## Previous accepted baseline (superseded during the TASK-027 QA window)
 

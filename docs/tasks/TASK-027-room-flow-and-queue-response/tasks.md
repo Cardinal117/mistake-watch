@@ -169,3 +169,5 @@ listen-local-qa.md for scoped evidence and remaining owner/device acceptance.
 ### Post-live-QA fine tuning
 
 Owner reported successful three-device live playback/queue/mode QA and requested that this working production remain live. The remaining fullscreen, volume, display timing, Listen video, metadata-reconnect and one-off token findings are tracked with local evidence and unresolved boundaries in [live-qa-fine-tuning.md](live-qa-fine-tuning.md). These follow-up changes are not deployed or merged and require the targeted next acceptance round.
+
+Fine tuning is now committed, pushed and deployed for targeted live acceptance; see the final deployment checkpoint in release-candidate.md. PR #13 remains draft.
