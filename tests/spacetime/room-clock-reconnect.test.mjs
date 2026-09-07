@@ -34,11 +34,13 @@ function client({
   let slots = [];
   let effects = [];
   let callbacks;
+  let connections = 0;
+  let disconnections = 0;
   let currentRow = row;
   const tables = new Map();
   const timers = new Map();
   let nextTimer = 1;
-  const room = {
+  let room = {
     id: "clock-room",
     name: "Clock test",
     hostMemberId: "host",
@@ -123,7 +125,9 @@ function client({
       },
       async leaveRoom() {},
     },
-    disconnect() {},
+    disconnect() {
+      disconnections++;
+    },
     subscriptionBuilder() {
       let applied;
       const builder = {
@@ -146,6 +150,7 @@ function client({
   };
   const DbConnection = {
     builder() {
+      connections++;
       callbacks = {};
       const builder = { build: () => connected };
       for (const name of ["withUri", "withDatabaseName", "withToken"])
@@ -260,6 +265,11 @@ function client({
   }
   return {
     connect,
+    counts: () => ({ connections, disconnections }),
+    refreshRoom(patch) {
+      room = { ...room, ...patch };
+      render();
+    },
     advance(ms) {
       now += ms;
     },
@@ -355,4 +365,38 @@ test("historical subscription and malformed samples cannot replace a valid clock
   });
   guest.sample({ event: { tag: "Reducer", value: { timestamp: null } } });
   assert.equal(guest.position(), 150);
+});
+
+for (const patch of [
+  { name: "Renamed room" },
+  {
+    currentMember: {
+      id: "guest",
+      name: "Guest",
+      role: "guest",
+      permissions: { playback: true },
+    },
+  },
+  { mode: "listen" },
+]) {
+  test(`room presentation refresh does not reconnect: ${JSON.stringify(patch)}`, async () => {
+    const guest = client();
+    await guest.connect();
+    const before = guest.counts();
+    guest.advance(2000);
+    guest.refreshRoom(patch);
+    assert.deepEqual(guest.counts(), before);
+    assert.equal(guest.position(), 702);
+  });
+}
+
+test("changing member identity still replaces the connection", async () => {
+  const guest = client();
+  await guest.connect();
+  guest.refreshRoom({
+    currentMember: { id: "other-guest", name: "Other guest", role: "guest" },
+  });
+  await Promise.resolve();
+  assert.equal(guest.counts().disconnections, 1);
+  assert.equal(guest.counts().connections, 2);
 });

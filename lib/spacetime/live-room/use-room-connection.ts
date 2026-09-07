@@ -53,6 +53,10 @@ export function useRoomConnection(room: RoomSnapshot) {
   const recoveringConnectionRef = useRef(false);
   const [connectionRunId, setConnectionRunId] = useState(0);
   const currentMember = room.currentMember;
+  const latestRoom = useRef(room);
+  useEffect(() => {
+    latestRoom.current = room;
+  }, [room]);
   const tokenStorageKey = `mw_spacetime_token_${room.id}`;
 
   function retryConnection() {
@@ -70,6 +74,9 @@ export function useRoomConnection(room: RoomSnapshot) {
   }
 
   useEffect(() => {
+    // Seed labels and member metadata are snapshots, not connection identity.
+    const room = latestRoom.current;
+    const currentMember = room.currentMember;
     if (!currentMember || !room.hostMemberId) {
       return;
     }
@@ -366,12 +373,10 @@ export function useRoomConnection(room: RoomSnapshot) {
     };
   }, [
     connectionRunId,
-    currentMember,
+    currentMember?.id,
+    currentMember?.role,
     room.hostMemberId,
     room.id,
-    room.liveSeedToken,
-    room.mode,
-    room.name,
     tokenStorageKey,
   ]);
 
