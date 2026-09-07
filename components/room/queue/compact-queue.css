@@ -167,7 +167,8 @@
   transition: transform 180ms ease-out;
 }
 
-.compact-queue-slot[data-held="true"] {
+.compact-queue-slot[data-held="true"],
+.compact-queue-slot[data-released="true"] {
   z-index: 30;
   transition: none;
 }

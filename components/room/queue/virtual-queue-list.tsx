@@ -38,6 +38,13 @@ export function VirtualQueueList({
   const list = useRef<HTMLDivElement>(null);
   const [viewport, setViewport] = useState({ top: 0, height: 600 });
   const [held, setHeld] = useState<string | null>(null);
+  const heldRef = useRef<string | null>(null);
+  const [released, setReleased] = useState<string | null>(null);
+  useEffect(() => {
+    if (!released) return;
+    const timer = setTimeout(() => setReleased(null), 200);
+    return () => clearTimeout(timer);
+  }, [released]);
   const [destination, setDestination] = useState(-1);
   const lastDestination = useRef(-1);
   const [focused, setFocused] = useState<string | null>(null);
@@ -158,10 +165,14 @@ export function VirtualQueueList({
   const context = useMemo(
     () => ({
       begin(id: string) {
+        heldRef.current = id;
+        setReleased(null);
         setHeld(id);
       },
       target,
       finish() {
+        setReleased(heldRef.current);
+        heldRef.current = null;
         lastDestination.current = -1;
         setHeld(null);
         setDestination(-1);
@@ -214,6 +225,7 @@ export function VirtualQueueList({
               className="compact-queue-slot"
               key={item.id}
               data-held={item.id === held}
+              data-released={item.id === released}
               style={{
                 transform: `translateY(${index * ROW_HEIGHT + shift}px)`,
               }}
