@@ -1,7 +1,7 @@
 import type { Page } from "@playwright/test";
 /** Follow the visible source navigation on either header layout. */
 export async function openBrowsing(page: Page) {
-  const catalogue = page.getByRole("button", {
+  const catalogue = page.getByRole("tab", {
     name: "Catalogue",
     exact: true,
   });

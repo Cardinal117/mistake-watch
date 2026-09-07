@@ -99,13 +99,12 @@ for (const viewport of [
 }
 
 qa(
-  "mobile mode bar is hidden in catalogue and restored on the Home player",
+  "combined mode toolbar serves mobile browsing and Add",
   async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/dev/watch-design");
-    const mode = page.locator('.watch-mobile-mode [role="tablist"]');
-    await expect(mode).toBeHidden();
-    await page.locator(".watch-mobile-nav").getByRole("button", { name: "Home", exact: true }).click();
+    const mode = page.locator('.listen-home-modes [role="tablist"]');
+    await expect(page.locator(".watch-mobile-mode")).toBeHidden();
     await expect(mode).toBeVisible();
     for (const name of ["Watch", "Listen"]) {
       await expect(
@@ -116,8 +115,8 @@ qa(
       page.getByRole("button", { name: "Browse media", exact: true }),
     ).toBeHidden();
     await page.locator(".watch-mobile-nav").getByRole("button", { name: "Add", exact: true }).click();
-    await page.locator(".watch-source-switch").getByRole("button", { name: "Catalogue", exact: true }).click();
-    await expect(mode).toBeHidden();
+    await page.getByRole("tablist", { name: "Media source" }).getByRole("tab", { name: "Catalogue", exact: true }).click();
+    await expect(mode).toBeVisible();
     await page.screenshot({ path: "test-results/mobile-mode-bar.png" });
   },
 );

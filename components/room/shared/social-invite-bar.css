@@ -1,0 +1,65 @@
+.social-invite-bar {
+  border: 1px solid rgb(var(--listen-primary) / 0.22);
+  border-radius: 8px;
+  background: rgb(var(--listen-primary) / 0.04);
+  margin-bottom: 20px;
+  min-width: 0;
+}
+.social-invite-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+}
+.social-invite-trigger span {
+  flex: 1;
+}
+.social-invite-trigger svg {
+  width: 18px;
+  height: 18px;
+  color: rgb(var(--listen-primary));
+}
+.social-invite-trigger svg:last-child {
+  transition: transform 180ms ease-out;
+}
+.social-invite-bar[data-open="true"] .social-invite-trigger svg:last-child {
+  transform: rotate(180deg);
+}
+.social-invite-reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 180ms ease-out;
+}
+.social-invite-bar[data-open="true"] .social-invite-reveal {
+  grid-template-rows: 1fr;
+}
+.social-invite-reveal > div {
+  min-height: 0;
+  overflow: hidden;
+}
+.social-invite-actions {
+  padding: 0 12px 12px;
+}
+.social-invite-actions button {
+  min-height: 44px;
+  min-width: 44px;
+}
+.social-invite-actions > div > span {
+  height: 44px;
+}
+.social-invite-trigger:focus-visible {
+  outline: 2px solid rgb(var(--listen-primary) / 0.7);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .social-invite-reveal,
+  .social-invite-trigger svg:last-child {
+    transition: none;
+  }
+}

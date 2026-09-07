@@ -138,26 +138,6 @@ export function ListenTechnicalRoomHeader({
       value: string;
     } => Boolean(stat),
   );
-  const mobileStats = [
-    { label: "Code", value: room.code },
-    { label: "Online", value: String(onlineCount) },
-    { label: "Mode", value: "Listen" },
-    { label: "Upcoming", value: String(queueCount) },
-    remainingSeconds
-      ? {
-          label: "Remaining",
-          value: formatQueueRemainingDuration(remainingSeconds),
-        }
-      : null,
-    { label: "Played", value: String(historyCount) },
-  ].filter(
-    (
-      stat,
-    ): stat is {
-      label: string;
-      value: string;
-    } => Boolean(stat),
-  );
 
   return (
     <section className="relative z-20 min-w-0 w-full max-w-full bg-transparent">
@@ -218,12 +198,14 @@ export function ListenTechnicalRoomHeader({
                   />
                 ) : null}
               </div>
-              <ListenMemberAvatarRow
-                controllerMemberId={controllerMemberId}
-                currentMemberId={room.currentMember?.id}
-                liveRoom={liveRoom}
-                participants={liveRoom.participants}
-              />
+              {!desktopShell && (
+                <ListenMemberAvatarRow
+                  controllerMemberId={controllerMemberId}
+                  currentMemberId={room.currentMember?.id}
+                  liveRoom={liveRoom}
+                  participants={liveRoom.participants}
+                />
+              )}
             </div>
             <p
               aria-live="polite"
@@ -253,23 +235,6 @@ export function ListenTechnicalRoomHeader({
                 );
               })}
             </p>
-            {!desktopShell ? (
-              <div className="mt-3 grid grid-cols-2 gap-1.5 min-[420px]:grid-cols-3">
-                {mobileStats.map((stat) => (
-                  <div
-                    className="rounded-sm border border-white/10 bg-background/38 px-2 py-1.5"
-                    key={stat.label}
-                  >
-                    <p className="technical-label border-0 p-0 text-on-surface-variant">
-                      {stat.label}
-                    </p>
-                    <p className="mt-0.5 truncate text-label-sm font-semibold text-on-surface">
-                      {stat.value}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : null}
           </div>
           <div
             className={cx(
@@ -298,6 +263,12 @@ export function ListenTechnicalRoomHeader({
               <Monitor className="h-4 w-4" aria-hidden />
               TV Mode
             </Button>
+            <ListenMemberAvatarRow
+              controllerMemberId={controllerMemberId}
+              currentMemberId={room.currentMember?.id}
+              liveRoom={liveRoom}
+              participants={liveRoom.participants}
+            />
             <AccountCommandPanel
               account={account}
               className="border-[rgb(var(--listen-primary)/0.45)] bg-[rgb(var(--listen-primary)/0.08)] shadow-[0_0_18px_rgb(var(--listen-shadow)/0.12)] hover:border-[rgb(var(--listen-primary)/0.65)] hover:bg-[rgb(var(--listen-primary)/0.12)]"

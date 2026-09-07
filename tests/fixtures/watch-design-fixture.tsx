@@ -7,6 +7,7 @@ import type { RoomSnapshot } from "@/lib/rooms";
 
 import { PreparedYouTubeAutoplay } from "@/lib/youtube/prepared-autoplay";
 import type { LiveRoomState } from "@/lib/spacetime";
+import { ListenModeLayout } from "@/components/room/listen/listen-mode-layout";
 import { WatchModeLayout } from "@/components/room/watch/watch-mode-layout";
 
 import { previewArtwork, previewCatalogue } from "./watch-preview-data";
@@ -109,7 +110,12 @@ declare global {
   }
 }
 
-export function WatchDesignFixture() {
+export function WatchDesignFixture({
+  mode = "watch",
+}: {
+  mode?: "watch" | "listen";
+}) {
+  const Layout = mode === "listen" ? ListenModeLayout : WatchModeLayout;
   const [youtubeAutoplayPreparation] = useState(
     () => new PreparedYouTubeAutoplay(),
   );
@@ -438,7 +444,7 @@ export function WatchDesignFixture() {
   return ready ? (
     // Match RoomExperience's dynamic layout boundary, including cold subpanels.
     <Suspense fallback={<p>Loading room</p>}>
-      <WatchModeLayout
+      <Layout
         account={
           accountOverride ??
           (owner
@@ -458,7 +464,7 @@ export function WatchDesignFixture() {
             : { status: "guest" })
         }
         liveRoom={liveRoom}
-        room={room}
+        room={{ ...room, mode }}
         stageRef={stageRef}
       />
     </Suspense>

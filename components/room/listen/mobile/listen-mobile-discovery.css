@@ -1,0 +1,228 @@
+/* Mobile discovery keeps readable copy and a separate four-action touch rail. */
+.listen-mobile-shell .listen-discovery-shelf {
+  gap: 10px;
+}
+.listen-mobile-shell .listen-discovery-shelf > header {
+  gap: 8px;
+  padding: 0;
+}
+.listen-mobile-shell .listen-discovery-shelf > header h3 {
+  white-space: normal;
+  overflow: visible;
+  font-size: 16px;
+  line-height: 1.3;
+}
+.listen-mobile-shell .listen-discovery-shelf > header > div:first-child {
+  flex: 1;
+}
+.listen-mobile-shell
+  .listen-discovery-shelf
+  > header
+  button[aria-label^="Scroll"] {
+  display: none;
+}
+.listen-mobile-shell .listen-discovery-shelf > header button {
+  height: 44px;
+  min-width: 44px;
+  padding: 0 4px;
+}
+.listen-mobile-shell .listen-discovery-rail {
+  grid-auto-columns: minmax(250px, 88%);
+  padding-right: 4%;
+  gap: 12px;
+  scroll-snap-type: x proximity;
+}
+.listen-mobile-shell .listen-discovery-card {
+  height: auto;
+  min-height: 132px;
+  grid-template-columns: 76px minmax(0, 1fr);
+  grid-template-rows: minmax(84px, auto) 44px;
+  border-radius: 8px;
+}
+.listen-mobile-shell .listen-discovery-card > button {
+  grid-row: 1;
+  min-width: 0;
+  border: 0;
+  padding: 8px;
+}
+.listen-mobile-shell .listen-discovery-card > button > div {
+  border-radius: 6px;
+  aspect-ratio: 1;
+  height: auto;
+}
+.listen-mobile-shell .listen-discovery-card > div:nth-child(2) {
+  padding: 8px 10px 8px 0;
+}
+.listen-mobile-shell .listen-discovery-card > div:nth-child(2) > p:first-child {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.25;
+  font-size: 15px;
+}
+.listen-mobile-shell .listen-discovery-card > div:last-child {
+  grid-column: 1 / -1;
+  min-height: 44px;
+}
+.listen-mobile-shell .listen-discovery-card > div:last-child button {
+  min-height: 44px;
+  min-width: 44px;
+}
+.listen-mobile-shell .listen-discovery-card > button > span {
+  opacity: 1;
+  place-items: end;
+  background: transparent;
+  padding: 8px;
+}
+.listen-mobile-shell .listen-discovery-card > button > span > svg {
+  width: 20px;
+  height: 20px;
+  background: rgb(0 0 0/0.65);
+  border-radius: 50%;
+  padding: 3px;
+}
+@media (min-width: 600px) {
+  .listen-mobile-shell .listen-discovery-rail {
+    grid-auto-columns: minmax(260px, 46%);
+  }
+}
+
+.listen-card-preview[hidden] {
+  display: none;
+}
+.listen-mobile-shell .listen-discovery-rail {
+  grid-auto-columns: max-content;
+  align-items: start;
+  gap: 12px;
+}
+.listen-mobile-shell .listen-discovery-card {
+  width: 112px;
+  min-height: 0;
+  height: 144px;
+  display: block;
+  border: 0;
+  background: transparent;
+  transition: width 180ms ease-out;
+}
+.listen-mobile-shell
+  .listen-discovery-card[data-expanded="false"]
+  > :not(.listen-card-preview) {
+  display: none;
+}
+.listen-mobile-shell .listen-discovery-card .listen-card-preview {
+  padding: 0;
+  display: grid;
+  width: 112px;
+  gap: 6px;
+  border: 0;
+  grid-template-rows: 112px auto;
+  text-align: left;
+  background: transparent;
+}
+.listen-mobile-shell .listen-discovery-card .listen-card-preview[hidden] {
+  display: none;
+}
+.listen-mobile-shell .listen-card-preview > div {
+  width: 112px;
+  height: 112px;
+  aspect-ratio: 1;
+  border: 1px solid rgb(var(--listen-primary) / 0.55);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.listen-mobile-shell .listen-discovery-card .listen-card-preview > span {
+  position: static;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.3;
+  padding: 0;
+  background: none;
+  color: var(--color-on-surface);
+}
+.listen-mobile-shell .listen-discovery-card[data-expanded="true"] {
+  width: min(300px, calc(100vw - 64px));
+  height: auto;
+  min-height: 132px;
+  display: grid;
+  background: rgb(var(--listen-primary) / 0.06);
+  border: 1px solid rgb(var(--listen-primary) / 0.35);
+}
+.listen-mobile-shell
+  .listen-discovery-card[data-expanded="true"]
+  > div:nth-last-child(2) {
+  padding: 8px 10px 8px 0;
+}
+.listen-mobile-shell
+  .listen-discovery-card[data-expanded="true"]
+  > div:nth-last-child(2)
+  > p:first-child {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.listen-mobile-shell
+  .listen-discovery-card[data-expanded="true"]
+  > :not(.listen-card-preview) {
+  animation: listen-card-reveal 180ms ease-out;
+}
+@keyframes listen-card-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .listen-mobile-shell .listen-discovery-card {
+    transition: none;
+  }
+  .listen-mobile-shell
+    .listen-discovery-card[data-expanded="true"]
+    > :not(.listen-card-preview) {
+    animation: none;
+  }
+}
+.listen-mobile-shell [aria-labelledby="listen-discovery-browse-title"] > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  gap: 12px;
+}
+
+/* Reverse the card expansion before settling back to its thumbnail. */
+.listen-mobile-shell .listen-discovery-card[data-closing="true"] {
+  position: relative;
+  width: 112px;
+  height: 144px;
+  min-height: 0;
+  border-color: transparent;
+  background: transparent;
+}
+.listen-mobile-shell
+  .listen-discovery-card[data-closing="true"]
+  > :not(.listen-card-preview) {
+  pointer-events: none;
+  animation: listen-card-dismiss 180ms ease-in forwards;
+}
+.listen-mobile-shell
+  .listen-discovery-card[data-closing="true"]
+  .listen-card-preview {
+  position: absolute;
+  inset: 0 auto auto 0;
+  z-index: 1;
+  animation: listen-card-reveal 180ms ease-out;
+}
+@keyframes listen-card-dismiss {
+  to {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}

@@ -1,0 +1,586 @@
+.listen-mobile-shell {
+  --listen-nav-height: calc(64px + env(safe-area-inset-bottom, 0px));
+  --listen-bar-height: 72px;
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--color-on-surface);
+  background:
+    radial-gradient(
+      ellipse at top left,
+      rgb(var(--listen-primary) / 0.22),
+      transparent 70%
+    ),
+    var(--color-background);
+}
+.listen-mobile-shell[data-youtube="true"] {
+  --listen-bar-height: 280px;
+}
+.listen-mobile-shell .listen-mobile-identity {
+  display: flex;
+  align-items: center;
+  flex: none;
+  padding: 0 12px;
+  border-bottom: 1px solid rgb(255 255 255/0.08);
+  min-height: 68px;
+  z-index: 30;
+}
+.listen-mobile-shell .listen-mobile-identity > button {
+  flex: none;
+}
+.listen-mobile-shell .listen-mobile-identity input {
+  font-size: 16px !important;
+  max-width: 100% !important;
+}
+.listen-mobile-shell .listen-mobile-identity > section > div {
+  padding: 10px 4px !important;
+}
+.listen-mobile-shell .listen-mobile-identity svg {
+  flex-shrink: 0;
+}
+.listen-mobile-mode {
+  flex: none;
+  padding: 4px 16px;
+  z-index: 20;
+}
+.listen-mobile-mode [role="tablist"] {
+  display: flex;
+  background: transparent;
+  border-radius: 999px;
+  max-width: 260px;
+  margin: auto;
+  gap: 4px;
+}
+.listen-mobile-mode [role="tab"] {
+  min-height: 36px;
+  border-radius: 999px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.listen-mobile-mode [aria-selected="true"] {
+  color: rgb(var(--listen-primary));
+  background: rgb(var(--listen-primary) / 0.12);
+}
+.listen-mobile-workspace {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  margin-bottom: var(--listen-nav-height);
+}
+.listen-mobile-shell[data-source="true"] .listen-mobile-workspace {
+  margin-bottom: calc(var(--listen-nav-height) + var(--listen-bar-height));
+}
+.listen-mobile-destination,
+.listen-mobile-discovery {
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding: 16px;
+}
+.listen-mobile-workspace [hidden] {
+  display: none !important;
+}
+.listen-mobile-destination > h2 {
+  font-size: 24px;
+  font-weight: 650;
+  margin: 0 0 18px;
+}
+.listen-empty {
+  margin: 0 0 18px;
+  color: var(--color-on-surface-variant);
+}
+.listen-mobile-discovery > section {
+  min-height: 100%;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.listen-mobile-nav {
+  position: absolute;
+  inset: auto 0 0;
+  height: var(--listen-nav-height);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  display: flex;
+  background: var(--color-background);
+  border-top: 1px solid rgb(255 255 255/0.1);
+  z-index: 45;
+}
+.listen-mobile-nav button {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--color-on-surface-variant);
+}
+.listen-mobile-nav svg {
+  width: 21px;
+  height: 21px;
+}
+.listen-mobile-nav [aria-current="page"] {
+  color: rgb(var(--listen-primary));
+  background: rgb(var(--listen-primary) / 0.08);
+}
+.listen-mobile-shell .listen-mobile-player {
+  position: absolute;
+  inset: auto 0 var(--listen-nav-height);
+  height: calc(
+    var(--listen-bar-height) +
+      (
+        100% - var(--listen-nav-height) - var(--listen-player-top, 0px) -
+          var(--listen-bar-height)
+      ) *
+      var(--listen-expand)
+  );
+  z-index: 35;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      ellipse at top left,
+      rgb(var(--listen-primary) / 0.18),
+      transparent 75%
+    ),
+    var(--color-background);
+  border-top: 1px solid rgb(var(--listen-primary) / 0.25);
+  transition: height 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  display: flex;
+  flex-direction: column;
+}
+.listen-mobile-player[hidden] {
+  display: none;
+}
+.listen-mobile-player[data-dragging="true"] {
+  transition: none;
+}
+.listen-mobile-player-top {
+  display: flex;
+  align-items: center;
+  flex: none;
+  min-height: 68px;
+  gap: 4px;
+  padding: 6px 12px;
+  order: 0;
+}
+.listen-mobile-player-top button {
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 8px;
+}
+.listen-mobile-player-top svg {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+.listen-expand-handle {
+  flex: 1;
+  min-width: 0 !important;
+  touch-action: none;
+  user-select: none;
+  justify-content: flex-start !important;
+}
+.listen-expand-handle span {
+  display: grid;
+  min-width: 0;
+  text-align: left;
+}
+.listen-expand-handle strong,
+.listen-expand-handle small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.listen-expand-handle strong {
+  font-size: 14px;
+}
+.listen-expand-handle small {
+  font-size: 11px;
+  color: var(--color-on-surface-variant);
+}
+.listen-mobile-player-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 0 18px 16px;
+}
+.listen-mobile-shell .listen-mobile-player .listen-now-panel {
+  padding: 0;
+}
+.listen-mobile-shell .listen-mobile-player .listen-now-scroll {
+  overflow: visible;
+}
+.listen-mobile-shell .listen-mobile-player .listen-now-art {
+  width: min(100%, 380px);
+  height: auto;
+  aspect-ratio: 1;
+  margin: auto;
+  min-height: 200px;
+  box-shadow: none;
+}
+.listen-mobile-shell .listen-mobile-player h1 {
+  font-size: 24px;
+}
+.listen-mobile-player[data-expanded="false"] .listen-mobile-player-body {
+  padding: 0;
+  overflow: hidden;
+}
+.listen-mobile-player[data-expanded="false"]
+  .listen-now-scroll
+  > :not(.listen-now-art) {
+  display: none;
+}
+.listen-mobile-shell[data-youtube="false"]
+  .listen-mobile-player[data-expanded="false"]
+  .listen-now-art {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  min-height: 0;
+  top: 12px;
+  left: 12px;
+  aspect-ratio: 1;
+  border: 0;
+}
+.listen-mobile-shell[data-youtube="false"]
+  .listen-mobile-player[data-expanded="false"]
+  .listen-mobile-player-body {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.listen-mobile-shell[data-youtube="false"]
+  .listen-mobile-player[data-expanded="false"]
+  .listen-expand-handle {
+  padding-left: 50px;
+}
+.listen-mobile-shell[data-youtube="true"]
+  .listen-mobile-player[data-expanded="false"]
+  .listen-mobile-player-top {
+  order: 1;
+  min-height: 72px;
+}
+.listen-mobile-shell[data-youtube="true"]
+  .listen-mobile-player[data-expanded="false"]
+  .listen-now-art {
+  height: 200px;
+  min-height: 200px;
+  width: 100%;
+  max-width: 356px;
+  aspect-ratio: auto;
+  border: 0;
+}
+.listen-mobile-shell button:disabled {
+  opacity: 0.4;
+}
+.listen-mobile-shell button:focus-visible {
+  outline: 2px solid rgb(var(--listen-primary));
+  outline-offset: -2px;
+}
+.listen-text-button {
+  padding: 12px;
+  border: 1px solid rgb(var(--listen-primary) / 0.35);
+  border-radius: 8px;
+  margin-top: 12px;
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .listen-mobile-shell {
+    --listen-nav-height: calc(52px + env(safe-area-inset-bottom, 0px));
+  }
+  .listen-mobile-shell .listen-mobile-identity {
+    min-height: 52px;
+  }
+  .listen-mobile-shell .listen-mobile-identity > section > div {
+    padding: 4px !important;
+  }
+  .listen-mobile-mode {
+    position: absolute;
+    top: 8px;
+    left: 40%;
+    width: 200px;
+    padding: 0;
+  }
+  .listen-mobile-shell .listen-mobile-player {
+    height: calc(
+      var(--listen-bar-height) +
+        (
+          100% - var(--listen-nav-height) - var(--listen-player-top, 0px) -
+            var(--listen-bar-height)
+        ) *
+        var(--listen-expand)
+    );
+  }
+  .listen-mobile-player[data-expanded="true"] .listen-now-scroll {
+    display: grid;
+    grid-template-columns: minmax(200px, 35%) minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+  }
+  .listen-mobile-player[data-expanded="true"] .listen-now-art {
+    grid-row: span 4;
+    width: 200px;
+    height: 200px;
+  }
+  .listen-mobile-player-top {
+    min-height: 44px;
+    padding-block: 0;
+  }
+  .listen-mobile-player-body {
+    padding-bottom: 12px;
+  }
+  .listen-mobile-shell[data-youtube="true"] .listen-mobile-workspace {
+    margin-right: 240px;
+    margin-bottom: var(--listen-nav-height);
+  }
+  .listen-mobile-shell[data-youtube="true"]
+    .listen-mobile-player[data-expanded="false"] {
+    left: auto;
+    width: 240px;
+    height: calc(
+      100% - var(--listen-nav-height) - 56px + 56px * var(--listen-expand)
+    );
+    min-height: 244px;
+  }
+  .listen-mobile-shell[data-youtube="true"]
+    .listen-mobile-player[data-expanded="false"]
+    .listen-mobile-player-top {
+    min-height: 44px;
+    padding: 0 4px;
+  }
+  .listen-mobile-shell[data-youtube="true"]
+    .listen-mobile-player[data-expanded="false"]
+    .listen-expand-handle
+    small {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .listen-mobile-shell .listen-mobile-player {
+    transition: none;
+  }
+}
+
+.listen-mobile-player[data-expanded="false"]
+  .listen-now-panel
+  > div
+  > :not(.listen-now-scroll) {
+  display: none;
+}
+.listen-mobile-shell[data-youtube="false"]
+  .listen-mobile-player[data-expanded="false"]
+  .listen-now-panel
+  > div,
+.listen-mobile-shell[data-youtube="false"]
+  .listen-mobile-player[data-expanded="false"]
+  .listen-now-scroll {
+  height: 100%;
+  overflow: visible;
+}
+.listen-mobile-shell[data-youtube="false"]
+  .listen-mobile-player[data-expanded="false"]
+  .listen-now-art {
+  width: calc(44px + (min(100vw - 36px, 380px) - 44px) * var(--listen-expand));
+  height: calc(44px + (min(100vw - 36px, 380px) - 44px) * var(--listen-expand));
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .listen-mobile-player[data-expanded="true"] .listen-now-art {
+    margin: 0 auto;
+    align-self: start;
+  }
+}
+
+.listen-mobile-shell[data-youtube="true"] .listen-now-art {
+  border: 0;
+}
+
+.listen-mobile-shell {
+  --color-secondary-fixed-dim: rgb(var(--listen-primary));
+  --color-primary-fixed-dim: rgb(var(--listen-primary));
+}
+.listen-mobile-shell[data-youtube="true"] .listen-now-art > div[aria-hidden] {
+  display: none;
+}
+.listen-mobile-shell .listen-mobile-identity > button {
+  width: 40px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+}
+.listen-mobile-shell .watch-queue-controls {
+  background: transparent;
+  max-height: none;
+}
+.listen-mobile-shell .watch-queue-toolbar {
+  padding: 8px;
+  gap: 8px;
+}
+.listen-mobile-shell .watch-queue-toolbar button {
+  min-height: 44px;
+}
+.listen-mobile-shell .watch-leave-dialog {
+  margin: auto;
+  width: min(420px, calc(100vw - 32px));
+  padding: 24px;
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 12px;
+  color: var(--color-on-surface);
+  background: var(--color-surface-container);
+}
+.listen-mobile-shell .watch-leave-dialog::backdrop {
+  background: rgb(0 0 0/0.6);
+}
+.listen-mobile-shell .watch-leave-dialog h2 {
+  font-size: 24px;
+  font-weight: 600;
+}
+.listen-mobile-shell .watch-leave-dialog p {
+  margin: 12px 0 24px;
+}
+.listen-mobile-shell .watch-leave-dialog > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.listen-mobile-shell .watch-leave-dialog button,
+.listen-mobile-shell .watch-leave-dialog a {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 8px;
+}
+
+.listen-mobile-shell {
+  --listen-player-top: 0px;
+}
+.listen-mobile-shell[data-expanded="true"] .listen-mobile-workspace {
+  visibility: hidden;
+}
+.listen-mobile-shell .listen-mobile-identity > section {
+  flex: 1;
+  min-width: 0;
+}
+.listen-mobile-shell .listen-mobile-account {
+  margin-left: 6px;
+  flex: none;
+  width: 40px;
+  height: 44px;
+}
+/* The outer discovery region owns vertical scrolling; inner shelves own only horizontal scrolling. */
+.listen-mobile-shell .listen-mobile-discovery > section {
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+}
+.listen-mobile-shell #listen-discover-panel {
+  height: auto;
+  overflow: visible;
+}
+.listen-mobile-shell #listen-discover-panel > section {
+  height: auto;
+  overflow: visible;
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .listen-mobile-shell {
+    --listen-player-top: 0px;
+  }
+}
+
+/* The same Room & account component as Watch, themed by the Listen shell. */
+.listen-room-account {
+  min-width: 0;
+}
+.listen-room-account .watch-page-title {
+  font-size: 24px;
+  font-weight: 650;
+  margin-bottom: 20px;
+}
+.listen-room-account .watch-settings-section {
+  padding: 20px 0;
+  border-bottom: 1px solid rgb(var(--listen-primary) / 0.12);
+}
+.listen-room-account .watch-settings-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.listen-room-account .watch-settings-section h3 svg {
+  width: 20px;
+  height: 20px;
+  color: rgb(var(--listen-primary));
+}
+.listen-room-account .watch-settings-section p {
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+  margin: 8px 0 16px;
+}
+.listen-room-account .watch-settings-section > button {
+  min-height: 44px;
+  color: rgb(var(--listen-primary));
+}
+.listen-room-account .watch-setting-actions {
+  display: grid;
+  gap: 16px;
+  max-width: 480px;
+}
+.listen-room-account .watch-setting-actions button {
+  min-height: 44px;
+}
+.listen-room-account .watch-leave-section button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.listen-room-account .watch-leave-section svg {
+  width: 18px;
+  height: 18px;
+}
+.listen-room-account > .watch-workspace-content {
+  padding: 0;
+}
+
+.listen-social-chat {
+  margin-top: 24px;
+  min-width: 0;
+}
+.listen-social-chat > div {
+  height: auto;
+  min-height: 0;
+  grid-template-rows: auto minmax(180px, 32dvh) auto;
+  gap: 12px;
+}
+.listen-social-chat h2 {
+  font-size: 20px;
+  line-height: 1.3;
+  margin-top: 8px;
+}
+.listen-social-chat form {
+  min-width: 0;
+}
+.listen-social-chat textarea {
+  min-height: 80px;
+  width: 100%;
+}
+.listen-social-chat form button {
+  min-height: 44px;
+}
+
+.listen-mobile-shell .listen-mobile-player-top {
+  padding-top: calc(6px + env(safe-area-inset-top, 0px) * var(--listen-expand));
+}

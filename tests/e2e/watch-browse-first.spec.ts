@@ -57,9 +57,9 @@ watchTest(
     await page.goto("/dev/watch-design?network=1");
     await expect(
       page
-        .locator(".watch-source-switch")
-        .getByRole("button", { name: "YouTube & links" }),
-    ).toHaveAttribute("aria-pressed", "true");
+        .getByRole("tablist", { name: "Media source" })
+        .getByRole("tab", { name: "YouTube & links" }),
+    ).toHaveAttribute("aria-selected", "true");
     await expect(page.locator("video")).toBeVisible();
   },
 );
@@ -69,7 +69,7 @@ watchTest(
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/dev/watch-design");
     await expect(page.locator(".watch-mobile-mode")).toBeHidden();
-    await page.locator(".watch-mobile-nav").getByRole("button", { name: "Home", exact: true }).click();
+    await expect(page.getByRole("tablist", { name: "Media source" })).toBeVisible();
     await expect(
       page.getByRole("tab", { name: "Listen", exact: true }),
     ).toBeVisible();
@@ -96,15 +96,15 @@ watchTest(
     });
     await page.goto("/dev/watch-design?network=1");
     const catalogue = page
-      .locator(".watch-source-switch")
-      .getByRole("button", { name: "Catalogue", exact: true });
-    await expect(catalogue).toHaveAttribute("aria-pressed", "true");
+      .getByRole("tablist", { name: "Media source" })
+      .getByRole("tab", { name: "Catalogue", exact: true });
+    await expect(catalogue).toHaveAttribute("aria-selected", "true");
     await expect(page.locator(".watch-home-content")).toBeVisible();
     fail();
     await expect(
       page.getByText("Catalogue temporarily unavailable", { exact: true }),
     ).toBeVisible();
-    await expect(catalogue).toHaveAttribute("aria-pressed", "true");
+    await expect(catalogue).toHaveAttribute("aria-selected", "true");
     await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
   },
 );
@@ -264,7 +264,7 @@ watchTest(
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/dev/watch-design");
     await expect(page.locator(".watch-mobile-mode")).toBeHidden();
-    await page.locator(".watch-mobile-nav").getByRole("button", { name: "Home", exact: true }).click();
+    await expect(page.getByRole("tablist", { name: "Media source" })).toBeVisible();
     const listen = page.getByRole("tab", { name: "Listen", exact: true });
     await expect(listen).toBeInViewport();
     await listen.click();
@@ -321,7 +321,7 @@ watchTest(
       ".watch-room-name",
       ".watch-header-audience",
       ".watch-account-button",
-      ".watch-desktop-mode",
+      ".listen-home-modes",
     ]) {
       const el = page.locator(selector);
       if (await el.count()) {
@@ -333,7 +333,7 @@ watchTest(
     const identity = (await page
       .locator(".watch-room-identity")
       .boundingBox())!;
-    const mode = (await page.locator(".watch-desktop-mode").boundingBox())!;
+    const mode = (await page.locator(".listen-home-modes").boundingBox())!;
     expect(
       identity.x + identity.width <= mode.x ||
         identity.y + identity.height <= mode.y,

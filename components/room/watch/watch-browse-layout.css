@@ -600,3 +600,15 @@
     animation: none;
   }
 }
+/* Keep one mode control and preserve the focused media-detail presentation. */
+.watch-redesign[data-screen="home"] .watch-desktop-mode,
+.watch-redesign[data-screen="add"] .watch-desktop-mode,
+.watch-redesign[data-screen="more"] .watch-desktop-mode {
+  display: none;
+}
+.watch-content:has(
+    .watch-home-content:not([hidden]) .watch-browser[data-details="true"]
+  )
+  > .listen-home-toolbar {
+  display: none;
+}

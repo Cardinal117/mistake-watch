@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode } from "react";
+import { useContext, type ReactNode } from "react";
 import {
   Disc3,
   Maximize2,
@@ -25,7 +25,7 @@ import { YoutubeMediaPlayer } from "@/components/room/youtube-media-player";
 import { YouTubeMetadataLine } from "@/components/room/youtube-metadata-line";
 import { PreferenceHeartButton } from "@/components/room/listen/preference-heart-button";
 import type { MediaPreferenceController } from "@/lib/recommendations/use-media-preferences";
-import { ListenPreparingNextStrip } from "@/components/room/listen/settings/settings-dialogs";
+import { ListenMobileQueueNavigation } from "../mobile/listen-mobile-context";
 import { formatSeconds } from "@/components/room/listen/helpers";
 import { ListenUpNextPreview } from "@/components/room/listen/now-playing/up-next-preview";
 
@@ -38,7 +38,6 @@ export function ListenNowPlayingPanel({
   liveRoom,
   mediaPreferences,
   mobileTools,
-  nextPreparation,
   onNext,
   onOpenQueue,
   onPlaybackChange,
@@ -74,6 +73,7 @@ export function ListenNowPlayingPanel({
   room: RoomSnapshot;
   volume: number;
 }) {
+  const openMobileQueue = useContext(ListenMobileQueueNavigation);
   const session = liveRoom.snapshot.session;
   const liveSource = session?.sourceUrl ?? null;
   const liveSourceType = session?.sourceType ?? null;
@@ -95,7 +95,7 @@ export function ListenNowPlayingPanel({
   return (
     <aside
       className={cx(
-        "relative grid min-h-0 content-start overflow-visible border-white/10 bg-transparent p-0",
+        "listen-now-panel relative grid min-h-0 content-start overflow-visible border-white/10 bg-transparent p-0",
         desktopShell &&
           "h-full grid-rows-[minmax(0,1fr)] overflow-hidden rounded-xl border bg-background/72 p-0 shadow-[0_22px_64px_rgb(0_0_0_/_0.32)] backdrop-blur-xl",
         !desktopShell && "pb-2",
@@ -155,11 +155,11 @@ export function ListenNowPlayingPanel({
         ) : null}
         <div
           className={cx(
-            "relative z-10 flex min-h-0 flex-col gap-[clamp(0.625rem,1.35vh,1rem)] overflow-y-auto py-1 [scrollbar-color:rgb(var(--listen-primary)_/_0.42)_transparent] [scrollbar-width:thin]",
+            "listen-now-scroll relative z-10 flex min-h-0 flex-col gap-[clamp(0.625rem,1.35vh,1rem)] overflow-y-auto py-1 [scrollbar-color:rgb(var(--listen-primary)_/_0.42)_transparent] [scrollbar-width:thin]",
             desktopShell && "h-full content-start px-3 py-3",
           )}
         >
-          <div className="relative h-[clamp(16rem,36vh,20rem)] shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black shadow-[0_0_34px_rgb(var(--listen-shadow)/0.12),inset_0_0_0_1px_rgb(255_255_255_/_0.05)]">
+          <div className="listen-now-art relative h-[clamp(16rem,36vh,20rem)] shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black shadow-[0_0_34px_rgb(var(--listen-shadow)/0.12),inset_0_0_0_1px_rgb(255_255_255_/_0.05)]">
             {thumbnailUrl ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element -- Provider thumbnails are external media artwork. */}
@@ -363,16 +363,10 @@ export function ListenNowPlayingPanel({
 
           <ListenUpNextPreview
             items={queuedItems}
-            onOpenQueue={onOpenQueue}
+            onOpenQueue={openMobileQueue ?? onOpenQueue}
             remainingSeconds={remainingQueueSeconds}
           />
         </div>
-
-        {!desktopShell &&
-        nextPreparation.status !== "idle" &&
-        nextPreparation.target ? (
-          <ListenPreparingNextStrip nextPreparation={nextPreparation} />
-        ) : null}
       </div>
 
       {mobileTools && !desktopShell ? <div>{mobileTools}</div> : null}

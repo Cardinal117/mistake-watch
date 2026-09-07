@@ -1,0 +1,128 @@
+.room-settings {
+  max-width: 760px;
+  margin-inline: auto;
+  min-width: 0;
+  color: var(--color-on-surface);
+}
+.room-settings h2 {
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 650;
+  margin: 0 0 8px;
+}
+.room-settings-intro {
+  font-size: 13px;
+  color: var(--color-on-surface-variant);
+  margin: 0 0 20px;
+}
+.room-settings-categories {
+  display: grid;
+  gap: 8px;
+}
+.room-settings-categories > button {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 72px;
+  padding: 12px 14px;
+  text-align: left;
+  border: 1px solid rgb(var(--listen-primary) / 0.16);
+  border-radius: 8px;
+  background: rgb(var(--listen-primary) / 0.035);
+}
+.room-settings-categories > button:hover {
+  background: rgb(var(--listen-primary) / 0.09);
+  border-color: rgb(var(--listen-primary) / 0.4);
+}
+.room-settings-categories > button > svg:first-child {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  color: rgb(var(--listen-primary));
+}
+.room-settings-categories > button > svg:last-child {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--color-on-surface-variant);
+}
+.room-settings-categories > button > span {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.room-settings-categories strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.room-settings-categories small {
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+}
+.room-settings-back,
+.room-settings-leave button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 13px;
+}
+.room-settings-back {
+  margin-bottom: 12px;
+  color: rgb(var(--listen-primary));
+}
+.room-settings-back svg,
+.room-settings-leave svg {
+  width: 18px;
+  height: 18px;
+}
+.room-settings-leave {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid rgb(var(--listen-primary) / 0.12);
+}
+.room-settings-detail {
+  padding-top: 12px;
+  min-width: 0;
+}
+.room-settings-detail h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 16px 0 12px;
+}
+.room-settings-detail > h3:first-child {
+  margin-top: 0;
+}
+.room-settings-detail button,
+.room-settings-detail a {
+  min-height: 44px;
+}
+.room-settings-account-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.room-settings-account-tabs button {
+  flex: 1;
+  border: 1px solid rgb(var(--listen-primary) / 0.18);
+  border-radius: 8px;
+}
+.room-settings-account-tabs [aria-pressed="true"] {
+  color: rgb(var(--listen-primary));
+  background: rgb(var(--listen-primary) / 0.1);
+}
+.room-settings button:focus-visible {
+  outline: 2px solid rgb(var(--listen-primary) / 0.7);
+  outline-offset: 2px;
+}
+.room-account-content {
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+}
+@media (min-width: 700px) {
+  .room-settings-categories {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

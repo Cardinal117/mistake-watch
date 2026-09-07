@@ -54,7 +54,7 @@ for (const width of [1440, 390]) {
         page.getByRole("button", { name: "Library", exact: true }),
       ).toBeHidden();
       await expect(
-        page.getByRole("group", { name: "Media source" }),
+        page.getByRole("tablist", { name: "Media source" }),
       ).toBeHidden();
       const art = (await page.locator(".watch-detail-art").boundingBox())!;
       expect(Math.abs(art.x + art.width / 2 - width / 2)).toBeLessThan(20);
@@ -73,7 +73,7 @@ for (const width of [1440, 390]) {
       await page.screenshot({ path: `test-results/detail-${width}.png` });
       await back.click();
       await expect(
-        page.getByRole("group", { name: "Media source" }),
+        page.getByRole("tablist", { name: "Media source" }),
       ).toBeVisible();
       await expect(
         page.getByRole("searchbox", { name: "Search media" }),
@@ -102,7 +102,7 @@ qa(
     ).toBe("none");
     await page.getByRole("button", { name: "Add media", exact: true }).click();
     await expect(
-      page.getByRole("group", { name: "Media source" }),
+      page.getByRole("tablist", { name: "Media source" }),
     ).toBeVisible();
   },
 );

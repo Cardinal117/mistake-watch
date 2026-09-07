@@ -333,9 +333,9 @@ qa(
     await page
       .getByRole("button", { name: "Room and account settings", exact: true })
       .click();
-    await expect(
-      page.getByRole("region", { name: "Jayden", exact: true }),
-    ).toBeVisible();
+    await expect(page.locator(".room-settings-categories")).toBeVisible();
+    await page.locator('[data-category="profile"]').click();
+    await expect(page.locator(".room-account-content")).toBeVisible();
     await expect(page.locator('[aria-modal="true"]')).toHaveCount(0);
     expect(await video?.evaluate((v) => v.isConnected)).toBe(true);
   },

@@ -35,7 +35,7 @@ watchTest(
       .getByRole("button", { name: "Open cinema", exact: true })
       .click();
     await page
-      .getByRole("button", { name: "Back to browsing", exact: true })
+      .getByRole("button", { name: "Back to add", exact: true })
       .click();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.getByRole("button", { name: "Queue", exact: true }).click();

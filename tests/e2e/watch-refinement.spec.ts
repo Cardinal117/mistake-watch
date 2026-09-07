@@ -38,7 +38,7 @@ qa(
 async function open(page: Page) {
   await page.goto("/dev/watch-design");
   await expect(page.locator("video")).toHaveJSProperty("readyState", 4);
-  await expect(page.locator(".watch-source-switch")).toBeAttached();
+  await expect(page.getByRole("tablist", { name: "Media source" })).toBeAttached();
 }
 const primary = (page: Page) =>
   page
@@ -137,13 +137,13 @@ qa(
       .getByRole("searchbox", { name: "Search media" })
       .fill("Afterlight");
     await page
-      .getByRole("button", { name: "YouTube & links", exact: true })
+      .getByRole("tab", { name: "YouTube & links", exact: true })
       .click();
     await expect(
       page.getByRole("heading", { name: "Add media", exact: true }),
     ).toBeInViewport();
     await expect(
-      page.getByRole("button", { name: "Catalogue", exact: true }),
+      page.getByRole("tab", { name: "Catalogue", exact: true }),
     ).toBeInViewport();
     await page
       .getByRole("button", { name: "Browse uploaded catalogue", exact: true })
@@ -240,7 +240,7 @@ for (const width of [320, 390, 430])
         page.getByRole("heading", { name: "Add media", exact: true }),
       ).toBeInViewport();
       await expect(
-        page.getByRole("button", { name: "Catalogue", exact: true }),
+        page.getByRole("tab", { name: "Catalogue", exact: true }),
       ).toBeInViewport();
       expect(
         await content.evaluate(

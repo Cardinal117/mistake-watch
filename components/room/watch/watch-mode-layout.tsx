@@ -8,15 +8,13 @@ import {
   Minus,
   GripHorizontal,
   Home,
-  Library,
-  Link2,
   ListVideo,
   MoreHorizontal,
   Plus,
   Users,
 } from "lucide-react";
 import { useMediaPreferences } from "@/lib/recommendations/use-media-preferences";
-import { ModeSwitcher } from "../mode-switcher";
+import { RoomHomeToolbar } from "../shared/room-home-toolbar";
 import { MediaStage } from "../media-stage";
 import { TransportControls } from "../transport-controls";
 import type { WatchModeLayoutProps } from "./contracts";
@@ -207,16 +205,6 @@ export function WatchModeLayout({
           themeStyle={themeStyle}
         />
         <div className="watch-viewbar">
-          {screen === "home" && visibleHome === "watch" && !cinema && (
-            <div className="watch-mobile-mode">
-              <ModeSwitcher
-                mode={room.mode}
-                compact
-                canSwitch={liveRoom.canManageAuthority && connected}
-                onSwitchMode={liveRoom.switchMode}
-              />
-            </div>
-          )}
           {cinema ? (
             <button onClick={backToBrowse}>
               <ArrowLeft />
@@ -340,28 +328,28 @@ export function WatchModeLayout({
             )}
           </section>
           <div className="watch-content" ref={contentRef} tabIndex={-1}>
-            {(screen === "home" || screen === "add") && (
-              <div className="watch-source-bar">
-                <div
-                  className="watch-source-switch"
-                  role="group"
-                  aria-label="Media source"
-                >
-                  <button
-                    hidden={catalogueDenied}
-                    aria-pressed={workspace === "home"}
-                    onClick={browse}
-                  >
-                    <Library aria-hidden /> Catalogue
-                  </button>
-                  <button
-                    aria-pressed={workspace === "add"}
-                    onClick={() => navigate("add")}
-                  >
-                    <Link2 aria-hidden /> YouTube & links
-                  </button>
-                </div>
-              </div>
+            {(screen === "home" || screen === "add" || screen === "more") && (
+              <RoomHomeToolbar
+                mode="watch"
+                canSwitch={liveRoom.canManageAuthority && connected}
+                onSwitchMode={liveRoom.switchMode}
+                selected={
+                  workspace === "home"
+                    ? "catalogue"
+                    : workspace === "add"
+                      ? "links"
+                      : null
+                }
+                options={[
+                  ...(!catalogueDenied
+                    ? [{ id: "catalogue", label: "Catalogue" }]
+                    : []),
+                  { id: "links", label: "YouTube & links" },
+                ]}
+                onSelect={(id) =>
+                  id === "catalogue" ? browse() : navigate("add")
+                }
+              />
             )}
             <div className="watch-home-content" hidden={workspace !== "home"}>
               <WatchBrowser
@@ -390,6 +378,13 @@ export function WatchModeLayout({
             )}
             {screen === "manage" && isOwner && (
               <div className="watch-workspace-content">
+                <button
+                  className="room-settings-back"
+                  onClick={() => navigate("more")}
+                >
+                  <ArrowLeft aria-hidden />
+                  Back to settings
+                </button>
                 <h2 className="watch-page-title">Manage library</h2>
                 <WatchMediaHubDiscovery
                   initialTab="uploads"

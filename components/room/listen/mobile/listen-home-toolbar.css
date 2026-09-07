@@ -1,0 +1,96 @@
+/* A single Home navigation surface, using the room's live artwork accent. */
+.listen-home-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  min-height: 52px;
+  padding: 0 16px;
+  border-bottom: 1px solid rgb(var(--listen-primary) / 0.16);
+  background: transparent;
+}
+.listen-home-modes {
+  position: relative;
+  flex: none;
+}
+.listen-home-modes [role="tablist"] {
+  display: flex;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.listen-home-modes [role="tab"] {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 8px;
+  background: transparent;
+}
+.listen-home-modes [role="tab"] svg {
+  width: 18px;
+  height: 18px;
+}
+.listen-home-modes [aria-selected="true"] {
+  color: rgb(var(--listen-primary));
+  background: rgb(var(--listen-primary) / 0.1);
+}
+.listen-home-modes [role="alert"] {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: min(280px, 85vw);
+  z-index: 40;
+}
+.listen-home-divider {
+  width: 1px;
+  height: 22px;
+  background: rgb(var(--listen-primary) / 0.24);
+  flex: none;
+}
+.listen-home-views {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  gap: 4px;
+}
+.listen-home-views button {
+  position: relative;
+  min-width: 0;
+  flex: 1;
+  height: 52px;
+  padding: 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-on-surface-variant);
+  background: transparent;
+}
+.listen-home-views button::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 12px;
+  right: 12px;
+  height: 2px;
+  background: rgb(var(--listen-primary));
+  transform: scaleX(0);
+  transition: transform 180ms ease-out;
+}
+.listen-home-views [aria-selected="true"] {
+  color: rgb(var(--listen-primary));
+}
+.listen-home-views [aria-selected="true"]::after {
+  transform: scaleX(1);
+}
+.listen-home-toolbar button:focus-visible {
+  outline: 2px solid rgb(var(--listen-primary) / 0.7);
+  outline-offset: -3px;
+}
+.listen-mobile-shell #listen-discover-panel > section {
+  padding-top: 16px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .listen-home-views button::after {
+    transition: none;
+  }
+}

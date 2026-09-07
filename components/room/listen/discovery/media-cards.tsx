@@ -1,6 +1,7 @@
 "use client";
 
-import { type ReactNode } from "react";
+import { useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { ListenMobilePresentation } from "../mobile/listen-mobile-context";
 import { Headphones, ListPlus, Play, Plus } from "lucide-react";
 import { Badge } from "@/components/ui";
 import type { RoomQueueItem } from "@/lib/rooms";
@@ -70,6 +71,47 @@ export function RecommendationCard({
   onPlayNext(): void;
   reason?: string;
 }) {
+  const mobile = useContext(ListenMobilePresentation);
+  const [expanded, setExpanded] = useState(false);
+  const [closing, setClosing] = useState(false);
+  function collapse() {
+    setExpanded(false);
+    setClosing(!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }
+  useEffect(() => {
+    if (!closing) return;
+    const timer = setTimeout(() => setClosing(false), 180);
+    return () => clearTimeout(timer);
+  }, [closing]);
+  const cardRef = useRef<HTMLElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!mobile || !expanded) return;
+    function dismiss(event: Event) {
+      if (
+        event.target instanceof Node &&
+        !cardRef.current?.contains(event.target)
+      )
+        collapse();
+    }
+    function escape(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      collapse();
+      requestAnimationFrame(() =>
+        triggerRef.current?.focus({ preventScroll: true }),
+      );
+    }
+    document.addEventListener("pointerdown", dismiss, true);
+    document.addEventListener("focusin", dismiss);
+    cardRef.current?.addEventListener("keydown", escape);
+    const card = cardRef.current;
+    return () => {
+      document.removeEventListener("pointerdown", dismiss, true);
+      document.removeEventListener("focusin", dismiss);
+      card?.removeEventListener("keydown", escape);
+    };
+  }, [expanded, mobile]);
   const metadata = useYouTubeMetadata(
     item.sourceType === "youtube" ? item.sourceUrl : null,
   );
@@ -86,14 +128,31 @@ export function RecommendationCard({
 
   return (
     <article
+      ref={cardRef}
+      data-expanded={!mobile || expanded || closing}
+      data-closing={mobile && closing}
       className={cx(
-        "group grid h-[7.5rem] min-w-0 snap-start grid-cols-[6rem_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_2.25rem] overflow-hidden rounded-md border bg-surface/58 text-left transition",
+        "listen-discovery-card group grid h-[7.5rem] min-w-0 snap-start grid-cols-[6rem_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_2.25rem] overflow-hidden rounded-md border bg-surface/58 text-left transition",
         current
           ? "border-[rgb(var(--listen-primary)/0.5)] bg-[rgb(var(--listen-primary)/0.08)]"
           : "border-white/10 hover:border-[rgb(var(--listen-primary)/0.38)] hover:bg-surface-container-low/58",
         disabled && !current && "opacity-75",
       )}
     >
+      <button
+        className="listen-card-preview"
+        hidden={!mobile || expanded}
+        ref={triggerRef}
+        aria-label={`Show actions for ${title}`}
+        aria-expanded={expanded}
+        onClick={() => {
+          setClosing(false);
+          setExpanded(true);
+        }}
+      >
+        <QueueArtwork thumbnailUrl={thumbnailUrl} title={title} />
+        <span>{title}</span>
+      </button>
       <button
         aria-label={
           current
