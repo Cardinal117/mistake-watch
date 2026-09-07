@@ -38,3 +38,8 @@ Before promotion, the exact locally tested backend bundle was published with `--
 Public read-back after promotion: health 200/ok, readiness 200/ready with Supabase and Spacetime ready; `/dev/listen-design` and `/dev/watch-design` both 404. Public domain resolves to the intended Ready deployment. Browser dashboard load verified. These are deployment smoke checks, not two-participant or real-provider acceptance. Owner has been asked to test the Huawei and a second device in the same room; PR remains draft while that acceptance is pending.
 
 Local dev was restarted on port 5383 after the clean build. The original checkout and unrelated work remain untouched. Remaining local diff consists of generated line-ending/reference noise, excluded from the committed archive. This follow-up record changes documentation only and does not require rebuilding identical application code.
+
+
+### Post-live-QA fine tuning
+
+Owner reported successful three-device live playback/queue/mode QA and requested that this working production remain live. The remaining fullscreen, volume, display timing, Listen video, metadata-reconnect and one-off token findings are tracked with local evidence and unresolved boundaries in [live-qa-fine-tuning.md](live-qa-fine-tuning.md). These follow-up changes are not deployed or merged and require the targeted next acceptance round.
