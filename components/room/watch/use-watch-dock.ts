@@ -51,6 +51,9 @@ export function useWatchDock() {
     player.current = event.currentTarget.closest(".watch-player");
     if (!player.current) return;
     const shell = player.current.closest(".watch-redesign");
+    const nav = shell
+      ?.querySelector(".watch-mobile-nav")
+      ?.getBoundingClientRect();
     origin.current = {
       x: event.clientX,
       y: event.clientY,
@@ -58,9 +61,7 @@ export function useWatchDock() {
       top:
         (shell?.querySelector(".watch-viewbar")?.getBoundingClientRect()
           .bottom ?? 0) + 12,
-      bottom:
-        (shell?.querySelector(".watch-mobile-nav")?.getBoundingClientRect()
-          .top ?? window.innerHeight) - 12,
+      bottom: (nav?.height ? nav.top : window.innerHeight) - 12,
     };
     event.currentTarget.setPointerCapture(event.pointerId);
     setDragging(true);

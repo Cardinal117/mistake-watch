@@ -28,7 +28,7 @@ test("hidden watch workflows load only when their surfaces are opened", async ()
   const cardSource = await readRoomSource("watch/library/media-asset-item.ts");
   assert.ok(layoutSource.includes('import("./watch-workspaces")'));
   assert.ok(layoutSource.includes('import("./media-hub/watch-media-hub")'));
-  assert.match(layoutSource, /screen !== "home" && screen !== "manage"/);
+  assert.match(layoutSource, /workspace !== "home" && workspace !== "manage"/);
   assert.match(layoutSource, /screen === "manage" && isOwner/);
   assert.doesNotMatch(browseSource, /from ".*(?:upload|media-hub-helpers)/);
   assert.doesNotMatch(

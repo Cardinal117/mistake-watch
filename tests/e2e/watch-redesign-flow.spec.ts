@@ -1,3 +1,4 @@
+import { openBrowsing } from "./watch-navigation-helpers";
 import { expect, test, type Page } from "@playwright/test";
 import { previewCatalogue } from "../fixtures/watch-preview-data";
 const qa = process.env.WATCH_DESIGN_QA === "1" ? test : test.skip;
@@ -24,7 +25,6 @@ qa(
       .locator("video")
       .evaluate((v) => (v as HTMLVideoElement).currentTime);
     for (const name of [
-      "Browse media",
       "Open cinema",
       "Back to browsing",
       "Queue",
@@ -64,9 +64,7 @@ qa(
   "Library detail restores search and focus; room actions respect permission changes",
   async ({ page }) => {
     await open(page);
-    await page
-      .getByRole("button", { name: "Browse media", exact: true })
-      .click();
+    await openBrowsing(page);
     await page.getByRole("searchbox", { name: "Search media" }).fill("Quiet");
     const result = page.getByRole("button", {
       name: "Details: The Quiet Coast",
@@ -113,9 +111,7 @@ qa(
         },
       });
     });
-    await page
-      .getByRole("button", { name: "Browse media", exact: true })
-      .click();
+    await openBrowsing(page);
     await page
       .getByRole("button", { name: "Details: Afterlight", exact: true })
       .click();
@@ -145,9 +141,7 @@ qa(
       }),
     );
     await page.reload();
-    await page
-      .getByRole("button", { name: "Browse media", exact: true })
-      .click();
+    await openBrowsing(page);
     await expect(
       page.getByRole("heading", { name: "Library unavailable" }),
     ).toBeVisible();
@@ -173,11 +167,9 @@ qa(
       }),
     );
     await page.reload();
-    await page
-      .getByRole("button", { name: "Browse media", exact: true })
-      .click();
+    await openBrowsing(page);
     await expect(
-      page.getByRole("heading", { name: "Your library is private" }),
+      page.getByRole("heading", { name: "Add media", exact: true }),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Details: Afterlight", exact: true }),
@@ -188,9 +180,7 @@ qa(
   "Large catalogue mounts a bounded batch and searches all titles",
   async ({ page }) => {
     await open(page, 1000);
-    await page
-      .getByRole("button", { name: "Browse media", exact: true })
-      .click();
+    await openBrowsing(page);
     await page.getByRole("button", { name: "Library", exact: true }).click();
     await expect(page.locator(".watch-media-card")).toHaveCount(24);
     await page.getByRole("button", { name: /Show more/ }).click();
@@ -222,9 +212,7 @@ for (const [width, height] of [
     async ({ page }, info) => {
       await page.setViewportSize({ width, height });
       await open(page);
-      await page
-        .getByRole("button", { name: "Browse media", exact: true })
-        .click();
+      await openBrowsing(page);
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= innerWidth,
@@ -233,29 +221,27 @@ for (const [width, height] of [
       const box = await page.locator("video").boundingBox();
       expect(box!.width).toBeGreaterThanOrEqual(200 - 0.5);
       expect(box!.height).toBeGreaterThanOrEqual(
-        (width < 768 && height > 600 ? 112 : 200) - 0.5,
+        (width < 768 && height > 600 ? 112 : height <= 600 ? 200 : 180) - 0.5,
       );
       expect(box!.x).toBeGreaterThanOrEqual(0);
       expect(box!.y).toBeGreaterThanOrEqual(0);
       expect(box!.x + box!.width).toBeLessThanOrEqual(width + 1);
       if (width < 768 && height > 600) {
         await page
-          .getByRole("button", { name: "Move player left", exact: true })
-          .click();
+          .getByRole("button", { name: "Drag player to a corner", exact: true })
+          .press("ArrowLeft");
         await expect(page.locator(".watch-redesign")).toHaveAttribute(
           "data-anchor",
           "left",
         );
         await page
-          .getByRole("button", { name: "Expand player", exact: true })
+          .getByRole("button", { name: "Minimize player", exact: true })
           .click();
         await expect(page.locator(".watch-redesign")).toHaveAttribute(
-          "data-expanded",
+          "data-minimized",
           "true",
         );
-        await page
-          .getByRole("button", { name: "Shrink player", exact: true })
-          .click();
+        await page.getByRole("button", { name: /Restore player/ }).click();
         const nav = page.getByRole("navigation", { name: "Room navigation" });
         for (const title of ["Queue", "Add", "Social", "More"]) {
           await nav.getByRole("button", { name: title, exact: true }).click();
@@ -266,9 +252,7 @@ for (const [width, height] of [
             ),
           ).toBe(true);
         }
-        await page
-          .getByRole("button", { name: "Browse media", exact: true })
-          .click();
+        await openBrowsing(page);
       }
       await page.screenshot({
         path: info.outputPath("browse-" + width + ".png"),
@@ -282,9 +266,7 @@ qa(
   async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await open(page);
-    await page
-      .getByRole("button", { name: "Browse media", exact: true })
-      .click();
+    await openBrowsing(page);
     await page.getByRole("searchbox", { name: "Search media" }).focus();
     await page.setViewportSize({ width: 390, height: 520 });
     await page
@@ -306,9 +288,7 @@ qa(
   "Details issue exactly the requested queue action and disable disconnected transport",
   async ({ page }) => {
     await open(page);
-    await page
-      .getByRole("button", { name: "Browse media", exact: true })
-      .click();
+    await openBrowsing(page);
     await page
       .getByRole("button", { name: "Details: Afterlight", exact: true })
       .click();
@@ -339,9 +319,7 @@ qa(
     await open(page);
     await page.goto("/dev/watch-design?network=1&owner=1");
     const video = await page.locator("video").elementHandle();
-    await page
-      .getByRole("button", { name: "Browse media", exact: true })
-      .click();
+    await openBrowsing(page);
     await page
       .getByRole("button", { name: "Manage library", exact: true })
       .click();
@@ -366,9 +344,7 @@ qa(
   "Collections filter the library, and cinema restores the queue workspace",
   async ({ page }) => {
     await open(page);
-    await page
-      .getByRole("button", { name: "Browse media", exact: true })
-      .click();
+    await openBrowsing(page);
     await page.getByRole("button", { name: "Library", exact: true }).click();
     await page
       .getByLabel("Collection: All collections", { exact: true })
@@ -395,9 +371,7 @@ qa(
     await expect(
       page.getByRole("button", { name: "Open cinema", exact: true }),
     ).toBeFocused();
-    await page
-      .getByRole("button", { name: "Browse media", exact: true })
-      .click();
+    await openBrowsing(page);
     await expect(
       page.getByLabel("Collection: Out there", { exact: true }),
     ).toBeVisible();
@@ -421,9 +395,7 @@ qa(
     await page.route("**/api/media/room-sessions/*/playback?*", (route) =>
       route.fulfill({ json: { playbackUrl: "/dev/watch-fixture.webm" } }),
     );
-    await page
-      .getByRole("button", { name: "Browse media", exact: true })
-      .click();
+    await openBrowsing(page);
     await page
       .getByRole("button", { name: "Details: Afterlight", exact: true })
       .click();

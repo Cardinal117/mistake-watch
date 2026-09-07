@@ -28,6 +28,7 @@ export function WatchWorkspaces({
   liveRoom,
   account,
   accountNotice,
+  catalogueAvailable = true,
   items,
   onClose,
   onManage,
@@ -36,6 +37,7 @@ export function WatchWorkspaces({
   "room" | "liveRoom" | "account" | "accountNotice"
 > & {
   screen: WatchWorkspace;
+  catalogueAvailable?: boolean;
   items: WatchMediaHubItem[];
   onClose(): void;
   onManage(): void;
@@ -81,12 +83,15 @@ export function WatchWorkspaces({
         <>
           <h2 className="watch-page-title">Add media</h2>
           <p className="watch-workspace-intro">
-            Paste a YouTube or video link below, or choose something ready to
-            watch from the catalogue.
+            {catalogueAvailable
+              ? "Paste a YouTube or video link below, or choose something ready to watch from the catalogue."
+              : "Paste a YouTube or video link to play together. Catalogue access is separate from playback in this room."}
           </p>
-          <button className="watch-catalogue-return" onClick={onClose}>
-            <ArrowLeft aria-hidden /> Browse uploaded catalogue
-          </button>
+          {catalogueAvailable && (
+            <button className="watch-catalogue-return" onClick={onClose}>
+              <ArrowLeft aria-hidden /> Browse uploaded catalogue
+            </button>
+          )}
           <AddMediaDialog
             embedded
             open

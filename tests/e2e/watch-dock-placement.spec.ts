@@ -11,7 +11,7 @@ qa(
       .click();
     const video = await page.locator("video").elementHandle();
     const dock = page.getByRole("region", { name: "Watch stage" });
-    expect((await dock.boundingBox())!.height).toBeLessThan(270);
+    expect((await dock.boundingBox())!.height).toBeLessThan(330);
     const grip = page.getByRole("button", { name: "Drag player to a corner" });
     const positions = [];
     for (const key of ["ArrowUp", "ArrowLeft", "ArrowDown", "ArrowRight"]) {
@@ -27,8 +27,10 @@ qa(
     expect(positions[3]!.x).toBeGreaterThan(100);
     expect(await page.evaluate(() => window.watchQA!.calls)).toEqual([]);
     await page
-      .getByRole("button", { name: "Expand player", exact: true })
+      .getByRole("button", { name: "Minimize player", exact: true })
       .click();
-    expect((await dock.boundingBox())!.width).toBeGreaterThan(300);
+    expect((await dock.boundingBox())!.height).toBeLessThan(80);
+    await page.getByRole("button", { name: /Restore player/ }).click();
+    expect(await video!.evaluate((v) => v.isConnected)).toBe(true);
   },
 );

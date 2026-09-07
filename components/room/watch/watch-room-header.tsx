@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   ArrowLeft,
   ListVideo,
@@ -20,6 +20,7 @@ import type { WatchModeLayoutProps } from "./contracts";
 import type { WatchWorkspace } from "./watch-navigation";
 
 export function WatchRoomHeader({
+  account,
   room,
   liveRoom,
   navigate,
@@ -28,6 +29,13 @@ export function WatchRoomHeader({
   navigate(screen: WatchWorkspace): void;
   themeStyle: CSSProperties;
 }) {
+  const photo =
+    account.status === "signed-in"
+      ? (account.googleAvatarUrl ??
+        (account.avatarSource === "google_avatar" ? account.avatarUrl : null))
+      : null;
+  const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
+  const avatarPhoto = photo && photo !== failedPhoto ? photo : undefined;
   const inviteRef = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     function outside(event: PointerEvent) {
@@ -72,25 +80,6 @@ export function WatchRoomHeader({
           room
         </span>
       </div>
-      <div className="watch-header-audience">
-        <ListenMemberAvatarRow
-          controllerMemberId={
-            liveRoom.participants.find((p) => p.isController)?.id ?? null
-          }
-          currentMemberId={room.currentMember?.id}
-          liveRoom={liveRoom}
-          participants={liveRoom.participants}
-          maxVisibleParticipants={1}
-          themeStyle={
-            {
-              ...themeStyle,
-              "--color-primary-fixed-dim": "rgb(var(--listen-primary))",
-              "--color-primary": "rgb(var(--listen-primary))",
-              "--color-primary-container": "rgb(var(--listen-primary))",
-            } as CSSProperties
-          }
-        />
-      </div>
       <div className="watch-desktop-mode">
         <ModeSwitcher
           mode={room.mode}
@@ -129,23 +118,48 @@ export function WatchRoomHeader({
           </div>
         </details>
       </nav>
-      <button
-        className="watch-account-button"
-        aria-label="Room and account settings"
-        onClick={() => navigate("more")}
-      >
-        {room.currentMember ? (
-          <Avatar
-            name={room.currentMember.name}
-            seed={room.currentMember.id}
-            avatarKey={room.currentMember.avatarKey}
-            crowned={room.currentMember.id === room.hostMemberId}
-            className="h-9 w-9"
+      <div className="watch-header-people">
+        <div className="watch-header-audience">
+          <ListenMemberAvatarRow
+            controllerMemberId={
+              liveRoom.participants.find((p) => p.isController)?.id ?? null
+            }
+            currentMemberId={room.currentMember?.id}
+            liveRoom={liveRoom}
+            participants={liveRoom.participants}
+            maxVisibleParticipants={1}
+            themeStyle={
+              {
+                ...themeStyle,
+                "--color-primary-fixed-dim": "rgb(var(--listen-primary))",
+                "--color-primary": "rgb(var(--listen-primary))",
+                "--color-primary-container": "rgb(var(--listen-primary))",
+              } as CSSProperties
+            }
           />
-        ) : (
-          <MoreHorizontal />
-        )}
-      </button>
+        </div>
+        <button
+          className="watch-account-button"
+          aria-label="Room and account settings"
+          onClick={() => navigate("more")}
+        >
+          {room.currentMember ? (
+            <Avatar
+              src={avatarPhoto}
+              onErrorCapture={() => {
+                if (avatarPhoto) setFailedPhoto(avatarPhoto);
+              }}
+              name={room.currentMember.name}
+              seed={room.currentMember.id}
+              avatarKey={room.currentMember.avatarKey}
+              crowned={room.currentMember.id === room.hostMemberId}
+              className="h-9 w-9"
+            />
+          ) : (
+            <MoreHorizontal />
+          )}
+        </button>
+      </div>
     </header>
   );
 }

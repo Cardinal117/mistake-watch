@@ -1,3 +1,4 @@
+import { openBrowsing } from "./watch-navigation-helpers";
 import { expect, test } from "@playwright/test";
 
 const watchTest = process.env.WATCH_DESIGN_QA === "1" ? test : test.skip;
@@ -26,11 +27,9 @@ watchTest(
       (window as unknown as { originalVideo: Element | null }).originalVideo =
         document.querySelector("video");
     });
-    await page
-      .getByRole("button", { name: "Browse media", exact: true })
-      .click();
+    await openBrowsing(page);
     await expect(
-      page.getByRole("heading", { name: "Tonight, together" }),
+      page.getByRole("heading", { name: "Add media", exact: true }),
     ).toBeVisible();
     await page
       .getByRole("button", { name: "Open cinema", exact: true })

@@ -1,6 +1,8 @@
 "use client";
 
 import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { AccountSummary } from "@/lib/account/types";
+import type { QueuePlacement } from "@/lib/queue/move-intent";
 import type { RoomSnapshot } from "@/lib/rooms";
 
 import { PreparedYouTubeAutoplay } from "@/lib/youtube/prepared-autoplay";
@@ -83,6 +85,14 @@ const queue = names.map((title, index) => ({
 declare global {
   interface Window {
     watchQA?: {
+      setAccount(account: AccountSummary): void;
+      setQueueCount(count: number): void;
+      setMoveDelay(ms: number): void;
+      setMoveFailure(fail: boolean): void;
+      changeQueuedItem(
+        id: string,
+        status: "queued" | "playing" | "removed",
+      ): void;
       autoplayYouTube(sourceUrl: string): void;
       calls: Array<{ action: string; input: unknown }>;
       setPermission: (allowed: boolean) => void;
@@ -104,7 +114,12 @@ export function WatchDesignFixture() {
     () => new PreparedYouTubeAutoplay(),
   );
   const [queueState, setQueueState] = useState(queue);
+  const moveDelay = useRef(0);
+  const moveFailure = useRef(false);
   const [ready, setReady] = useState(false);
+  const [accountOverride, setAccountOverride] = useState<AccountSummary | null>(
+    null,
+  );
   const [owner, setOwner] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
   const calls = useRef<Array<{ action: string; input: unknown }>>([]);
@@ -165,9 +180,11 @@ export function WatchDesignFixture() {
     youtubeAutoplayPreparation,
     snapshot: {
       session,
-      queue: queueState.map((item, index) =>
-        index ? item : { ...item, thumbnailUrl: activeArtwork },
-      ),
+      queue: queueState
+        .filter((i) => i.status !== "removed")
+        .map((item, index) =>
+          index ? item : { ...item, thumbnailUrl: activeArtwork },
+        ),
       participants: [],
       participantPresences: [],
       permissions: [],
@@ -206,8 +223,15 @@ export function WatchDesignFixture() {
     playQueueItem: (input: unknown) => record("playQueue", input),
     setQueueItemPriority: (id: string, priority: unknown) =>
       record("priority", { id, priority }),
-    moveQueueItem: (id: string, position: number) => {
+    moveQueueItem: async (
+      id: string,
+      position: number,
+      _actionId?: string,
+      placement?: QueuePlacement,
+    ) => {
       record("move", { id, position });
+      await new Promise((resolve) => setTimeout(resolve, moveDelay.current));
+      if (moveFailure.current) throw new Error("Queue move rejected for QA");
       setQueueState((current) => {
         const upcoming = current
           .filter((i) => i.status === "queued")
@@ -215,17 +239,31 @@ export function WatchDesignFixture() {
         const moving = upcoming.find((i) => i.queueItemId === id);
         if (!moving) return current;
         const ordered = upcoming.filter((i) => i !== moving);
-        ordered.splice(position, 0, moving);
-        return current.map((i) =>
-          i.status === "queued"
-            ? {
-                ...i,
-                position: ordered.findIndex(
-                  (q) => q.queueItemId === i.queueItemId,
-                ),
-              }
-            : i,
+        const anchor = ordered.findIndex(
+          (i) => i.queueItemId === placement?.anchorQueueItemId,
         );
+        if (placement?.edge === "before" && anchor < 0) return current;
+        const target =
+          placement?.edge === "start"
+            ? 0
+            : placement?.edge === "end"
+              ? ordered.length
+              : placement?.edge === "before"
+                ? anchor
+                : position;
+        ordered.splice(target, 0, moving);
+        return current
+          .map((i) =>
+            i.status === "queued"
+              ? {
+                  ...i,
+                  position: ordered.findIndex(
+                    (q) => q.queueItemId === i.queueItemId,
+                  ),
+                }
+              : i,
+          )
+          .sort((a, b) => a.position - b.position);
       });
     },
     removeQueueItem: (input: unknown) => record("remove", input),
@@ -235,7 +273,9 @@ export function WatchDesignFixture() {
     advanceToNextQueueItem: () => record("advance"),
     reportMediaFailure: () => {},
     updateMediaTitle: () => {},
-    switchMode: async () => {},
+    switchMode: async (mode: string) => {
+      record("switchMode", mode);
+    },
     renameRoom: async (roomName: string) => {
       record("rename", roomName);
       if (renameFailure.current)
@@ -285,8 +325,24 @@ export function WatchDesignFixture() {
             );
           }
         }
-        if (url.startsWith("/api/media/assets"))
+        if (url.startsWith("/api/media/assets")) {
+          const access = new URLSearchParams(location.search).get("access");
+          if (access === "error")
+            return Response.json(
+              { error: "Catalogue temporarily unavailable" },
+              { status: 503 },
+            );
+          if (access === "denied")
+            return Response.json({
+              assets: [],
+              folders: [],
+              access: {
+                canAccessUploadedCatalogue: false,
+                message: "Private catalogue",
+              },
+            });
           return Response.json(previewCatalogue());
+        }
         if (url.startsWith("/api/recommendations/preferences"))
           return Response.json({ items: [] });
         if (url.startsWith("/api/"))
@@ -301,10 +357,33 @@ export function WatchDesignFixture() {
       };
     const frame = requestAnimationFrame(() => {
       setOwner(new URLSearchParams(location.search).has("owner"));
+      if (new URLSearchParams(location.search).has("empty"))
+        setSession((current) => ({ ...current, sourceUrl: "" }));
       setReady(true);
     });
     window.watchQA = {
       calls: calls.current,
+      setAccount: setAccountOverride,
+      setMoveDelay: (ms) => {
+        moveDelay.current = ms;
+      },
+      setMoveFailure: (fail) => {
+        moveFailure.current = fail;
+      },
+      changeQueuedItem: (id, status) =>
+        setQueueState((current) =>
+          current.map((i) => (i.queueItemId === id ? { ...i, status } : i)),
+        ),
+      setQueueCount: (count) =>
+        setQueueState(
+          Array.from({ length: count }, (_, index) => ({
+            ...queue[index % 4],
+            queueItemId: `queue-${index}`,
+            title: index < 4 ? names[index] : `Queue item ${index}`,
+            position: index,
+            status: index ? "queued" : "playing",
+          })),
+        ),
       setPermission: setAllowed,
       setRoomName: (roomName) =>
         setSession((current) => ({ ...current, roomName })),
@@ -361,7 +440,8 @@ export function WatchDesignFixture() {
     <Suspense fallback={<p>Loading room</p>}>
       <WatchModeLayout
         account={
-          owner
+          accountOverride ??
+          (owner
             ? {
                 status: "signed-in",
                 role: "owner",
@@ -375,7 +455,7 @@ export function WatchDesignFixture() {
                 googleAvatarUrl: null,
                 handle: null,
               }
-            : { status: "guest" }
+            : { status: "guest" })
         }
         liveRoom={liveRoom}
         room={room}
