@@ -26,7 +26,7 @@ padding. Loading, buffering and paused are not empty states. Reconnect preserves
 the current source rather than briefly destroying the player.
 
 Desktop browsing uses the available width instead of retaining a permanent left
-player column. Reuse four-corner docking, resize/expand and keyboard movement
+player column. Use free-position docking (approved 2026-09-07), resize/expand and keyboard movement
 from accepted mobile; desktop dimensions may differ. Clamp after resize, zoom,
 orientation and keyboard changes. Keep controls clear of headers, navigation and
 safe areas. All meaningful desktop controls remain reachable without hover.

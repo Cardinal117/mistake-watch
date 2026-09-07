@@ -273,3 +273,5 @@ Expanded Listen mobile playback reaches the viewport top, covering the inert roo
 header and preserving the bottom navigation/minimize handle. Drag progress is
 frame-batched visual state using measured travel, without pointer-frequency room
 rerenders. Safe-area padding protects top controls.
+
+Watch mini-player positioning is free within the usable viewport (2026-09-07). The existing grip follows pointer/touch movement and retains the released position without corner snapping. Arrow keys move 20px; Shift+arrows move 4px. Re-clamp on resize, rotation and size changes; Cinema/fullscreen retain their existing geometry. Short landscape keeps a movable bounded player above the bottom navigation. No new colors or decorative motion.

@@ -33,8 +33,8 @@ for exact checks and the [handoff](docs/HANDOFF.md) for deployment/rollback stat
   projection with explicit lifecycle controls.
 - Persistent responsive Watch browsing/Cinema/fullscreen and immersive Listen,
   with synchronized host-led playback, artwork themes and bounded Up Next.
-- Compact Watch touch queues (drag, Play next, swipe removal), a four-corner
-  mobile player, live room identity controls and leave confirmation.
+- Compact Watch touch queues (drag, Play next, swipe removal), a freely movable
+  mini-player, live room identity controls and leave confirmation.
 - SpacetimeDB live presence, queue, playback, chat, and permission state.
 - Supabase durable rooms, accounts, media records, uploads, and authorization.
 - YouTube, direct media, HLS, and first-party uploaded playback.

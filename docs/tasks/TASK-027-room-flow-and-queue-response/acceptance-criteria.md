@@ -10,7 +10,7 @@ or an explicitly unresolved limitation; a screenshot alone cannot prove sync.
 | AC-02 | 2 | Mobile Home exposes a stable Watch/Listen switch below identity; permission and connection gating remain correct; switching affects the room, expanding does not. | Browser + two participants |
 | AC-03 | 3,4 | Fresh Watch entry shows catalogue when permitted and links when denied; loading/error/empty states are distinct; existing media is not restarted. | Access-state browser tests + actual allowed/denied QA |
 | AC-04 | 5 | Empty source shows no rail/dock/bar or phantom padding; loaded paused/buffering media keeps resume/transport on both device sizes. | State-transition/browser bounds tests |
-| AC-05 | 6 | Desktop browsing has movable/expandable loaded mini-player and a visible Cinema action; four corners, keyboard movement, resize clamping and mobile parity work. | Desktop/mobile browser and visual QA |
+| AC-05 | 6 | Desktop browsing has movable/expandable loaded mini-player and a visible Cinema action; free placement, keyboard movement, resize clamping and mobile parity work. | Desktop/mobile browser and visual QA |
 | AC-06 | 7 | Listen browsing shows a compact bar above navigation, with title/artwork/primary transport and clear expand action, without hiding content below it. | Portrait/landscape bounds + physical phone |
 | AC-07 | Latest request | Drag up expands continuously into the main Listen view; drag down on handle returns to prior browse scroll; short/cancelled gesture settles correctly. | Pointer/touch browser tests + phone |
 | AC-08 | Latest request | Tap and keyboard expand/collapse work; seek/volume/list scroll do not accidentally expand/collapse; focus/Escape and reduced motion are correct. | Keyboard/reduced-motion/gesture tests |
