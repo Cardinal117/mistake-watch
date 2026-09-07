@@ -1,19 +1,19 @@
 # Mistake Watch Handoff
 
-## Free-position player deployment � 2026-09-07
+## Free-position player deployment — 2026-09-07
 
 Watch free positioning is live at https://watch.mistakestudios.com from `1cc7832`
 (application commit `1485718`), deployment `dpl_2szjneG7xb5SpDtdaKjC1ijGkrGL`.
 Immutable URL: https://mistake-watch-ixh1ei4jz-cardinal117s-projects.vercel.app.
 The clean 1,149-file archive passed the production Turbopack build. Production
 alias verified; health/readiness 200; Watch design route 404. These are smoke
-checks; owner live movement/rotation acceptance is pending. PR #13 remains draft.
+checks; owner live QA is now accepted and merge is authorized subject to green checks.
 Rollback target is the prior fine-tuning release `dpl_AEkhfVx3PikrQ4e1YPe9HR4SztgE`.
 No backend changes. Code, design contract, README and focused QA are committed and
 pushed. Keep this release live for requested QA.
 
 
-## Latest checkpoint — TASK-027 fine-tuning live (2026-09-07)
+## Previous checkpoint — TASK-027 fine-tuning live (2026-09-07)
 
 Owner passed three-device live QA on Opera, Opera GX and Huawei Chrome. The
 follow-up application at `fe7b28c` is now deployed as

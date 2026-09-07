@@ -11,7 +11,7 @@ Baseline browser cases failed because releasing snapped to corners. Final free p
 Movement changes only local geometry; no provider reload, room reducer, database or backend change. The old short-landscape side-panel rule was superseded for the mini-player so touch movement remains available after rotation.
 
 
-## Free-position player deployment — 2026-09-07
+## Free-position player deployment â€” 2026-09-07
 
 Watch free positioning is live at https://watch.mistakestudios.com from `1cc7832`
 (application commit `1485718`), deployment `dpl_2szjneG7xb5SpDtdaKjC1ijGkrGL`.

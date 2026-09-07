@@ -66,7 +66,7 @@ subsequent documentation-only commits do not change the deployed application.
 This checkpoint supersedes the earlier local-only/uncommitted status above.
 
 
-## Free-position player deployment — 2026-09-07
+## Free-position player deployment â€” 2026-09-07
 
 Watch free positioning is live at https://watch.mistakestudios.com from `1cc7832`
 (application commit `1485718`), deployment `dpl_2szjneG7xb5SpDtdaKjC1ijGkrGL`.
@@ -77,3 +77,8 @@ checks; owner live movement/rotation acceptance is pending. PR #13 remains draft
 Rollback target is the prior fine-tuning release `dpl_AEkhfVx3PikrQ4e1YPe9HR4SztgE`.
 No backend changes. Code, design contract, README and focused QA are committed and
 pushed. Keep this release live for requested QA.
+
+
+## Final acceptance gate - 2026-09-07
+
+Owner confirmed live QA and explicitly authorized merging when checks pass. The deployed application tree is unchanged since 1cc7832; later changes are documentation only. Final focused tests/typecheck are rechecked, alongside the passing 35 browser checks and Ready production build. GitHub reports no CI checks configured on this PR; that absence is not represented as a CI pass. Main is an ancestor of this branch. The unreproduced token report and broader pre-existing diagnostics remain documented follow-ups.
