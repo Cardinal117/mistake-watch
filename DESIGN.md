@@ -226,3 +226,50 @@ The shape language balances modern approachability with technical structure.
 - **Volume/Progress Sliders:** Thin 2px tracks. The "thumb" or "handle" only appears on hover to minimize visual noise during playback.
 - **Lounge HUD:** A specialized component containing the room code, participant avatars, and settings; this should be semi-transparent and docked at the top-center of the screen.
 - **Transport Bar:** Session controls should use a grounded bottom bar integrated with the viewport, following the Cinematic Room Page reference. Avoid detached floating bubble-style control docks.
+
+### TASK-027.4 local Listen candidate
+
+Mobile direct media uses the compact bar; owner chose a visible >=200x200 YouTube
+viewport above its compact controls, with a side column in short landscape.
+The responsive shell keeps one provider tree across breakpoints. Existing desktop
+rail and discovery styling remain. Expansion uses a 220ms settle, handle-only
+vertical gestures and reduced-motion fallback. Mobile Discover cards keep readable
+two-line titles and a separate 44px action rail; horizontal swipe and Browse all
+replace narrow-screen arrow clutter. This is local QA evidence, not a live release.
+
+TASK-027.4 mobile Discover follow-up: cards begin as compact accented thumbnails.
+Tap expands the existing metadata/action card with restrained motion; outside
+pointer/focus dismisses it. Desktop cards retain their established presentation.
+Listen header audience controls sit immediately beside the account entry on both
+mobile and desktop. Keep one vertical scrolling container for mobile Discover.
+
+Listen mobile Home is browse-first. Tapping Home never expands the player;
+explicit bar expansion covers the content area between the room header and bottom
+navigation uniformly on all tabs. Hide mode switching while expanded. Home swipe
+left selects Discover, right selects Visualizer; controls and card rails keep their
+own gestures. Cards reverse their expansion on dismissal (180ms, reduced-motion
+fallback). Queue drop settlement skips a second travel from the original slot and
+retains row elevation while neighboring rows finish their displacement.
+
+Mobile Listen Home uses one continuous toolbar below the room header: 44px
+Video/Headphones icon targets, subtle divider, then Discover/Visualizer text tabs
+with dynamic-accent underline. No nested pill shells. The toolbar stays outside the
+scrolling content and hides while the player is expanded. Listen uses the same
+Room & account workspace component as Watch, keeping its full embedded account
+settings and existing permissions; Listen-specific TV entry is retained.
+
+### Shared mobile settings and Social
+
+Settings open as compact category rows using existing room accents, 8px corners,
+consistent mobile insets and >=44px targets. Open one category at a time, keep Back
+to settings prominent, and separate Leave room with confirmation. Watch Home/Add/
+settings use the icon mode toolbar plus Catalogue/YouTube & links; no Watch swipe
+navigation. Listen settings uses its Discover/Visualizer toolbar to return Home.
+Social uses the same member section in both modes, plus an expandable compact invite
+bar above it. Avoid nested member padding/scroll containers. Listen chat separates
+from members by24px, with a bounded message area and composer aligned to page edges.
+
+Expanded Listen mobile playback reaches the viewport top, covering the inert room
+header and preserving the bottom navigation/minimize handle. Drag progress is
+frame-batched visual state using measured travel, without pointer-frequency room
+rerenders. Safe-area padding protects top controls.

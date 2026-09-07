@@ -1,6 +1,6 @@
 # Acceptance and traceability
 
-Status: All application acceptance pending. Updated: 2026-09-07.
+Status: owner local UI acceptance passed; integrated live acceptance remains pending. Updated: 2026-09-07.
 Numbers refer to [owner-intent capture](brain-dump.md). Every row needs evidence
 or an explicitly unresolved limitation; a screenshot alone cannot prove sync.
 
@@ -96,4 +96,4 @@ batches and are not claimed complete.
 AC-05, the Watch portion of AC-09, and AC-20 through AC-24. Actual account,
 room-authority, real-provider and physical-device checks listed in the matrix
 remain integrated acceptance gates; they are not closed by fixture tests.
-Listen-specific AC-06 through AC-08 remain in pending 027.4.
+Listen-specific AC-06 through AC-08 now have local evidence in [listen-local-qa.md](listen-local-qa.md). Live provider and two-participant acceptance remains open; see [release-candidate.md](release-candidate.md).

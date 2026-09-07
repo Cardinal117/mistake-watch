@@ -1,5 +1,14 @@
 # Mistake Watch Handoff
 
+## Latest local checkpoint — 027.4 Listen mobile (2026-09-07)
+
+Owner accepted local QA on 2026-09-07 and authorized scoped commits, branch push and a deployment for live two-participant QA before merge.
+[Listen evidence](tasks/TASK-027-room-flow-and-queue-response/listen-local-qa.md)
+and preview: http://127.0.0.1:5383/dev/listen-design . Includes shared queue,
+compact/expanded player, visible YouTube fallback, stable responsive provider and
+mobile Discover card refinement. Release preparation is recorded in [release-candidate.md](tasks/TASK-027-room-flow-and-queue-response/release-candidate.md). Reconcile the separate uncommitted
+Media Session work before release; physical-device/live-provider gates remain.
+
 Updated: 2026-09-07
 
 ## Current State

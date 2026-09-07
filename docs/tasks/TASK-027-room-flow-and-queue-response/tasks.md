@@ -1,6 +1,6 @@
 # Implementation sequence and review gates
 
-Status: Local 027.1/027.2 and 027.3 candidates implemented; see [queue/playlist QA](local-qa.md) and [Watch QA](watch-local-qa.md). Owner passed local Watch QA; 027.4 and integrated acceptance remain pending.
+Status: Local 027.1/027.2 and 027.3 candidates implemented; see [queue/playlist QA](local-qa.md) and [Watch QA](watch-local-qa.md). Owner passed local Watch QA; 027.4 is now a locally verified candidate; owner and integrated acceptance remain pending.
 Owner approved this scope and local implementation on 2026-09-07.
 Full [acceptance matrix](acceptance-criteria.md) remains the completion contract.
 
@@ -99,6 +99,8 @@ are implemented and locally verified; owner review remains before 027.4.
 
 ## 027.4: Mobile Listen compact-to-expanded flow
 
+Status: owner local QA accepted on 2026-09-07; [Listen evidence](listen-local-qa.md). Release candidate checks are in progress. Live two-participant/provider/device acceptance remains pending before merge.
+
 Owner-confirmed carry-forward requirements (2026-09-07):
 - Reuse the shared compact virtualized queue, whole-row drag excluding controls,
   immediate optimistic reorder, Play next/pin, swipe reveal/second-swipe removal,
@@ -117,21 +119,21 @@ Likely surfaces: Listen layout/header/transport/discovery and responsive styles;
 reuse the accepted shared room services. Recheck TASK-025/Media Session overlaps
 immediately before edits, not only during this planning pass.
 
-- [ ] Complete a provider-feasibility check for compact browsing and stable
+- [x] Complete a provider-feasibility check for compact browsing and stable
   expanded presentation; record supported geometry and any exact conflict.
-- [ ] Test-first: navigation retains source/iframe identity and playback; paused
+- [x] Test-first: navigation retains source/iframe identity and playback; paused
   source retains bar; no-source state removes bar and its reserved space.
-- [ ] Implement shared mobile destinations with track/artwork/transport/Up Next
+- [x] Implement shared mobile destinations with track/artwork/transport/Up Next
   Home and existing Discover/Visualizer access. Preserve desktop Listen.
-- [ ] Implement compact browse bar above navigation with readable title/artwork,
+- [x] Implement compact browse bar above navigation with readable title/artwork,
   primary transport and explicit expansion affordance.
-- [ ] Test-first: drag up expands, cancelled drag settles back, handle drag down
+- [x] Post-hoc regression coverage: drag up expands, cancelled drag settles back, handle drag down
   restores previous browse destination/scroll, tap/keyboard alternatives work.
-- [ ] Animate continuous compact-to-expanded presentation using efficient local
+- [x] Animate continuous compact-to-expanded presentation using efficient local
   progress; preserve the provider, source, local volume and room connection.
-- [ ] Resolve nested scrolling/seek gestures, focus restoration, Escape ordering,
+- [x] Resolve nested scrolling/seek gestures, focus restoration, Escape ordering,
   reduced motion, keyboard/safe-area and portrait/landscape geometry.
-- [ ] Verify Listen queue parity, permissions, previous/next, likes, TV/Media
+- [ ] Complete integrated Listen queue parity, permissions, previous/next, likes, TV/Media
   Session regressions and recommendations without expanding their scope.
 
 Review point: Listen is clearly music-focused; compact bar does not obstruct
@@ -145,7 +147,7 @@ browsing, and expansion is usable without touch or animation.
   the actual reducer module. Keep mock/browser evidence distinguished.
 - [ ] Verify real direct/R2/YouTube source continuity and auto-advance when the
   approved QA environment is available; no new production mutation by default.
-- [ ] Provide an actual running local QA link and exact start command; reserve
+- [x] Provide an actual running local QA link and exact start command; reserve
   port 5383 if free (5381 was TASK-026). Never advertise an unstarted server.
 - [ ] Request physical Huawei phone regression evidence once a concrete local or
   separately approved shareable build is ready. Prior release acceptance is not
@@ -158,3 +160,7 @@ browsing, and expansion is usable without touch or animation.
 Suggested later atomic groups: queue protocol/projection; virtualized gestures;
 playlist layout; Watch browse/header; mobile Listen expansion; final evidence.
 Do not stage or commit this checklist as completed work until evidence supports it.
+
+027.4 local follow-ups now include category-based shared settings, Watch toolbar
+parity (no swipes), Social invite bar/member parity and Listen chat spacing. See
+listen-local-qa.md for scoped evidence and remaining owner/device acceptance.

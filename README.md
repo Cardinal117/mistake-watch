@@ -321,3 +321,10 @@ separate fixture checks from real-room/device acceptance. No release was made;
 027.4 mobile Listen expansion remains the next implementation slice.
 
 Owner QA refinements are documented in [027.3 follow-up](docs/tasks/TASK-027-room-flow-and-queue-response/watch-refinements.md): Cinema/paused player, body dragging, compact mode controls and continuous browsing surfaces. Local only.
+
+### TASK-027.4 accepted local Listen flow
+
+The mobile Listen compact/expanded player, Discover cards, shared queue controls,
+category settings and Social parity have owner local QA acceptance. The release
+candidate remains on its isolated branch until live two-participant QA passes.
+See [current checks and deployment status](docs/tasks/TASK-027-room-flow-and-queue-response/release-candidate.md).
