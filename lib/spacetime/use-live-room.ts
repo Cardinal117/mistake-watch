@@ -1,4 +1,5 @@
 "use client";
+import type { QueuePlacement } from "@/lib/queue/move-intent";
 
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 
@@ -501,22 +502,43 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     });
   }
 
-  function moveQueueItem(
+  async function moveQueueItem(
     queueItemId: string,
     position: number,
     clientActionId = crypto.randomUUID(),
+    placement?: QueuePlacement,
   ) {
-    if (!currentMember || !canManageQueue || !reducers) {
+    if (
+      !currentMember ||
+      !canManageQueue ||
+      !reducers ||
+      connectionStatus !== "connected"
+    ) {
+      if (placement)
+        throw new Error(
+          "You cannot reorder the queue while disconnected or without permission.",
+        );
       return;
     }
-
-    void reducers.moveQueueItem({
-      actorMemberId: currentMember.id,
-      clientActionId,
-      position,
-      queueItemId,
-      roomId: room.id,
-    });
+    if (placement) {
+      await reducers.moveQueueItemRelative({
+        actorMemberId: currentMember.id,
+        clientActionId,
+        roomId: room.id,
+        queueItemId,
+        ...placement,
+      });
+      return;
+    }
+    await reducers
+      .moveQueueItem({
+        actorMemberId: currentMember.id,
+        clientActionId,
+        position,
+        queueItemId,
+        roomId: room.id,
+      })
+      .catch(() => setErrorMessage("The queue move failed. Please try again."));
   }
 
   function removeQueueItem(queueItemId: string) {

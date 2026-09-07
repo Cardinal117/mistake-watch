@@ -1,3 +1,4 @@
+import type { QueuePlacement } from "@/lib/queue/move-intent";
 import type {
   PrepareYoutubeAutoplayParams,
   StartPreparedYoutubeParams,
@@ -124,6 +125,14 @@ export type LiveReducers = {
     sourceType: "direct" | "hls" | "youtube";
     sourceUrl: string;
   }): Promise<void>;
+  moveQueueItemRelative(
+    params: QueuePlacement & {
+      actorMemberId: string;
+      clientActionId: string;
+      queueItemId: string;
+      roomId: string;
+    },
+  ): Promise<void>;
   moveQueueItem(params: {
     actorMemberId: string;
     clientActionId: string;
@@ -286,7 +295,8 @@ export type LiveRoomState = {
     queueItemId: string,
     position: number,
     clientActionId?: string,
-  ): void;
+    placement?: QueuePlacement,
+  ): Promise<void>;
   participants: RoomParticipant[];
   playQueueItemNow(queueItemId: string): void;
   playQueueItem(queueItemId: string): void;
