@@ -16,10 +16,15 @@ const tempDir = await mkdtemp(
 );
 const sourcePath = path.join(rootDir, "lib/queue/virtualization.ts");
 const source = await readFile(sourcePath, "utf8");
-const listenDrawerSource = await readFile(
-  path.join(rootDir, "components/room/listen/queue/queue-drawer.tsx"),
-  "utf8",
-);
+const listenDrawerSource =
+  (await readFile(
+    path.join(rootDir, "components/room/listen/queue/queue-drawer.tsx"),
+    "utf8",
+  )) +
+  (await readFile(
+    path.join(rootDir, "components/room/listen/queue/history-rows.tsx"),
+    "utf8",
+  ));
 const listenHooksSource = await readFile(
   path.join(rootDir, "components/room/listen/hooks/listen-hooks.ts"),
   "utf8",
@@ -190,7 +195,7 @@ test("listen drawer renders only the virtual queue slice with stable keys", () =
   );
   assert.match(listenDrawerSource, /key=\{item\.id\}/);
   assert.match(listenDrawerSource, /aria-posinset=\{index \+ 1\}/);
-  assert.match(listenDrawerSource, /aria-setsize=\{visibleItems\.length\}/);
+  assert.match(listenDrawerSource, /aria-setsize=\{total\}/);
   assert.doesNotMatch(listenDrawerSource, /visibleItems\.map\(/);
 });
 

@@ -70,7 +70,10 @@ export function DiscoveryShelf({
   const headingId = `listen-discovery-${shelf.id}`;
 
   return (
-    <section aria-labelledby={headingId} className="grid gap-2">
+    <section
+      aria-labelledby={headingId}
+      className="listen-discovery-shelf grid gap-2"
+    >
       <header className="flex min-w-0 items-center justify-between gap-3 px-1">
         <div className="min-w-0">
           <h3
@@ -119,7 +122,7 @@ export function DiscoveryShelf({
         </div>
       </header>
       <div
-        className="grid snap-x snap-mandatory auto-cols-[84%] grid-flow-col gap-2.5 overflow-x-auto pb-1.5 pr-[12%] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:auto-cols-[minmax(14rem,42%)] sm:pr-[14%] lg:auto-cols-[14.5rem] lg:pr-[8%] 2xl:auto-cols-[14.5rem] 2xl:pr-6"
+        className="listen-discovery-rail grid snap-x snap-mandatory auto-cols-[84%] grid-flow-col gap-2.5 overflow-x-auto pb-1.5 pr-[12%] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:auto-cols-[minmax(14rem,42%)] sm:pr-[14%] lg:auto-cols-[14.5rem] lg:pr-[8%] 2xl:auto-cols-[14.5rem] 2xl:pr-6"
         onKeyDown={handleRailKeyDown}
         onScroll={updateScrollState}
         ref={railRef}

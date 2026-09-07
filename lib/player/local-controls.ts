@@ -25,11 +25,14 @@ export function readStoredPlayerVolume() {
     return DEFAULT_PLAYER_VOLUME;
   }
 
-  const storedVolume = Number(window.localStorage.getItem("mw_player_volume"));
-
-  if (!Number.isFinite(storedVolume) || storedVolume <= 0) {
+  try {
+    const stored = window.localStorage.getItem("mw_player_volume");
+    if (stored === null || !stored.trim()) return DEFAULT_PLAYER_VOLUME;
+    const value = Number(stored);
+    return Number.isFinite(value)
+      ? Math.min(1, Math.max(0, value / 100))
+      : DEFAULT_PLAYER_VOLUME;
+  } catch {
     return DEFAULT_PLAYER_VOLUME;
   }
-
-  return Math.min(1, Math.max(0.01, storedVolume / 100));
 }

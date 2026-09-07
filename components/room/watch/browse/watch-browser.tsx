@@ -145,27 +145,35 @@ export function WatchBrowser({
     );
   }
   return (
-    <div className="watch-browser">
-      <div className="watch-browser-tabs" aria-label="Browse sections">
-        {(["discover", "library", "history"] as const).map((value) => (
-          <button
-            key={value}
-            aria-pressed={tab === value}
-            onClick={() => changeTab(value)}
-          >
-            {value === "discover"
-              ? "Discover"
-              : value === "library"
-                ? "Library"
-                : "History"}
+    <div className="watch-browser" data-details={selectedVisible}>
+      {selectedVisible ? (
+        <div className="watch-details-nav">
+          <button className="watch-back" onClick={closeDetails}>
+            <ArrowLeft aria-hidden /> Back to results
           </button>
-        ))}
-        {isOwner && (
-          <button className="watch-manage-link" onClick={onManage}>
-            Manage library
-          </button>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="watch-browser-tabs" aria-label="Browse sections">
+          {(["discover", "library", "history"] as const).map((value) => (
+            <button
+              key={value}
+              aria-pressed={tab === value}
+              onClick={() => changeTab(value)}
+            >
+              {value === "discover"
+                ? "Discover"
+                : value === "library"
+                  ? "Library"
+                  : "History"}
+            </button>
+          ))}
+          {isOwner && (
+            <button className="watch-manage-link" onClick={onManage}>
+              Manage library
+            </button>
+          )}
+        </div>
+      )}
       <div
         className="watch-browse-scroll"
         ref={scrollRef}

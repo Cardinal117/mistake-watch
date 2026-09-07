@@ -36,6 +36,8 @@
   inset: auto 0 0;
   z-index: 20;
   width: 100%;
+  max-width: none;
+  align-self: stretch;
   margin: 0;
   padding: 48px max(24px, env(safe-area-inset-right))
     max(20px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));

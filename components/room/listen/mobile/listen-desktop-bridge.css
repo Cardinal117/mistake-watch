@@ -1,0 +1,82 @@
+/* Keep one provider ownership tree as responsive presentation changes. */
+.listen-desktop-shell {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--listen-room-columns);
+  grid-template-rows: auto minmax(0, 1fr);
+  column-gap: var(--listen-shell-gap);
+  height: 100dvh;
+  overflow: hidden;
+  padding: var(--listen-shell-inset);
+  background: var(--color-background);
+  color: var(--color-on-surface);
+}
+.listen-desktop-shell .listen-mobile-identity {
+  grid-column: 2;
+  grid-row: 1;
+  padding: 0;
+  border: 0;
+  position: relative;
+  z-index: 20;
+}
+.listen-desktop-shell .listen-mobile-identity > section {
+  width: 100%;
+}
+.listen-desktop-shell .listen-mobile-workspace {
+  grid-column: 2;
+  grid-row: 2;
+  position: relative;
+  z-index: 10;
+  margin: 0;
+  padding: 4px var(--listen-workspace-inset)
+    calc(var(--listen-collapsed-queue-height) + 1rem);
+  min-height: 0;
+}
+.listen-desktop-shell .listen-mobile-discovery {
+  padding: 0;
+  overflow: hidden;
+}
+.listen-desktop-shell .listen-mobile-discovery > section {
+  height: 100%;
+  min-height: 0;
+  border: 1px solid rgb(255 255 255/0.08);
+  border-radius: 12px;
+  background: rgb(14 14 15/0.46);
+}
+.listen-desktop-shell .listen-mobile-player {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  position: relative;
+  inset: auto;
+  z-index: 10;
+  height: 100%;
+  min-height: 0;
+  display: block;
+  border: 0;
+  background: transparent;
+  transition: none;
+  overflow: hidden;
+}
+.listen-desktop-shell .listen-mobile-player-body {
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+.listen-desktop-shell .listen-now-panel {
+  height: 100%;
+}
+.listen-desktop-shell .listen-now-art {
+  height: clamp(16rem, 36vh, 20rem);
+  width: 100%;
+  aspect-ratio: auto;
+  max-width: none;
+  margin: 0;
+}
+.listen-desktop-shell .listen-mobile-player-top,
+.listen-desktop-shell .listen-mobile-nav {
+  display: none;
+}
+
+.listen-desktop-shell .listen-mobile-discovery > section {
+  box-shadow: 0 24px 70px rgb(0 0 0/0.24);
+}

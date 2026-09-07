@@ -11,6 +11,21 @@ Production:
 - https://watch.mistakestudios.com
 - https://mistake-watch.vercel.app
 
+## Current Release and Next Acceptance
+
+[TASK-027](docs/tasks/TASK-027-room-flow-and-queue-response/release-candidate.md)
+is deployed for live acceptance: catalogue-first Watch, compact optimistic and
+virtualized queues, mobile Listen with swipe-up expansion, shared settings and
+Social controls, and repaired playlist review. The owner passed three-device QA
+on Opera, Opera GX and Huawei Chrome, including a participant without catalogue access.
+
+The 2026-09-07 fine-tuning release adds connection continuity during metadata
+updates, retained volume/mute, full-width fullscreen controls, fresher transport
+timing and visible direct video in Listen. Owner live QA of these
+follow-ups and free-position mini-player is accepted; final merge checks are underway. The one-off token
+error is recorded as unreproduced. See the [fine-tuning evidence](docs/tasks/TASK-027-room-flow-and-queue-response/live-qa-fine-tuning.md)
+for exact checks and the [handoff](docs/HANDOFF.md) for deployment/rollback state.
+
 ## What Exists
 
 - Guest-first private rooms with optional Google account identity.
@@ -18,13 +33,13 @@ Production:
   projection with explicit lifecycle controls.
 - Persistent responsive Watch browsing/Cinema/fullscreen and immersive Listen,
   with synchronized host-led playback, artwork themes and bounded Up Next.
-- Compact Watch touch queues (drag, Play next, swipe removal), a four-corner
-  mobile player, live room identity controls and leave confirmation.
+- Compact Watch touch queues (drag, Play next, swipe removal), a freely movable
+  mini-player, live room identity controls and leave confirmation.
 - SpacetimeDB live presence, queue, playback, chat, and permission state.
 - Supabase durable rooms, accounts, media records, uploads, and authorization.
 - YouTube, direct media, HLS, and first-party uploaded playback.
 - Search, playlist review/import, queue ordering, play next/now, shuffle,
-  history, auto-advance, and large-queue virtualization.
+  history, auto-advance, and bounded Watch/Listen queue rendering.
 - Private Mistake Watch Likes, authoritative room-event capture, deterministic
   first-party ranking, and explainable Listen Room Picks.
 - Owner upload catalogue with folders, multipart recovery, browser-safety
@@ -294,3 +309,27 @@ recommendation intelligence, TASK-018 companion analysis, TASK-019 shared
 rhythm, and TASK-021 Listen Room overhaul are complete. Continue from
 `docs/HANDOFF.md` and `docs/ROADMAP.md` rather than older recovery-packet status
 summaries.
+
+### TASK-027 first local candidate
+
+Queue responsiveness/virtualization and playlist repair are implemented locally.
+[QA links, results and remaining acceptance](docs/tasks/TASK-027-room-flow-and-queue-response/local-qa.md).
+This earlier checkpoint preceded 027.3 below; mobile Listen 027.4 remains pending.
+No production release or Git publication is included in this checkpoint.
+
+
+### TASK-027.3 local Watch review
+
+The browse-first Watch shell and shared header are implemented locally in the
+TASK-027 worktree. [027.3 behavior, QA and review routes](docs/tasks/TASK-027-room-flow-and-queue-response/watch-local-qa.md)
+separate fixture checks from real-room/device acceptance. No release was made;
+027.4 mobile Listen expansion remains the next implementation slice.
+
+Owner QA refinements are documented in [027.3 follow-up](docs/tasks/TASK-027-room-flow-and-queue-response/watch-refinements.md): Cinema/paused player, body dragging, compact mode controls and continuous browsing surfaces. Local only.
+
+### TASK-027.4 accepted local Listen flow
+
+The mobile Listen compact/expanded player, Discover cards, shared queue controls,
+category settings and Social parity have owner local QA acceptance. The release
+candidate remains on its isolated branch until live two-participant QA passes.
+See [current checks and deployment status](docs/tasks/TASK-027-room-flow-and-queue-response/release-candidate.md).

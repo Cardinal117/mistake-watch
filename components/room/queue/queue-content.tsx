@@ -5,7 +5,9 @@ import { useMemo, useState } from "react";
 import type { RoomQueueItem } from "@/lib/rooms";
 import type { LiveRoomError } from "@/lib/spacetime";
 import type { QueueAddInput } from "./contracts";
-import { useQueueMotion } from "./use-queue-motion";
+import { VirtualQueueList } from "./virtual-queue-list";
+import { useOptimisticQueue } from "./use-optimistic-queue";
+import type { MoveQueueAction } from "@/lib/queue/move-intent";
 import { QueueRow } from "./queue-row";
 
 type MeasureQueueAction = (label: string, action: () => void) => void;
@@ -21,17 +23,16 @@ export function QueueContent({
   onQueueItemPriorityChange,
   onRemoveQueueItem,
   previousItems,
-  queuedIndexById,
   queuedItemsLength,
   roomErrors,
-  upcomingItems,
+  upcomingItems: canonicalItems,
 }: {
   compact?: boolean;
   manageDisabled: boolean;
   measureQueueAction: MeasureQueueAction;
   mode: "listen" | "watch";
   onAddQueueItem?(input: QueueAddInput): void;
-  onMoveQueueItem?(queueItemId: string, position: number): void;
+  onMoveQueueItem?: MoveQueueAction;
   onPlayQueueItem?(queueItemId: string): void;
   onQueueItemPriorityChange?(
     queueItemId: string,
@@ -47,9 +48,16 @@ export function QueueContent({
   const [activeQueueTab, setActiveQueueTab] = useState<"history" | "up-next">(
     "up-next",
   );
-  const queueListRef = useQueueMotion(
-    upcomingItems.map((item) => item.id).join("|"),
-    compact,
+  const optimistic = useOptimisticQueue(
+    canonicalItems,
+    manageDisabled,
+    onMoveQueueItem,
+  );
+  const upcomingItems = optimistic.items;
+  const projectedIndices = new Map(
+    upcomingItems
+      .filter((i) => i.status === "queued")
+      .map((i, index) => [i.id, index]),
   );
   const mediaEvents = useMemo(
     () =>
@@ -62,6 +70,11 @@ export function QueueContent({
 
   return (
     <>
+      {optimistic.notice && (
+        <p role="status" className="text-label-sm text-error">
+          {optimistic.notice}
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-1 rounded-md border border-white/10 bg-surface-container-lowest p-1">
         {[
           { id: "up-next", label: "Up Next" },
@@ -88,9 +101,13 @@ export function QueueContent({
 
       {activeQueueTab === "up-next" ? (
         upcomingItems.length > 0 ? (
-          <ol className="relative grid gap-2" ref={queueListRef}>
-            {upcomingItems.map((item) => {
-              const queuedIndex = queuedIndexById.get(item.id) ?? -1;
+          <VirtualQueueList
+            enabled={compact}
+            items={upcomingItems}
+            indices={projectedIndices}
+          >
+            {(item) => {
+              const queuedIndex = projectedIndices.get(item.id) ?? -1;
 
               return (
                 <QueueRow
@@ -101,7 +118,7 @@ export function QueueContent({
                   mode={mode}
                   onMoveQueueItem={(queueItemId, position) =>
                     measureQueueAction("move", () =>
-                      onMoveQueueItem?.(queueItemId, position),
+                      optimistic.move(queueItemId, position),
                     )
                   }
                   onPlayNext={(queueItem) => {
@@ -135,8 +152,8 @@ export function QueueContent({
                   queuedItemsLength={queuedItemsLength}
                 />
               );
-            })}
-          </ol>
+            }}
+          </VirtualQueueList>
         ) : (
           <div className="rounded-md border border-dashed border-white/10 bg-surface-container-low p-4 text-body-md text-on-surface-variant">
             {mode === "listen"
@@ -243,8 +260,13 @@ function QueueHistory({
           </ol>
         </section>
       ) : null}
-      <ol className="grid gap-2">
-        {previousItems.map((item) => (
+      <VirtualQueueList
+        enabled={compact}
+        items={previousItems}
+        indices={new Map()}
+        label="Queue history"
+      >
+        {(item) => (
           <QueueRow
             compact={compact}
             item={item}
@@ -280,8 +302,8 @@ function QueueHistory({
             queuedIndex={-1}
             queuedItemsLength={queuedItemsLength}
           />
-        ))}
-      </ol>
+        )}
+      </VirtualQueueList>
     </div>
   );
 }

@@ -10,7 +10,6 @@ import {
 import { expectedPositionAt } from "@/lib/player";
 import { shuffleUpcomingQueue, smartShuffleQueue } from "@/lib/queue/model";
 import { deriveQueueState } from "@/lib/queue/derived";
-import { cx } from "@/lib/ui";
 import { useMediaPreferences } from "@/lib/recommendations/use-media-preferences";
 import { activeMediaPreferenceItem } from "@/lib/recommendations/room-client";
 import { useNextItemPreparation } from "@/components/room/use-next-item-preparation";
@@ -20,7 +19,7 @@ import {
 } from "@/components/room/listen/shared";
 import { ListenNowPlayingPanel } from "@/components/room/listen/now-playing/now-playing-panel";
 import { ListenTechnicalRoomHeader } from "@/components/room/listen/header/technical-room-header";
-import { ListenMobileRoomTools } from "@/components/room/listen/mobile/mobile-room-tools";
+import { ListenMobileLayout } from "./mobile/listen-mobile-layout";
 import { ListenQueueDrawer } from "@/components/room/listen/queue/queue-drawer";
 import { ListenContentStage } from "@/components/room/listen/stage/listen-content-stage";
 import {
@@ -63,9 +62,6 @@ export function ListenModeLayout({
   room,
 }: ListenModeLayoutProps) {
   const [clockMs, setClockMs] = useState(() => Date.now());
-  const [mobileToolsTab, setMobileToolsTab] = useState<"members" | "room">(
-    "room",
-  );
   const [tvMode, setTvMode] = useState(false);
   const [tvSettingsOpen, setTvSettingsOpen] = useState(false);
   const [tvSettings, setTvSettings] = usePersistentListenTvSettings();
@@ -146,9 +142,6 @@ export function ListenModeLayout({
       queuedItems.length > 0 ? "4.5rem" : "3rem",
   } as CSSProperties;
   const desktopShell = useDesktopListenShell();
-  const controllerMemberId =
-    liveRoom.participants.find((participant) => participant.isController)?.id ??
-    null;
   const currentPosition = useMemo(() => {
     const canonicalState = buildCanonicalState(liveRoom);
 
@@ -193,7 +186,7 @@ export function ListenModeLayout({
     seconds: remainingQueueSeconds,
   } = useRemainingQueueSeconds(liveRoom, room.id, queueDrawerOpen);
   useEffect(() => {
-    const timer = window.setInterval(() => setClockMs(Date.now()), 500);
+    const timer = window.setInterval(() => setClockMs(Date.now()), 250);
 
     return () => window.clearInterval(timer);
   }, []);
@@ -212,10 +205,6 @@ export function ListenModeLayout({
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
-  useEffect(() => {
-    dispatchPlayerVolume(volume / 100);
-  }, [volume]);
-
   function setLocalVolume(nextVolume: number) {
     const safeVolume = Math.min(100, Math.max(0, nextVolume));
 
@@ -225,8 +214,9 @@ export function ListenModeLayout({
   }
 
   function setPlayback(status: "paused" | "playing") {
+    const state = buildCanonicalState(liveRoom);
     liveRoom.setPlaybackState({
-      positionSeconds: currentPosition,
+      positionSeconds: state ? expectedPositionAt(state, Date.now()) : 0,
       status,
     });
   }
@@ -324,10 +314,88 @@ export function ListenModeLayout({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [tvMode, tvSettingsOpen]);
 
+  const nowPlaying = (
+    <ListenNowPlayingPanel
+      canControl={canControl && isConnected}
+      currentItem={activePreferenceItem}
+      currentPosition={currentPosition}
+      desktopShell={desktopShell}
+      durationSeconds={durationSeconds}
+      liveRoom={liveRoom}
+      mediaPreferences={mediaPreferences}
+      nextPreparation={nextPreparation}
+      onNext={playNext}
+      onOpenQueue={() => setQueueDrawerOpen(true)}
+      onPlaybackChange={setPlayback}
+      onPrevious={playPrevious}
+      onSeek={seekTo}
+      onShuffle={() => applyQueueShuffle("shuffle")}
+      onVolumeChange={setLocalVolume}
+      queueAutoplayEnabled={session?.queueAutoplayEnabled ?? true}
+      queuedItems={queuedItems}
+      remainingQueueSeconds={remainingQueueSeconds}
+      room={room}
+      volume={volume}
+    />
+  );
+  const header = (
+    <ListenTechnicalRoomHeader
+      account={account}
+      accountNotice={accountNotice}
+      artworkUrl={activeArtworkUrl}
+      canAddQueue={liveRoom.canAddQueue}
+      canLoadSource={liveRoom.canManageAuthority}
+      connectionStatus={liveRoom.connectionStatus}
+      desktopShell={desktopShell}
+      historyCount={previousItems.length}
+      liveRoom={liveRoom}
+      onAddQueueItem={liveRoom.addQueueItem}
+      onEnterTvMode={() => setTvMode(true)}
+      onLoadSource={liveRoom.loadMediaSource}
+      queueItems={liveQueueItems}
+      queueCount={queuedItems.length}
+      remainingSeconds={remainingQueueSeconds}
+      room={room}
+      tvSettings={tvSettings}
+      onTvSettingsChange={setTvSettings}
+    />
+  );
+  const discovery = (
+    <ListenContentStage
+      active={session?.status === "playing"}
+      activeArtworkUrl={activeArtworkUrl}
+      activeMediaId={activeMediaId}
+      ambientFallbackEnabled={ambientFallbackEnabled}
+      artist={activeArtist}
+      canAddQueue={liveRoom.canAddQueue && isConnected}
+      canLoadSource={liveRoom.canManageAuthority && isConnected}
+      canPlay={canControl && isConnected}
+      companion={audioCompanion}
+      currentItem={currentItem}
+      currentPosition={currentPosition}
+      durationSeconds={durationSeconds}
+      intensity={visualIntensity}
+      items={liveQueueItems}
+      mediaPreferences={mediaPreferences}
+      nowMs={clockMs}
+      onAddQueueItem={liveRoom.addQueueItem}
+      onLoadSource={liveRoom.loadMediaSource}
+      onPlayQueueItem={liveRoom.playQueueItemNow}
+      playbackOccurrenceId={session?.playbackOccurrenceId}
+      preferenceItem={activePreferenceItem}
+      room={room}
+      roomRhythmProfile={liveRoom.snapshot.roomRhythmProfile}
+      theme={listenTheme}
+      title={activeTitle}
+      visualizationMode={visualizationMode}
+      visualizerArtworkEnabled={visualizerArtworkEnabled}
+    />
+  );
+
   if (tvMode) {
     return (
       <ListenTvModeLayout
-        canControl={canControl}
+        canControl={canControl && isConnected}
         currentItem={currentItem}
         currentPosition={currentPosition}
         durationSeconds={durationSeconds}
@@ -359,167 +427,64 @@ export function ListenModeLayout({
   }
 
   return (
-    <main
-      className={cx(
-        "relative min-h-screen overflow-x-hidden bg-background text-on-surface",
-        desktopShell && "h-dvh min-h-dvh overflow-hidden",
-      )}
+    <ListenMobileLayout
+      account={account}
+      accountNotice={accountNotice}
+      room={room}
+      liveRoom={liveRoom}
+      items={liveQueueItems}
+      header={header}
+      player={nowPlaying}
+      discovery={discovery}
       style={listenThemeStyle}
-    >
-      {desktopShell && effectiveVisualizationMode !== "off" ? (
-        <ListenAmbientBackdrop mode={effectiveVisualizationMode} />
-      ) : null}
-      {effectiveVisualizationMode !== "off" ? (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 transition-opacity duration-1000"
-          style={{
-            background:
-              "radial-gradient(circle at 0% 18%, rgb(var(--listen-primary) / 0.3), transparent 44%), radial-gradient(circle at 18% 62%, rgb(var(--listen-secondary) / 0.18), transparent 40%), radial-gradient(circle at 38% 100%, rgb(var(--listen-wave) / 0.1), transparent 46%), linear-gradient(90deg, rgb(var(--listen-primary) / 0.05), rgb(14 14 15 / var(--listen-room-dim-middle,0.64)) 34%, rgb(19 19 20 / var(--listen-room-dim-end,0.97)) 100%)",
-          }}
-        />
-      ) : null}
-      <div
-        className={cx(
-          "relative z-10 grid transition-[grid-template-columns] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-          desktopShell
-            ? "h-dvh min-h-0 grid-cols-[var(--listen-room-columns)] gap-[var(--listen-shell-gap)] overflow-hidden p-[var(--listen-shell-inset)]"
-            : "gap-4 px-margin-mobile pb-32 pt-4 md:px-margin-desktop",
-        )}
-      >
-        <ListenNowPlayingPanel
-          canControl={canControl}
-          currentItem={activePreferenceItem}
-          currentPosition={currentPosition}
-          desktopShell={desktopShell}
-          durationSeconds={durationSeconds}
-          liveRoom={liveRoom}
-          mediaPreferences={mediaPreferences}
-          mobileTools={
-            <ListenMobileRoomTools
-              activeTab={mobileToolsTab}
-              account={account}
-              accountNotice={accountNotice}
-              artworkUrl={activeArtworkUrl}
-              canAddQueue={liveRoom.canAddQueue}
-              canLoadSource={liveRoom.canManageAuthority}
-              connectionStatus={liveRoom.connectionStatus}
-              controllerMemberId={controllerMemberId}
-              currentMemberId={room.currentMember?.id}
-              items={liveQueueItems}
-              liveRoom={liveRoom}
-              onAddQueueItem={liveRoom.addQueueItem}
-              onLoadSource={liveRoom.loadMediaSource}
-              onTabChange={setMobileToolsTab}
-              roomErrors={liveRoom.snapshot.errors}
-              room={room}
-            />
-          }
+      title={activeTitle}
+      artist={activeArtist}
+      onPlaybackChange={setPlayback}
+      onNext={playNext}
+      onEnterTv={() => setTvMode(true)}
+      desktopShell={desktopShell}
+      desktopQueue={
+        <ListenQueueDrawer
+          canAddQueue={liveRoom.canAddQueue}
+          canManageQueue={canManageQueue}
+          isConnected={isConnected}
           nextPreparation={nextPreparation}
-          onNext={playNext}
-          onOpenQueue={() => setQueueDrawerOpen(true)}
-          onPlaybackChange={setPlayback}
-          onPrevious={playPrevious}
-          onSeek={seekTo}
+          onOpenChange={setQueueDrawerOpen}
+          onAddQueueItem={liveRoom.addQueueItem}
+          onClearQueue={liveRoom.clearQueue}
+          onMoveQueueItem={liveRoom.moveQueueItem}
+          onPinnedFirst={() => applyQueueShuffle("pinned")}
+          onPlayQueueItem={liveRoom.playQueueItemNow}
+          onQueueItemPriorityChange={liveRoom.setQueueItemPriority}
+          onRemoveQueueItem={liveRoom.removeQueueItem}
           onShuffle={() => applyQueueShuffle("shuffle")}
-          onVolumeChange={setLocalVolume}
-          queueAutoplayEnabled={session?.queueAutoplayEnabled ?? true}
-          queuedItems={queuedItems}
-          remainingQueueSeconds={remainingQueueSeconds}
-          room={room}
-          volume={volume}
+          onSmartShuffle={() => applyQueueShuffle("smart")}
+          queueState={queueState}
+          queueMode={session?.queueMode ?? "normal"}
+          open={queueDrawerOpen}
+          remainingLoading={remainingQueueMetadataLoading}
+          remainingSeconds={remainingQueueSeconds}
+          desktopShell={desktopShell}
         />
-
-        <section
-          className={cx(
-            "relative grid min-w-0 overflow-visible",
-            desktopShell &&
-              "min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden pb-[calc(var(--listen-collapsed-queue-height)+1rem)]",
-          )}
-        >
-          <ListenTechnicalRoomHeader
-            account={account}
-            accountNotice={accountNotice}
-            artworkUrl={activeArtworkUrl}
-            canAddQueue={liveRoom.canAddQueue}
-            canLoadSource={liveRoom.canManageAuthority}
-            connectionStatus={liveRoom.connectionStatus}
-            desktopShell={desktopShell}
-            historyCount={previousItems.length}
-            liveRoom={liveRoom}
-            onAddQueueItem={liveRoom.addQueueItem}
-            onEnterTvMode={() => setTvMode(true)}
-            onLoadSource={liveRoom.loadMediaSource}
-            queueItems={liveQueueItems}
-            queueCount={queuedItems.length}
-            remainingSeconds={remainingQueueSeconds}
-            room={room}
-            tvSettings={tvSettings}
-            onTvSettingsChange={setTvSettings}
-          />
-          <div
-            className={cx(
-              "relative z-10 grid gap-4 py-4 [scrollbar-color:rgb(var(--listen-primary)_/_0.42)_transparent] [scrollbar-width:thin]",
-              desktopShell &&
-                "min-h-0 overflow-hidden px-[var(--listen-workspace-inset)] pb-0 pt-1",
-              !desktopShell && "px-4 sm:px-6",
-            )}
-          >
-            <ListenContentStage
-              active={session?.status === "playing"}
-              activeArtworkUrl={activeArtworkUrl}
-              activeMediaId={activeMediaId}
-              ambientFallbackEnabled={ambientFallbackEnabled}
-              artist={activeArtist}
-              canAddQueue={liveRoom.canAddQueue && isConnected}
-              canLoadSource={liveRoom.canManageAuthority && isConnected}
-              canPlay={canControl && isConnected}
-              companion={audioCompanion}
-              currentItem={currentItem}
-              currentPosition={currentPosition}
-              durationSeconds={durationSeconds}
-              intensity={visualIntensity}
-              items={liveQueueItems}
-              mediaPreferences={mediaPreferences}
-              nowMs={clockMs}
-              onAddQueueItem={liveRoom.addQueueItem}
-              onLoadSource={liveRoom.loadMediaSource}
-              onPlayQueueItem={liveRoom.playQueueItemNow}
-              playbackOccurrenceId={session?.playbackOccurrenceId}
-              preferenceItem={activePreferenceItem}
-              room={room}
-              roomRhythmProfile={liveRoom.snapshot.roomRhythmProfile}
-              theme={listenTheme}
-              title={activeTitle}
-              visualizationMode={visualizationMode}
-              visualizerArtworkEnabled={visualizerArtworkEnabled}
+      }
+      backdrop={
+        <>
+          {desktopShell && effectiveVisualizationMode !== "off" ? (
+            <ListenAmbientBackdrop mode={effectiveVisualizationMode} />
+          ) : null}
+          {effectiveVisualizationMode !== "off" ? (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 transition-opacity duration-1000"
+              style={{
+                background:
+                  "radial-gradient(circle at 0% 18%, rgb(var(--listen-primary) / 0.3), transparent 44%), radial-gradient(circle at 18% 62%, rgb(var(--listen-secondary) / 0.18), transparent 40%), radial-gradient(circle at 38% 100%, rgb(var(--listen-wave) / 0.1), transparent 46%), linear-gradient(90deg, rgb(var(--listen-primary) / 0.05), rgb(14 14 15 / var(--listen-room-dim-middle,0.64)) 34%, rgb(19 19 20 / var(--listen-room-dim-end,0.97)) 100%)",
+              }}
             />
-          </div>
-        </section>
-      </div>
-      <ListenQueueDrawer
-        canAddQueue={liveRoom.canAddQueue}
-        canManageQueue={canManageQueue}
-        isConnected={isConnected}
-        nextPreparation={nextPreparation}
-        onOpenChange={setQueueDrawerOpen}
-        onAddQueueItem={liveRoom.addQueueItem}
-        onClearQueue={liveRoom.clearQueue}
-        onMoveQueueItem={liveRoom.moveQueueItem}
-        onPinnedFirst={() => applyQueueShuffle("pinned")}
-        onPlayQueueItem={liveRoom.playQueueItemNow}
-        onQueueItemPriorityChange={liveRoom.setQueueItemPriority}
-        onRemoveQueueItem={liveRoom.removeQueueItem}
-        onShuffle={() => applyQueueShuffle("shuffle")}
-        onSmartShuffle={() => applyQueueShuffle("smart")}
-        queueState={queueState}
-        queueMode={session?.queueMode ?? "normal"}
-        open={queueDrawerOpen}
-        remainingLoading={remainingQueueMetadataLoading}
-        remainingSeconds={remainingQueueSeconds}
-        desktopShell={desktopShell}
-      />
-    </main>
+          ) : null}
+        </>
+      }
+    />
   );
 }
 

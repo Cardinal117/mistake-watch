@@ -1,146 +1,172 @@
 "use client";
 import {
   useLayoutEffect,
+  useCallback,
   useRef,
   useState,
+  type RefObject,
   type KeyboardEvent,
   type PointerEvent,
 } from "react";
-import type { DockAnchor } from "./watch-navigation";
-const corners: DockAnchor[] = ["right", "left", "top-left", "top-right"];
-function animateMove(el: HTMLElement, from: DOMRect) {
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const to = el.getBoundingClientRect();
-  el.animate(
-    [
-      { transform: `translate(${from.x - to.x}px,${from.y - to.y}px)` },
-      { transform: "translate(0,0)" },
-    ],
-    { duration: 180, easing: "ease-out" },
-  );
-}
-export function useWatchDock() {
-  const [anchor, setAnchor] = useState<DockAnchor>("right");
+type Point = { x: number; y: number };
+
+// Local geometry only: moving the mounted provider must never publish room state.
+export function useWatchDock(shellRef: RefObject<HTMLDivElement | null>) {
   const [dragging, setDragging] = useState(false);
-  const player = useRef<HTMLElement | null>(null);
-  const previous = useRef<DOMRect | null>(null);
+  const position = useRef<Point | null>(null);
   const origin = useRef<{
+    pointer: number;
     x: number;
     y: number;
     rect: DOMRect;
-    top: number;
-    bottom: number;
+    previous: Point | null;
   } | null>(null);
-  function place(next: DockAnchor) {
-    previous.current = player.current?.getBoundingClientRect() ?? null;
-    if (player.current) player.current.style.translate = "";
-    if (next === anchor && player.current && previous.current) {
-      animateMove(player.current, previous.current);
-      previous.current = null;
-    }
-    setAnchor(next);
-  }
+  const getPlayer = useCallback(
+    () => shellRef.current?.querySelector<HTMLElement>(".watch-player"),
+    [shellRef],
+  );
+  const place = useCallback(
+    (point: Point) => {
+      const shell = shellRef.current,
+        el = getPlayer();
+      if (
+        !shell ||
+        !el ||
+        shell.dataset.docked !== "true" ||
+        document.fullscreenElement
+      )
+        return;
+      const rect = el.getBoundingClientRect();
+      const viewport = window.visualViewport;
+      const left = (viewport?.offsetLeft ?? 0) + 12;
+      const top = Math.max(
+        (viewport?.offsetTop ?? 0) + 12,
+        parseFloat(
+          getComputedStyle(shell).getPropertyValue("--watch-dock-top"),
+        ) || 12,
+      );
+      const nav = shell
+        .querySelector(".watch-mobile-nav")
+        ?.getBoundingClientRect();
+      const right =
+        (viewport?.offsetLeft ?? 0) +
+        (viewport?.width ?? window.innerWidth) -
+        12;
+      const bottom =
+        Math.min(
+          (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight),
+          nav?.height ? nav.top : window.innerHeight,
+        ) - 12;
+      const next = {
+        x: Math.max(left, Math.min(point.x, right - rect.width)),
+        y: Math.max(top, Math.min(point.y, bottom - rect.height)),
+      };
+      position.current = next;
+      el.dataset.freeDock = "true";
+      el.style.setProperty("--watch-free-left", `${next.x}px`);
+      el.style.setProperty("--watch-free-top", `${next.y}px`);
+    },
+    [getPlayer, shellRef],
+  );
   useLayoutEffect(() => {
-    const el = player.current,
-      from = previous.current;
-    previous.current = null;
-    if (el && from) animateMove(el, from);
-  }, [anchor]);
+    const shell = shellRef.current,
+      el = getPlayer();
+    if (!shell || !el) return;
+    let frame = 0;
+    const update = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        if (position.current) place(position.current);
+      });
+    };
+    const resize = new ResizeObserver(update);
+    resize.observe(shell);
+    resize.observe(el);
+    const mutation = new MutationObserver(update);
+    mutation.observe(shell, {
+      attributes: true,
+      attributeFilter: ["data-docked", "data-minimized"],
+    });
+    window.visualViewport?.addEventListener("resize", update);
+    window.visualViewport?.addEventListener("scroll", update);
+    document.addEventListener("fullscreenchange", update);
+    return () => {
+      cancelAnimationFrame(frame);
+      resize.disconnect();
+      mutation.disconnect();
+      window.visualViewport?.removeEventListener("resize", update);
+      window.visualViewport?.removeEventListener("scroll", update);
+      document.removeEventListener("fullscreenchange", update);
+    };
+  }, [shellRef, getPlayer, place]);
   function startDrag(event: PointerEvent<HTMLElement>) {
-    if (event.button !== 0) return;
-    player.current = event.currentTarget.closest(".watch-player");
-    if (!player.current) return;
-    const shell = player.current.closest(".watch-redesign");
+    const el = getPlayer();
+    if (event.button !== 0 || !el) return;
+    el.getAnimations().forEach((animation) => animation.cancel());
     origin.current = {
+      pointer: event.pointerId,
       x: event.clientX,
       y: event.clientY,
-      rect: player.current.getBoundingClientRect(),
-      top:
-        (shell?.querySelector(".watch-viewbar")?.getBoundingClientRect()
-          .bottom ?? 0) + 12,
-      bottom:
-        (shell?.querySelector(".watch-mobile-nav")?.getBoundingClientRect()
-          .top ?? window.innerHeight) - 12,
+      rect: el.getBoundingClientRect(),
+      previous: position.current,
     };
     event.currentTarget.setPointerCapture(event.pointerId);
     setDragging(true);
   }
   function moveDrag(event: PointerEvent<HTMLElement>) {
-    if (!origin.current || !player.current) return;
-    const { rect, top, bottom } = origin.current;
-    const x = Math.max(
-      12 - rect.left,
-      Math.min(
-        window.innerWidth - 12 - rect.right,
-        event.clientX - origin.current.x,
-      ),
-    );
-    const y = Math.max(
-      top - rect.top,
-      Math.min(bottom - rect.bottom, event.clientY - origin.current.y),
-    );
-    player.current.style.translate = `${x}px ${y}px`;
-  }
-  function cancelDrag() {
-    if (player.current) player.current.style.translate = "";
-    origin.current = null;
-    setDragging(false);
+    const start = origin.current;
+    if (!start || start.pointer !== event.pointerId) return;
+    place({
+      x: start.rect.x + event.clientX - start.x,
+      y: start.rect.y + event.clientY - start.y,
+    });
   }
   function endDrag(event: PointerEvent<HTMLElement>) {
-    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
-    event.currentTarget.releasePointerCapture(event.pointerId);
-    const left = event.clientX < window.innerWidth / 2,
-      top = event.clientY < window.innerHeight / 2;
-    place(top ? (left ? "top-left" : "top-right") : left ? "left" : "right");
+    if (!origin.current || origin.current.pointer !== event.pointerId) return;
+    moveDrag(event);
+    origin.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId))
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    setDragging(false);
+  }
+  function cancelDrag() {
+    const start = origin.current;
+    if (!start) return;
+    position.current = start.previous;
+    if (start.previous) place(start.previous);
+    else {
+      const el = getPlayer();
+      if (el) delete el.dataset.freeDock;
+    }
     origin.current = null;
     setDragging(false);
   }
-  function cycle(event: { currentTarget: HTMLElement }) {
-    player.current = event.currentTarget.closest(".watch-player");
-    place(corners[(corners.indexOf(anchor) + 1) % 4]);
-  }
   function keyDown(event: KeyboardEvent<HTMLElement>) {
-    const left = anchor.endsWith("left"),
-      top = anchor.startsWith("top");
-    const next: DockAnchor | undefined =
-      event.key === "ArrowUp"
-        ? left
-          ? "top-left"
-          : "top-right"
-        : event.key === "ArrowDown"
-          ? left
-            ? "left"
-            : "right"
-          : event.key === "ArrowLeft"
-            ? top
-              ? "top-left"
-              : "left"
-            : event.key === "ArrowRight"
-              ? top
-                ? "top-right"
-                : "right"
-              : undefined;
-    if (next) {
-      event.preventDefault();
-      player.current = event.currentTarget.closest(".watch-player");
-      place(next);
+    if (event.key === "Escape") {
+      cancelDrag();
+      return;
     }
+    const directions: Record<string, Point> = {
+      ArrowUp: { x: 0, y: -1 },
+      ArrowDown: { x: 0, y: 1 },
+      ArrowLeft: { x: -1, y: 0 },
+      ArrowRight: { x: 1, y: 0 },
+    };
+    const direction = directions[event.key],
+      el = getPlayer();
+    if (!direction || !el) return;
+    event.preventDefault();
+    const rect = el.getBoundingClientRect(),
+      step = event.shiftKey ? 4 : 20;
+    place({ x: rect.x + direction.x * step, y: rect.y + direction.y * step });
   }
-  const nextLabel = [
-    "Move player left",
-    "Move player top left",
-    "Move player top right",
-    "Move player bottom right",
-  ][corners.indexOf(anchor)];
   return {
-    anchor,
+    anchor: "right",
     dragging,
     startDrag,
     moveDrag,
     endDrag,
     cancelDrag,
-    cycle,
     keyDown,
-    nextLabel,
   };
 }

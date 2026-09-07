@@ -24,6 +24,8 @@ type DirectMediaPlayerProps = {
   className?: string;
   liveRoom: LiveRoomState;
   mode: PlaybackMode;
+  renderVideo?: boolean;
+  poster?: string;
 };
 
 const AUTOPLAY_ADVANCE_IN_FLIGHT_TIMEOUT_MS = 6_000;
@@ -32,6 +34,8 @@ export function DirectMediaPlayer({
   className,
   liveRoom,
   mode,
+  renderVideo,
+  poster,
 }: DirectMediaPlayerProps) {
   const canonicalState = useMemo(
     () => buildCanonicalPlaybackState(liveRoom, mode),
@@ -47,6 +51,8 @@ export function DirectMediaPlayer({
       className={className}
       liveRoom={liveRoom}
       mode={mode}
+      renderVideo={renderVideo}
+      poster={poster}
     />
   );
 }
@@ -60,6 +66,8 @@ function DirectMediaPlayerCore({
   className,
   liveRoom,
   mode,
+  renderVideo,
+  poster,
 }: DirectMediaPlayerCoreProps) {
   const mediaRef = useRef<HTMLMediaElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -174,7 +182,7 @@ function DirectMediaPlayerCore({
     let disposed = false;
 
     media.volume = readStoredPlayerVolume();
-    media.muted = false;
+    media.muted = media.volume === 0;
 
     const resetStateTimer = window.setTimeout(() => {
       setAutoplayBlocked(false);
@@ -484,7 +492,7 @@ function DirectMediaPlayerCore({
     publishMediaState("ended");
   }
 
-  const Element = mode === "listen" ? "audio" : "video";
+  const Element = mode === "listen" && !renderVideo ? "audio" : "video";
 
   return (
     <>
@@ -493,6 +501,7 @@ function DirectMediaPlayerCore({
           mode === "listen" ? "Synced audio player" : "Synced video player"
         }
         className={className}
+        poster={poster}
         controls={fullscreenControlsActive}
         onCanPlay={() => {
           if (canonicalState?.status === "buffering" && mediaRef.current) {

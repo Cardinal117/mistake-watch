@@ -72,7 +72,7 @@ qa(
     await expect(iframe).toBeVisible();
     await expect(iframe).toHaveAttribute("data-controls", "0");
     const original = await iframe.elementHandle();
-    for (const name of ["Browse media", "Open cinema", "Back to browsing"])
+    for (const name of ["Open cinema", "Back to browsing"])
       await page.getByRole("button", { name, exact: true }).click();
     await page.setViewportSize({ width: 390, height: 844 });
     for (const name of ["Queue", "Add", "Social", "More"]) {
@@ -98,15 +98,16 @@ qa(
       ).toBe(true);
     }
     await page
-      .getByRole("button", { name: "Move player left", exact: true })
-      .click();
+      .getByRole("button", { name: "Move player", exact: true })
+      .press("ArrowLeft");
     await page
-      .getByRole("button", { name: "Expand player", exact: true })
+      .getByRole("button", { name: "Minimize player", exact: true })
       .click();
     expect(await original!.evaluate((i) => i.isConnected)).toBe(true);
+    await page.getByRole("button", { name: /Restore player/ }).click();
     expect(await page.evaluate(() => window.watchQA!.calls)).toEqual([]);
     await page
-      .getByRole("button", { name: "Open full player", exact: true })
+      .getByRole("button", { name: "Open cinema", exact: true })
       .click();
     await page
       .getByRole("button", { name: "Fullscreen video", exact: true })

@@ -1,21 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   ArrowLeft,
-  ArrowLeftRight,
+  ChevronUp,
+  Minus,
   GripHorizontal,
   Home,
-  Library,
-  Link2,
   ListVideo,
-  Maximize2,
   MoreHorizontal,
   Plus,
   Users,
 } from "lucide-react";
 import { useMediaPreferences } from "@/lib/recommendations/use-media-preferences";
+import { RoomHomeToolbar } from "../shared/room-home-toolbar";
 import { MediaStage } from "../media-stage";
 import { TransportControls } from "../transport-controls";
 import type { WatchModeLayoutProps } from "./contracts";
@@ -25,6 +24,7 @@ import { WatchBrowser } from "./browse/watch-browser";
 import { WatchRoomHeader } from "./watch-room-header";
 import { LazyMediaPoster } from "./library/lazy-media-poster";
 import { useWatchViewport } from "./use-watch-viewport";
+import { useWatchDockBounds } from "./use-watch-dock-bounds";
 import { useWatchDock } from "./use-watch-dock";
 import type { WatchHomeView, WatchWorkspace } from "./watch-navigation";
 import { ListenAmbientBackdrop } from "../listen/theme/listen-theme";
@@ -34,6 +34,7 @@ import {
   WatchFullscreenContext,
 } from "./use-watch-fullscreen";
 import "./watch-room.css";
+import "./watch-browse-layout.css";
 import "./watch-fullscreen.css";
 
 function WatchPanelLoading() {
@@ -68,12 +69,10 @@ export function WatchModeLayout({
   stageRef,
 }: WatchModeLayoutProps) {
   const [screen, setScreen] = useState<WatchWorkspace>("home");
-  const [homeView, setHomeView] = useState<WatchHomeView>(
-    liveRoom.snapshot.session?.sourceUrl ? "watch" : "browse",
-  );
+  const [homeView, setHomeView] = useState<WatchHomeView>("browse");
   const [cinema, setCinema] = useState(false);
   const [cinemaReturn, setCinemaReturn] = useState<WatchWorkspace>("home");
-  const [expanded, setExpanded] = useState(false);
+  const [minimizedSource, setMinimizedSource] = useState<string | null>(null);
   const restoreFocus = useRef<HTMLElement | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const {
@@ -87,7 +86,8 @@ export function WatchModeLayout({
     liveRoom.snapshot.session?.status === "playing",
     liveRoom.snapshot.session?.sourceType,
   );
-  const dock = useWatchDock();
+  const shellRef = useWatchDockBounds();
+  const dock = useWatchDock(shellRef);
   const viewport = useWatchViewport();
   const library = useMediaLibrary();
   const preferences = useMediaPreferences({
@@ -102,10 +102,22 @@ export function WatchModeLayout({
     account.status === "signed-in" &&
     account.role === "owner" &&
     account.accountStatus === "active";
+  const hasSource = Boolean(liveRoom.snapshot.session?.sourceUrl);
+  // Only a resolved denial changes the default source surface. Loading and errors
+  // remain in the catalogue so its status and retry action stay available.
+  const catalogueDenied =
+    !library.assetLoading &&
+    !library.assetError &&
+    library.libraryAccess?.canAccessUploadedCatalogue === false;
+  const workspace = screen === "home" && catalogueDenied ? "add" : screen;
+  const visibleHome = hasSource ? homeView : "browse";
+  const paused = liveRoom.snapshot.session?.status === "paused";
+  const activeItem = items.find((item) => item.status === "now");
+  const sourceUrl = liveRoom.snapshot.session?.sourceUrl ?? "";
   const docked =
-    Boolean(liveRoom.snapshot.session?.sourceUrl) &&
-    !cinema &&
-    (screen !== "home" || homeView === "browse");
+    hasSource && !cinema && (screen !== "home" || visibleHome === "browse");
+
+  const minimized = docked && paused && minimizedSource === sourceUrl;
 
   useEffect(() => {
     // Each workspace starts at its heading; the catalogue owns its own preserved scroll.
@@ -115,10 +127,13 @@ export function WatchModeLayout({
   function navigate(next: WatchWorkspace) {
     setScreen(next);
     setCinema(false);
-    setExpanded(false);
-    if (next === "home") setHomeView("watch");
+    setMinimizedSource(null);
+    if (next === "home") setHomeView(hasSource ? "watch" : "browse");
     requestAnimationFrame(() =>
-      (next === "home" ? stageRef.current : contentRef.current)?.focus(),
+      (next === "home" && hasSource
+        ? stageRef.current
+        : contentRef.current
+      )?.focus(),
     );
   }
   function browse() {
@@ -126,7 +141,7 @@ export function WatchModeLayout({
     setScreen("home");
     setHomeView("browse");
     setCinema(false);
-    setExpanded(false);
+    setMinimizedSource(null);
   }
   function openCinema() {
     setCinemaReturn(screen);
@@ -142,7 +157,9 @@ export function WatchModeLayout({
     }
     requestAnimationFrame(() => restoreFocus.current?.focus());
   }
-  useEffect(() => {
+  // Install against the committed view before the next keyboard event, including
+  // a fast Escape immediately after the dock's Cinema button is activated.
+  useLayoutEffect(() => {
     function escape(event: KeyboardEvent) {
       if (
         event.key !== "Escape" ||
@@ -151,7 +168,7 @@ export function WatchModeLayout({
         return;
       if (fullscreenActive) return;
       if (cinema) backToBrowse();
-      else if (expanded) setExpanded(false);
+      else if (minimizedSource) setMinimizedSource(null);
     }
     window.addEventListener("keydown", escape);
     return () => window.removeEventListener("keydown", escape);
@@ -163,14 +180,16 @@ export function WatchModeLayout({
     >
       <div
         className="watch-redesign"
+        ref={shellRef}
         style={{ ...themeStyle, ...viewport.style }}
         data-short={viewport.short}
-        data-cinema={cinema}
+        data-cinema={cinema && hasSource}
         data-screen={screen}
-        data-home={homeView}
+        data-home={visibleHome}
+        data-has-source={hasSource}
         data-docked={docked}
         data-provider={liveRoom.snapshot.session?.sourceType}
-        data-expanded={expanded}
+        data-minimized={minimized}
         data-anchor={dock.anchor}
         data-dragging={dock.dragging}
       >
@@ -196,30 +215,12 @@ export function WatchModeLayout({
                     ? "library management"
                     : cinemaReturn)}
             </button>
-          ) : (
-            <>
-              <button
-                className="watch-mobile-watch"
-                aria-pressed={screen === "home" && homeView === "watch"}
-                onClick={() => navigate("home")}
-              >
-                Watch
-              </button>
-              <button
-                aria-pressed={screen === "home" && homeView === "browse"}
-                onClick={browse}
-              >
-                Browse media
-              </button>
-              {screen !== "home" && (
-                <span>{screen === "manage" ? "Manage library" : screen}</span>
-              )}
-            </>
-          )}
+          ) : null}
         </div>
         <main className="watch-main">
           <section
             className="watch-player"
+            hidden={!hasSource}
             aria-label="Watch stage"
             ref={fullscreenPlayerRef}
             data-watch-fullscreen
@@ -229,31 +230,47 @@ export function WatchModeLayout({
             onPointerDown={revealFullscreen}
             onFocusCapture={revealFullscreen}
           >
+            <button
+              className="watch-paused-bar"
+              hidden={!minimized}
+              aria-label={`Restore player: ${liveRoom.snapshot.session?.sourceTitle ?? "Paused media"}`}
+              onClick={() => setMinimizedSource(null)}
+            >
+              <span className="watch-paused-art">
+                {activeItem?.thumbnailUrl && (
+                  <LazyMediaPoster src={activeItem.thumbnailUrl} />
+                )}
+              </span>
+              <span>
+                <strong>
+                  {liveRoom.snapshot.session?.sourceTitle ?? "Paused media"}
+                </strong>
+                <small>Paused</small>
+              </span>
+              <ChevronUp aria-hidden />
+            </button>
             <div className="watch-dock-frame">
               <button
                 className="watch-drag-handle"
-                aria-label="Drag player to a corner"
+                aria-label="Move player"
                 onKeyDown={dock.keyDown}
                 onPointerMove={dock.moveDrag}
                 onPointerDown={dock.startDrag}
                 onPointerUp={dock.endDrag}
                 onPointerCancel={dock.cancelDrag}
+                onLostPointerCapture={dock.cancelDrag}
               >
                 <GripHorizontal />
               </button>
-              <button aria-label={dock.nextLabel} onClick={dock.cycle}>
-                <ArrowLeftRight />
-              </button>
               <button
-                aria-label={expanded ? "Shrink player" : "Expand player"}
-                onClick={() => setExpanded((v) => !v)}
+                aria-label="Minimize player"
+                disabled={!paused}
+                title={paused ? "Minimize paused player" : "Pause to minimize"}
+                onClick={() => setMinimizedSource(sourceUrl)}
               >
-                <Maximize2 />
+                <Minus />
               </button>
-              <button
-                aria-label="Open full player"
-                onClick={() => navigate("home")}
-              >
+              <button aria-label="Open cinema" onClick={openCinema}>
                 <Home />
               </button>
             </div>
@@ -279,14 +296,6 @@ export function WatchModeLayout({
                 {fullscreenError}
               </p>
             )}
-            <button
-              hidden={cinema}
-              className="watch-cinema-button"
-              onClick={openCinema}
-            >
-              <Maximize2 />
-              Open cinema
-            </button>
             {!cinema && (
               <div className="watch-up-next">
                 <div className="watch-shelf-heading">
@@ -320,26 +329,30 @@ export function WatchModeLayout({
             )}
           </section>
           <div className="watch-content" ref={contentRef} tabIndex={-1}>
-            {(screen === "home" || screen === "add") && (
-              <div className="watch-source-bar">
-                <div
-                  className="watch-source-switch"
-                  role="group"
-                  aria-label="Media source"
-                >
-                  <button aria-pressed={screen === "home"} onClick={browse}>
-                    <Library aria-hidden /> Catalogue
-                  </button>
-                  <button
-                    aria-pressed={screen === "add"}
-                    onClick={() => navigate("add")}
-                  >
-                    <Link2 aria-hidden /> YouTube & links
-                  </button>
-                </div>
-              </div>
+            {(screen === "home" || screen === "add" || screen === "more") && (
+              <RoomHomeToolbar
+                mode="watch"
+                canSwitch={liveRoom.canManageAuthority && connected}
+                onSwitchMode={liveRoom.switchMode}
+                selected={
+                  workspace === "home"
+                    ? "catalogue"
+                    : workspace === "add"
+                      ? "links"
+                      : null
+                }
+                options={[
+                  ...(!catalogueDenied
+                    ? [{ id: "catalogue", label: "Catalogue" }]
+                    : []),
+                  { id: "links", label: "YouTube & links" },
+                ]}
+                onSelect={(id) =>
+                  id === "catalogue" ? browse() : navigate("add")
+                }
+              />
             )}
-            <div className="watch-home-content" hidden={screen !== "home"}>
+            <div className="watch-home-content" hidden={workspace !== "home"}>
               <WatchBrowser
                 library={library}
                 items={items}
@@ -351,9 +364,10 @@ export function WatchModeLayout({
                 isOwner={isOwner}
               />
             </div>
-            {screen !== "home" && screen !== "manage" && (
+            {workspace !== "home" && workspace !== "manage" && (
               <WatchWorkspaces
-                screen={screen}
+                screen={workspace}
+                catalogueAvailable={!catalogueDenied}
                 room={room}
                 liveRoom={liveRoom}
                 account={account}
@@ -365,6 +379,13 @@ export function WatchModeLayout({
             )}
             {screen === "manage" && isOwner && (
               <div className="watch-workspace-content">
+                <button
+                  className="room-settings-back"
+                  onClick={() => navigate("more")}
+                >
+                  <ArrowLeft aria-hidden />
+                  Back to settings
+                </button>
                 <h2 className="watch-page-title">Manage library</h2>
                 <WatchMediaHubDiscovery
                   initialTab="uploads"

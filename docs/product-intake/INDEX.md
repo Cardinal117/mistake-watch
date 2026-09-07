@@ -33,6 +33,14 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 
 ## Current Focus
 
+Owner-approved next work (2026-09-07):
+[TASK-027](../tasks/TASK-027-room-flow-and-queue-response/proposal.md), documentation
+prepared before implementation. It covers queue feedback/concurrency and Watch
+virtualization, Listen gesture parity, playlist layout, Watch browsing/header,
+and mobile Listen compact-bar expansion. MW-QOL-002 stays in progress;
+MW-QOL-001 remains related and is not closed by partial provider-chrome work.
+All earlier unresolved bug statuses below remain unchanged.
+
 TASK-026 Watch redesign passed owner physical Huawei QA on 2026-09-05; PR #12 is merged
 and production is verified. [Release evidence](../tasks/TASK-026-watch-room-redesign/release.md)
 and [report-by-report reconciliation](../tasks/TASK-026-watch-room-redesign/bug-reconciliation.md)

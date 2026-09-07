@@ -608,7 +608,8 @@ export function YoutubeMediaPlayer({
 
               const startupVolume = Math.round(readStoredPlayerVolume() * 100);
               player.setVolume(startupVolume);
-              player.unMute();
+              if (startupVolume > 0) player.unMute();
+              else player.mute();
               applyCanonicalVideoToPlayer(player);
               scheduleMetadataRefresh(player);
             },

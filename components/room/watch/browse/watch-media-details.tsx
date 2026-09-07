@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowLeft, Heart, ListPlus, Play, Plus } from "lucide-react";
+import { Heart, ListPlus, Play, Plus } from "lucide-react";
 import type { RoomQueueItem } from "@/lib/rooms";
 import type { LiveRoomState } from "@/lib/spacetime";
 import type { MediaPreferenceController } from "@/lib/recommendations/use-media-preferences";
@@ -161,10 +161,6 @@ export function WatchMediaDetails({
 
   return (
     <section className="watch-details" aria-label="Media details">
-      <button className="watch-back" onClick={onClose}>
-        <ArrowLeft />
-        Back to results
-      </button>
       <div className="watch-detail-art">
         {item.thumbnailUrl ? (
           <LazyMediaPoster src={item.thumbnailUrl} eager />

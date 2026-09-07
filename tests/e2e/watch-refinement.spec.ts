@@ -1,3 +1,4 @@
+import { openBrowsing } from "./watch-navigation-helpers";
 import { expect, test, type Page } from "@playwright/test";
 import { previewArtwork } from "../fixtures/watch-preview-data";
 const qa = process.env.WATCH_DESIGN_QA === "1" ? test : test.skip;
@@ -37,7 +38,7 @@ qa(
 async function open(page: Page) {
   await page.goto("/dev/watch-design");
   await expect(page.locator("video")).toHaveJSProperty("readyState", 4);
-  await expect(page.locator(".watch-source-switch")).toBeAttached();
+  await expect(page.getByRole("tablist", { name: "Media source" })).toBeAttached();
 }
 const primary = (page: Page) =>
   page
@@ -69,9 +70,7 @@ qa(
       )
       .not.toBe(originalBackground);
     const next = await primary(page);
-    await page
-      .getByRole("button", { name: "Browse media", exact: true })
-      .click();
+    await openBrowsing(page);
     await page
       .getByRole("button", { name: "Details: Afterlight", exact: true })
       .click();
@@ -97,9 +96,7 @@ qa(
   "Search uses its outer border and transport uses Listen sliders with real values",
   async ({ page }) => {
     await open(page);
-    await page
-      .getByRole("button", { name: "Browse media", exact: true })
-      .click();
+    await openBrowsing(page);
     const search = page.getByRole("searchbox", { name: "Search media" });
     await search.click();
     expect(
@@ -135,20 +132,18 @@ qa(
   async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await open(page);
-    await page
-      .getByRole("button", { name: "Browse media", exact: true })
-      .click();
+    await openBrowsing(page);
     await page
       .getByRole("searchbox", { name: "Search media" })
       .fill("Afterlight");
     await page
-      .getByRole("button", { name: "YouTube & links", exact: true })
+      .getByRole("tab", { name: "YouTube & links", exact: true })
       .click();
     await expect(
       page.getByRole("heading", { name: "Add media", exact: true }),
     ).toBeInViewport();
     await expect(
-      page.getByRole("button", { name: "Catalogue", exact: true }),
+      page.getByRole("tab", { name: "Catalogue", exact: true }),
     ).toBeInViewport();
     await page
       .getByRole("button", { name: "Browse uploaded catalogue", exact: true })
@@ -210,9 +205,7 @@ qa(
     await expect(summary).toBeFocused();
     await expect(popover).toBeHidden();
     await summary.click();
-    await page
-      .getByRole("button", { name: "Browse media", exact: true })
-      .click();
+    await openBrowsing(page);
     await expect(popover).toBeHidden();
   },
 );
@@ -247,7 +240,7 @@ for (const width of [320, 390, 430])
         page.getByRole("heading", { name: "Add media", exact: true }),
       ).toBeInViewport();
       await expect(
-        page.getByRole("button", { name: "Catalogue", exact: true }),
+        page.getByRole("tab", { name: "Catalogue", exact: true }),
       ).toBeInViewport();
       expect(
         await content.evaluate(

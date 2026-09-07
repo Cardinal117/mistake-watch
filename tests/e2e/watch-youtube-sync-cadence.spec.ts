@@ -72,6 +72,7 @@ for (const delay of [0, 1600])
       );
       const frame = page.getByTitle("YouTube cadence fixture");
       await expect(frame).toBeVisible();
+      await frame.evaluate((el) => el.setAttribute("data-original", "yes"));
       await page
         .getByRole("navigation", { name: "Room navigation" })
         .getByRole("button", { name: "Queue", exact: true })
@@ -79,10 +80,10 @@ for (const delay of [0, 1600])
       const positionDuringUpdates = await page.evaluate(async () => {
         window.watchQA!.setPosition(25);
         let revision = 0;
-        const updates = setInterval(
-          () => window.watchQA!.setRoomName(`Room update ${++revision}`),
-          100,
-        );
+        const updates = setInterval(() => {
+          window.watchQA!.setRoomName(`Room update ${++revision}`);
+          window.watchQA!.setPlaybackPermission(revision % 2 === 0);
+        }, 100);
         await new Promise((resolve) => setTimeout(resolve, 4000));
         const position = Number(
           document.querySelector<HTMLIFrameElement>(
@@ -93,5 +94,6 @@ for (const delay of [0, 1600])
         return position;
       });
       expect(positionDuringUpdates).toBe(25);
+      await expect(frame).toHaveAttribute("data-original", "yes");
     },
   );

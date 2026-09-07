@@ -1,3 +1,4 @@
+import { registerRelativeQueueMove } from "./relative-queue-move";
 import { t } from "spacetimedb/server";
 import { registerPreparedYouTubeReducers } from "./prepared-youtube";
 import {
@@ -2112,3 +2113,10 @@ const preparedYouTube = registerPreparedYouTubeReducers({
 });
 export const prepare_youtube_autoplay = preparedYouTube.prepare;
 export const start_prepared_youtube = preparedYouTube.start;
+
+export const move_queue_item_relative = registerRelativeQueueMove({
+  getAuthorizedQueueManager,
+  queuedQueueItems,
+  replaceQueueItem,
+  recordQueueRecommendationEvent,
+});

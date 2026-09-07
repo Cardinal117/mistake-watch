@@ -1,8 +1,42 @@
 # Mistake Watch Handoff
 
-Updated: 2026-09-05
+## Free-position player deployment — 2026-09-07
 
-## Current State
+Watch free positioning is live at https://watch.mistakestudios.com from `1cc7832`
+(application commit `1485718`), deployment `dpl_2szjneG7xb5SpDtdaKjC1ijGkrGL`.
+Immutable URL: https://mistake-watch-ixh1ei4jz-cardinal117s-projects.vercel.app.
+The clean 1,149-file archive passed the production Turbopack build. Production
+alias verified; health/readiness 200; Watch design route 404. These are smoke
+checks; owner live QA is now accepted and merge is authorized subject to green checks.
+Rollback target is the prior fine-tuning release `dpl_AEkhfVx3PikrQ4e1YPe9HR4SztgE`.
+No backend changes. Code, design contract, README and focused QA are committed and
+pushed. Keep this release live for requested QA.
+
+
+## Previous checkpoint — TASK-027 fine-tuning live (2026-09-07)
+
+Owner passed three-device live QA on Opera, Opera GX and Huawei Chrome. The
+follow-up application at `fe7b28c` is now deployed as
+`dpl_AEkhfVx3PikrQ4e1YPe9HR4SztgE` on https://watch.mistakestudios.com.
+Clean Vercel Turbopack build passed; health/readiness return 200, development
+routes return 404, and the dashboard was browser-verified.
+
+Atomic fixes: `eacaad4` connection lifetime, `6342bc0` player/UI fine tuning;
+`fe7b28c` records local QA. Branch `codex/task-027-room-flow` is pushed; draft
+PR #13 remains unmerged for targeted rename/permission YouTube, volume switching,
+fullscreen and Huawei timing acceptance. The token error remains unreproduced.
+
+The immediately previous working frontend `dpl_2rG6qaf8oMmzbSWm453DTUQqfX8X`
+is retained for rollback. Backend is unchanged by fine tuning; no new Supabase,
+SpacetimeDB or Worker deployment was needed. Keep this release live pending
+acceptance; do not automatically restore an older release.
+
+[Fine-tuning scope and QA](tasks/TASK-027-room-flow-and-queue-response/live-qa-fine-tuning.md)
+and [release record](tasks/TASK-027-room-flow-and-queue-response/release-candidate.md)
+are canonical. Local previews remain on port 5383. Preserve separate owner
+Media Session work and other unrelated checkout changes.
+
+## Previous accepted baseline (superseded during the TASK-027 QA window)
 
 TASK-026 Watch redesign is owner-accepted after the final Huawei production QA
 on 2026-09-05. PR #12 merged as
@@ -206,6 +240,19 @@ verified discrepancy is documented rather than silently rewritten.
 
 ## Next Product Direction
 
+Owner approved [TASK-027 room flow and responsive queue](tasks/TASK-027-room-flow-and-queue-response/proposal.md)
+on 2026-09-07, explicitly requiring documentation before implementation. The
+isolated `codex/task-027-room-flow` worktree starts at refreshed main `c0b8247`.
+Documentation is prepared; application work remains pending. Follow its ordered
+queue/playlist, Watch browsing/header, then mobile Listen compact-bar/drag-up
+batches and acceptance matrix. No additional approval is needed for scoped
+local implementation; Git/production release remains separate.
+
+The original checkout's dirty Listen/transport/Media Session work and untracked
+TASK-025 draft remain untouched. Reconcile those overlaps before Listen edits.
+The new compact bar direction replaces the earlier floating Listen dock proposal
+for TASK-027, while TASK-025's broader performance investigation stays separate.
+
 TASK-026 Watch browsing/touch flow is accepted. Recommendation shelves and
 provider-account signals remain follow-ups; Watch completion does not close the
 full TASK-002.10F Add/Discover/recommendation direction.
@@ -217,3 +264,20 @@ The next existing backlog priority is to verify MW-BUG-003 in the affected
 participant profile. Later evidence work covers TASK-015C performance/shared
 timing and reconciliation of the already-released Account Rooms owner QA. TASK-020 and TASK-022
 are complete and no longer block the release order.
+
+### TASK-027 first local candidate
+
+Queue responsiveness/virtualization and playlist repair are implemented locally.
+[QA links, results and remaining acceptance](tasks/TASK-027-room-flow-and-queue-response/local-qa.md).
+This earlier checkpoint preceded 027.3 below; mobile Listen 027.4 remains pending.
+No production release or Git publication is included in this checkpoint.
+
+
+### TASK-027.3 local Watch review
+
+The browse-first Watch shell and shared header are implemented locally in the
+TASK-027 worktree. [027.3 behavior, QA and review routes](tasks/TASK-027-room-flow-and-queue-response/watch-local-qa.md)
+separate fixture checks from real-room/device acceptance. No release was made;
+027.4 mobile Listen expansion remains the next implementation slice.
+
+Owner QA refinements are documented in [027.3 follow-up](tasks/TASK-027-room-flow-and-queue-response/watch-refinements.md): Cinema/paused player, body dragging, compact mode controls and continuous browsing surfaces. Local only.

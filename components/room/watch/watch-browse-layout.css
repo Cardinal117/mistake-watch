@@ -1,0 +1,641 @@
+/* TASK-027: browsing owns the width; the same mounted stage docks over it. */
+.watch-header-people {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.watch-mobile-mode {
+  display: none;
+}
+.watch-viewbar .watch-view-cinema {
+  margin-left: auto;
+  color: var(--color-primary);
+}
+.watch-redesign[data-has-source="false"] .watch-player {
+  display: none;
+}
+.watch-redesign[data-has-source="false"] .watch-main {
+  display: block;
+}
+.watch-redesign[data-has-source="false"] .watch-content {
+  display: flex;
+  height: 100%;
+}
+.watch-redesign[data-has-source="false"] .watch-main {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+@media (min-width: 768px) {
+  .watch-redesign[data-docked="true"] .watch-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .watch-redesign[data-docked="true"] .watch-player:not(:fullscreen) {
+    position: fixed;
+    z-index: 130;
+    right: 12px;
+    bottom: var(--watch-dock-bottom, 12px);
+    width: 334px;
+    height: auto;
+    max-height: var(--watch-dock-height, calc(100dvh - 148px));
+    padding: 6px;
+    overflow: auto;
+    overscroll-behavior: contain;
+    background: linear-gradient(
+      145deg,
+      rgb(var(--listen-background-primary)),
+      var(--color-surface-container-lowest)
+    );
+    border: 1px solid rgb(var(--listen-primary) / 0.28);
+    border-radius: 12px;
+    box-shadow: 0 10px 36px #0008;
+  }
+  .watch-redesign[data-docked="true"] .watch-viewport {
+    width: 100%;
+    height: 180px;
+    min-height: 0;
+    max-height: none;
+    border-radius: 8px;
+  }
+  .watch-redesign[data-docked="true"][data-provider="youtube"] .watch-viewport {
+    height: 200px;
+  }
+  .watch-redesign[data-docked="true"] .watch-dock-frame {
+    display: flex;
+    height: 44px;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .watch-dock-frame button {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+  }
+  .watch-drag-handle {
+    touch-action: none;
+    cursor: grab;
+  }
+  .watch-redesign[data-dragging="true"] .watch-player {
+    outline: 2px solid var(--color-primary);
+  }
+  .watch-redesign[data-docked="true"]
+    :is(.watch-up-next, .watch-transport-title) {
+    display: none;
+  }
+  .watch-redesign[data-docked="true"] .watch-transport {
+    margin: 0;
+  }
+  .watch-redesign[data-docked="true"] .watch-transport-primary {
+    margin: 0;
+    gap: 0;
+  }
+  .watch-redesign[data-docked="true"] .watch-transport-secondary {
+    margin: 0;
+  }
+  .watch-redesign[data-docked="true"] .watch-cinema-button {
+    margin-top: 4px;
+  }
+  .watch-redesign[data-docked="true"][data-expanded="true"]
+    .watch-player:not(:fullscreen) {
+    width: min(520px, calc(100vw - 24px));
+  }
+  .watch-redesign[data-docked="true"][data-expanded="true"] .watch-viewport {
+    height: auto;
+    min-height: 200px;
+    aspect-ratio: 16 / 9;
+  }
+  .watch-redesign[data-docked="true"][data-anchor="left"]
+    .watch-player:not(:fullscreen),
+  .watch-redesign[data-docked="true"][data-anchor="top-left"]
+    .watch-player:not(:fullscreen) {
+    left: 12px;
+    right: auto;
+  }
+  .watch-redesign[data-docked="true"][data-anchor^="top"]
+    .watch-player:not(:fullscreen) {
+    top: var(--watch-dock-top, 136px);
+    bottom: auto;
+  }
+  .watch-redesign[data-docked="true"]
+    :is(.watch-browse-scroll, .watch-workspace-content) {
+    padding-bottom: 440px;
+  }
+}
+@media (max-width: 767px), (max-width: 950px) and (max-height: 600px) {
+  .watch-header-people {
+    gap: 8px;
+  }
+  .watch-redesign {
+    grid-template-rows: 64px auto minmax(0, 1fr) auto;
+  }
+  .watch-viewbar {
+    height: auto;
+    min-height: 44px;
+    flex-wrap: wrap;
+    gap: 0 16px;
+    padding: 0 12px;
+  }
+  .watch-mobile-mode {
+    display: block;
+    flex-basis: 100%;
+    padding: 4px 0;
+  }
+  .watch-mobile-mode [role="tablist"] {
+    max-width: 320px;
+    margin: 0 auto;
+  }
+  .watch-mobile-mode [role="tab"] {
+    min-height: 36px;
+  }
+  .watch-mobile-mode [aria-selected="true"] {
+    color: var(--color-primary);
+    background: rgb(var(--listen-primary) / 0.12);
+  }
+  .watch-viewbar button {
+    min-height: 44px;
+  }
+  .watch-viewbar .watch-mobile-watch[hidden] {
+    display: none;
+  }
+}
+@media (max-width: 767px) and (min-height: 601px) {
+  .watch-redesign[data-docked="true"][data-anchor^="top"]
+    .watch-player:not(:fullscreen) {
+    top: var(--watch-dock-top, 168px);
+    bottom: auto;
+  }
+  .watch-redesign[data-docked="true"]:not([data-short="true"])
+    .watch-player:not(:fullscreen) {
+    max-height: var(--watch-dock-height);
+    overflow-y: auto;
+  }
+}
+/* Short landscape retains the accepted mobile side dock, not a floating video
+   over most of the available browsing area. Empty rooms never reserve that side. */
+@media (min-width: 768px) and (max-width: 950px) and (max-height: 600px) {
+  .watch-redesign[data-docked="true"] .watch-main {
+    grid-template-columns: minmax(336px, 48%) minmax(0, 1fr);
+  }
+  .watch-redesign[data-docked="true"] .watch-player:not(:fullscreen) {
+    position: static;
+    width: auto;
+    height: 100%;
+    max-height: none;
+  }
+  .watch-redesign[data-docked="true"] .watch-dock-frame {
+    display: none;
+  }
+  .watch-redesign[data-docked="true"]
+    :is(.watch-browse-scroll, .watch-workspace-content) {
+    padding-bottom: 24px;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 950px) and (max-height: 600px) {
+  .watch-redesign {
+    grid-template-rows: 44px auto minmax(0, 1fr) auto;
+  }
+  .watch-room-header {
+    height: 44px;
+  }
+  .watch-mobile-mode {
+    flex: 0 1 180px;
+    padding: 0;
+  }
+  .watch-mobile-mode [role="tablist"] {
+    margin: 0;
+  }
+  .watch-viewbar .watch-mobile-watch {
+    display: none;
+  }
+  .watch-viewbar {
+    flex-wrap: nowrap;
+  }
+  .watch-redesign[data-cinema="true"] {
+    grid-template-rows: 44px auto minmax(0, 1fr);
+  }
+}
+
+.watch-redesign[data-cinema="true"][data-has-source="true"]
+  .watch-player:not(:fullscreen) {
+  display: flex;
+}
+@media (min-width: 600px) and (max-width: 950px) and (max-height: 600px) {
+  .watch-redesign[data-docked="true"] .watch-viewport {
+    height: 200px;
+  }
+}
+
+@media (min-width: 951px), (min-width: 768px) and (min-height: 601px) {
+  .watch-room-header {
+    height: auto;
+    min-height: 76px;
+    flex-wrap: wrap;
+    padding-block: 12px;
+    gap: 8px 16px;
+  }
+  .watch-room-identity {
+    flex: 1 1 180px;
+    min-width: 0;
+  }
+  .watch-desktop-mode {
+    width: auto;
+    min-width: 176px;
+  }
+  .watch-desktop-mode [role="tab"] {
+    height: auto;
+    min-height: 32px;
+  }
+  .watch-room-name input {
+    height: auto;
+    min-height: 32px;
+  }
+  .watch-header-people {
+    margin-left: auto;
+  }
+  .watch-account-button > div {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* Cinema keeps the stage flexible and every control inside one transport area. */
+.watch-redesign[data-cinema="true"][data-has-source="true"]
+  .watch-player:not(:fullscreen) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+.watch-redesign[data-cinema="true"] .watch-viewport {
+  flex: 1 1 0;
+  height: auto;
+  min-height: 200px;
+  aspect-ratio: auto;
+}
+.watch-redesign[data-cinema="true"] .watch-transport {
+  width: 100%;
+  max-width: 1200px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 24px;
+  margin: 12px auto 0;
+  flex: 0 0 auto;
+}
+.watch-redesign[data-cinema="true"]
+  :is(.watch-transport-title, .watch-seek, .watch-time) {
+  grid-column: 1 / -1;
+}
+.watch-redesign[data-cinema="true"] .watch-transport-secondary {
+  position: static;
+  min-width: 240px;
+}
+.watch-redesign[data-cinema="true"] .watch-transport-primary {
+  justify-content: flex-start;
+}
+.watch-paused-bar {
+  display: flex;
+  width: 100%;
+  min-height: 52px;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+.watch-paused-art {
+  width: 48px;
+  height: 40px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 6px;
+  background: rgb(var(--listen-primary) / 0.1);
+}
+.watch-paused-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.watch-paused-bar > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.watch-paused-bar strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+.watch-paused-bar small {
+  color: var(--color-on-surface-variant);
+  font-size: 12px;
+}
+.watch-redesign[data-minimized="true"] .watch-player:not(:fullscreen) {
+  width: min(300px, calc(100vw - 24px));
+  height: auto;
+  min-height: 0;
+  padding: 6px;
+}
+.watch-redesign[data-minimized="true"]
+  .watch-player:not(:fullscreen)
+  > :not(.watch-paused-bar):not(.watch-viewport) {
+  display: none;
+}
+/* Keep the paused provider mounted at valid dimensions; restoration never loads
+   another iframe. Playing state immediately restores its normal presentation. */
+.watch-redesign[data-minimized="true"]
+  .watch-player:not(:fullscreen)
+  .watch-viewport {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+}
+@media (max-width: 767px) {
+  .watch-redesign[data-cinema="true"] .watch-transport {
+    grid-template-columns: 1fr;
+  }
+  .watch-redesign[data-cinema="true"] .watch-transport-primary {
+    justify-content: center;
+  }
+  .watch-redesign[data-docked="true"] .watch-transport-secondary {
+    display: flex;
+    position: static;
+    gap: 4px;
+  }
+  .watch-redesign[data-docked="true"]
+    :is(
+      .watch-volume-value,
+      .watch-transport-secondary > button[aria-pressed]
+    ) {
+    display: none;
+  }
+  .watch-redesign[data-docked="true"] .watch-volume {
+    gap: 4px;
+  }
+}
+@media (max-height: 600px) and (max-width: 950px) {
+  .watch-redesign[data-minimized="true"] .watch-main {
+    display: block;
+  }
+  .watch-redesign[data-minimized="true"] .watch-player:not(:fullscreen) {
+    position: fixed;
+    z-index: 130;
+    right: 12px;
+    bottom: var(--watch-dock-bottom, 64px);
+    display: block;
+  }
+}
+
+/* A hidden, mounted provider must not turn the paused bar into a scroll area. */
+.watch-redesign[data-docked="true"][data-minimized="true"]
+  .watch-player:not(:fullscreen) {
+  overflow: clip;
+}
+
+@media (min-width: 600px) and (max-width: 950px) and (max-height: 600px) {
+  .watch-redesign[data-docked="true"]:not([data-minimized="true"])
+    .watch-dock-frame {
+    display: flex;
+    justify-content: flex-end;
+  }
+  .watch-redesign[data-docked="true"] .watch-drag-handle {
+    display: none;
+  }
+}
+
+/* Match the room's compact segmented controls on both header placements. */
+.watch-redesign :is(.watch-mobile-mode, .watch-desktop-mode) [role="tablist"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 999px;
+  background: rgb(19 19 20 / 0.36);
+}
+.watch-redesign :is(.watch-mobile-mode, .watch-desktop-mode) [role="tab"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--color-on-surface-variant);
+  background: transparent;
+}
+.watch-redesign
+  :is(.watch-mobile-mode, .watch-desktop-mode)
+  [role="tab"][aria-selected="true"] {
+  border-color: rgb(var(--listen-primary) / 0.6);
+  color: rgb(var(--listen-primary));
+  background: rgb(var(--listen-primary) / 0.12);
+}
+.watch-redesign :is(.watch-mobile-mode, .watch-desktop-mode) [role="tab"] svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+.watch-mobile-mode {
+  text-align: center;
+}
+@media (max-width: 950px) {
+  .watch-redesign .watch-mobile-mode [role="tab"] {
+    height: 40px;
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 767px), (max-width: 950px) and (max-height: 600px) {
+  .watch-redesign:not([data-cinema="true"]) .watch-viewbar {
+    min-height: 0;
+    height: auto;
+    padding: 0 12px;
+    background: transparent;
+    border: 0;
+  }
+  .watch-redesign:not([data-cinema="true"]) .watch-viewbar > :is(button, span) {
+    display: none;
+  }
+  .watch-redesign:not([data-cinema="true"]) .watch-content {
+    border-top: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .watch-mobile-mode {
+    padding: 6px 0 0;
+  }
+  .watch-redesign .watch-mobile-mode [role="tablist"] {
+    background: transparent;
+  }
+  .watch-redesign .watch-mobile-mode [role="tab"] {
+    min-height: 40px;
+    height: 40px;
+    padding-inline: 14px;
+  }
+}
+@media (min-width: 600px) and (max-width: 950px) and (max-height: 600px) {
+  .watch-redesign[data-docked="true"] .watch-viewport {
+    flex-shrink: 0;
+  }
+}
+
+.watch-redesign:not([data-cinema="true"]) .watch-viewbar {
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.watch-redesign:not([data-cinema="true"]) .watch-content {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.watch-redesign:not([data-cinema="true"]) .watch-main {
+  padding: 0;
+}
+
+@media (min-width: 600px) and (max-width: 950px) and (max-height: 600px) {
+  .watch-redesign[data-docked="true"]:not([data-minimized="true"])
+    .watch-dock-frame {
+    grid-column: 1 / -1;
+  }
+}
+
+/* In short landscape, place dock actions above the narrow control column so
+   the toolbar does not consume the video's already limited vertical space. */
+@media (min-width: 600px) and (max-width: 950px) and (max-height: 600px) {
+  .watch-redesign[data-docked="true"]:not([data-minimized="true"])
+    .watch-player:not(:fullscreen) {
+    position: relative;
+    inset: auto;
+  }
+  .watch-redesign[data-docked="true"]:not([data-minimized="true"])
+    .watch-dock-frame {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 120px;
+    gap: 0;
+    z-index: 2;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 950px) and (max-height: 600px) {
+  .watch-redesign[data-docked="true"] .watch-transport {
+    align-self: end;
+    padding-top: 44px;
+  }
+  .watch-redesign[data-docked="true"] .watch-transport-secondary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    position: static;
+  }
+  .watch-redesign[data-docked="true"] .watch-volume {
+    grid-column: 1 / -1;
+    width: 100%;
+    gap: 4px;
+  }
+  .watch-redesign[data-docked="true"] .watch-volume-value {
+    display: none;
+  }
+}
+
+/* Detail browsing has its own return navigation and centered media focus. */
+.watch-content:has(
+    .watch-home-content:not([hidden]) .watch-browser[data-details="true"]
+  )
+  > .watch-source-bar {
+  display: none;
+}
+.watch-details-nav {
+  display: flex;
+  align-items: center;
+  min-height: 53px;
+  padding: 0 28px;
+  border-bottom: 1px solid var(--color-outline-variant);
+}
+.watch-details-nav .watch-back {
+  min-height: 44px;
+  margin: 0;
+}
+.watch-details {
+  width: min(100%, 960px);
+  margin-inline: auto;
+}
+.watch-details .watch-detail-art {
+  width: 100%;
+  max-height: none;
+}
+@keyframes watch-detail-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.watch-details,
+.watch-details-nav,
+.watch-source-bar,
+.watch-browser-tabs {
+  animation: watch-detail-enter 180ms ease-out both;
+}
+@media (max-width: 767px) {
+  .watch-details-nav {
+    padding-inline: 18px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .watch-details,
+  .watch-details-nav,
+  .watch-source-bar,
+  .watch-browser-tabs {
+    animation: none;
+  }
+}
+/* Keep one mode control and preserve the focused media-detail presentation. */
+.watch-redesign[data-screen="home"] .watch-desktop-mode,
+.watch-redesign[data-screen="add"] .watch-desktop-mode,
+.watch-redesign[data-screen="more"] .watch-desktop-mode {
+  display: none;
+}
+.watch-content:has(
+    .watch-home-content:not([hidden]) .watch-browser[data-details="true"]
+  )
+  > .listen-home-toolbar {
+  display: none;
+}
+
+@media (min-width: 600px) and (max-width: 950px) and (max-height: 600px) {
+  .watch-redesign[data-docked="true"] .watch-main {
+    display: block;
+  }
+  .watch-redesign[data-docked="true"]:not([data-minimized="true"])
+    .watch-player:not(:fullscreen) {
+    position: fixed;
+    inset: auto 12px var(--watch-dock-bottom, 64px) auto;
+    width: min(420px, calc(100vw - 24px));
+    height: var(--watch-dock-height);
+    min-height: 0;
+    max-height: var(--watch-dock-height);
+    overflow: auto;
+  }
+  .watch-redesign[data-docked="true"] .watch-drag-handle {
+    display: flex;
+  }
+}
+.watch-redesign[data-docked="true"]
+  .watch-player[data-free-dock="true"]:not(:fullscreen) {
+  position: fixed;
+  left: var(--watch-free-left);
+  top: var(--watch-free-top);
+  right: auto;
+  bottom: auto;
+}

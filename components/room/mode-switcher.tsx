@@ -10,6 +10,7 @@ import { cx } from "@/lib/ui";
 type ModeSwitcherProps = {
   canSwitch?: boolean;
   compact?: boolean;
+  iconsOnly?: boolean;
   mode: RoomSnapshot["mode"];
   onSwitchMode?(mode: "listen" | "watch"): Promise<void>;
 };
@@ -22,6 +23,7 @@ const modes = [
 export function ModeSwitcher({
   canSwitch = false,
   compact = false,
+  iconsOnly = false,
   mode,
   onSwitchMode,
 }: ModeSwitcherProps) {
@@ -63,9 +65,7 @@ export function ModeSwitcher({
         aria-label="Room mode"
         className={cx(
           "grid grid-cols-2 gap-1 border-white/10 bg-surface-container-lowest/80 p-1",
-          compact
-            ? "rounded-sm border"
-            : "border-t",
+          compact ? "rounded-sm border" : "border-t",
         )}
         role="tablist"
       >
@@ -77,6 +77,7 @@ export function ModeSwitcher({
             <button
               aria-disabled={!canSwitch || Boolean(pendingMode)}
               aria-selected={active}
+              title={iconsOnly ? item.label : undefined}
               className={cx(
                 "inline-flex items-center justify-center gap-2 rounded-sm px-3 text-label-sm font-semibold text-on-surface-variant transition hover:text-on-surface",
                 compact ? "h-8" : "h-9",
@@ -94,7 +95,9 @@ export function ModeSwitcher({
               type="button"
             >
               <Icon className="h-4 w-4" aria-hidden />
-              {item.label}
+              <span className={iconsOnly ? "sr-only" : undefined}>
+                {item.label}
+              </span>
             </button>
           );
         })}

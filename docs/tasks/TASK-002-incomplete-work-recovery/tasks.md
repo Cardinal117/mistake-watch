@@ -4,6 +4,13 @@ This file is the canonical implementation order for recovering incomplete or par
 
 Do not skip ahead unless the user explicitly changes this order.
 
+Owner-selected active follow-up (2026-09-07):
+[TASK-027 room flow and responsive queue](../TASK-027-room-flow-and-queue-response/tasks.md).
+The owner approved documentation first, followed by local implementation of
+queue responsiveness/virtualization, playlist repairs, Watch browsing/header and
+mobile Listen compact-bar expansion. Follow that packet's gates; this does not
+close the remaining TASK-002 recovery work or authorize a production release.
+
 ## TASK-002.1: Listen Mode Quality Pass
 
 Source task: TASK-001 Task 23.

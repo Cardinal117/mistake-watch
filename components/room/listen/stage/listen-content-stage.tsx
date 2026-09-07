@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 import { AudioWaveform, CirclePlay } from "lucide-react";
 
 import type {
@@ -23,6 +23,14 @@ import type {
   SourceLoadInput,
 } from "@/components/room/listen/shared";
 import { ListenVisualizerStage } from "@/components/room/listen/stage/listen-visualizer-stage";
+
+import {
+  ListenMobilePresentation,
+  ListenMobileStage,
+} from "../mobile/listen-mobile-context";
+import { useListenWorkspaceSwipe } from "../mobile/use-listen-workspace-swipe";
+
+export const ListenStageVisibility = createContext(true);
 
 export function ListenContentStage({
   active,
@@ -84,36 +92,48 @@ export function ListenContentStage({
   visualizationMode: ListenVisualizationMode;
   visualizerArtworkEnabled: boolean;
 }) {
-  const [view, setView] = useState<ListenStageView>("discover");
+  const visible = useContext(ListenStageVisibility);
+  const mobile = useContext(ListenMobilePresentation);
+  const mobileStage = useContext(ListenMobileStage);
+  const [desktopView, setView] = useState<ListenStageView>("discover");
+  const view = mobile && mobileStage ? mobileStage.view : desktopView;
 
   function selectView(nextView: ListenStageView) {
-    setView(normalizeListenStageView(nextView));
+    if (mobile && mobileStage)
+      mobileStage.select(normalizeListenStageView(nextView));
+    else setView(normalizeListenStageView(nextView));
   }
 
+  const swipe = useListenWorkspaceSwipe(mobile && visible, selectView);
   return (
-    <section className="relative min-h-[28rem] min-w-0 overflow-hidden rounded-xl border border-white/8 bg-background/46 shadow-[0_24px_70px_rgb(0_0_0/0.24)] xl:h-full xl:min-h-0">
-      <div className="pointer-events-none absolute inset-x-0 top-2 z-20 flex justify-center px-3 sm:px-4">
-        <div
-          aria-label="Listen workspace"
-          className="pointer-events-auto inline-flex rounded-full border border-white/8 bg-background/72 p-1 backdrop-blur-md"
-          role="tablist"
-        >
-          <StageTab
-            controls="listen-discover-panel"
-            icon={<CirclePlay aria-hidden className="h-4 w-4" />}
-            label="Discover"
-            onSelect={() => selectView("discover")}
-            selected={view === "discover"}
-          />
-          <StageTab
-            controls="listen-visualizer-panel"
-            icon={<AudioWaveform aria-hidden className="h-4 w-4" />}
-            label="Visualizer"
-            onSelect={() => selectView("visualizer")}
-            selected={view === "visualizer"}
-          />
+    <section
+      {...swipe}
+      className="relative min-h-[28rem] min-w-0 overflow-hidden rounded-xl border border-white/8 bg-background/46 shadow-[0_24px_70px_rgb(0_0_0/0.24)] xl:h-full xl:min-h-0"
+    >
+      {!mobile && (
+        <div className="pointer-events-none absolute inset-x-0 top-2 z-20 flex justify-center px-3 sm:px-4">
+          <div
+            aria-label="Listen workspace"
+            className="pointer-events-auto inline-flex rounded-full border border-white/8 bg-background/72 p-1 backdrop-blur-md"
+            role="tablist"
+          >
+            <StageTab
+              controls="listen-discover-panel"
+              icon={<CirclePlay aria-hidden className="h-4 w-4" />}
+              label="Discover"
+              onSelect={() => selectView("discover")}
+              selected={view === "discover"}
+            />
+            <StageTab
+              controls="listen-visualizer-panel"
+              icon={<AudioWaveform aria-hidden className="h-4 w-4" />}
+              label="Visualizer"
+              onSelect={() => selectView("visualizer")}
+              selected={view === "visualizer"}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <div
         aria-labelledby="listen-stage-tab-discover"
@@ -145,7 +165,7 @@ export function ListenContentStage({
           role="tabpanel"
         >
           <ListenVisualizerStage
-            active={active}
+            active={active && visible}
             activeArtworkUrl={activeArtworkUrl}
             activeMediaId={activeMediaId}
             ambientFallbackEnabled={ambientFallbackEnabled}

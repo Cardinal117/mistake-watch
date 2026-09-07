@@ -187,6 +187,8 @@ for (const size of [
     async ({ page }) => {
       await page.setViewportSize(size);
       await page.goto("/dev/watch-design");
+      // Fresh entry now browses; foreground the media before using its transport.
+      await page.getByRole("button", { name: "Home", exact: true }).click();
       await expect(page.locator("video")).toHaveJSProperty("readyState", 4);
       await page
         .getByRole("button", { name: "Fullscreen video", exact: true })

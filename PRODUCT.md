@@ -25,6 +25,14 @@ The room is the product. Media remains visually primary while participants, queu
 
 ## Product Surfaces
 
+Approved next direction (TASK-027, 2026-09-07; implementation pending): Watch
+opens into permission-aware discovery and presents loaded media through a
+mini-player/Cinema flow. Listen mobile foregrounds track/artwork/transport at
+Home and uses a compact browsing bar with swipe-up expansion into the main
+Listen view. Shared room navigation, identity, artwork theme and server authority
+remain common. Provider-safe geometry and persistent playback are required.
+See [the full task packet](docs/tasks/TASK-027-room-flow-and-queue-response/proposal.md).
+
 - Persistent synchronized Watch room with catalogue browsing, collections,
   media details, Cinema/fullscreen, mobile player docking and compact touch queues.
 - Host-led listen room and shared queue.

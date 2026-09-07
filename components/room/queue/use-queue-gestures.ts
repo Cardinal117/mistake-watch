@@ -1,5 +1,15 @@
 "use client";
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import {
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+  type PointerEvent,
+} from "react";
+
+import { QueueDragContext } from "./virtual-queue-list";
 
 /** Pointer-local feedback; only the final drop/remove issues a room command. */
 export function useQueueGestures({
@@ -13,9 +23,16 @@ export function useQueueGestures({
   onMove(position: number): void;
   onRemove(): void;
 }) {
-  const row = useRef<HTMLLIElement>(null);
+  const virtual = useContext(QueueDragContext);
+  const virtualRef = useRef(virtual);
+  useLayoutEffect(() => {
+    virtualRef.current = virtual;
+  }, [virtual]);
+  const row = useRef<HTMLDivElement>(null);
   const gesture = useRef<{
-    kind: "drag" | "swipe";
+    kind: "drag" | "swipe" | "surface" | "scroll";
+    touch: boolean;
+    scrollY: number;
     x: number;
     y: number;
     lastY: number;
@@ -26,11 +43,30 @@ export function useQueueGestures({
     highlighted: HTMLElement | null;
   } | null>(null);
   const frame = useRef(0);
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function clearHold() {
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    holdTimer.current = null;
+  }
+  function scroller() {
+    let el = row.current?.parentElement ?? null;
+    while (
+      el &&
+      !(
+        el.scrollHeight > el.clientHeight &&
+        /auto|scroll/.test(getComputedStyle(el).overflowY)
+      )
+    )
+      el = el.parentElement;
+    return el;
+  }
   const suppressClick = useRef(false);
   const [revealed, setRevealed] = useState(false);
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
   function clear() {
+    clearHold();
+    virtualRef.current?.finish();
     cancelAnimationFrame(frame.current);
     row.current?.parentElement
       ?.querySelectorAll("[data-drop-target]")
@@ -40,7 +76,13 @@ export function useQueueGestures({
     setDragging(false);
     setOffset(0);
   }
-  useEffect(() => () => cancelAnimationFrame(frame.current), []);
+  useEffect(
+    () => () => {
+      if (holdTimer.current) clearTimeout(holdTimer.current);
+      cancelAnimationFrame(frame.current);
+    },
+    [],
+  );
   function updateDrag() {
     const g = gesture.current,
       el = row.current;
@@ -75,27 +117,45 @@ export function useQueueGestures({
         nearest = target.element;
       }
     }
-    g.target = Number(nearest.dataset.queueIndex);
-    if (g.highlighted !== nearest) {
+    g.target = virtualRef.current
+      ? virtualRef.current.target(g.lastY)
+      : Number(nearest.dataset.queueIndex);
+    if (!virtualRef.current && g.highlighted !== nearest) {
       g.highlighted?.removeAttribute("data-drop-target");
       nearest.setAttribute("data-drop-target", "true");
       g.highlighted = nearest;
     }
     frame.current = requestAnimationFrame(updateDrag);
   }
-  function start(event: PointerEvent<HTMLElement>, kind: "drag" | "swipe") {
+  function activateDrag() {
+    const g = gesture.current;
+    if (!g) return;
+    clearHold();
+    g.kind = "drag";
+    virtualRef.current?.begin(row.current?.dataset.queueId ?? "");
+    setDragging(true);
+    setRevealed(false);
+    frame.current = requestAnimationFrame(updateDrag);
+  }
+  function start(
+    event: PointerEvent<HTMLElement>,
+    kind: "drag" | "swipe" | "surface",
+  ) {
     if (disabled || event.button !== 0 || (kind === "drag" && index < 0))
       return;
     if (
       kind === "swipe" &&
       (event.target as HTMLElement).closest(
-        "summary, [data-queue-menu], [data-queue-handle]",
+        "[data-queue-menu] button, [data-queue-handle]",
       )
     )
       return;
+    clearHold();
     suppressClick.current = false;
     gesture.current = {
       kind,
+      touch: event.pointerType === "touch",
+      scrollY: event.clientY,
       x: event.clientX,
       y: event.clientY,
       lastY: event.clientY,
@@ -114,24 +174,61 @@ export function useQueueGestures({
         }),
       highlighted: null,
     };
-    if (kind === "drag") {
+    if (kind === "drag" || kind === "surface") {
       event.currentTarget.setPointerCapture(event.pointerId);
-      setDragging(true);
-      setRevealed(false);
-      frame.current = requestAnimationFrame(updateDrag);
+      if (kind === "drag") activateDrag();
+      else if (event.pointerType === "touch")
+        holdTimer.current = setTimeout(() => {
+          if (gesture.current?.kind === "surface") {
+            suppressClick.current = true;
+            activateDrag();
+          }
+        }, 280);
     }
   }
+
+  const cancelDisabled = useEffectEvent(clear);
+  useEffect(() => {
+    if (disabled) {
+      const frame = requestAnimationFrame(() => cancelDisabled());
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [disabled]);
   function move(event: PointerEvent<HTMLElement>) {
     const g = gesture.current;
     if (!g) return;
     g.lastY = event.clientY;
     g.dx = event.clientX - g.x;
+    const dy = event.clientY - g.y;
+    if (g.kind === "surface" && Math.max(Math.abs(g.dx), Math.abs(dy)) > 8) {
+      clearHold();
+      if (Math.abs(g.dx) > Math.abs(dy)) g.kind = "swipe";
+      else if (g.touch) g.kind = "scroll";
+      else {
+        suppressClick.current = true;
+        activateDrag();
+      }
+    }
+    if (g.kind === "scroll") {
+      const el = scroller();
+      if (el) el.scrollTop -= event.clientY - g.scrollY;
+      g.scrollY = event.clientY;
+      suppressClick.current = true;
+      return;
+    }
     if (g.kind === "swipe") {
       if (
         Math.abs(event.clientY - g.y) > Math.abs(g.dx) &&
         !suppressClick.current
       ) {
-        gesture.current = null;
+        if (g.touch) {
+          g.kind = "scroll";
+          const el = scroller();
+          if (el) el.scrollTop -= event.clientY - g.scrollY;
+          g.scrollY = event.clientY;
+          suppressClick.current = true;
+          event.currentTarget.setPointerCapture(event.pointerId);
+        } else gesture.current = null;
         return;
       }
       if (Math.abs(g.dx) > 12) {

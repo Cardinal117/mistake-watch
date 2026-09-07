@@ -31,6 +31,7 @@ type AccountCommandPanelProps = {
   className?: string;
   compact?: boolean;
   embedded?: boolean;
+  contentTab?: AccountPanelTab;
   nextPath: string;
   notice?: "guest-room-attached";
   personalizationArtworkUrl?: string | null;
@@ -54,6 +55,7 @@ export function AccountCommandPanel({
   className,
   compact = false,
   embedded = false,
+  contentTab,
   nextPath,
   notice,
   personalizationArtworkUrl,
@@ -236,6 +238,29 @@ export function AccountCommandPanel({
       </section>
     </div>
   ) : null;
+
+  if (contentTab)
+    return (
+      <div className="room-account-content">
+        <AccountPanelContent
+          account={account}
+          activeTab={contentTab}
+          avatarKey={avatarKey}
+          displayName={displayName}
+          notice={notice}
+          onAccountRoomsCountChange={handleAccountRoomsCountChange}
+          personalizationArtworkUrl={personalizationArtworkUrl}
+          roomAttached={roomAttached}
+          roomId={roomId}
+          signOutHref={signOutHref}
+        />
+        {!isSignedIn && contentTab === "account" && (
+          <a className={buttonClassName({ size: "sm" })} href={signInHref}>
+            <LogIn aria-hidden className="h-4 w-4" /> Continue with Google
+          </a>
+        )}
+      </div>
+    );
 
   if (embedded)
     return <div className="watch-account-embedded">{accountModal}</div>;

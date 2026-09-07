@@ -1,4 +1,6 @@
 "use client";
+import { useContext, useEffect, useRef, useState } from "react";
+import { QueueDragContext } from "./virtual-queue-list";
 import {
   GripVertical,
   ListPlus,
@@ -62,9 +64,28 @@ export function CompactQueueRow({
     onMove: (position) => onMove?.(item.id, position),
     onRemove: () => onRemove?.(item.id),
   });
+  const virtual = useContext(QueueDragContext);
   const queued = item.status === "queued";
+  const menuRef = useRef<HTMLDetailsElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => {
+    if (!menuOpen) return;
+    function dismiss(event: Event) {
+      const menu = menuRef.current;
+      if (menu && event.target instanceof Node && !menu.contains(event.target))
+        menu.open = false;
+    }
+    document.addEventListener("pointerdown", dismiss, true);
+    document.addEventListener("focusin", dismiss);
+    return () => {
+      document.removeEventListener("pointerdown", dismiss, true);
+      document.removeEventListener("focusin", dismiss);
+    };
+  }, [menuOpen]);
+
   return (
-    <li
+    <div
+      role={virtual ? "presentation" : "listitem"}
       ref={row}
       className="watch-queue-row"
       data-queue-id={item.id}
@@ -89,8 +110,22 @@ export function CompactQueueRow({
         className="watch-queue-face"
         style={{
           transform: `translateX(${(revealed ? -72 : 0) + offset}px)`,
+          touchAction: disabled ? "pan-y" : undefined,
         }}
-        onPointerDown={(e) => start(e, "swipe")}
+        onPointerDown={(e) => {
+          const target = e.target as HTMLElement;
+          if (
+            target.closest("[data-queue-menu] button, [data-queue-menu][open]")
+          )
+            return;
+          start(
+            e,
+            target.closest(".watch-queue-play, .watch-queue-next, summary") ||
+              !queued
+              ? "swipe"
+              : "surface",
+          );
+        }}
         onPointerMove={move}
         onPointerUp={end}
         onPointerCancel={cancel}
@@ -139,22 +174,25 @@ export function CompactQueueRow({
             <QueueImage thumbnailUrl={thumbnailUrl} />
             <Play aria-hidden />
           </span>
-          <span className="watch-queue-copy">
-            <strong>{title}</strong>
-            <small>
-              {item.status === "now"
-                ? "Now playing · "
-                : index === 0
-                  ? "Next · "
-                  : ""}
-              {channel ? `${channel} · ` : ""}
-              {duration}
-              {blocked ? " · Unavailable" : ""}
-              {item.isPinned ? " · Pinned" : ""}
-              {item.isPlayNext ? " · Play next" : ""}
-            </small>
-          </span>
         </button>
+        <div
+          className="watch-queue-copy"
+          title={queued ? "Drag to reorder; hold on touch" : undefined}
+        >
+          <strong>{title}</strong>
+          <small>
+            {item.status === "now"
+              ? "Now playing · "
+              : index === 0
+                ? "Next · "
+                : ""}
+            {channel ? `${channel} · ` : ""}
+            {duration}
+            {blocked ? " · Unavailable" : ""}
+            {item.isPinned ? " · Pinned" : ""}
+            {item.isPlayNext ? " · Play next" : ""}
+          </small>
+        </div>
         {item.status !== "now" && (
           <button
             className="watch-queue-next"
@@ -171,6 +209,8 @@ export function CompactQueueRow({
         <details
           className="watch-queue-menu"
           data-queue-menu
+          ref={menuRef}
+          onToggle={(event) => setMenuOpen(event.currentTarget.open)}
           onKeyDown={(e) => {
             if (e.key === "Escape") {
               e.currentTarget.open = false;
@@ -219,6 +259,6 @@ export function CompactQueueRow({
           </div>
         </details>
       </div>
-    </li>
+    </div>
   );
 }

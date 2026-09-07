@@ -1,0 +1,150 @@
+{
+  "environment": "Next development / Chromium / 390x844",
+  "confirmationDelayMs": 600,
+  "samples": [
+    {
+      "rate": 1,
+      "count": 50,
+      "mounted": 14,
+      "dropMs": 13
+    },
+    {
+      "rate": 1,
+      "count": 50,
+      "mounted": 14,
+      "dropMs": 12.599999999627471
+    },
+    {
+      "rate": 1,
+      "count": 50,
+      "mounted": 14,
+      "dropMs": 11.800000000745058
+    },
+    {
+      "rate": 1,
+      "count": 50,
+      "mounted": 14,
+      "dropMs": 9.800000000745058
+    },
+    {
+      "rate": 1,
+      "count": 250,
+      "mounted": 14,
+      "dropMs": 32.19999999925494
+    },
+    {
+      "rate": 1,
+      "count": 250,
+      "mounted": 14,
+      "dropMs": 11.700000001117587
+    },
+    {
+      "rate": 1,
+      "count": 250,
+      "mounted": 14,
+      "dropMs": 10.600000001490116
+    },
+    {
+      "rate": 1,
+      "count": 250,
+      "mounted": 14,
+      "dropMs": 33.40000000037253
+    },
+    {
+      "rate": 1,
+      "count": 1000,
+      "mounted": 14,
+      "dropMs": 34.80000000074506
+    },
+    {
+      "rate": 1,
+      "count": 1000,
+      "mounted": 14,
+      "dropMs": 10.599999999627471
+    },
+    {
+      "rate": 1,
+      "count": 1000,
+      "mounted": 14,
+      "dropMs": 31.600000001490116
+    },
+    {
+      "rate": 1,
+      "count": 1000,
+      "mounted": 14,
+      "dropMs": 28
+    },
+    {
+      "rate": 4,
+      "count": 50,
+      "mounted": 14,
+      "dropMs": 310.19999999925494
+    },
+    {
+      "rate": 4,
+      "count": 50,
+      "mounted": 14,
+      "dropMs": 255.69999999925494
+    },
+    {
+      "rate": 4,
+      "count": 50,
+      "mounted": 14,
+      "dropMs": 245.2999999988824
+    },
+    {
+      "rate": 4,
+      "count": 50,
+      "mounted": 14,
+      "dropMs": 252.90000000037253
+    },
+    {
+      "rate": 4,
+      "count": 250,
+      "mounted": 14,
+      "dropMs": 225.7000000011176
+    },
+    {
+      "rate": 4,
+      "count": 250,
+      "mounted": 14,
+      "dropMs": 275.59999999962747
+    },
+    {
+      "rate": 4,
+      "count": 250,
+      "mounted": 14,
+      "dropMs": 341.09999999962747
+    },
+    {
+      "rate": 4,
+      "count": 250,
+      "mounted": 14,
+      "dropMs": 255.40000000037253
+    },
+    {
+      "rate": 4,
+      "count": 1000,
+      "mounted": 14,
+      "dropMs": 229.39999999850988
+    },
+    {
+      "rate": 4,
+      "count": 1000,
+      "mounted": 14,
+      "dropMs": 294.90000000037253
+    },
+    {
+      "rate": 4,
+      "count": 1000,
+      "mounted": 14,
+      "dropMs": 244
+    },
+    {
+      "rate": 4,
+      "count": 1000,
+      "mounted": 14,
+      "dropMs": 277.1000000014901
+    }
+  ]
+}
