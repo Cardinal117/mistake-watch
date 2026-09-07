@@ -5,9 +5,9 @@ qa(
   async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/dev/listen-design");
-    await expect(page.locator("audio")).toHaveCount(1);
+    await expect(page.locator("video")).toHaveCount(1);
     await page
-      .locator("audio")
+      .locator("video")
       .evaluate((el) => el.setAttribute("data-original", "yes"));
     const nav = page.getByRole("navigation", { name: "Listen room" });
     await nav.getByRole("button", { name: "Queue", exact: true }).click();
@@ -30,7 +30,7 @@ qa(
     await expect(
       nav.getByRole("button", { name: "Queue", exact: true }),
     ).toHaveAttribute("aria-current", "page");
-    await expect(page.locator("audio")).toHaveAttribute("data-original", "yes");
+    await expect(page.locator("video")).toHaveAttribute("data-original", "yes");
     expect(await page.evaluate(() => window.watchQA!.calls)).toEqual([]);
     await page.evaluate(() => window.watchQA!.setSource("", "direct"));
     await expect(page.locator(".listen-mobile-player")).toBeHidden();
@@ -137,17 +137,17 @@ qa(
   },
 );
 qa(
-  "Listen destination changes do not remount audio; controls respect permission",
+  "Listen destination changes do not remount media; controls respect permission",
   async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/dev/listen-design");
     await page
-      .locator("audio")
+      .locator("video")
       .evaluate((el) => el.setAttribute("data-original", "yes"));
     const nav = page.getByRole("navigation", { name: "Listen room" });
     for (const name of ["Add", "Social", "More", "Queue", "Home"]) {
       await nav.getByRole("button", { name, exact: true }).click();
-      await expect(page.locator("audio")).toHaveAttribute(
+      await expect(page.locator("video")).toHaveAttribute(
         "data-original",
         "yes",
       );
@@ -247,25 +247,25 @@ qa("Desktop Listen keeps its rail and existing TV action", async ({ page }) => {
     page.getByRole("button", { name: "TV Mode", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".listen-mobile-shell")).toHaveCount(0);
-  await expect(page.locator("audio")).toHaveCount(1);
+  await expect(page.locator("video")).toHaveCount(1);
   await page.screenshot({ path: "test-results/listen-desktop.png" });
 });
 
 qa(
-  "Listen breakpoint changes preserve the same audio instance",
+  "Listen breakpoint changes preserve the same media instance",
   async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/dev/listen-design");
     await page
-      .locator("audio")
+      .locator("video")
       .evaluate((el) => el.setAttribute("data-original", "yes"));
     await page.setViewportSize({ width: 1440, height: 900 });
     await expect(
       page.getByRole("button", { name: "TV Mode", exact: true }),
     ).toBeVisible();
-    await expect(page.locator("audio")).toHaveAttribute("data-original", "yes");
+    await expect(page.locator("video")).toHaveAttribute("data-original", "yes");
     await page.setViewportSize({ width: 390, height: 844 });
-    await expect(page.locator("audio")).toHaveAttribute("data-original", "yes");
+    await expect(page.locator("video")).toHaveAttribute("data-original", "yes");
   },
 );
 
@@ -296,13 +296,13 @@ qa(
 );
 
 qa(
-  "Listen local transport plays, pauses and seeks without replacing audio",
+  "Listen local transport plays, pauses and seeks without replacing media",
   async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/dev/listen-design");
-    const audio = page.locator("audio");
+    const audio = page.locator("video");
     await expect
-      .poll(() => audio.evaluate((el) => (el as HTMLAudioElement).readyState))
+      .poll(() => audio.evaluate((el) => (el as HTMLVideoElement).readyState))
       .toBeGreaterThanOrEqual(2);
     await audio.evaluate((el) => el.setAttribute("data-original", "yes"));
     await page

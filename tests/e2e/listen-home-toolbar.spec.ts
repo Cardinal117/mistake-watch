@@ -17,7 +17,7 @@ for (const width of [320, 390, 844])
         expect(box.x + box.width).toBeLessThanOrEqual(width);
       }
       await page
-        .locator("audio")
+        .locator("video")
         .evaluate((el) => el.setAttribute("data-original", "yes"));
       await toolbar
         .getByRole("tab", { name: "Visualizer", exact: true })
@@ -37,7 +37,7 @@ for (const width of [320, 390, 844])
         .getByRole("button", { name: "Minimize player", exact: true })
         .click();
       await expect(toolbar).toBeVisible();
-      await expect(page.locator("audio")).toHaveAttribute(
+      await expect(page.locator("video")).toHaveAttribute(
         "data-original",
         "yes",
       );

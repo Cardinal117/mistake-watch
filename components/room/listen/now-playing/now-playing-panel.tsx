@@ -179,6 +179,14 @@ export function ListenNowPlayingPanel({
                 liveRoom={liveRoom}
                 mode="listen"
               />
+            ) : liveSource ? (
+              <DirectMediaPlayer
+                className="absolute inset-0 h-full w-full object-contain"
+                liveRoom={liveRoom}
+                mode="listen"
+                renderVideo
+                poster={thumbnailUrl ?? undefined}
+              />
             ) : thumbnailUrl ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element -- Provider thumbnails are external media artwork. */}
@@ -200,14 +208,6 @@ export function ListenNowPlayingPanel({
               className="absolute inset-x-0 bottom-0 h-12 bg-[linear-gradient(to_top,rgb(14_14_15_/_0.58),transparent)]"
             />
           </div>
-
-          {!youtubeSource && liveSource ? (
-            <DirectMediaPlayer
-              className="sr-only"
-              liveRoom={liveRoom}
-              mode="listen"
-            />
-          ) : null}
 
           <div className="grid gap-[clamp(0.5rem,1vh,0.75rem)]">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">

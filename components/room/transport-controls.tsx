@@ -118,7 +118,7 @@ export function TransportControls({
   );
 
   useEffect(() => {
-    const timer = window.setInterval(() => setClockMs(Date.now()), 500);
+    const timer = window.setInterval(() => setClockMs(Date.now()), 250);
 
     return () => window.clearInterval(timer);
   }, []);
@@ -131,18 +131,15 @@ export function TransportControls({
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
-  useEffect(() => {
-    dispatchPlayerVolume(volume / 100);
-  }, [volume]);
-
   const setPlayback = useCallback(
     (status: "paused" | "playing") => {
+      const state = buildCanonicalState(liveRoom, room.mode);
       liveRoom.setPlaybackState({
-        positionSeconds: currentPosition,
+        positionSeconds: state ? expectedPositionAt(state, Date.now()) : 0,
         status,
       });
     },
-    [currentPosition, liveRoom],
+    [liveRoom, room.mode],
   );
 
   const seekRelative = useCallback(

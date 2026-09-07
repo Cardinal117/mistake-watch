@@ -186,7 +186,7 @@ export function ListenModeLayout({
     seconds: remainingQueueSeconds,
   } = useRemainingQueueSeconds(liveRoom, room.id, queueDrawerOpen);
   useEffect(() => {
-    const timer = window.setInterval(() => setClockMs(Date.now()), 500);
+    const timer = window.setInterval(() => setClockMs(Date.now()), 250);
 
     return () => window.clearInterval(timer);
   }, []);
@@ -205,10 +205,6 @@ export function ListenModeLayout({
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
-  useEffect(() => {
-    dispatchPlayerVolume(volume / 100);
-  }, [volume]);
-
   function setLocalVolume(nextVolume: number) {
     const safeVolume = Math.min(100, Math.max(0, nextVolume));
 
@@ -218,8 +214,9 @@ export function ListenModeLayout({
   }
 
   function setPlayback(status: "paused" | "playing") {
+    const state = buildCanonicalState(liveRoom);
     liveRoom.setPlaybackState({
-      positionSeconds: currentPosition,
+      positionSeconds: state ? expectedPositionAt(state, Date.now()) : 0,
       status,
     });
   }

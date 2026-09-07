@@ -8,7 +8,7 @@ qa(
     const player = page.locator(".listen-mobile-player");
     await expect(player).toHaveAttribute("data-expanded", "false");
     await page
-      .locator("audio")
+      .locator("video")
       .evaluate((el) => el.setAttribute("data-original", "yes"));
     const nav = page.getByRole("navigation", { name: "Listen room" });
     let previous: { y: number; height: number } | undefined;
@@ -37,7 +37,7 @@ qa(
     await page.screenshot({ path: "test-results/listen-home-expanded.png" });
     await nav.getByRole("button", { name: "Home", exact: true }).click();
     await expect(player).toHaveAttribute("data-expanded", "false");
-    await expect(page.locator("audio")).toHaveAttribute("data-original", "yes");
+    await expect(page.locator("video")).toHaveAttribute("data-original", "yes");
   },
 );
 qa(
