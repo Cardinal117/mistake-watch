@@ -82,3 +82,8 @@ pushed. Keep this release live for requested QA.
 ## Final acceptance gate - 2026-09-07
 
 Owner confirmed live QA and explicitly authorized merging when checks pass. The deployed application tree is unchanged since 1cc7832; later changes are documentation only. Final focused tests/typecheck are rechecked, alongside the passing 35 browser checks and Ready production build. GitHub reports no CI checks configured on this PR; that absence is not represented as a CI pass. Main is an ancestor of this branch. The unreproduced token report and broader pre-existing diagnostics remain documented follow-ups.
+
+
+## Merged and accepted - 2026-09-07
+
+PR #13 merged as `5411449ee80ab7d0da382154a5916474d567f1fc`. Owner explicitly accepted the passed local/browser/production-build gate despite absent GitHub CI checks. Final 240 focused tests/typecheck passed; full lint returned zero errors and one inherited navigation warning. The 35 movement/responsive browser checks and production Turbopack build passed. All approved commits are ancestors of origin/main. Verified production remains Ready at `dpl_2szjneG7xb5SpDtdaKjC1ijGkrGL`; diff from deployed `1cc7832` to merged main contains only README/docs. No application rebuild is required. This supersedes all prior pending-merge status.

@@ -22,7 +22,7 @@ on Opera, Opera GX and Huawei Chrome, including a participant without catalogue 
 The 2026-09-07 fine-tuning release adds connection continuity during metadata
 updates, retained volume/mute, full-width fullscreen controls, fresher transport
 timing and visible direct video in Listen. Owner live QA of these
-follow-ups and free-position mini-player is accepted; final merge checks are underway. The one-off token
+follow-ups and free-position mini-player is accepted; PR #13 is merged into main. The one-off token
 error is recorded as unreproduced. See the [fine-tuning evidence](docs/tasks/TASK-027-room-flow-and-queue-response/live-qa-fine-tuning.md)
 for exact checks and the [handoff](docs/HANDOFF.md) for deployment/rollback state.
 

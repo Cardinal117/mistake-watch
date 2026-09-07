@@ -1,5 +1,9 @@
 # Mistake Watch Handoff
 
+## Final release accepted and merged - 2026-09-07
+
+Owner accepted live QA and approved the local/browser/production-build gate with no GitHub CI checks configured. PR #13 merged into main as `5411449ee80ab7d0da382154a5916474d567f1fc`, preserving the atomic commits. Production `dpl_2szjneG7xb5SpDtdaKjC1ijGkrGL` is Ready and its application code matches main; only README/release documentation differs, so no redundant deployment is needed. Earlier draft/pending statements below are historical. The unreproduced token report remains a documented follow-up.
+
 ## Free-position player deployment — 2026-09-07
 
 Watch free positioning is live at https://watch.mistakestudios.com from `1cc7832`
