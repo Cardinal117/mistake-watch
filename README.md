@@ -11,6 +11,15 @@ Production:
 - https://watch.mistakestudios.com
 - https://mistake-watch.vercel.app
 
+## Approved Next Work
+
+[TASK-027: room flow and responsive queue](docs/tasks/TASK-027-room-flow-and-queue-response/proposal.md)
+documents the approved follow-up: immediate queue feedback and virtualization,
+playlist-review repairs, catalogue-first Watch and a compact mobile Listen bar
+that expands by dragging upward. 027.1-027.3 have local candidates; 027.4 remains pending. This is not a claim
+about the currently deployed feature set. The packet tracks every requirement,
+concurrency rule, provider constraint and QA gate before code changes.
+
 ## What Exists
 
 - Guest-first private rooms with optional Google account identity.
@@ -24,7 +33,8 @@ Production:
 - Supabase durable rooms, accounts, media records, uploads, and authorization.
 - YouTube, direct media, HLS, and first-party uploaded playback.
 - Search, playlist review/import, queue ordering, play next/now, shuffle,
-  history, auto-advance, and large-queue virtualization.
+  history, auto-advance, and Listen large-queue virtualization. Watch queue
+  virtualization is part of TASK-027.
 - Private Mistake Watch Likes, authoritative room-event capture, deterministic
   first-party ranking, and explainable Listen Room Picks.
 - Owner upload catalogue with folders, multipart recovery, browser-safety
@@ -294,3 +304,20 @@ recommendation intelligence, TASK-018 companion analysis, TASK-019 shared
 rhythm, and TASK-021 Listen Room overhaul are complete. Continue from
 `docs/HANDOFF.md` and `docs/ROADMAP.md` rather than older recovery-packet status
 summaries.
+
+### TASK-027 first local candidate
+
+Queue responsiveness/virtualization and playlist repair are implemented locally.
+[QA links, results and remaining acceptance](docs/tasks/TASK-027-room-flow-and-queue-response/local-qa.md).
+This earlier checkpoint preceded 027.3 below; mobile Listen 027.4 remains pending.
+No production release or Git publication is included in this checkpoint.
+
+
+### TASK-027.3 local Watch review
+
+The browse-first Watch shell and shared header are implemented locally in the
+TASK-027 worktree. [027.3 behavior, QA and review routes](docs/tasks/TASK-027-room-flow-and-queue-response/watch-local-qa.md)
+separate fixture checks from real-room/device acceptance. No release was made;
+027.4 mobile Listen expansion remains the next implementation slice.
+
+Owner QA refinements are documented in [027.3 follow-up](docs/tasks/TASK-027-room-flow-and-queue-response/watch-refinements.md): Cinema/paused player, body dragging, compact mode controls and continuous browsing surfaces. Local only.

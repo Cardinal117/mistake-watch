@@ -5,10 +5,18 @@ status: in-progress
 priority: P2
 area: queue
 created: 2026-08-17
-updated: 2026-09-05
+updated: 2026-09-07
 ---
 
 # Drag-and-drop queue reordering
+
+## TASK-027 approved continuation - 2026-09-07
+
+[TASK-027](../../tasks/TASK-027-room-flow-and-queue-response/proposal.md) now owns
+the approved Listen compact gesture parity and follow-up Watch drop feedback,
+concurrency, animation and virtualization work. Documentation prepared; new
+implementation and acceptance pending. Preserve the TASK-026 evidence below;
+do not mark the general request resolved until Listen parity passes its gates.
 
 > [!qol] In progress - P2
 

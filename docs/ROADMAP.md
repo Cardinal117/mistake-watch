@@ -1,6 +1,6 @@
 # Mistake Watch Roadmap
 
-Snapshot date: 2026-09-05
+Snapshot date: 2026-09-07
 
 This is the compact product-state index. Task packets remain the detailed
 requirements and evidence record.
@@ -10,7 +10,8 @@ requirements and evidence record.
 - Guest-first rooms and optional Google identity.
 - Watch and Listen room experiences.
 - SpacetimeDB playback, presence, queue, permission, and chat authority.
-- Large-queue performance and virtualization.
+- Large-queue performance and Listen virtualization; Watch queue windowing is
+  pending in TASK-027 rather than already shared across both modes.
 - YouTube search, metadata, playlist review/import, and provider availability.
 - Uploaded-media library, R2 storage, processing, room-scoped playback, and
   owner/allowlist catalogue controls.
@@ -19,6 +20,13 @@ requirements and evidence record.
   deterministic ranking, and explainable Listen Room Picks.
 
 ## Accepted Watch Redesign
+
+Approved follow-up: [TASK-027](tasks/TASK-027-room-flow-and-queue-response/proposal.md)
+captures queue responsiveness/concurrency and Watch virtualization, playlist
+review defects, catalogue-first Watch, header identity/mode access, and mobile
+Listen's compact browsing bar with swipe-up expansion. Local 027.1-027.3 candidates
+are documented in the packet; 027.4 and integrated acceptance remain pending.
+Existing TASK-026 production acceptance remains intact.
 
 TASK-026 passed owner Huawei production QA on 2026-09-05: persistent
 artwork-themed browsing, catalogue/link navigation, Cinema/fullscreen, save and

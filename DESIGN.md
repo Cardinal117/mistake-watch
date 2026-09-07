@@ -150,6 +150,55 @@ The typography system prioritizes technical clarity and hierarchy.
 - **Scaling:** Headlines use strong weight and clear hierarchy for a modern look, while labels use increased tracking for legibility at small sizes on dark backgrounds.
 
 ## Layout & Spacing
+
+### Approved TASK-027 target (2026-09-07; implementation pending)
+
+These scoped rules govern the next room-flow slice and override earlier generic
+rail/dock guidance only where they conflict. Existing tokens and the accepted
+TASK-026 artwork-driven theme remain unchanged.
+
+- Watch is catalogue-first when permitted, with a YouTube & links entry state
+  when catalogue access is denied. Unresolved/error states stay explicit.
+- Empty media has no reserved player rail/dock. Loaded paused or buffering media
+  retains its player. Desktop browsing uses the available width with a movable
+  compact player and an obvious Cinema action when a source exists.
+- Watch's loaded paused dock may be manually minimized to a non-scrollable
+  thumbnail/title bar. Restore on click and return to full provider presentation
+  when playback resumes. Preserve the mounted media instance. Dock actions are
+  drag, minimize and Home/Cinema; fullscreen stays with transport controls.
+- Desktop and mobile Watch mode controls share the room's compact outlined pill
+  treatment, Video/Headphones icons and artwork-derived selected accent. Keep
+  visible labels, touch targets and existing shared-room permission semantics.
+- Media details center artwork and metadata in a bounded column. Replace browse
+  tabs/source selection with Back to results while details are visible; restore
+  browsing state on return. Use a subtle 180ms downward entrance, disabled for
+  reduced motion. Queue ellipsis menus dismiss on outside pointer/focus events.
+- Watch browsing uses a continuous ambient surface without the extra navigation
+  strip or outer content box. Keep the mobile compact mode bar below identity,
+  Cinema return action, and Catalogue access through the source controls.
+- Queue text/background accepts mouse dragging and touch hold-to-lift. Artwork
+  remains the independent play target; quick vertical touch scrolls, horizontal
+  swipe retains reveal-then-remove, and menu/actions never start reordering.
+- Mobile Listen browsing uses a compact now-playing bar above bottom navigation;
+  dragging up expands it into the main track/artwork/embed and transport view.
+  Provide reverse handle drag, tap/keyboard alternatives, preserved browse state
+  and reduced motion. Validate supported provider geometry and keep one player.
+- Keep Watch/Listen visible below the mobile Home identity while Home scrolls;
+  its shared-room permission semantics remain distinct from local expansion.
+- Group participant access beside account/settings. Use an available Google
+  profile image for account identity with chosen-avatar fallback. Preserve
+  separate participant identity, host role, labels and comfortable touch targets.
+- Queue lift, insertion and settling use restrained artwork-accent feedback and
+  transform/opacity motion, typically 150–220 ms. The visual drop must not wait
+  for server confirmation. Reduced motion retains clear static placement cues.
+- Playlist rows have separate selection/artwork/text/status columns; themed
+  semantic checkboxes and reachable footer actions follow existing controls.
+
+Detailed state, gesture, concurrency and accessibility contracts live in
+[TASK-027 design](docs/tasks/TASK-027-room-flow-and-queue-response/design.md).
+
+### Existing layout foundations
+
 This design system employs a **Fluid-Grid hybrid** model. 
 - **Media Content:** Always attempts to occupy the maximum available real estate (aspect-ratio preserved).
 - **Control Overlays:** Float above the media using fixed margins (24px) from the edges.
