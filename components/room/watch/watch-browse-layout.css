@@ -612,3 +612,30 @@
   > .listen-home-toolbar {
   display: none;
 }
+
+@media (min-width: 600px) and (max-width: 950px) and (max-height: 600px) {
+  .watch-redesign[data-docked="true"] .watch-main {
+    display: block;
+  }
+  .watch-redesign[data-docked="true"]:not([data-minimized="true"])
+    .watch-player:not(:fullscreen) {
+    position: fixed;
+    inset: auto 12px var(--watch-dock-bottom, 64px) auto;
+    width: min(420px, calc(100vw - 24px));
+    height: var(--watch-dock-height);
+    min-height: 0;
+    max-height: var(--watch-dock-height);
+    overflow: auto;
+  }
+  .watch-redesign[data-docked="true"] .watch-drag-handle {
+    display: flex;
+  }
+}
+.watch-redesign[data-docked="true"]
+  .watch-player[data-free-dock="true"]:not(:fullscreen) {
+  position: fixed;
+  left: var(--watch-free-left);
+  top: var(--watch-free-top);
+  right: auto;
+  bottom: auto;
+}

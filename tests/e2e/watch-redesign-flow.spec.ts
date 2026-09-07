@@ -228,11 +228,11 @@ for (const [width, height] of [
       expect(box!.x + box!.width).toBeLessThanOrEqual(width + 1);
       if (width < 768 && height > 600) {
         await page
-          .getByRole("button", { name: "Drag player to a corner", exact: true })
+          .getByRole("button", { name: "Move player", exact: true })
           .press("ArrowLeft");
-        await expect(page.locator(".watch-redesign")).toHaveAttribute(
-          "data-anchor",
-          "left",
+        await expect(page.locator(".watch-player")).toHaveAttribute(
+          "data-free-dock",
+          "true",
         );
         await page
           .getByRole("button", { name: "Minimize player", exact: true })

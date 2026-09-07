@@ -98,7 +98,7 @@ qa(
       ).toBe(true);
     }
     await page
-      .getByRole("button", { name: "Drag player to a corner", exact: true })
+      .getByRole("button", { name: "Move player", exact: true })
       .press("ArrowLeft");
     await page
       .getByRole("button", { name: "Minimize player", exact: true })

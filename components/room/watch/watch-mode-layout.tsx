@@ -87,7 +87,7 @@ export function WatchModeLayout({
     liveRoom.snapshot.session?.sourceType,
   );
   const shellRef = useWatchDockBounds();
-  const dock = useWatchDock();
+  const dock = useWatchDock(shellRef);
   const viewport = useWatchViewport();
   const library = useMediaLibrary();
   const preferences = useMediaPreferences({
@@ -252,12 +252,13 @@ export function WatchModeLayout({
             <div className="watch-dock-frame">
               <button
                 className="watch-drag-handle"
-                aria-label="Drag player to a corner"
+                aria-label="Move player"
                 onKeyDown={dock.keyDown}
                 onPointerMove={dock.moveDrag}
                 onPointerDown={dock.startDrag}
                 onPointerUp={dock.endDrag}
                 onPointerCancel={dock.cancelDrag}
+                onLostPointerCapture={dock.cancelDrag}
               >
                 <GripHorizontal />
               </button>

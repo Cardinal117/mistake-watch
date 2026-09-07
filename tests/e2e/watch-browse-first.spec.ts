@@ -14,7 +14,7 @@ watchTest(
     const content = await page.locator(".watch-content").boundingBox();
     expect(content!.x).toBeLessThan(30);
     await expect(
-      page.getByRole("button", { name: "Drag player to a corner" }),
+      page.getByRole("button", { name: "Move player" }),
     ).toBeVisible();
   },
 );
@@ -167,7 +167,7 @@ watchTest(
     const original = await page.locator("video").elementHandle();
     for (const key of ["ArrowLeft", "ArrowUp", "ArrowRight", "ArrowDown"]) {
       await page
-        .getByRole("button", { name: "Drag player to a corner" })
+        .getByRole("button", { name: "Move player" })
         .press(key);
       const rect = await page.locator(".watch-player").boundingBox();
       const header = (await page.locator(".watch-room-header").boundingBox())!;
@@ -282,21 +282,21 @@ watchTest(
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/dev/watch-design");
     const handle = page.getByRole("button", {
-      name: "Drag player to a corner",
+      name: "Move player",
     });
     const box = (await handle.boundingBox())!;
     await page.mouse.move(box.x + 20, box.y + 20);
     await page.mouse.down();
     await page.mouse.move(30, 180, { steps: 8 });
     await page.mouse.up();
-    await expect(page.locator(".watch-redesign")).toHaveAttribute(
-      "data-anchor",
-      "top-left",
+    await expect(page.locator(".watch-player")).toHaveAttribute(
+      "data-free-dock",
+      "true",
     );
     await handle.press("ArrowRight");
-    await expect(page.locator(".watch-redesign")).toHaveAttribute(
-      "data-anchor",
-      "top-right",
+    await expect(page.locator(".watch-player")).toHaveAttribute(
+      "data-free-dock",
+      "true",
     );
     await page
       .getByRole("button", { name: "Minimize player", exact: true })
