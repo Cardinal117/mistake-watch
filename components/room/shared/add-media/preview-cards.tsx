@@ -1,4 +1,5 @@
 "use client";
+import "./playlist-preview.css";
 
 import { useState } from "react";
 import {
@@ -140,7 +141,7 @@ export function PlaylistPreviewCard({
   }
 
   return (
-    <div className="grid max-h-[min(34rem,calc(100dvh-12rem))] min-h-0 grid-rows-[auto_auto_auto_auto_minmax(0,1fr)_auto] gap-3 overflow-hidden rounded-md border border-primary-fixed-dim/25 bg-surface-container-low p-3">
+    <div className="playlist-preview rounded-md border border-primary-fixed-dim/25 bg-surface-container-low p-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <Badge tone={mode === "listen" ? "amber" : "cyan"}>
@@ -174,10 +175,12 @@ export function PlaylistPreviewCard({
         <input
           className="h-9 min-w-0 rounded-sm border border-white/10 bg-surface-container px-3 text-label-sm text-on-surface outline-none placeholder:text-on-surface-variant/55 focus:border-primary-fixed-dim"
           onChange={(event) => setQuery(event.currentTarget.value)}
+          aria-label="Search playlist"
           placeholder="Search playlist"
           value={query}
         />
         <select
+          aria-label="Sort playlist"
           className="h-9 rounded-sm border border-white/10 bg-surface-container px-2 text-label-sm text-on-surface outline-none focus:border-primary-fixed-dim"
           onChange={(event) =>
             setSortMode(event.currentTarget.value as typeof sortMode)
@@ -256,7 +259,7 @@ export function PlaylistPreviewCard({
           Clear selection
         </Button>
       </div>
-      <div className="grid min-h-0 gap-1.5 overflow-y-auto pr-1 [scrollbar-color:rgb(255_186_32_/_0.42)_transparent] [scrollbar-width:thin]">
+      <div className="playlist-preview-list">
         {visibleItems.map((item) => {
           const itemKey = playlistItemKey(item);
           const selected = selectedIds.has(itemKey);
@@ -265,7 +268,7 @@ export function PlaylistPreviewCard({
           return (
             <label
               className={cx(
-                "grid grid-cols-[auto_2.75rem_minmax(0,1fr)_auto] items-center gap-2 rounded-sm border border-white/10 bg-surface-container/70 p-1.5",
+                "playlist-preview-row rounded-sm border border-white/10 bg-surface-container/70 p-1.5",
                 unavailable
                   ? "cursor-not-allowed opacity-60"
                   : "cursor-pointer",
@@ -274,7 +277,7 @@ export function PlaylistPreviewCard({
             >
               <input
                 checked={selected}
-                className="accent-primary-fixed-dim"
+                className="playlist-checkbox"
                 disabled={unavailable}
                 onChange={() => {
                   if (unavailable) return;
@@ -284,7 +287,9 @@ export function PlaylistPreviewCard({
                 }}
                 type="checkbox"
               />
-              <QueueImage thumbnailUrl={item.thumbnailUrl} />
+              <span className="playlist-preview-artwork">
+                <QueueImage thumbnailUrl={item.thumbnailUrl} />
+              </span>
               <span className="min-w-0">
                 <span className="block truncate text-label-sm font-semibold text-on-surface">
                   {item.title}
@@ -304,7 +309,7 @@ export function PlaylistPreviewCard({
           );
         })}
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="playlist-preview-actions grid grid-cols-2 gap-2">
         <Button
           disabled={addDisabled || preview.items.length === 0}
           onClick={() => onImport("all")}

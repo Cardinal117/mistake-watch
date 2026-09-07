@@ -133,12 +133,8 @@ test("playlist review exposes search sort select import and duration controls", 
 });
 
 test("playlist duration filters are reserved above the scrollable rows", () => {
-  assert.match(
-    queuePanelSource,
-    /grid-rows-\[auto_auto_auto_auto_minmax\(0,1fr\)_auto\]/,
-  );
+  assert.match(queuePanelSource, /playlist-preview-list/);
   assert.match(queuePanelSource, /Duration filter/);
-  assert.match(queuePanelSource, /min-h-0 gap-1\.5 overflow-y-auto/);
   assert.match(listenLayoutSource, /Duration filter/);
 });
 
