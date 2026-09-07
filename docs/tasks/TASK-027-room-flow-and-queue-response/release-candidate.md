@@ -26,3 +26,15 @@ Current production baseline verified: `dpl_8ayFXZG5sE2fUoR2W2iZk2z5MmuG`, https:
 ## Still required before final merge
 
 Real two-participant Watch/Listen navigation, source retention, permission changes, simultaneous queue edits, reconnect and autoplay; real YouTube/R2 playback; physical phone rotation/fullscreen and gestures. The full performance distributions and prior early convergence diagnostic stay open until measured in integrated QA. No intake item is closed on fixture results alone.
+
+## Live QA checkpoint — 2026-09-07
+
+The reviewed branch was pushed and [draft PR #13](https://github.com/Cardinal117/mistake-watch/pull/13) opened. New atomic commits: `0031277` Listen/shared interface, `979b84a` queue drop layer, `5da8158` accepted QA documentation. They follow the five earlier TASK-027 commits. Main is not merged.
+
+Vercel candidate `dpl_2rG6qaf8oMmzbSWm453DTUQqfX8X` built successfully from the clean tracked-file archive at `5da8158` (1,145 audited files, no private environment/cache/log artifacts). Its production Turbopack build passed. It was first built with domain assignment disabled, then promoted for the authorized QA round to https://watch.mistakestudios.com. Immutable candidate URL: https://mistake-watch-c4ee9k0i6-cardinal117s-projects.vercel.app. The unpromoted hostname's access-screen responses were not counted as application health.
+
+Before promotion, the exact locally tested backend bundle was published with `--delete-data=never`; migration plan was empty. Live `st_module` program hash equals the disposable local candidate: `0xa67969406235cdd885d8008cc4690cc9f036508910bd3cff1f671f4fde274759`. Legacy clients remain compatible. The earlier baseline above remains the rollback target.
+
+Public read-back after promotion: health 200/ok, readiness 200/ready with Supabase and Spacetime ready; `/dev/listen-design` and `/dev/watch-design` both 404. Public domain resolves to the intended Ready deployment. Browser dashboard load verified. These are deployment smoke checks, not two-participant or real-provider acceptance. Owner has been asked to test the Huawei and a second device in the same room; PR remains draft while that acceptance is pending.
+
+Local dev was restarted on port 5383 after the clean build. The original checkout and unrelated work remain untouched. Remaining local diff consists of generated line-ending/reference noise, excluded from the committed archive. This follow-up record changes documentation only and does not require rebuilding identical application code.

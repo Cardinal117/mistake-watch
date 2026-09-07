@@ -1,8 +1,8 @@
 # Mistake Watch Handoff
 
-## Latest local checkpoint — 027.4 Listen mobile (2026-09-07)
+## Latest checkpoint — TASK-027 live QA candidate (2026-09-07)
 
-Owner accepted local QA on 2026-09-07 and authorized scoped commits, branch push and a deployment for live two-participant QA before merge.
+Owner accepted local QA. Atomic commits are pushed to codex/task-027-room-flow; draft PR #13 is unmerged. Candidate dpl_2rG6qaf8oMmzbSWm453DTUQqfX8X is live on watch.mistakestudios.com for two-participant QA. Public health/readiness pass; live acceptance remains pending.
 [Listen evidence](tasks/TASK-027-room-flow-and-queue-response/listen-local-qa.md)
 and preview: http://127.0.0.1:5383/dev/listen-design . Includes shared queue,
 compact/expanded player, visible YouTube fallback, stable responsive provider and
@@ -11,7 +11,7 @@ Media Session work before release; physical-device/live-provider gates remain.
 
 Updated: 2026-09-07
 
-## Current State
+## Previous accepted baseline (superseded during the TASK-027 QA window)
 
 TASK-026 Watch redesign is owner-accepted after the final Huawei production QA
 on 2026-09-05. PR #12 merged as
