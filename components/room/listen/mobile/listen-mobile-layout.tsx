@@ -12,6 +12,8 @@ import {
   ChevronUp,
   Home,
   ListMusic,
+  Minimize2,
+  Maximize2,
   MoreHorizontal,
   Pause,
   Play,
@@ -20,6 +22,7 @@ import {
   Users,
 } from "lucide-react";
 import type { RoomQueueItem } from "@/lib/rooms";
+import { useCompactPlayback } from "@/lib/account/use-compact-playback";
 import type { ListenModeLayoutProps } from "../shared";
 import { Avatar } from "@/components/ui";
 import {
@@ -99,6 +102,9 @@ export function ListenMobileLayout({
   const hasSource = Boolean(session?.sourceUrl);
   const isExpanded = expanded && hasSource;
   const youtube = session?.sourceType === "youtube";
+  const compact = useCompactPlayback(account);
+  const compactYoutube =
+    youtube && compact.allowed && compact.enabled && !desktopShell;
   const playing = session?.status === "playing";
   const canControl =
     liveRoom.canControlPlayback && liveRoom.connectionStatus === "connected";
@@ -149,6 +155,8 @@ export function ListenMobileLayout({
         data-screen={screen}
         data-source={hasSource}
         data-youtube={youtube}
+        data-embed-layout={youtube && !compactYoutube}
+        data-compact-playback={compactYoutube}
         data-expanded={desktopShell || isExpanded}
       >
         {backdrop}
@@ -283,6 +291,28 @@ export function ListenMobileLayout({
             </button>
             {!isExpanded && (
               <>
+                {youtube && compact.allowed && (
+                  <button
+                    aria-label={
+                      compact.enabled
+                        ? "Show browsing player"
+                        : "Use compact player"
+                    }
+                    title={
+                      compact.enabled
+                        ? "Show browsing player"
+                        : "Use compact player"
+                    }
+                    aria-pressed={compact.enabled}
+                    onClick={() => compact.setEnabled(!compact.enabled)}
+                  >
+                    {compact.enabled ? (
+                      <Maximize2 aria-hidden />
+                    ) : (
+                      <Minimize2 aria-hidden />
+                    )}
+                  </button>
+                )}
                 <button
                   aria-label={playing ? "Pause" : "Play"}
                   disabled={!canControl}

@@ -113,12 +113,19 @@ export function WatchModeLayout({
   const workspace = screen === "home" && catalogueDenied ? "add" : screen;
   const visibleHome = hasSource ? homeView : "browse";
   const paused = liveRoom.snapshot.session?.status === "paused";
+  const canMinimizeWhilePlaying =
+    account.status === "signed-in" &&
+    account.accountStatus === "active" &&
+    account.canUseCompactPlayback === true;
   const activeItem = items.find((item) => item.status === "now");
   const sourceUrl = liveRoom.snapshot.session?.sourceUrl ?? "";
   const docked =
     hasSource && !cinema && (screen !== "home" || visibleHome === "browse");
 
-  const minimized = docked && paused && minimizedSource === sourceUrl;
+  const minimized =
+    docked &&
+    (paused || canMinimizeWhilePlaying) &&
+    minimizedSource === sourceUrl;
 
   useEffect(() => {
     // Each workspace starts at its heading; the catalogue owns its own preserved scroll.
@@ -283,7 +290,7 @@ export function WatchModeLayout({
                   <strong>
                     {liveRoom.snapshot.session?.sourceTitle ?? "Paused media"}
                   </strong>
-                  <small>Paused</small>
+                  <small>{paused ? "Paused" : "Playing"}</small>
                 </span>
                 <ChevronUp aria-hidden />
               </button>
@@ -303,8 +310,12 @@ export function WatchModeLayout({
               </button>
               <button
                 aria-label="Minimize player"
-                disabled={!paused}
-                title={paused ? "Minimize paused player" : "Pause to minimize"}
+                disabled={!paused && !canMinimizeWhilePlaying}
+                title={
+                  paused || canMinimizeWhilePlaying
+                    ? "Minimize player"
+                    : "Pause to minimize"
+                }
                 onClick={() => setMinimizedSource(sourceUrl)}
               >
                 <Minus />

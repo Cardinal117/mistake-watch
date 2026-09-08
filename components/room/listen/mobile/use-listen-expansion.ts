@@ -45,7 +45,7 @@ export function useListenExpansion(
       (player.parentElement?.clientHeight ?? window.innerHeight) -
       parseFloat(style.bottom);
     const shortYouTube =
-      player.parentElement?.dataset.youtube === "true" &&
+      player.parentElement?.dataset.embedLayout === "true" &&
       window.matchMedia("(max-height: 500px) and (orientation: landscape)")
         .matches;
     const compact = shortYouTube

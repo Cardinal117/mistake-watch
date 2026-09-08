@@ -1,5 +1,14 @@
 # Mistake Watch Handoff
 
+## Account compact playback candidate — 2026-09-08
+
+Prior fixes committed locally: `dc3ba38` (membership alignment), `f84c287`
+(minimized Watch dragging). No push/deployment. Owner treats membership as fixed
+pending ongoing physical-device QA. New compact playback candidate and local
+allowlist are documented in [account compact playback](tasks/TASK-027-room-flow-and-queue-response/account-compact-playback.md).
+This capability is not configured in production. Preserve unrelated worktree
+edits; the account feature is not part of the two earlier commits.
+
 ## Local account membership follow-up — 2026-09-08
 
 The shared page/admission membership resolver fixes the reproduced guest-cookie

@@ -18,4 +18,5 @@ export type AccountSummary =
       id: string;
       role: AccountRole;
       accountStatus: AccountStatus;
+      canUseCompactPlayback?: boolean;
     };
