@@ -93,14 +93,23 @@ export function RoomExperience({
     }
 
     const timer = window.setTimeout(() => {
-      router.replace("/?notice=removed-from-room");
+      router.replace(
+        liveRoom.removalReason === "admission-failed"
+          ? "/?notice=room-connection-failed"
+          : "/?notice=removed-from-room",
+      );
     }, 3500);
 
     return () => window.clearTimeout(timer);
-  }, [liveRoom.removalNotice, router]);
+  }, [liveRoom.removalNotice, liveRoom.removalReason, router]);
 
   if (liveRoom.removalNotice) {
-    return <RoomRemovedNotice message={liveRoom.removalNotice} />;
+    return (
+      <RoomRemovedNotice
+        message={liveRoom.removalNotice}
+        admissionFailed={liveRoom.removalReason === "admission-failed"}
+      />
+    );
   }
 
   if (liveRoom.connectionReadiness.status !== "ready") {
@@ -182,7 +191,13 @@ function RoomConnectionBoundary({
   );
 }
 
-function RoomRemovedNotice({ message }: { message: string }) {
+function RoomRemovedNotice({
+  message,
+  admissionFailed,
+}: {
+  message: string;
+  admissionFailed: boolean;
+}) {
   return (
     <main className="grid min-h-screen place-items-center bg-background px-margin-mobile text-on-surface">
       <section
@@ -196,7 +211,9 @@ function RoomRemovedNotice({ message }: { message: string }) {
         <div>
           <p className="technical-label text-error">Room access ended</p>
           <h1 className="mt-2 text-headline-md font-semibold text-on-surface">
-            You were removed from the room
+            {admissionFailed
+              ? "Room connection interrupted"
+              : "You were removed from the room"}
           </h1>
           <p className="mt-2 text-body-md text-on-surface-variant">
             {message} You will be returned to the dashboard.
@@ -205,7 +222,9 @@ function RoomRemovedNotice({ message }: { message: string }) {
         <Button
           className="mx-auto"
           onClick={() => {
-            window.location.href = "/?notice=removed-from-room";
+            window.location.href = admissionFailed
+              ? "/?notice=room-connection-failed"
+              : "/?notice=removed-from-room";
           }}
           type="button"
           variant="secondary"

@@ -19,7 +19,9 @@ export default async function DashboardPage({
   ]);
   const statusMessage = error
     ? decodeURIComponent(error)
-    : dashboardData.statusMessage;
+    : notice === "room-connection-failed"
+      ? "Your live room connection could not be restored. Reopen the room to reconnect."
+      : dashboardData.statusMessage;
 
   return (
     <DashboardShell

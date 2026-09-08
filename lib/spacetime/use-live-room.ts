@@ -109,7 +109,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
 
     const timer = window.setTimeout(() => {
       setMemberMissingNotice(
-        "Your live room membership could not be restored. You will be returned to the dashboard.",
+        "Your live room connection could not be restored. Please reopen the room to reconnect.",
       );
     }, LIVE_ROOM_MEMBER_MISSING_NOTICE_MS);
 
@@ -755,6 +755,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     playQueueItem,
     publishRoomRhythmProfile,
     removalNotice,
+    removalReason: currentMemberKick ? "removed" : "admission-failed",
     retryConnection,
     removeIdleMember,
     removeQueueItem,

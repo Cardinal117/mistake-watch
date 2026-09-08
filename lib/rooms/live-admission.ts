@@ -1,26 +1,14 @@
 import "server-only";
 
 import { randomBytes } from "node:crypto";
-import { cookies } from "next/headers";
 
-import { getAccountSummary } from "@/lib/account/server";
-import {
-  getGuestIdentityCookieName,
-  reclaimGuestMembership,
-} from "@/lib/identity";
 import { DbConnection } from "@/lib/spacetime/generated";
 import { getSpacetimeConfig } from "@/lib/spacetime/config";
-import { createSupabaseAdminClient } from "@/lib/supabase";
+import { resolveRoomMembership, type AdmissionMember } from "./membership";
 
 const ADMISSION_TTL_MS = 60_000;
 const ADMISSION_TIMEOUT_MS = 5_000;
 const TOKEN_BYTES = 32;
-
-type AdmissionMember = {
-  authorizationKind: "account" | "guest";
-  memberId: string;
-  role: "host" | "guest";
-};
 
 type AdmissionGrantReducers = {
   issueRoomAdmissionGrant(params: {
@@ -55,7 +43,7 @@ export async function createLiveRoomAdmission(input: {
     throw new LiveAdmissionError("Invalid live connection identity.", 400);
   }
 
-  const member = await resolveAdmissionMember(input.roomId);
+  const member = await resolveRoomMembership(input.roomId);
 
   if (!member) {
     throw new LiveAdmissionError("Active room membership is required.", 403);
@@ -64,10 +52,7 @@ export async function createLiveRoomAdmission(input: {
   const serverToken = process.env.SPACETIME_SERVER_AUTH_TOKEN?.trim();
 
   if (!serverToken) {
-    throw new LiveAdmissionError(
-      "Live room admission is not configured.",
-      503,
-    );
+    throw new LiveAdmissionError("Live room admission is not configured.", 503);
   }
 
   const admissionId = randomBytes(18).toString("base64url");
@@ -85,63 +70,6 @@ export async function createLiveRoomAdmission(input: {
   });
 
   return { admissionId, admissionToken, expiresAt };
-}
-
-async function resolveAdmissionMember(
-  roomId: string,
-): Promise<AdmissionMember | null> {
-  const account = await getAccountSummary();
-
-  if (account.status === "signed-in") {
-    if (account.accountStatus !== "active") {
-      return null;
-    }
-
-    const admin = createSupabaseAdminClient();
-    const [{ data: room, error: roomError }, { data: member, error: memberError }] =
-      await Promise.all([
-        admin
-          .from("rooms")
-          .select("id")
-          .eq("id", roomId)
-          .eq("status", "open")
-          .maybeSingle(),
-        admin
-          .from("room_members")
-          .select("id, role")
-          .eq("room_id", roomId)
-          .eq("user_id", account.id)
-          .maybeSingle(),
-      ]);
-
-    if (roomError || memberError) {
-      throw roomError ?? memberError;
-    }
-
-    if (room && member) {
-      return {
-        authorizationKind: "account",
-        memberId: member.id,
-        role: member.role === "host" ? "host" : "guest",
-      };
-    }
-  }
-
-  const cookieStore = await cookies();
-  const token = cookieStore.get(getGuestIdentityCookieName(roomId))?.value;
-  const session = token
-    ? await reclaimGuestMembership({ roomId, token })
-    : null;
-
-  if (!session || session.room.status !== "open") {
-    return null;
-  }
-
-  return {
-    authorizationKind: "guest",
-    memberId: session.member.id,
-    role: session.member.role === "host" ? "host" : "guest",
-  };
 }
 
 async function issueAdmissionGrant(input: {

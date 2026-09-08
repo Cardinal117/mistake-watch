@@ -1,5 +1,13 @@
 # Mistake Watch Handoff
 
+## Local account membership follow-up — 2026-09-08
+
+The shared page/admission membership resolver fixes the reproduced guest-cookie
+versus Google-account member mismatch. Local regression, typecheck, source lint
+and webpack build pass. Physical two-device Google sign-in QA remains pending;
+production and Git release state below are unchanged. See the
+[scope and exact QA evidence](tasks/TASK-027-room-flow-and-queue-response/account-membership-follow-up.md).
+
 ## Final release accepted and merged - 2026-09-07
 
 Owner accepted live QA and approved the local/browser/production-build gate with no GitHub CI checks configured. PR #13 merged into main as `5411449ee80ab7d0da382154a5916474d567f1fc`, preserving the atomic commits. Production `dpl_2szjneG7xb5SpDtdaKjC1ijGkrGL` is Ready and its application code matches main; only README/release documentation differs, so no redundant deployment is needed. Earlier draft/pending statements below are historical. The unreproduced token report remains a documented follow-up.

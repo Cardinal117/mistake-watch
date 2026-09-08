@@ -26,7 +26,10 @@ const [
   read("spacetime/src/room-participant-state.ts"),
   read("spacetime/src/room-tables.ts"),
   read("spacetime/src/room-admission.ts"),
-  read("lib/rooms/live-admission.ts"),
+  Promise.all([
+    read("lib/rooms/live-admission.ts"),
+    read("lib/rooms/membership.ts"),
+  ]).then((sources) => sources.join("\n")),
   read("lib/spacetime/use-live-room.ts"),
   read("spacetime/src/recommendation-authority.ts"),
 ]);
