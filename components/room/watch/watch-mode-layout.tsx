@@ -73,6 +73,7 @@ export function WatchModeLayout({
   const [cinema, setCinema] = useState(false);
   const [cinemaReturn, setCinemaReturn] = useState<WatchWorkspace>("home");
   const [minimizedSource, setMinimizedSource] = useState<string | null>(null);
+  const restoreTouch = useRef<{ x: number; y: number } | null>(null);
   const restoreFocus = useRef<HTMLElement | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const {
@@ -230,25 +231,63 @@ export function WatchModeLayout({
             onPointerDown={revealFullscreen}
             onFocusCapture={revealFullscreen}
           >
-            <button
-              className="watch-paused-bar"
-              hidden={!minimized}
-              aria-label={`Restore player: ${liveRoom.snapshot.session?.sourceTitle ?? "Paused media"}`}
-              onClick={() => setMinimizedSource(null)}
-            >
-              <span className="watch-paused-art">
-                {activeItem?.thumbnailUrl && (
-                  <LazyMediaPoster src={activeItem.thumbnailUrl} />
-                )}
-              </span>
-              <span>
-                <strong>
-                  {liveRoom.snapshot.session?.sourceTitle ?? "Paused media"}
-                </strong>
-                <small>Paused</small>
-              </span>
-              <ChevronUp aria-hidden />
-            </button>
+            <div className="watch-paused-bar" hidden={!minimized}>
+              <button
+                className="watch-paused-grip"
+                aria-label="Move minimized player"
+                title="Drag to move. Arrow keys move; Shift moves precisely."
+                onKeyDown={dock.keyDown}
+                onPointerMove={dock.moveDrag}
+                onPointerDown={dock.startDrag}
+                onPointerUp={dock.endDrag}
+                onPointerCancel={dock.cancelDrag}
+                onLostPointerCapture={dock.cancelDrag}
+              >
+                <GripHorizontal aria-hidden />
+              </button>
+              <button
+                className="watch-paused-restore"
+                onPointerDown={(event) => {
+                  if (event.pointerType !== "touch") return;
+                  // Restore on the touch gesture itself: mobile browsers can
+                  // suppress a synthesized click after a captured dock drag.
+                  event.preventDefault();
+                  restoreTouch.current = { x: event.clientX, y: event.clientY };
+                }}
+                onPointerCancel={() => {
+                  restoreTouch.current = null;
+                }}
+                onPointerUp={(event) => {
+                  const start = restoreTouch.current;
+                  restoreTouch.current = null;
+                  if (
+                    event.pointerType === "touch" &&
+                    start &&
+                    Math.hypot(
+                      event.clientX - start.x,
+                      event.clientY - start.y,
+                    ) < 8
+                  ) {
+                    setMinimizedSource(null);
+                  }
+                }}
+                aria-label={`Restore player: ${liveRoom.snapshot.session?.sourceTitle ?? "Paused media"}`}
+                onClick={() => setMinimizedSource(null)}
+              >
+                <span className="watch-paused-art">
+                  {activeItem?.thumbnailUrl && (
+                    <LazyMediaPoster src={activeItem.thumbnailUrl} />
+                  )}
+                </span>
+                <span>
+                  <strong>
+                    {liveRoom.snapshot.session?.sourceTitle ?? "Paused media"}
+                  </strong>
+                  <small>Paused</small>
+                </span>
+                <ChevronUp aria-hidden />
+              </button>
+            </div>
             <div className="watch-dock-frame">
               <button
                 className="watch-drag-handle"

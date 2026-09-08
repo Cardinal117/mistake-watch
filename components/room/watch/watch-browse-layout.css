@@ -299,7 +299,29 @@
   width: 100%;
   min-height: 52px;
   align-items: center;
-  gap: 12px;
+  gap: 4px;
+}
+.watch-paused-grip {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  height: 44px;
+  touch-action: none;
+  user-select: none;
+  cursor: grab !important;
+  color: var(--color-on-surface-variant);
+}
+.watch-redesign[data-dragging="true"] .watch-paused-grip {
+  cursor: grabbing !important;
+}
+.watch-paused-restore {
+  touch-action: manipulation;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  align-items: center;
+  gap: 8px;
   text-align: left;
 }
 .watch-paused-art {
@@ -315,7 +337,7 @@
   height: 100%;
   object-fit: cover;
 }
-.watch-paused-bar > span:nth-child(2) {
+.watch-paused-restore > span:nth-child(2) {
   flex: 1;
   min-width: 0;
 }
