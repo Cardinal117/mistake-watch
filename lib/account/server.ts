@@ -1,4 +1,5 @@
 import "server-only";
+import { canUseCompactPlayback } from "./compact-playback";
 
 import { cookies } from "next/headers";
 
@@ -37,6 +38,10 @@ export async function getAccountSummary(): Promise<AccountSummary> {
 
   return {
     accountStatus: normalizeAccountStatus(profile.account_status),
+    canUseCompactPlayback: canUseCompactPlayback(
+      data.user,
+      profile.account_status,
+    ),
     avatarKey: profile.avatar_key,
     avatarSource: normalizeAvatarSource(profile.avatar_source),
     avatarUrl: profile.avatar_url,

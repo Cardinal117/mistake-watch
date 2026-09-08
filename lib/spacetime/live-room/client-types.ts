@@ -312,6 +312,7 @@ export type LiveRoomState = {
     ttlMs: number;
   }): void;
   removalNotice: string | null;
+  removalReason?: "removed" | "admission-failed";
   retryConnection(): void;
   removeIdleMember(memberId: string): void;
   removeQueueItem(queueItemId: string): void;

@@ -5,12 +5,14 @@ import vm from "node:vm";
 import test from "node:test";
 import ts from "typescript";
 
-function command({
+function roomState({
   sourceType = "direct",
   status = "ended",
   position = 120,
   role = "host",
   admitted = true,
+  kicked = false,
+  memberMissingNotice = null,
 } = {}) {
   const sent = [];
   const snapshot = {
@@ -22,7 +24,7 @@ function command({
     },
     participants: [],
     permissions: [],
-    kicks: [],
+    kicks: kicked ? [{ memberId: "member" }] : [],
     queue: [],
     participantPresences: admitted
       ? [{ admissionId: "fixture", memberId: "member", status: "online" }]
@@ -56,6 +58,7 @@ function command({
             return {
               useRoomConnection: () => ({
                 snapshot,
+                memberMissingNotice,
                 admissionId: "fixture",
                 reducers: { setPlaybackState: (value) => sent.push(value) },
               }),
@@ -84,8 +87,38 @@ function command({
     currentMember: { id: "member", role },
   });
   live.setPlaybackState({ positionSeconds: position, status: "playing" });
-  return sent;
+  return { sent, live };
 }
+
+function command(options) {
+  return roomState(options).sent;
+}
+
+// Post-hoc coverage for the exit-reason presentation accompanying identity repair.
+test("missing admission is reported as a connection failure, not a host kick", () => {
+  const { live } = roomState({
+    admitted: false,
+    memberMissingNotice: "Reconnect required",
+  });
+  assert.equal(live.removalReason, "admission-failed");
+  assert.equal(live.removalNotice, "Reconnect required");
+});
+test("a real kick retains priority over a missing-admission notice", () => {
+  const { live } = roomState({
+    kicked: true,
+    admitted: false,
+    memberMissingNotice: "Reconnect required",
+  });
+  assert.equal(live.removalReason, "removed");
+  assert.match(live.removalNotice, /removed.*host/);
+});
+test("restored per-device admission suppresses a stale missing-member notice", () => {
+  const { live } = roomState({
+    admitted: true,
+    memberMissingNotice: "Reconnect required",
+  });
+  assert.equal(live.removalNotice, null);
+});
 
 for (const sourceType of ["direct", "hls"]) {
   test(`${sourceType}: Play after completion restarts through canonical room authority`, () => {

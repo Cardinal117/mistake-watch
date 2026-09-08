@@ -1,5 +1,32 @@
 # Mistake Watch Handoff
 
+## Account compact playback live QA — 2026-09-08
+
+Production now runs `2dadc20`, including `dc3ba38` (membership alignment) and
+`f84c287` (minimized Watch dragging). Deployment:
+`dpl_9ud5VPgopYH3SKJewBuyTEgPCWDH`;
+https://mistake-watch-lkenmzwyt-cardinal117s-projects.vercel.app.
+https://watch.mistakestudios.com resolves to this Ready candidate.
+
+The exact two-account server-only allowlist is configured in Vercel production;
+no IDs or credentials are committed. Clean tracked archive deployed; unrelated
+worktree changes excluded. Production Turbopack build, health/readiness (200),
+development design-route protection (404) and public dashboard browser smoke
+passed. No Supabase schema or Spacetime module deployment was required.
+
+Owner confirmed compact playback live QA and authorized push/merge. The specific
+friend multi-device sign-in/removal scenario remains under observation; do not
+infer that it was separately reproduced and accepted. Final pre-merge checks:
+111 identity/realtime tests, typecheck and diff whitespace passed. Earlier six
+browser checks and production Turbopack build passed. See [scope and evidence](tasks/TASK-027-room-flow-and-queue-response/account-compact-playback.md).
+
+Rollback remains `dpl_2szjneG7xb5SpDtdaKjC1ijGkrGL` at
+https://mistake-watch-ixh1ei4jz-cardinal117s-projects.vercel.app.
+Keep this accepted release live. Push and merge of `codex/task-027-room-flow`
+are authorized; the PR records the final merge result. Subsequent documentation
+commits do not change the deployed application. Earlier release entries below
+are historical; preserve unrelated dirty files in the worktree.
+
 ## Final release accepted and merged - 2026-09-07
 
 Owner accepted live QA and approved the local/browser/production-build gate with no GitHub CI checks configured. PR #13 merged into main as `5411449ee80ab7d0da382154a5916474d567f1fc`, preserving the atomic commits. Production `dpl_2szjneG7xb5SpDtdaKjC1ijGkrGL` is Ready and its application code matches main; only README/release documentation differs, so no redundant deployment is needed. Earlier draft/pending statements below are historical. The unreproduced token report remains a documented follow-up.

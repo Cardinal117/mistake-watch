@@ -2,10 +2,7 @@ import "server-only";
 
 import { cookies } from "next/headers";
 
-import {
-  getGuestIdentityCookieName,
-  reclaimGuestMembership,
-} from "@/lib/identity";
+import { reclaimGuestMembership } from "@/lib/identity";
 import {
   getSourceDisplayTitle,
   getYouTubeThumbnailUrl,
@@ -18,6 +15,7 @@ import {
   type Tables,
 } from "@/lib/supabase";
 
+import { resolveRoomMembership } from "./membership";
 import { isRoomAttachedToAccount } from "./account-attachment";
 import { closeIdleUnsavedRooms } from "./lifecycle";
 import { createLiveRoomSeedToken } from "./live-authority";
@@ -157,50 +155,16 @@ export async function getRoomSnapshotForGuest(
   { accountUserId }: { accountUserId?: string | null } = {},
 ): Promise<RoomSnapshot | null> {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(getGuestIdentityCookieName(roomId))?.value;
+    const member = await resolveRoomMembership(roomId);
+    if (!member) return null;
 
-    const session = token
-      ? await reclaimGuestMembership({ roomId, token })
-      : null;
-
-    if (!session || session.room.status !== "open") {
-      return getRoomSnapshotForSignedInMember(roomId, accountUserId);
-    }
-
-    return getRoomSnapshot(session.room.id, {
+    return getRoomSnapshot(roomId, {
       accountUserId,
-      currentMemberId: session.member.id,
+      currentMemberId: member.memberId,
     });
   } catch {
     return null;
   }
-}
-
-async function getRoomSnapshotForSignedInMember(
-  roomId: string,
-  accountUserId?: string | null,
-): Promise<RoomSnapshot | null> {
-  if (!accountUserId) {
-    return null;
-  }
-
-  const supabase = createSupabaseAdminClient();
-  const { data: member, error: memberError } = await supabase
-    .from("room_members")
-    .select("id")
-    .eq("room_id", roomId)
-    .eq("user_id", accountUserId)
-    .maybeSingle();
-
-  if (memberError || !member) {
-    return null;
-  }
-
-  return getRoomSnapshot(roomId, {
-    accountUserId,
-    currentMemberId: member.id,
-  });
 }
 
 export async function getRoomJoinPreview(

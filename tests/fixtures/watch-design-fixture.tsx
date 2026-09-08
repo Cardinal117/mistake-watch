@@ -127,6 +127,7 @@ export function WatchDesignFixture({
     null,
   );
   const [owner, setOwner] = useState(false);
+  const [compactAccount, setCompactAccount] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
   const calls = useRef<Array<{ action: string; input: unknown }>>([]);
   const [activeArtwork, setArtwork] = useState<string | null>(
@@ -363,6 +364,13 @@ export function WatchDesignFixture({
       };
     const frame = requestAnimationFrame(() => {
       setOwner(new URLSearchParams(location.search).has("owner"));
+      setCompactAccount(new URLSearchParams(location.search).has("compact"));
+      if (new URLSearchParams(location.search).has("youtube"))
+        setSession((current) => ({
+          ...current,
+          sourceType: "youtube",
+          sourceUrl: "https://www.youtube.com/watch?v=M7lc1UVf-VE",
+        }));
       if (new URLSearchParams(location.search).has("empty"))
         setSession((current) => ({ ...current, sourceUrl: "" }));
       setReady(true);
@@ -452,6 +460,7 @@ export function WatchDesignFixture({
                 status: "signed-in",
                 role: "owner",
                 accountStatus: "active",
+                canUseCompactPlayback: compactAccount,
                 id,
                 displayName: "Jayden",
                 email: null,

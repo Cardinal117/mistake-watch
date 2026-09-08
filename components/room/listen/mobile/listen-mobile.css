@@ -16,7 +16,7 @@
     ),
     var(--color-background);
 }
-.listen-mobile-shell[data-youtube="true"] {
+.listen-mobile-shell[data-embed-layout="true"] {
   --listen-bar-height: 280px;
 }
 .listen-mobile-shell .listen-mobile-identity {
@@ -244,7 +244,7 @@
   > :not(.listen-now-art) {
   display: none;
 }
-.listen-mobile-shell[data-youtube="false"]
+.listen-mobile-shell[data-embed-layout="false"]
   .listen-mobile-player[data-expanded="false"]
   .listen-now-art {
   position: absolute;
@@ -256,25 +256,25 @@
   aspect-ratio: 1;
   border: 0;
 }
-.listen-mobile-shell[data-youtube="false"]
+.listen-mobile-shell[data-embed-layout="false"]
   .listen-mobile-player[data-expanded="false"]
   .listen-mobile-player-body {
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
-.listen-mobile-shell[data-youtube="false"]
+.listen-mobile-shell[data-embed-layout="false"]
   .listen-mobile-player[data-expanded="false"]
   .listen-expand-handle {
   padding-left: 50px;
 }
-.listen-mobile-shell[data-youtube="true"]
+.listen-mobile-shell[data-embed-layout="true"]
   .listen-mobile-player[data-expanded="false"]
   .listen-mobile-player-top {
   order: 1;
   min-height: 72px;
 }
-.listen-mobile-shell[data-youtube="true"]
+.listen-mobile-shell[data-embed-layout="true"]
   .listen-mobile-player[data-expanded="false"]
   .listen-now-art {
   height: 200px;
@@ -342,11 +342,11 @@
   .listen-mobile-player-body {
     padding-bottom: 12px;
   }
-  .listen-mobile-shell[data-youtube="true"] .listen-mobile-workspace {
+  .listen-mobile-shell[data-embed-layout="true"] .listen-mobile-workspace {
     margin-right: 240px;
     margin-bottom: var(--listen-nav-height);
   }
-  .listen-mobile-shell[data-youtube="true"]
+  .listen-mobile-shell[data-embed-layout="true"]
     .listen-mobile-player[data-expanded="false"] {
     left: auto;
     width: 240px;
@@ -355,13 +355,13 @@
     );
     min-height: 244px;
   }
-  .listen-mobile-shell[data-youtube="true"]
+  .listen-mobile-shell[data-embed-layout="true"]
     .listen-mobile-player[data-expanded="false"]
     .listen-mobile-player-top {
     min-height: 44px;
     padding: 0 4px;
   }
-  .listen-mobile-shell[data-youtube="true"]
+  .listen-mobile-shell[data-embed-layout="true"]
     .listen-mobile-player[data-expanded="false"]
     .listen-expand-handle
     small {
@@ -380,17 +380,17 @@
   > :not(.listen-now-scroll) {
   display: none;
 }
-.listen-mobile-shell[data-youtube="false"]
+.listen-mobile-shell[data-embed-layout="false"]
   .listen-mobile-player[data-expanded="false"]
   .listen-now-panel
   > div,
-.listen-mobile-shell[data-youtube="false"]
+.listen-mobile-shell[data-embed-layout="false"]
   .listen-mobile-player[data-expanded="false"]
   .listen-now-scroll {
   height: 100%;
   overflow: visible;
 }
-.listen-mobile-shell[data-youtube="false"]
+.listen-mobile-shell[data-embed-layout="false"]
   .listen-mobile-player[data-expanded="false"]
   .listen-now-art {
   width: calc(44px + (min(100vw - 36px, 380px) - 44px) * var(--listen-expand));
@@ -403,7 +403,7 @@
   }
 }
 
-.listen-mobile-shell[data-youtube="true"] .listen-now-art {
+.listen-mobile-shell[data-embed-layout="true"] .listen-now-art {
   border: 0;
 }
 
@@ -411,7 +411,9 @@
   --color-secondary-fixed-dim: rgb(var(--listen-primary));
   --color-primary-fixed-dim: rgb(var(--listen-primary));
 }
-.listen-mobile-shell[data-youtube="true"] .listen-now-art > div[aria-hidden] {
+.listen-mobile-shell[data-embed-layout="true"]
+  .listen-now-art
+  > div[aria-hidden] {
   display: none;
 }
 .listen-mobile-shell .listen-mobile-identity > button {
@@ -583,4 +585,21 @@
 
 .listen-mobile-shell .listen-mobile-player-top {
   padding-top: calc(6px + env(safe-area-inset-top, 0px) * var(--listen-expand));
+}
+
+/* Authorized compact presentation keeps the provider mounted behind artwork. */
+.listen-mobile-shell[data-compact-playback="true"]
+  .listen-mobile-player[data-expanded="false"]
+  .listen-now-art
+  > :not(img) {
+  visibility: hidden;
+  pointer-events: none;
+}
+.listen-mobile-shell[data-compact-playback="true"]
+  .listen-mobile-player[data-expanded="false"]
+  .listen-now-art
+  > img {
+  opacity: 1;
+  filter: none;
+  transform: none;
 }
