@@ -89,3 +89,14 @@ inspection confirmed the public dashboard loaded. No hosted data/schema or
 Spacetime module changes. The previous accepted deployment
 `dpl_2szjneG7xb5SpDtdaKjC1ijGkrGL` is retained for rollback. Branch commits remain
 local, with no main merge. Live two-account and physical-phone QA is pending.
+
+## Owner acceptance and merge gate — 2026-09-08
+
+Owner confirmed live compact playback QA and explicitly authorized commits,
+push and merge. Final 111 identity/realtime tests, typecheck and diff check pass.
+Earlier six browser checks and Ready production Turbopack build remain valid;
+application code is unchanged since the accepted deployment. The friend's
+multi-device Google removal report remains an observation follow-up. No claim
+of separately verified guest denial or repeated live OAuth testing is inferred
+from the owner's general acceptance. Prior pending/local statements record the
+earlier release stages and are superseded by this acceptance.

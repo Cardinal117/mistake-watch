@@ -14,15 +14,16 @@ worktree changes excluded. Production Turbopack build, health/readiness (200),
 development design-route protection (404) and public dashboard browser smoke
 passed. No Supabase schema or Spacetime module deployment was required.
 
-Owner live acceptance remains pending: real Google eligibility for both accounts,
-Watch playing/minimized dragging, Listen compact/restore and audio continuity,
-and multi-device sign-in without unintended removal. Local mocked-provider
-checks are not real-provider acceptance. See [scope and evidence](tasks/TASK-027-room-flow-and-queue-response/account-compact-playback.md).
+Owner confirmed compact playback live QA and authorized push/merge. The specific
+friend multi-device sign-in/removal scenario remains under observation; do not
+infer that it was separately reproduced and accepted. Final pre-merge checks:
+111 identity/realtime tests, typecheck and diff whitespace passed. Earlier six
+browser checks and production Turbopack build passed. See [scope and evidence](tasks/TASK-027-room-flow-and-queue-response/account-compact-playback.md).
 
 Rollback remains `dpl_2szjneG7xb5SpDtdaKjC1ijGkrGL` at
 https://mistake-watch-ixh1ei4jz-cardinal117s-projects.vercel.app.
-Keep this candidate live for QA. Commits are local on `codex/task-027-room-flow`;
-no push or main merge was performed in this release step. Subsequent documentation
+Keep this accepted release live. Push and merge of `codex/task-027-room-flow`
+are authorized; the PR records the final merge result. Subsequent documentation
 commits do not change the deployed application. Earlier release entries below
 are historical; preserve unrelated dirty files in the worktree.
 

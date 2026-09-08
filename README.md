@@ -17,8 +17,9 @@ Live QA update (2026-09-08): account membership alignment (`dc3ba38`), draggable
 minimized Watch playback (`f84c287`), and [account-specific compact playback](docs/tasks/TASK-027-room-flow-and-queue-response/account-compact-playback.md)
 (`2dadc20`) are deployed. The server-only allowlist is configured for the two
 approved active Google accounts. Production build, health/readiness and public
-page smoke checks passed; physical-device/account acceptance remains pending.
-The branch is committed locally and not merged into main. See the handoff for
+page smoke checks passed; the owner accepted compact playback live QA.
+Push and merge are authorized; the multi-device removal report remains under
+observation. See the handoff for
 exact deployment and rollback details.
 
 [TASK-027](docs/tasks/TASK-027-room-flow-and-queue-response/release-candidate.md)
