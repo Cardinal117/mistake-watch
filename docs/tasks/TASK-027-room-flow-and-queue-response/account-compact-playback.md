@@ -1,6 +1,6 @@
 # Account-specific compact playback
 
-Approved 2026-09-08; local implementation and QA only.
+Approved 2026-09-08; committed and deployed for owner live QA.
 
 ## Contract
 
@@ -61,7 +61,7 @@ profile/catalogue/Google-identity query; no hosted rows were changed. Revocation
 via profile/identity/config changes takes effect when server account state is
 refreshed; it does not terminate an already-rendered view remotely.
 
-## Review and later activation
+## Review and activation
 
 Development-only fixture links simulate eligibility (no sign-in needed):
 
@@ -72,8 +72,20 @@ In Watch, play then minimize. In Listen, use the compact icon beside transport
 controls; expand normally or choose Show browsing player. Listen stores the
 choice per account/device, while Watch minimization remains per current source.
 
-Before a separately approved production release, configure the same server-only
-allowlist in the target environment without printing it, then deploy and verify
-both intended accounts plus an unlisted/guest control. Never use a NEXT_PUBLIC
+Production activation was explicitly approved and completed on 2026-09-08. The
+server-only allowlist is configured without exposing its values. Owner QA must
+still verify both intended accounts plus an unlisted/guest control. Never use a NEXT_PUBLIC
 variable or enable the capability based on a query string in a real room. The
 query parameters above exist only in the development-gated design fixture.
+
+## Deployment record — 2026-09-08
+
+Feature commit `2dadc20` includes the prior membership/drag fixes. Vercel Ready
+candidate `dpl_9ud5VPgopYH3SKJewBuyTEgPCWDH` was built from a clean Git archive
+(1,159 tracked files; Vercel selected 1,156 upload files), passed the production
+Turbopack build and was promoted to https://watch.mistakestudios.com.
+Health/readiness returned 200/ready, both design routes returned 404, and browser
+inspection confirmed the public dashboard loaded. No hosted data/schema or
+Spacetime module changes. The previous accepted deployment
+`dpl_2szjneG7xb5SpDtdaKjC1ijGkrGL` is retained for rollback. Branch commits remain
+local, with no main merge. Live two-account and physical-phone QA is pending.

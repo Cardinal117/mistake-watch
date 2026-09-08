@@ -1,21 +1,30 @@
 # Mistake Watch Handoff
 
-## Account compact playback candidate — 2026-09-08
+## Account compact playback live QA — 2026-09-08
 
-Prior fixes committed locally: `dc3ba38` (membership alignment), `f84c287`
-(minimized Watch dragging). No push/deployment. Owner treats membership as fixed
-pending ongoing physical-device QA. New compact playback candidate and local
-allowlist are documented in [account compact playback](tasks/TASK-027-room-flow-and-queue-response/account-compact-playback.md).
-This capability is not configured in production. Preserve unrelated worktree
-edits; the account feature is not part of the two earlier commits.
+Production now runs `2dadc20`, including `dc3ba38` (membership alignment) and
+`f84c287` (minimized Watch dragging). Deployment:
+`dpl_9ud5VPgopYH3SKJewBuyTEgPCWDH`;
+https://mistake-watch-lkenmzwyt-cardinal117s-projects.vercel.app.
+https://watch.mistakestudios.com resolves to this Ready candidate.
 
-## Local account membership follow-up — 2026-09-08
+The exact two-account server-only allowlist is configured in Vercel production;
+no IDs or credentials are committed. Clean tracked archive deployed; unrelated
+worktree changes excluded. Production Turbopack build, health/readiness (200),
+development design-route protection (404) and public dashboard browser smoke
+passed. No Supabase schema or Spacetime module deployment was required.
 
-The shared page/admission membership resolver fixes the reproduced guest-cookie
-versus Google-account member mismatch. Local regression, typecheck, source lint
-and webpack build pass. Physical two-device Google sign-in QA remains pending;
-production and Git release state below are unchanged. See the
-[scope and exact QA evidence](tasks/TASK-027-room-flow-and-queue-response/account-membership-follow-up.md).
+Owner live acceptance remains pending: real Google eligibility for both accounts,
+Watch playing/minimized dragging, Listen compact/restore and audio continuity,
+and multi-device sign-in without unintended removal. Local mocked-provider
+checks are not real-provider acceptance. See [scope and evidence](tasks/TASK-027-room-flow-and-queue-response/account-compact-playback.md).
+
+Rollback remains `dpl_2szjneG7xb5SpDtdaKjC1ijGkrGL` at
+https://mistake-watch-ixh1ei4jz-cardinal117s-projects.vercel.app.
+Keep this candidate live for QA. Commits are local on `codex/task-027-room-flow`;
+no push or main merge was performed in this release step. Subsequent documentation
+commits do not change the deployed application. Earlier release entries below
+are historical; preserve unrelated dirty files in the worktree.
 
 ## Final release accepted and merged - 2026-09-07
 

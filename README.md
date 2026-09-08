@@ -13,12 +13,13 @@ Production:
 
 ## Current Release and Next Acceptance
 
-Local follow-up (2026-09-08): account membership reconciliation and draggable
-minimized Watch playback are committed as `dc3ba38` and `f84c287`, not yet pushed.
-The [account-specific compact playback candidate](docs/tasks/TASK-027-room-flow-and-queue-response/account-compact-playback.md)
-is local for QA. Eligibility uses the server-only `COMPACT_PLAYBACK_ACCOUNT_IDS`
-allowlist plus verified Google identity and active profile. Empty configuration
-disables the exception. Production remains at the accepted release below.
+Live QA update (2026-09-08): account membership alignment (`dc3ba38`), draggable
+minimized Watch playback (`f84c287`), and [account-specific compact playback](docs/tasks/TASK-027-room-flow-and-queue-response/account-compact-playback.md)
+(`2dadc20`) are deployed. The server-only allowlist is configured for the two
+approved active Google accounts. Production build, health/readiness and public
+page smoke checks passed; physical-device/account acceptance remains pending.
+The branch is committed locally and not merged into main. See the handoff for
+exact deployment and rollback details.
 
 [TASK-027](docs/tasks/TASK-027-room-flow-and-queue-response/release-candidate.md)
 is deployed for live acceptance: catalogue-first Watch, compact optimistic and
