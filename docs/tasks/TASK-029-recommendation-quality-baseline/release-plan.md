@@ -1,7 +1,8 @@
 # TASK-029 release plan
 
-Prepared 2026-09-09. Plan only. Local implementation/QA and commit preparation
-are authorized; Git publication and production operations are not yet authorized.
+Prepared 2026-09-09; executed after the owner's subsequent Git and full production
+rollout approval. See [live receipt](live-rollout-2026-09-09.md). The sequence below
+preserves the original review plan; its approval checkpoints have been satisfied.
 
 ## Proposed release
 
@@ -75,10 +76,9 @@ Recorded counts cover retained completed playback in the last 180 days, includin
 repeats; seeking can qualify. These are not lifetime totals. Recommendation quality
 and real provider behavior still require the live listening trial.
 
-## Explicit approval boundaries
+## Original approval checkpoints — now satisfied
 
-- Proposed next approval: create branch, stage the reviewed scope, commit and push
-  it to `origin/codex/task-029-personal-discover`.
-- Not included: merge to main, hosted migrations, production deployment, production
-  QA-account creation, destructive cleanup, messages or automatic monitoring.
-- Production rollout remains a separate concrete approval after source review.
+- Owner approved branch/staging/commit/push, then proceeding with the rollout:
+  merge to main, the reviewed hosted migration, deployment and live verification.
+- No production QA accounts, destructive cleanup, messages or automatic monitoring
+  were needed or performed for TASK-029.

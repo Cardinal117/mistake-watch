@@ -1,19 +1,21 @@
 # TASK-029: Recommendation quality baseline and evaluation
 
-Status: Discover UI and required Personal functionality implemented locally; final QA recorded in implementation.md. No Git or production release approval.
+Status: Discover UI and required Personal functionality released to production on 2026-09-09. See live-rollout-2026-09-09.md for exact receipts and verification limits.
 Documentation level: Expanded implementation packet; this file retains planning history.
 Updated: 2026-09-09.
 Baseline: `77c1943c3e712ccfec57054eee8d99254ddba205` (main).
 
 ## Objective and authority
 
-**Latest approval supersedes earlier planning-only restrictions for local work:**
+**Implementation approval superseded earlier planning-only restrictions:**
 implement the accepted reference, Your regulars with explicit Likes and truthful
 recorded play counts, rediscovery, recommendation queue states, feedback and
 measurement, and Discover/Visualizer underline controls. Preserve the existing
 per-song accent/gradient background. Use [implementation design](design.md),
 [implementation sequence](tasks.md) and [acceptance criteria](acceptance-criteria.md).
-No Git publication, production migration or deployment is included in this approval.
+The owner's subsequent proceed/approval instructions authorized Git publication,
+PR #17 merge, the reviewed migration and production deployment. Earlier local-only
+restrictions below are historical preparation checkpoints, not current gates.
 
 Identify the smallest change that makes Personal recommendations more useful,
 and establish how strict Themed eligibility can be evaluated before enabling it.

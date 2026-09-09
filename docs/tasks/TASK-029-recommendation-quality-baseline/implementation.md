@@ -1,7 +1,9 @@
 # TASK-029 Personal Discover — local implementation and QA
 
-Date: 2026-09-09. Baseline main `77c1943`. Owner-approved local implementation;
-no staging, commit, push, hosted migration or deployment.
+Date: 2026-09-09. Baseline main `77c1943`. This report records the local QA
+checkpoint. The subsequent owner-approved release is documented in
+[live rollout](live-rollout-2026-09-09.md); local-only statements below describe
+the evidence available at the original checkpoint.
 
 ## Result
 

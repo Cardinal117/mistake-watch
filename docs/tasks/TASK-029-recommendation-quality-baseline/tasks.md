@@ -1,6 +1,6 @@
 # TASK-029 implementation sequence
 
-Status: Steps 1–6 completed and locally verified; no commit/deployment approval.
+Status: Steps 1–6 completed and locally verified; subsequent owner-approved production rollout completed. See [live receipt](live-rollout-2026-09-09.md).
 Evidence: [implementation and QA](implementation.md).
 
 1. Record reference and gradient override; freeze observable data/count/feedback
@@ -16,4 +16,9 @@ Evidence: [implementation and QA](implementation.md).
    manual playback remains available. Test new contracts and existing regressions.
 6. Run typecheck, lint, build and responsive browser QA. Independent agent reviews
    actual diff and important failure cases. Fix findings, record evidence and
-   remaining real-device/hosted limits. Stop before Git or deployment.
+   remaining real-device/hosted limits. The original local checkpoint preceded
+   the owner's subsequent Git and production rollout authorization.
+
+7. Completed: merge PR #17, apply the reviewed migration, deploy the merged
+   revision, verify production health/access and signed-in Personal UI, and
+   record the release receipt. Natural listening-quality evaluation remains open.

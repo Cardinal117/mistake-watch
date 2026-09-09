@@ -1,23 +1,27 @@
 # Mistake Watch Handoff
 
-## Personal Discover implementation — 2026-09-09
+## Personal Discover — deployed 2026-09-09
 
 The owner approved implementing TASK-029's accepted reference with the existing
 per-song gradient retained. Local work now includes the regulars grid, recorded
 play counts, recommendation rows, Rediscover, underline stage controls and private
 reversible feedback. SpacetimeDB still owns playback/queue; additions are confirmed
 from its projection. No automatic enqueue is introduced. The additive migration
-was tested and applied only to the existing local synthetic backend.
+was tested locally and subsequently applied to production under owner approval.
 
 See [implementation and QA](tasks/TASK-029-recommendation-quality-baseline/implementation.md)
 and [backend evidence](tasks/TASK-029-recommendation-quality-baseline/backend-verification.md).
-This work remains uncommitted and undeployed. Production migration and frontend
-release require separate approval. Personal listening-quality evaluation, strict
+PR #17 merged as `14f8f6c`; production deployment
+`dpl_2fGQVj3WQDuqCkqYz61XpuupEufz` serves that exact source. Migration history is
+aligned to `20260909150143`; existing rooms/accounts were preserved. Health,
+readiness, private API access and signed-in Personal UI checks passed. See
+[live rollout](tasks/TASK-029-recommendation-quality-baseline/live-rollout-2026-09-09.md)
+for proof and limits. Personal listening-quality evaluation, strict
 Fantasy/orchestral eligibility and Autoplay remain later work.
 The [exact commit review](tasks/TASK-029-recommendation-quality-baseline/commit-review.md)
 and [release plan](tasks/TASK-029-recommendation-quality-baseline/release-plan.md)
-are prepared. Proposed branch: `codex/task-029-personal-discover`; no Git mutation
-has been performed. Remote main still matched the tested baseline at preparation.
+record the reviewed scope and executed sequence. Earlier approval-pending statements
+in historical checkpoints are superseded by the owner's full rollout authorization.
 
 ## Recommendation baseline and proposed evaluation — historical planning
 
