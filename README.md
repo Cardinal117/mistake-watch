@@ -11,6 +11,52 @@ Production:
 - https://watch.mistakestudios.com
 - https://mistake-watch.vercel.app
 
+## Local room-kinds foundation
+
+[TASK-028.1](docs/tasks/TASK-028-room-kinds-foundation/implementation-028.1.md)
+adds Legacy metadata and Saved Rooms grouping.
+[TASK-028.2](docs/tasks/TASK-028-room-kinds-foundation/implementation-028.2.md)
+adds one private, persistent Personal room per active signed-in account, atomic
+creation/resume and owner-only access across devices.
+[TASK-028.3](docs/tasks/TASK-028-room-kinds-foundation/implementation-028.3.md)
+adds trusted learning eligibility, revocable consent, duplicate suppression and
+Temporary implicit-history exclusion.
+[TASK-028.4](docs/tasks/TASK-028-room-kinds-foundation/implementation-028.4.md)
+adds persistent Shared rooms for active accounts, owner-approved membership,
+independent learning choices and removal across devices. Personal and Shared reuse
+the existing Watch/Listen shell and playback authority.
+[TASK-028.5](docs/tasks/TASK-028-room-kinds-foundation/implementation-028.5.md)
+adds persistent Themed rooms, explicit owner-editable direction with conflict
+protection, invited guest access and suppression of unfiltered automatic suggestions.
+Manual media stays available; theme classification/ranking is later work.
+[TASK-028.6](docs/tasks/TASK-028-room-kinds-foundation/implementation-028.6.md)
+adds guest/account Temporary rooms with one-hour inactivity grace, safe cleanup
+after 24 hours closed, preserved explicit Likes/catalogue assets and graceful
+expired-tab/link return home.
+
+The [five audit corrections](docs/tasks/TASK-028-room-kinds-foundation/fixes-2026-09-09.md)
+close Shared listing/Leave gaps, preserve independent consent evidence, recognize
+the real Play Next event and exclude catalogue uploads from automatic Listen suggestions.
+Verified locally through 028.6: **683 Node tests, 267 database assertions, six combined
+browser tests**, fresh migration replay with unchanged populated Legacy fixtures,
+concurrency checks, database advisors, typecheck, lint and build.
+Local app: <http://127.0.0.1:5384/>. Integration QA uses synthetic accounts.
+
+Personal, Shared, Themed and Temporary creation gates default off; enabled only
+in isolated local QA. Database error-level lint/advisors are clear; one inherited
+Shared jsonb-cast warning remains. Cleanup eligibility is 24h after closure, with
+execution at the next successful scheduled/opportunistic maintenance run.
+No new ranker/Autoplay, production schema change, commit or deployment is included.
+[028.7 integration review](docs/tasks/TASK-028-room-kinds-foundation/implementation-028.7.md)
+found a persistent-room closure/live-authority gap. The approved
+[R3 correction](docs/tasks/TASK-028-room-kinds-foundation/implementation-028.7-R3.md)
+now passes locally: **690 Node tests, 290 database assertions, seven combined
+browser tests**, a separate owner-deletion run, concurrency, migration replay,
+typecheck, lint, build and database advisors. Closed/deleted rooms end live access
+and return connected clients home with an explanation; failed work remains retryable.
+The user approved the three reviewed commits and branch push; foundation code is
+`17242f7`. Hosted acceptance, migrations, main merge and deployment remain pending.
+
 ## Current Release and Next Acceptance
 
 Live QA update (2026-09-08): account membership alignment (`dc3ba38`), draggable

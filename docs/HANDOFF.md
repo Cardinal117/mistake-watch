@@ -1,5 +1,86 @@
 # Mistake Watch Handoff
 
+## TASK-028 approved Git handoff - 2026-09-09
+
+The user approved the reviewed three commits and branch push. Recommendation
+planning is `d36323f`; the guarded foundation, eight migrations and tests are
+`17242f7`. This documentation commit records the review and execution. Push target
+is `origin/codex/task-028-room-kinds`; verify its final SHA after publishing.
+Production/main, hosted migrations and kind activation remain unchanged by these
+Git operations. See [commit review](tasks/TASK-028-room-kinds-foundation/commit-review-2026-09-09.md).
+The independent SpacetimeDB performance capture remains uncommitted.
+
+## TASK-028.7 R3 correction verified locally - 2026-09-09
+
+[Persistent retirement evidence](tasks/TASK-028-room-kinds-foundation/implementation-028.7-R3.md)
+supersedes the earlier closure release blocker. Account Close and synthetic owner
+deletion stop connected sessions and return clients home with an explanation.
+Transactional private jobs survive deletion, retry failures and deny stale grants;
+explicit Likes must drain before deleted-room live data is purged.
+
+690 Node tests, 290 SQL assertions, seven combined browser tests plus separate
+owner-deletion QA, concurrency, replay, generated RPC parity, typecheck, lint,
+build and database advisors passed. Migration eight was replayed on the verified
+seven-migration scratch baseline. High remains appropriate for the hosted rollout.
+Next: user local acceptance, then atomic commit preparation when requested and the
+separately approved migration/live/app acceptance sequence in the .7 report.
+No Git, hosted schema or production changes occurred. Production remains unchanged.
+SpacetimeDB performance notifications are captured separately in the product inbox;
+deployed index/planner behavior and transition-reducer latency need investigation.
+
+## TASK-028.1 through 028.6 local foundation and audit corrections - 2026-09-09
+
+Legacy compatibility, Personal creation/access/resume, trusted learning policy,
+and Shared persistent membership/independent consent are implemented in
+`.worktrees/task-028-room-kinds`, branch `codex/task-028-room-kinds`, based on main
+`c64196e`. [028.4 evidence](tasks/TASK-028-room-kinds-foundation/implementation-028.4.md)
+records authorization, live revocation, race fixes, verification and rollout limits.
+The [five audit corrections](tasks/TASK-028-room-kinds-foundation/fixes-2026-09-09.md)
+are implemented and verified locally: Shared listing visibility, independent consent
+epochs, account self-withdrawal/live revocation, Play Next eligibility and automatic
+Listen catalogue exclusion. Through 028.6, **683 Node tests, 267 SQL assertions and six combined browser tests**,
+fresh migration replay with unchanged Legacy fixtures, concurrency, database
+advisors, typecheck, lint and build passed locally. See [Temporary evidence](tasks/TASK-028-room-kinds-foundation/implementation-028.6.md).
+
+Dashboard: <http://127.0.0.1:5384/>. Supabase project `mistake-watch-task028` uses
+API 55421 / DB 55422; isolated Spacetime module on 5376 includes trusted retirement.
+QA uses synthetic local Auth accounts. Personal, Shared, Themed and Temporary
+creation gates are locally enabled but default off in source/migrations.
+Use installed Supabase CLI 2.84.2 for local checks. All seven room-kind migrations
+were replayed in a separate scratch database with real Supabase bootstrap defaults
+and a schema-only Auth copy; Legacy fixtures loaded before migration one retain
+identical IDs and fields. All 267 SQL assertions pass on that replay too.
+The active QA database was preserved. Error-level DB lint/advisors are clear;
+the inherited Shared text-to-jsonb warning remains.
+
+Temporary rooms close after one hour without verified activity, cannot be saved
+or reopened, and become purge-eligible after 24h closed. Cleanup acknowledges live
+retirement before durable deletion, waits for pending explicit Likes, and retries
+failures. Account Likes and catalogue assets stay. The protected daily cleanup
+fallback and opportunistic work after responses mean deletion happens at the next
+successful maintenance run, not exactly at 24h. UUID-only receipts explain old
+expired links; returning tabs also go home with a notice retained until dismissal.
+No network failure alone is interpreted as expiry.
+
+Shared invitations request owner approval. Approved members return independently
+of presence/star state. Owner removal closes consent and revokes every live session;
+failed live removal is reported as pending with retry, never false success.
+Consent saves and removal serialize on the same lock. Reapproval uses a fresh ID
+and starts consent off. Social and Settings > People expose the controls.
+
+A future rollout must apply reviewed durable policy/membership migrations and
+publish trusted live revocation before enabling Shared. Keep the 028.3
+pre-existing-history reconciliation guard; do not bypass it or roll back to weaker
+access/learning rules while new-kind rooms exist. No production credentials,
+hosted migration, Git publication or deployment occurred. Accepted production
+remains live. Root checkout unrelated work was preserved; only the task packet
+is mirrored there.
+
+028.6 checkpoint next step was 028.7; see the newer release hold above. Hosted migration,
+trusted retirement publication, scheduling/secret setup and physical-device QA
+remain release gates. No Git/deployment was performed. Theme-safe recommendation
+quality, continuous Autoplay and Rooms Hub remain follow-on work.
+
 ## Account compact playback live QA — 2026-09-08
 
 Production now runs `2dadc20`, including `dc3ba38` (membership alignment) and
