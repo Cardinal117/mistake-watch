@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+} from "react";
+import { PersonalDiscoveryPanel } from "./personal-discovery-panel";
 import { ArrowLeft } from "lucide-react";
 import {
   buildListenDiscoveryShelves,
@@ -36,7 +43,16 @@ import {
   youtubeMetadataToQueueItem,
 } from "@/components/room/listen/discovery/media-cards";
 
-export function ListenDiscoveryPanel({
+export type DiscoveryPanelProps = ComponentProps<typeof LegacyDiscoveryPanel>;
+export function ListenDiscoveryPanel(props: DiscoveryPanelProps) {
+  return props.room.kind === "personal" ? (
+    <PersonalDiscoveryPanel key={props.room.id} {...props} />
+  ) : (
+    <LegacyDiscoveryPanel {...props} />
+  );
+}
+
+function LegacyDiscoveryPanel({
   canAddQueue,
   canLoadSource,
   canPlay,
@@ -74,7 +90,7 @@ export function ListenDiscoveryPanel({
   const browseTriggerIdRef = useRef<string | null>(null);
   const providerQuery = useMemo(
     () =>
-      (room.kind === "themed" || room.kind === "temporary")
+      room.kind === "themed" || room.kind === "temporary"
         ? null
         : buildProviderRecommendationQuery(currentItem),
     [currentItem, room.kind],
@@ -295,7 +311,7 @@ export function ListenDiscoveryPanel({
         className={cx(
           "grid gap-3",
           embedded &&
-            "h-full min-h-0 content-start overflow-y-auto overscroll-contain px-3 pb-3 pt-14 [scrollbar-color:rgb(var(--listen-primary)_/_0.4)_transparent] [scrollbar-width:thin] sm:px-4 sm:pb-4 sm:pt-14",
+            "h-full min-h-0 content-start overflow-y-auto overscroll-contain px-3 pb-3 pt-3 [scrollbar-color:rgb(var(--listen-primary)_/_0.4)_transparent] [scrollbar-width:thin] sm:px-4 sm:pb-4 sm:pt-3",
           !embedded &&
             "rounded-md border border-white/8 bg-surface-container-lowest/28 p-3 sm:p-4",
         )}
@@ -332,19 +348,21 @@ export function ListenDiscoveryPanel({
       className={cx(
         "grid gap-3 px-3 py-3 sm:px-4 sm:py-3",
         embedded &&
-          "h-full min-h-0 content-start overflow-y-auto overscroll-contain pt-14 [scrollbar-color:rgb(var(--listen-primary)_/_0.4)_transparent] [scrollbar-width:thin] sm:pt-14",
+          "h-full min-h-0 content-start overflow-y-auto overscroll-contain pt-3 [scrollbar-color:rgb(var(--listen-primary)_/_0.4)_transparent] [scrollbar-width:thin] sm:pt-3",
         !embedded &&
           "rounded-md border border-white/8 bg-surface-container-lowest/24 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.025)]",
       )}
     >
       {(room.kind === "themed" || room.kind === "temporary") && (
         <p className="mb-4 text-label-sm text-on-surface-variant">
-          {room.kind === "temporary" ? "Temporary listening starts with media you choose. Automatic suggestions are not enabled." : "Theme filtering is not ready. Add media manually; your room direction stays unchanged."}
+          {room.kind === "temporary"
+            ? "Temporary listening starts with media you choose. Automatic suggestions are not enabled."
+            : "Theme filtering is not ready. Add media manually; your room direction stays unchanged."}
         </p>
       )}
       {visibleShelves.length === 0 && !isProviderLoading ? (
         <EmptyListenPanel>
-          {(room.kind === "themed" || room.kind === "temporary")
+          {room.kind === "themed" || room.kind === "temporary"
             ? "Your manually played media and playlists will appear here."
             : "Add media to build room picks from the current queue and history."}
         </EmptyListenPanel>

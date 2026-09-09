@@ -33,6 +33,7 @@ export type UploadedRecommendationAsset = {
 };
 
 export type RoomRecommendationServiceDependencies = {
+  loadSuppressedMedia?(access: RoomRecommendationPrincipal): Promise<string[]>;
   cacheOptions?: {
     capacity?: number;
     failureTtlMs?: number;
@@ -101,7 +102,7 @@ export function createRoomRecommendationService(
       }
 
       try {
-        const [aggregates, durablePreferences, uploadedAssets] =
+        const [aggregates, durablePreferences, uploadedAssets, suppressedMedia] =
           await Promise.all([
             dependencies.loadAggregates(access),
             dependencies.loadPreferences(access),
@@ -110,14 +111,18 @@ export function createRoomRecommendationService(
                 .filter((candidate) => candidate.sourceType === "uploaded")
                 .map((candidate) => candidate.mediaId),
             ),
+            access.roomKind === "personal" && dependencies.loadSuppressedMedia
+              ? dependencies.loadSuppressedMedia(access)
+              : Promise.resolve([]),
           ]);
         const preferences = mergePreferences(
           durablePreferences,
           sessionPreferences,
         );
+        const suppressed = new Set(suppressedMedia);
         const candidates = applyCatalogueAuthorization({
           access,
-          candidates: request.candidates,
+          candidates: request.candidates.filter(candidate => !suppressed.has(candidate.mediaId) && !suppressed.has(`${candidate.sourceType}:${candidate.mediaId}`)),
           uploadedAssets,
         });
         const ranking = rankRecommendations({

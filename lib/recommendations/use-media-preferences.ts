@@ -23,6 +23,8 @@ const PREFERENCE_RECONCILE_INTERVAL_MS = 10_000;
 const PREFERENCE_ACTIVITY_THROTTLE_MS = 2_000;
 
 export type MediaPreferenceView = {
+  loaded: boolean;
+  known: boolean;
   available: boolean;
   error: string | null;
   liked: boolean;
@@ -33,7 +35,7 @@ export type MediaPreferenceView = {
 export type MediaPreferenceController = {
   getPreference(item: RoomQueueItem | null): MediaPreferenceView;
   revision: number;
-  togglePreference(item: RoomQueueItem): Promise<void>;
+  togglePreference(item: RoomQueueItem, fallbackLiked?: boolean): Promise<void>;
 };
 
 export function useMediaPreferences({
@@ -44,7 +46,7 @@ export function useMediaPreferences({
   roomId: string;
 }) {
   const [preferences, setPreferences] = useState<MediaPreferenceMap>({});
-  const [loadedRoomId, setLoadedRoomId] = useState(roomId);
+  const [loadedRoomId, setLoadedRoomId] = useState<string | null>(null);
   const [pendingKeys, setPendingKeys] = useState<Set<string>>(new Set());
   const [blockedKeys, setBlockedKeys] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -187,6 +189,7 @@ export function useMediaPreferences({
     return () => {
       disposed = true;
       requestSequenceRef.current += 1;
+      activeRefreshRef.current = null;
       window.clearInterval(interval);
       window.removeEventListener("focus", refreshOnActivity);
       window.removeEventListener("online", refreshOnActivity);
@@ -212,6 +215,8 @@ export function useMediaPreferences({
       const error = hasCurrentRoomState ? errors[key] : undefined;
 
       return {
+        loaded: hasCurrentRoomState,
+        known: current !== undefined,
         available: !blocked,
         error: blocked
           ? (error ?? "Like unavailable for this media.")
@@ -233,7 +238,7 @@ export function useMediaPreferences({
   );
 
   const togglePreference = useCallback(
-    async (item: RoomQueueItem) => {
+    async (item: RoomQueueItem, fallbackLiked = false) => {
       const identity = queueItemRecommendationIdentity(item);
 
       if (!identity) {
@@ -246,7 +251,7 @@ export function useMediaPreferences({
         ? preferencesRef.current[key]
         : undefined) ?? {
         ...identity,
-        liked: false,
+        liked: fallbackLiked,
         mediaKey: key,
         revision: 0,
       };
@@ -345,6 +350,8 @@ export function useMediaPreferences({
 
 function unavailablePreference(error: string): MediaPreferenceView {
   return {
+    loaded: false,
+    known: false,
     available: false,
     error,
     liked: false,

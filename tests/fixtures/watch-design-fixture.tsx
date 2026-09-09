@@ -88,6 +88,7 @@ declare global {
     watchQA?: {
       setAccount(account: AccountSummary): void;
       setQueueCount(count: number): void;
+      confirmPersonalAdd(videoId: string, title: string): void;
       setMoveDelay(ms: number): void;
       setMoveFailure(fail: boolean): void;
       changeQueuedItem(
@@ -127,6 +128,7 @@ export function WatchDesignFixture({
     null,
   );
   const [owner, setOwner] = useState(false);
+  const [personal, setPersonal] = useState(false);
   const [compactAccount, setCompactAccount] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
   const calls = useRef<Array<{ action: string; input: unknown }>>([]);
@@ -363,6 +365,7 @@ export function WatchDesignFixture({
         return originalFetch(input, init);
       };
     const frame = requestAnimationFrame(() => {
+      setPersonal(new URLSearchParams(location.search).has("personal"));
       setOwner(new URLSearchParams(location.search).has("owner"));
       setCompactAccount(new URLSearchParams(location.search).has("compact"));
       if (new URLSearchParams(location.search).has("youtube"))
@@ -377,6 +380,19 @@ export function WatchDesignFixture({
     });
     window.watchQA = {
       calls: calls.current,
+      confirmPersonalAdd: (videoId, title) =>
+        setQueueState((current) => [
+          ...current,
+          {
+            ...queue[0],
+            queueItemId: `qa:${videoId}`,
+            position: current.length,
+            title,
+            sourceType: "youtube",
+            sourceUrl: `https://www.youtube.com/watch?v=${videoId}`,
+            status: "queued",
+          },
+        ]),
       setAccount: setAccountOverride,
       setMoveDelay: (ms) => {
         moveDelay.current = ms;
@@ -473,7 +489,13 @@ export function WatchDesignFixture({
             : { status: "guest" })
         }
         liveRoom={liveRoom}
-        room={{ ...room, mode }}
+        room={{
+          ...room,
+          mode,
+          ...(personal
+            ? ({ kind: "personal", name: "Personal room" } as const)
+            : {}),
+        }}
         stageRef={stageRef}
       />
     </Suspense>

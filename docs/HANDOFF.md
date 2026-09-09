@@ -1,5 +1,38 @@
 # Mistake Watch Handoff
 
+## Personal Discover implementation — 2026-09-09
+
+The owner approved implementing TASK-029's accepted reference with the existing
+per-song gradient retained. Local work now includes the regulars grid, recorded
+play counts, recommendation rows, Rediscover, underline stage controls and private
+reversible feedback. SpacetimeDB still owns playback/queue; additions are confirmed
+from its projection. No automatic enqueue is introduced. The additive migration
+was tested and applied only to the existing local synthetic backend.
+
+See [implementation and QA](tasks/TASK-029-recommendation-quality-baseline/implementation.md)
+and [backend evidence](tasks/TASK-029-recommendation-quality-baseline/backend-verification.md).
+This work remains uncommitted and undeployed. Production migration and frontend
+release require separate approval. Personal listening-quality evaluation, strict
+Fantasy/orchestral eligibility and Autoplay remain later work.
+The [exact commit review](tasks/TASK-029-recommendation-quality-baseline/commit-review.md)
+and [release plan](tasks/TASK-029-recommendation-quality-baseline/release-plan.md)
+are prepared. Proposed branch: `codex/task-029-personal-discover`; no Git mutation
+has been performed. Remote main still matched the tested baseline at preparation.
+
+## Recommendation baseline and proposed evaluation — historical planning
+
+[TASK-029](tasks/TASK-029-recommendation-quality-baseline/task.md) records the
+owner-approved read-only baseline/specification work at main `77c1943`.
+43 existing recommendation checks passed; synthetic 500-candidate ranker p95
+was 8.83 ms. Candidate supply, recording identity, cache behavior and evaluation
+gaps are documented separately from live listening quality and provider quota,
+which were not measured. Owner selected Personal favorites/rediscovery first,
+Fantasy/orchestral for the strict-theme trial, and classical/phonk boundary cases.
+Evaluation should use agent-run offline checks followed by ordinary live listening
+in a bounded approved trial, not mandatory listening homework. The subsequent
+Personal improvement and feedback contract are implemented locally as described
+above; this baseline did not itself measure live recommendation usefulness.
+
 ## Desktop membership access - deployed follow-up
 
 Owner-reported live QA passed except desktop Shared approvals. Both room headers
