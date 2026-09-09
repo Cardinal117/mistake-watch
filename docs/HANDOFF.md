@@ -2,6 +2,19 @@
 
 ## Personal Discover — deployed 2026-09-09
 
+Follow-up: the owner's empty-player bottom-clipping report is fixed and deployed
+as `23da9d2` / `dpl_EfDVumjycp5QqTfBhvEcj29A1FQp`. Ten Personal browser checks,
+typecheck, source lint and build pass; live health/readiness pass. See
+[scroll correction](tasks/TASK-029-recommendation-quality-baseline/scroll-boundary-fix.md).
+
+Recommendation limitation confirmed by source review: Personal candidates still
+come from a YouTube search using the current track or first regular's artist/title,
+then first-party reranking. This is not the requested catalogue-driven taste
+engine. Completion counts power regulars/Rediscover, but current new-kind ranking
+uses explicit Likes and eligible queue/play-next choices, not completion/skip
+learning or time-of-day habits. Reusable metadata/candidate storage and bounded
+exploration are proposed next work, not implemented by the UI or clipping releases.
+
 The owner approved implementing TASK-029's accepted reference with the existing
 per-song gradient retained. Local work now includes the regulars grid, recorded
 play counts, recommendation rows, Rediscover, underline stage controls and private

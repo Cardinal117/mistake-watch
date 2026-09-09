@@ -28,3 +28,8 @@ Design hook review: the flagged translucent white border and black shadow alread
 exist in the baseline and match the accepted translucent room treatment. They are
 unchanged by this sizing fix, so these are contextual false positives for this
 diff. No palette changes or suppressions were introduced.
+
+Released: commit `23da9d2554576c68f2a9f78cc1dc4f16932856bd`, Vercel
+`dpl_EfDVumjycp5QqTfBhvEcj29A1FQp`. The production alias resolves to this READY
+deployment; health/readiness return 200. Source lint excluding ignored release
+archives passes without warnings. No database or SpacetimeDB change was needed.
