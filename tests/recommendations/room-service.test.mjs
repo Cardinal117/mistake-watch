@@ -13,6 +13,25 @@ const { createRoomRecommendationService } = await loadRecommendationModule(
   "room-service-core.ts",
 );
 
+test("Temporary rooms do not read account taste or produce automatic candidates", async () => {
+  const f = serviceFixture();
+  const result = await f.service.getRecommendations({ access: {...f.access, roomKind:'temporary'}, request:recommendationRequest() });
+  assert.equal(result.items.length,0);
+  assert.equal(f.calls.aggregates,0);
+});
+
+test("Themed rooms refuse unclassified candidates before profile/provider reads", async () => {
+  const fixture = serviceFixture();
+  const result = await fixture.service.getRecommendations({
+    access: { ...fixture.access, roomKind: "themed" },
+    request: recommendationRequest(),
+  });
+  assert.equal(result.status, "unavailable");
+  assert.equal(result.items.length, 0);
+  assert.equal(fixture.calls.aggregates, 0);
+  assert.equal(fixture.calls.uploads, 0);
+});
+
 test("room service ranks bounded URL-free candidates for authorized principals", async () => {
   for (const kind of ["guest", "account", "owner"]) {
     const fixture = serviceFixture({ identityKey: `${kind}:identity` });
@@ -282,3 +301,47 @@ function assertNoPrivateFields(value) {
 
 const ROOM_A = "00000000-0000-4000-8000-000000000003";
 const ROOM_B = "00000000-0000-4000-8000-000000000004";
+
+test("new-kind policy reads cannot reuse cached consent-dependent recommendations", async () => {
+  const fixture = serviceFixture();
+  const access = { ...fixture.access, roomKind: "personal" };
+  await fixture.service.getRecommendations({
+    access,
+    request: recommendationRequest(),
+  });
+  await fixture.service.getRecommendations({
+    access,
+    request: recommendationRequest(),
+  });
+  assert.equal(fixture.calls.aggregates, 2);
+});
+
+test("Listen excludes authorized uploads even after a warm Watch response", async () => {
+  const id = "06f55f38-2f03-4a10-95b5-f343e6db8cc7";
+  const upload = {
+    candidateId: id,
+    mediaId: id,
+    sourceType: "uploaded",
+    title: "Upload",
+  };
+  const f = serviceFixture({
+    uploadedAssets: [{ id, ownerUserId: "owner", status: "ready" }],
+  });
+  const request = recommendationRequest({ candidates: [upload] });
+  const access = {
+    ...f.access,
+    accountUserId: "owner",
+    catalogueScope: "owner",
+    roomMode: "watch",
+  };
+  assert.equal(
+    (await f.service.getRecommendations({ access, request })).items.length,
+    1,
+  );
+  const result = await f.service.getRecommendations({
+    access: { ...access, roomMode: "listen" },
+    request,
+  });
+  assert.equal(result.items.length, 0);
+  assert.equal(result.cache, "miss");
+});

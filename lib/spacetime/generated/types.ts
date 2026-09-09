@@ -117,6 +117,11 @@ export const RecommendationRoomSession = __t.object("RecommendationRoomSession",
 });
 export type RecommendationRoomSession = __Infer<typeof RecommendationRoomSession>;
 
+export const RetiredRoom = __t.object("RetiredRoom", {
+  roomId: __t.string(),
+});
+export type RetiredRoom = __Infer<typeof RetiredRoom>;
+
 export const RoomAdmissionGrant = __t.object("RoomAdmissionGrant", {
   admissionId: __t.string(),
   admissionToken: __t.string(),
@@ -170,6 +175,13 @@ export const RoomKick = __t.object("RoomKick", {
   roomId: __t.string(),
 });
 export type RoomKick = __Infer<typeof RoomKick>;
+
+export const RoomMemberRevocation = __t.object("RoomMemberRevocation", {
+  revocationKey: __t.string(),
+  roomId: __t.string(),
+  memberId: __t.string(),
+});
+export type RoomMemberRevocation = __Infer<typeof RoomMemberRevocation>;
 
 export const RoomParticipant = __t.object("RoomParticipant", {
   connectionId: __t.option(__t.connectionId()),

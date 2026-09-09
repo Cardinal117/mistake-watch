@@ -1,19 +1,53 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { BookmarkCheck, CircleAlert, X } from "lucide-react";
 
 import { Button, Panel } from "@/components/ui";
 
 type DashboardRoomNoticeProps = {
-  notice?: "closed" | "removed";
+  notice?: "closed" | "removed" | "temporary-expired" | "ended";
 };
 
 export function DashboardRoomNotice({ notice }: DashboardRoomNoticeProps) {
   const [dismissed, setDismissed] = useState(false);
+  const router = useRouter();
 
   if (!notice || dismissed) {
     return null;
+  }
+
+  if (notice === "temporary-expired" || notice === "ended") {
+    return (
+      <Panel
+        className="relative border-primary-fixed-dim/25 bg-surface-container-low"
+        tone="low"
+        role="status"
+      >
+        <button
+          aria-label="Dismiss room notice"
+          className="absolute right-3 top-3 rounded-md p-2 text-on-surface-variant hover:bg-surface-variant/35"
+          onClick={() => {
+            setDismissed(true);
+            router.replace("/", { scroll: false });
+          }}
+          type="button"
+        >
+          <X className="h-4 w-4" aria-hidden />
+        </button>
+        <h2 className="pr-10 text-title-md font-semibold">
+          {notice === "ended"
+            ? "This room has ended."
+            : "This Temporary room has ended."}
+        </h2>
+        <p className="mt-2 max-w-2xl pr-8 text-body-md text-on-surface-variant">
+          {notice === "ended"
+            ? "This room was closed or is no longer available. Playback has stopped on this device and you are back home. Choose another room when you are ready."
+            : "Temporary rooms expire after one hour without activity. You are back home; create a new room whenever you are ready. Your account Likes and catalogue files are kept."}
+        </p>
+      </Panel>
+    );
   }
 
   const removed = notice === "removed";

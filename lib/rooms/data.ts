@@ -15,6 +15,7 @@ import {
   type Tables,
 } from "@/lib/supabase";
 
+import { isPersonalRoomOwner } from "./personal-access";
 import { resolveRoomMembership } from "./membership";
 import { isRoomAttachedToAccount } from "./account-attachment";
 import { closeIdleUnsavedRooms } from "./lifecycle";
@@ -47,7 +48,11 @@ export async function getDashboardData(): Promise<DashboardData> {
     const reclaimed = await Promise.all(
       guestCookies.map(async (cookie) => {
         const roomId = cookie.name.slice(GUEST_COOKIE_PREFIX.length);
-        return reclaimGuestMembership({ roomId, token: cookie.value });
+        return reclaimGuestMembership({
+          roomId,
+          token: cookie.value,
+          touchActivity: false,
+        });
       }),
     );
 
@@ -76,7 +81,10 @@ export async function getDashboardData(): Promise<DashboardData> {
         .filter((room) => room.status === "open")
         .map(mapAccountDashboardRoom),
     );
-    const savedRooms = recentRooms.filter((room) => room.isSaved);
+    const savedRooms = recentRooms.filter(
+      (room) =>
+        room.isSaved || room.kind === "shared" || room.kind === "themed",
+    );
 
     return {
       currentRoom: recentRooms[0] ?? null,
@@ -113,6 +121,7 @@ function mapAccountDashboardRoom(
     host: room.relationship === "owned" ? "You" : "Account room",
     id: room.id,
     isSaved: room.isSaved,
+    kind: room.kind,
     joinState: "rejoin",
     mode: room.mode,
     name: room.name,
@@ -176,12 +185,19 @@ export async function getRoomJoinPreview(
     const supabase = createSupabaseAdminClient();
     const { data: room, error } = await supabase
       .from("rooms")
-      .select("id, name, invite_code, mode, status")
+      .select("id, name, invite_code, mode, status, room_kind")
       .eq("id", roomId)
       .eq("status", "open")
       .maybeSingle();
 
-    if (error || !room) {
+    if (
+      error ||
+      !room ||
+      (room.room_kind !== undefined &&
+        room.room_kind !== "legacy" &&
+        room.room_kind !== "themed" &&
+        room.room_kind !== "temporary")
+    ) {
       return null;
     }
 
@@ -213,6 +229,7 @@ async function getDashboardRoomSummary(
     host: snapshot.host,
     id: snapshot.id,
     isSaved: snapshot.isSaved,
+    kind: snapshot.kind,
     joinState,
     mode: snapshot.mode,
     name: snapshot.name,
@@ -246,9 +263,21 @@ async function getRoomSnapshot(
     .eq("id", roomId)
     .maybeSingle();
 
-  if (roomError || !room) {
+  if (
+    roomError ||
+    !room ||
+    (room.room_kind !== undefined &&
+      room.room_kind !== "legacy" &&
+      room.room_kind !== "personal" &&
+      room.room_kind !== "shared" &&
+      room.room_kind !== "themed" &&
+      room.room_kind !== "temporary")
+  ) {
     return null;
   }
+
+  if (room.room_kind === "personal" && !(await isPersonalRoomOwner(room)))
+    return null;
 
   const [{ data: members }, { data: queueItems }, { data: settings }] =
     await Promise.all([
@@ -314,7 +343,11 @@ async function mapRoomSnapshot({
       : null;
 
   return {
-    code: room.invite_code,
+    inviteUrl:
+      room.room_kind === "shared"
+        ? `/rooms/${room.id}?invite=${room.invite_code}`
+        : undefined,
+    code: room.room_kind === "personal" ? "" : room.invite_code,
     currentMember: currentMember
       ? {
           id: currentMember.id,
@@ -333,6 +366,16 @@ async function mapRoomSnapshot({
       savedByUserId: room.saved_by_user_id,
     }),
     isSaved: room.is_saved,
+    kind:
+      room.room_kind === "personal"
+        ? "personal"
+        : room.room_kind === "shared"
+          ? "shared"
+          : room.room_kind === "themed"
+            ? "themed"
+            : room.room_kind === "temporary"
+              ? "temporary"
+              : "legacy",
     liveSeedToken,
     mode,
     name: room.name,

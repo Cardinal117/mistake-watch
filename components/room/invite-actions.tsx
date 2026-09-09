@@ -69,6 +69,8 @@ export function InviteActions({
     window.setTimeout(() => setStatus("idle"), 1800);
   }
 
+  if (!roomCode) return null;
+
   if (compact) {
     return (
       <div className="flex min-w-0 flex-wrap items-center gap-2">

@@ -1,0 +1,22 @@
+.watch-add-embedded > div {
+  position: static;
+  background: none;
+  display: block;
+  padding: 0;
+  backdrop-filter: none;
+}
+.watch-add-embedded form {
+  max-width: none;
+  max-height: none;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.watch-add-embedded input:focus {
+  box-shadow: none;
+  outline: 1px solid rgb(var(--listen-primary) / 0.6);
+  outline-offset: 2px;
+}

@@ -1,5 +1,10 @@
 "use server";
 
+import { cleanupPersistentRooms } from "@/lib/rooms/persistent-retirement";
+import { leaveSharedRoomAction } from "@/lib/rooms/shared-actions";
+
+import { canAccessAccountRoom } from "@/lib/rooms/personal-access";
+
 import {
   createSupabaseAdminClient,
   createSupabaseServerClient,
@@ -35,7 +40,7 @@ export async function manageAccountRoomAction({
   const { data: room, error: roomError } = await admin
     .from("rooms")
     .select(
-      "id, is_saved, owner_user_id, saved_by_guest_identity_id, saved_by_user_id, status",
+      "id, is_saved, owner_user_id, saved_by_guest_identity_id, saved_by_user_id, status, room_kind",
     )
     .eq("id", roomId)
     .maybeSingle();
@@ -48,6 +53,16 @@ export async function manageAccountRoomAction({
     throw new Error("This room is no longer available.");
   }
 
+  // Withdrawal must remain retryable after durable access has already ended.
+  // The RPC authenticates the caller and rejects owner/foreign-room requests.
+  if (room.room_kind === "shared" && command === "leave") {
+    const result = await leaveSharedRoomAction(roomId);
+    if (result.error) throw new Error(result.error);
+    return { command, roomId };
+  }
+  if (!(await canAccessAccountRoom(room))) {
+    throw new Error("This account cannot perform that room action.");
+  }
   const { data: member, error: memberError } = await admin
     .from("room_members")
     .select("id")
@@ -62,6 +77,7 @@ export async function manageAccountRoomAction({
   if (
     !canExecuteAccountRoomCommand({
       command,
+      kind: room.room_kind,
       hasMembership: Boolean(member),
       ownerUserId: room.owner_user_id,
       savedByUserId: room.saved_by_user_id,
@@ -91,6 +107,16 @@ export async function manageAccountRoomAction({
       roomId,
       userId: authData.user.id,
     });
+    if (room.room_kind !== "temporary") {
+      try {
+        const result = await cleanupPersistentRooms(roomId);
+        if (result.failed) throw new Error("Pending retirement");
+      } catch {
+        throw new Error(
+          "The room is closed. Ending connected sessions is still pending and will be retried. Refresh to see the updated room status.",
+        );
+      }
+    }
   }
 
   return { command, roomId };

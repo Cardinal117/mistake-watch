@@ -1,0 +1,47 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+set local search_path=public,extensions;
+select no_plan();
+select has_function('public','pending_persistent_room_retirements',array['uuid']);
+insert into auth.users(id,is_anonymous,raw_user_meta_data) values
+ ('28700000-0000-4000-8000-000000000001',false,'{"display_name":"Retirement owner"}');
+insert into public.rooms(id,name,mode,privacy,status,invite_code,invite_token_hash) values
+ ('28700000-0000-4000-8000-000000000010','Open saved legacy','watch','invite','open','R3OPEN',repeat('a',64)),
+ ('28700000-0000-4000-8000-000000000011','Closed legacy','watch','invite','open','R3CLOSE',repeat('b',64));
+update public.rooms set is_saved=true where id='28700000-0000-4000-8000-000000000010';
+select is(public.has_persistent_room_ended('28700000-0000-4000-8000-000000000010'),false,'open room is not retired');
+select is(jsonb_array_length(public.pending_persistent_room_retirements('28700000-0000-4000-8000-000000000010')),0,'no open-room job');
+update public.rooms set status='closed' where id='28700000-0000-4000-8000-000000000011';
+select is(public.has_persistent_room_ended('28700000-0000-4000-8000-000000000011'),true,'close leaves durable receipt');
+select is(public.pending_persistent_room_retirements('28700000-0000-4000-8000-000000000011')->0->>'purge','false','close retires without deleting retained state');
+select is(public.finish_persistent_room_retirement('28700000-0000-4000-8000-000000000011',false),true,'trusted retirement acknowledgement');
+select is(jsonb_array_length(public.pending_persistent_room_retirements('28700000-0000-4000-8000-000000000011')),0,'acknowledged close not retried');
+select is(public.has_persistent_room_ended('28700000-0000-4000-8000-000000000011'),true,'ack does not lose ended receipt');
+select throws_ok($$update public.rooms set status='open' where id='28700000-0000-4000-8000-000000000011'$$,'23514',null,'retired room cannot reopen');
+delete from public.rooms where id='28700000-0000-4000-8000-000000000011';
+select is(public.pending_persistent_room_retirements('28700000-0000-4000-8000-000000000011')->0->>'purge','true','delete supersedes acknowledged close');
+select is(public.finish_persistent_room_retirement('28700000-0000-4000-8000-000000000011',false),false,'stale close acknowledgement cannot clear purge job');
+select is(public.finish_persistent_room_retirement('28700000-0000-4000-8000-000000000011',true),true,'purge acknowledgement');
+select is(public.finish_persistent_room_retirement('28700000-0000-4000-8000-000000000011',true),true,'duplicate purge acknowledgement is safe');
+select is(public.has_persistent_room_ended('28700000-0000-4000-8000-000000000011'),true,'deleted room retains receipt');
+select throws_ok($$insert into public.rooms(id,name,mode,privacy,status,invite_code,invite_token_hash) values('28700000-0000-4000-8000-000000000011','Reuse','watch','invite','open','R3REUSE',repeat('c',64))$$,'23514',null,'retired identity cannot be reused');
+update private.room_kind_features set enabled=true where room_kind in ('personal','shared','themed');
+set local role authenticated;
+select set_config('request.jwt.claim.sub','28700000-0000-4000-8000-000000000001',true);
+select set_config('test.personal',public.open_personal_room()::text,true);
+select set_config('test.shared',public.create_shared_room('Retirement shared','28700000-0000-4000-8000-000000000012')::text,true);
+select set_config('test.themed',public.create_themed_room('Retirement theme','Fantasy','','28700000-0000-4000-8000-000000000013')::text,true);
+select throws_ok($$select public.pending_persistent_room_retirements(null)$$,'42501',null,'accounts cannot claim jobs');
+select throws_ok($$select public.finish_persistent_room_retirement('28700000-0000-4000-8000-000000000011',true)$$,'42501',null,'accounts cannot acknowledge retirement');
+select throws_ok($$select * from private.persistent_room_retirements$$,'42501',null,'private receipts hidden');
+reset role;
+delete from auth.users where id='28700000-0000-4000-8000-000000000001';
+select is((select count(*)::int from public.rooms where owner_user_id='28700000-0000-4000-8000-000000000001'),0,'owner deletion clears owned new kinds');
+select is((select count(*)::int from private.persistent_room_retirements where room_id in (current_setting('test.personal')::uuid,current_setting('test.shared')::uuid,current_setting('test.themed')::uuid) and purge and not completed),3,'owner deletion leaves all three live purge jobs');
+set local role service_role;
+select lives_ok($$select public.pending_persistent_room_retirements(null)$$,'service worker may claim');
+select is(public.has_persistent_room_ended(current_setting('test.themed')::uuid),true,'server reads deleted owner room');
+reset role;
+select is((select status from public.rooms where id='28700000-0000-4000-8000-000000000010'),'open','unrelated saved legacy remains open');
+select * from finish();
+rollback;

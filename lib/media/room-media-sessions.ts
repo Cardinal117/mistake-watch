@@ -1,4 +1,5 @@
 import "server-only";
+import { canAccessAccountRoom } from "@/lib/rooms/personal-access";
 
 import { cookies } from "next/headers";
 
@@ -187,13 +188,13 @@ export async function getRoomMediaGatewayAccess(input: {
   ] = await Promise.all([
     admin
       .from("room_members")
-      .select("id,room_id")
+      .select("id,room_id,user_id")
       .eq("id", input.memberId)
       .eq("room_id", input.roomId)
       .maybeSingle(),
     admin
       .from("rooms")
-      .select("id,status")
+      .select("id,status,room_kind,owner_user_id")
       .eq("id", input.roomId)
       .maybeSingle(),
     getRoomMediaSession(input.sessionId),
@@ -208,8 +209,39 @@ export async function getRoomMediaGatewayAccess(input: {
   }
 
   const asset = session ? await getReadyAsset(session.media_asset_id) : null;
+  let personalAllowed = true;
+  if (room?.room_kind === "temporary") {
+    const { data, error } = await admin.rpc("is_temporary_room_open", {
+      target_room: room.id,
+    });
+    if (error) throw error;
+    personalAllowed = data === true;
+  }
+  if (room?.room_kind === "personal" || room?.room_kind === "shared") {
+    personalAllowed = false;
+    if (
+      member?.user_id &&
+      (room.room_kind === "shared" || member.user_id === room.owner_user_id)
+    ) {
+      const [
+        { data: userData, error: userError },
+        { data: profile, error: profileError },
+      ] = await Promise.all([
+        admin.auth.admin.getUserById(member.user_id),
+        admin
+          .from("profiles")
+          .select("account_status")
+          .eq("id", member.user_id)
+          .maybeSingle(),
+      ]);
+      if (userError || profileError) throw userError ?? profileError;
+      personalAllowed =
+        userData.user?.is_anonymous === false &&
+        profile?.account_status === "active";
+    }
+  }
   const participant =
-    member && room?.status === "open"
+    member && room?.status === "open" && personalAllowed
       ? {
           memberId: member.id,
           roomId: member.room_id,
@@ -309,7 +341,11 @@ async function getSignedInRoomAuthority({
     { data: room, error: roomError },
     { data: member, error: memberError },
   ] = await Promise.all([
-    admin.from("rooms").select("id,status").eq("id", roomId).maybeSingle(),
+    admin
+      .from("rooms")
+      .select("id,status,room_kind,owner_user_id")
+      .eq("id", roomId)
+      .maybeSingle(),
     admin
       .from("room_members")
       .select("id,role,user_id")
@@ -326,7 +362,7 @@ async function getSignedInRoomAuthority({
     throw memberError;
   }
 
-  if (!room || room.status !== "open") {
+  if (!room || room.status !== "open" || !(await canAccessAccountRoom(room))) {
     return {
       allowed: false,
       memberId: null,
@@ -428,6 +464,14 @@ async function getRoomAuthorityForGuestMember({
 }
 
 async function getCurrentRoomParticipant(roomId: string) {
+  const { data: room, error: roomError } = await createSupabaseAdminClient()
+    .from("rooms")
+    .select("id,status,room_kind,owner_user_id")
+    .eq("id", roomId)
+    .maybeSingle();
+  if (roomError) throw roomError;
+  if (!room || room.status !== "open" || !(await canAccessAccountRoom(room)))
+    return null;
   const cookieStore = await cookies();
   const token = cookieStore.get(getGuestIdentityCookieName(roomId))?.value;
 

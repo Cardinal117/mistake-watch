@@ -1,3 +1,7 @@
+import { SharedJoinGate } from "@/components/room/shared/shared-join-gate";
+import { sharedContextAction } from "@/lib/rooms/shared-actions";
+import { hasPersistentRoomEnded } from "@/lib/rooms/persistent-retirement";
+import { hasTemporaryRoomEnded } from "@/lib/rooms/temporary";
 import { redirect } from "next/navigation";
 
 import { RoomShell } from "@/components/room";
@@ -33,9 +37,10 @@ export default async function RoomPage({
   });
 
   if (room) {
-    const roomWithInvite = invite
-      ? { ...room, inviteUrl: buildRoomInvitePath(room, invite) }
-      : room;
+    const roomWithInvite =
+      invite && room.kind !== "personal"
+        ? { ...room, inviteUrl: buildRoomInvitePath(room, invite) }
+        : room;
 
     return (
       <RoomShell
@@ -46,10 +51,25 @@ export default async function RoomPage({
     );
   }
 
+  if (await hasTemporaryRoomEnded(roomId))
+    redirect("/?notice=temporary-room-expired");
+
+  if (await hasPersistentRoomEnded(roomId)) redirect("/?notice=room-ended");
+
+  const shared = await sharedContextAction(roomId, invite ?? "");
+  if (shared)
+    return (
+      <SharedJoinGate
+        roomId={roomId}
+        invite={invite ?? ""}
+        initial={shared}
+        account={account}
+      />
+    );
   const preview = await getRoomJoinPreview(roomId);
 
   if (!preview) {
-    redirect("/?notice=room-closed");
+    redirect("/?notice=room-unavailable");
   }
 
   return (

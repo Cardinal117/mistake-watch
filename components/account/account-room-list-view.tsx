@@ -139,6 +139,40 @@ export function AccountRoomListView({
         </div>
       ) : (
         <div className="grid gap-3">
+          {view.openRooms.some((room) => room.kind === "personal") && (
+            <AccountRoomGroup
+              label="Personal"
+              defaultExpanded
+              emptyCopy=""
+              currentRoomId={currentRoomId}
+              onChanged={onChanged}
+              rooms={view.openRooms.filter((room) => room.kind === "personal")}
+            />
+          )}
+          {view.openRooms.some((room) => room.kind === "shared") && (
+            <AccountRoomGroup
+              label="Shared"
+              defaultExpanded
+              emptyCopy=""
+              currentRoomId={currentRoomId}
+              onChanged={onChanged}
+              rooms={view.openRooms.filter((room) => room.kind === "shared")}
+            />
+          )}
+          {view.openRooms.some((room) => room.kind === "themed") && (
+            <AccountRoomGroup
+              label="Themed"
+              defaultExpanded
+              emptyCopy=""
+              currentRoomId={currentRoomId}
+              onChanged={onChanged}
+              rooms={view.openRooms.filter((room) => room.kind === "themed")}
+            />
+          )}
+          {view.openRooms.some(room=>room.kind === "temporary") && <AccountRoomGroup label="Temporary" defaultExpanded emptyCopy="" currentRoomId={currentRoomId} onChanged={onChanged} rooms={view.openRooms.filter(room=>room.kind === "temporary")}/>}
+            {relationship === "saved" ? (
+            <h4 className="technical-label text-on-surface-variant">Legacy</h4>
+          ) : null}
           <AccountRoomGroup
             currentRoomId={currentRoomId}
             defaultExpanded
@@ -146,7 +180,12 @@ export function AccountRoomListView({
             key={`open:${revealKey ?? "default"}`}
             label="Open rooms"
             onChanged={onChanged}
-            rooms={view.openRooms}
+            rooms={view.openRooms.filter(
+              (room) =>
+                room.kind !== "personal" &&
+                room.kind !== "shared" &&
+                room.kind !== "themed" && room.kind !== "temporary",
+            )}
           />
           <AccountRoomGroup
             currentRoomId={currentRoomId}

@@ -70,6 +70,7 @@ function roomState({
           if (
             [
               "@/lib/rooms/actions",
+              "@/lib/rooms/shared-actions",
               "@/lib/media/uploaded-playback-reference",
               "@/lib/media/uploaded-room-session-client",
               "@/lib/player/next-item-preparation",

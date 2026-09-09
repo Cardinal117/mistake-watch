@@ -12,6 +12,8 @@ export function SocialInviteBar({
 }) {
   const [open, setOpen] = useState(false);
   const id = useId();
+  if (!roomCode) return null;
+
   return (
     <section className="social-invite-bar" data-open={open}>
       <button

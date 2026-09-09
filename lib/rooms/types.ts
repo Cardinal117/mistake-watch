@@ -1,4 +1,5 @@
 export type DashboardRoomSummary = {
+  kind?: "legacy" | "personal" | "shared" | "themed" | "temporary";
   id: string;
   name: string;
   mode: "watch" | "listen" | "browse";
@@ -57,6 +58,7 @@ export type RoomParticipant = {
 };
 
 export type RoomSnapshot = {
+  kind?: "legacy" | "personal" | "shared" | "themed" | "temporary";
   id: string;
   name: string;
   code: string;

@@ -10,7 +10,9 @@ import {
 } from "./recommendation-events";
 import { roomRhythmProfile } from "./room-rhythm-table";
 import {
+  retiredRoom,
   liveQueueItem,
+  roomMemberRevocation,
   roomChatMessage,
   roomAdmissionGrant,
   roomError,
@@ -25,6 +27,7 @@ import {
 } from "./room-tables";
 
 export const spacetimedb = schema({
+  retired_room: retiredRoom,
   guest_media_preference: guestMediaPreference,
   live_queue_item: liveQueueItem,
   recommendation_event_outbox: recommendationEventOutbox,
@@ -38,6 +41,7 @@ export const spacetimedb = schema({
   room_admission_grant: roomAdmissionGrant,
   room_error: roomError,
   room_kick: roomKick,
+  room_member_revocation: roomMemberRevocation,
   room_permission: roomPermission,
   room_participant: roomParticipant,
   room_participant_presence: roomParticipantPresence,

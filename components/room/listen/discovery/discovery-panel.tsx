@@ -73,8 +73,11 @@ export function ListenDiscoveryPanel({
     useState<ListenDiscoveryShelfId | null>(null);
   const browseTriggerIdRef = useRef<string | null>(null);
   const providerQuery = useMemo(
-    () => buildProviderRecommendationQuery(currentItem),
-    [currentItem],
+    () =>
+      (room.kind === "themed" || room.kind === "temporary")
+        ? null
+        : buildProviderRecommendationQuery(currentItem),
+    [currentItem, room.kind],
   );
   const providerRequestKey = `recommended:${providerQuery ?? "room"}`;
   const providerItems = useMemo(
@@ -169,6 +172,7 @@ export function ListenDiscoveryPanel({
         providerRankedEmpty,
         providerUnavailable,
         roomName: room.name,
+        roomKind: room.kind,
       }),
     [
       currentItem,
@@ -177,6 +181,7 @@ export function ListenDiscoveryPanel({
       providerUnavailable,
       rankedProviderItems,
       room.name,
+      room.kind,
     ],
   );
   const visibleShelves = isProviderLoading
@@ -332,9 +337,16 @@ export function ListenDiscoveryPanel({
           "rounded-md border border-white/8 bg-surface-container-lowest/24 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.025)]",
       )}
     >
+      {(room.kind === "themed" || room.kind === "temporary") && (
+        <p className="mb-4 text-label-sm text-on-surface-variant">
+          {room.kind === "temporary" ? "Temporary listening starts with media you choose. Automatic suggestions are not enabled." : "Theme filtering is not ready. Add media manually; your room direction stays unchanged."}
+        </p>
+      )}
       {visibleShelves.length === 0 && !isProviderLoading ? (
         <EmptyListenPanel>
-          Add media to build room picks from the current queue and history.
+          {(room.kind === "themed" || room.kind === "temporary")
+            ? "Your manually played media and playlists will appear here."
+            : "Add media to build room picks from the current queue and history."}
         </EmptyListenPanel>
       ) : null}
       {visibleShelves.map((shelf, index) => (

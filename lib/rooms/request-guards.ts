@@ -1,5 +1,6 @@
 import "server-only";
 
+import { canAccessAccountRoom } from "./personal-access";
 import { cookies } from "next/headers";
 
 import {
@@ -147,7 +148,7 @@ async function resolveAccountRoomMemberId(roomId: string) {
   const [{ data: room }, { data: member }] = await Promise.all([
     admin
       .from("rooms")
-      .select("id")
+      .select("id, room_kind, owner_user_id")
       .eq("id", roomId)
       .eq("status", "open")
       .maybeSingle(),
@@ -159,6 +160,7 @@ async function resolveAccountRoomMemberId(roomId: string) {
       .maybeSingle(),
   ]);
 
+  if (room && !(await canAccessAccountRoom(room))) return null;
   return room && member ? member.id : null;
 }
 

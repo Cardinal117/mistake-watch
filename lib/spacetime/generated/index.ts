@@ -57,7 +57,9 @@ import PublishRoomRhythmProfileReducer from "./publish_room_rhythm_profile_reduc
 import RemoveIdleMemberReducer from "./remove_idle_member_reducer";
 import RemoveQueueItemReducer from "./remove_queue_item_reducer";
 import ReportMediaFailureReducer from "./report_media_failure_reducer";
+import RetireRoomReducer from "./retire_room_reducer";
 import RevokeRoomControlReducer from "./revoke_room_control_reducer";
+import RevokeRoomMembershipReducer from "./revoke_room_membership_reducer";
 import SeedRoomSessionReducer from "./seed_room_session_reducer";
 import SendRoomChatMessageReducer from "./send_room_chat_message_reducer";
 import SetGuestMediaPreferenceReducer from "./set_guest_media_preference_reducer";
@@ -250,7 +252,9 @@ const reducersSchema = __reducers(
   __reducerSchema("remove_idle_member", RemoveIdleMemberReducer),
   __reducerSchema("remove_queue_item", RemoveQueueItemReducer),
   __reducerSchema("report_media_failure", ReportMediaFailureReducer),
+  __reducerSchema("retire_room", RetireRoomReducer),
   __reducerSchema("revoke_room_control", RevokeRoomControlReducer),
+  __reducerSchema("revoke_room_membership", RevokeRoomMembershipReducer),
   __reducerSchema("seed_room_session", SeedRoomSessionReducer),
   __reducerSchema("send_room_chat_message", SendRoomChatMessageReducer),
   __reducerSchema("set_guest_media_preference", SetGuestMediaPreferenceReducer),

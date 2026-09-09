@@ -1,5 +1,6 @@
 import "server-only";
 
+import { canAccessAccountRoom } from "@/lib/rooms/personal-access";
 import { cookies } from "next/headers";
 
 import { getAccountSummary } from "@/lib/account/server";
@@ -33,6 +34,8 @@ export type RecommendationRoomAccess = {
   kind: "account" | "guest";
   memberId: string;
   roomId: string;
+  roomKind?: string;
+  roomMode?: string;
 };
 
 export type RecommendationRoomAccessResult =
@@ -85,7 +88,7 @@ async function resolveAccountAccess(
   const [{ data: room }, { data: member }] = await Promise.all([
     admin
       .from("rooms")
-      .select("id,status")
+      .select("id,status,room_kind,owner_user_id,mode")
       .eq("id", roomId)
       .eq("status", "open")
       .maybeSingle(),
@@ -100,6 +103,8 @@ async function resolveAccountAccess(
   if (!room || !member) {
     return null;
   }
+
+  if (!(await canAccessAccountRoom(room))) return null;
 
   const account = await getAccountSummary();
 
@@ -116,6 +121,8 @@ async function resolveAccountAccess(
     kind: "account",
     memberId: member.id,
     roomId,
+    roomKind: room.room_kind,
+    roomMode: room.mode,
   };
 }
 
@@ -142,6 +149,8 @@ async function resolveGuestAccess(
     kind: "guest",
     memberId: session.member.id,
     roomId,
+    roomKind: session.room.room_kind ?? "legacy",
+    roomMode: session.room.mode,
   };
 }
 

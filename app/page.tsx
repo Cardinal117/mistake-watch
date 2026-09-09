@@ -19,21 +19,30 @@ export default async function DashboardPage({
   ]);
   const statusMessage = error
     ? decodeURIComponent(error)
-    : notice === "room-connection-failed"
-      ? "Your live room connection could not be restored. Reopen the room to reconnect."
-      : dashboardData.statusMessage;
+    : notice === "room-unavailable"
+      ? "This room is unavailable to this session. Sign in to the owning account for your Personal room, or check your room invitation."
+      : notice === "room-connection-failed"
+        ? "Your live room connection could not be restored. Reopen the room to reconnect."
+        : dashboardData.statusMessage;
 
   return (
     <DashboardShell
-      cleanUrlOnHydrate={Boolean(error || notice)}
+      cleanUrlOnHydrate={
+        !["temporary-room-expired", "room-ended"].includes(notice ?? "") &&
+        Boolean(error || notice)
+      }
       currentRoom={dashboardData.currentRoom}
       recentRooms={dashboardData.recentRooms}
       roomNotice={
-        notice === "room-closed"
-          ? "closed"
-          : notice === "removed-from-room"
-            ? "removed"
-            : undefined
+        notice === "room-ended"
+          ? "ended"
+          : notice === "temporary-room-expired"
+            ? "temporary-expired"
+            : notice === "room-closed"
+              ? "closed"
+              : notice === "removed-from-room"
+                ? "removed"
+                : undefined
       }
       savedRooms={dashboardData.savedRooms}
       statusMessage={statusMessage}

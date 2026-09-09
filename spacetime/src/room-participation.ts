@@ -53,6 +53,13 @@ export const issue_room_admission_grant = spacetimedb.reducer(
       return;
     }
 
+    if (
+      ctx.db.room_member_revocation.revocation_key.find(
+        `${room_id}:${member_id}`,
+      )
+    )
+      throw new Error("Membership was revoked");
+    if(ctx.db.retired_room.room_id.find(room_id)) throw new Error("Room is closed");
     const token = admission_token.trim();
     const identityHex = identity_hex.trim().toLowerCase();
     const now = nowMs();
@@ -177,6 +184,7 @@ export const join_room = spacetimedb.reducer(
       room_id,
       member_id,
     );
+    if(ctx.db.retired_room.room_id.find(room_id)) throw new Error("Room is closed");
     const isIdempotentAdmission =
       currentSession?.admission_id === admission_id &&
       currentSession.identity.isEqual(ctx.sender) &&

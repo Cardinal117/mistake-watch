@@ -43,6 +43,7 @@ export type ListenSessionInsight = {
 
 export function buildListenDiscoveryShelves({
   currentItem,
+  roomKind,
   items,
   providerItems = [],
   providerRankedEmpty = false,
@@ -50,15 +51,24 @@ export function buildListenDiscoveryShelves({
   roomName,
 }: {
   currentItem: RoomQueueItem | null;
+  roomKind?: string;
   items: RoomQueueItem[];
   providerItems?: RoomQueueItem[];
   providerRankedEmpty?: boolean;
   providerUnavailable?: boolean;
   roomName: string;
 }): ListenDiscoveryShelf[] {
-  const roomPicks = getForYouItems(items, currentItem);
-  const roomRelated = getRecommendedFromRoom(items, currentItem);
-  const providerRelated = uniqueByPlayableSource(providerItems).slice(0, 8);
+  const roomPicks = getForYouItems(
+    items.filter(isListenSuggestion),
+    currentItem,
+  );
+  const roomRelated = getRecommendedFromRoom(
+    items.filter(isListenSuggestion),
+    currentItem,
+  );
+  const providerRelated = uniqueByPlayableSource(
+    providerItems.filter(isListenSuggestion),
+  ).slice(0, 8);
   const contextualItems = providerRankedEmpty
     ? []
     : providerRelated.length > 0
@@ -70,7 +80,7 @@ export function buildListenDiscoveryShelves({
     ),
   ).slice(0, 8);
   const playlistItems = getPlaylistLikeItems(items, currentItem);
-  const mostListened = getTopListenedItems(items);
+  const mostListened = getTopListenedItems(items.filter(isListenSuggestion));
   const seedTitle = currentItem?.title?.trim();
   const safeRoomName = roomName.trim() || "this room";
   const candidates: ListenDiscoveryShelf[] = [
@@ -126,14 +136,20 @@ export function buildListenDiscoveryShelves({
     },
   ];
 
-  return suppressEarlierShelfRepeats(candidates).filter(
-    (shelf) => shelf.items.length > 0,
-  );
+  return suppressEarlierShelfRepeats(
+    (roomKind === "themed" || roomKind === "temporary")
+      ? candidates.filter(
+          (shelf) =>
+            shelf.id === "recently-played" || shelf.id === "room-playlists",
+        )
+      : candidates,
+  ).filter((shelf) => shelf.items.length > 0);
 }
 
 export function buildListenDiscoveryResult({
   activeTab,
   currentItem,
+  roomKind,
   items,
   providerItems = [],
   providerRankedEmpty = false,
@@ -141,12 +157,23 @@ export function buildListenDiscoveryResult({
 }: {
   activeTab: ListenDiscoveryTab;
   currentItem: RoomQueueItem | null;
+  roomKind?: string;
   items: RoomQueueItem[];
   providerItems?: RoomQueueItem[];
   providerRankedEmpty?: boolean;
   providerUnavailable?: boolean;
 }): ListenDiscoveryResult {
-  const playableProviderItems = uniqueByPlayableSource(providerItems);
+  if ((roomKind === "themed" || roomKind === "temporary") && activeTab !== "playlist")
+    return {
+      items: [],
+      source: "unavailable",
+      sourceLabel: "Theme filtering unavailable",
+      emptyMessage:
+        "Theme filtering is not ready. Add media manually; your room direction stays unchanged.",
+    };
+  const playableProviderItems = uniqueByPlayableSource(
+    providerItems.filter(isListenSuggestion),
+  );
 
   if (activeTab === "recommended" && providerRankedEmpty) {
     return {
@@ -168,7 +195,10 @@ export function buildListenDiscoveryResult({
 
   switch (activeTab) {
     case "recommended": {
-      const itemsFromRoom = getRecommendedFromRoom(items, currentItem);
+      const itemsFromRoom = getRecommendedFromRoom(
+        items.filter(isListenSuggestion),
+        currentItem,
+      );
 
       return {
         emptyMessage: providerUnavailable
@@ -182,7 +212,7 @@ export function buildListenDiscoveryResult({
       };
     }
     case "top-listened": {
-      const topListened = getTopListenedItems(items);
+      const topListened = getTopListenedItems(items.filter(isListenSuggestion));
 
       return {
         emptyMessage:
@@ -211,7 +241,7 @@ export function buildListenDiscoveryResult({
       return {
         emptyMessage:
           "Add media to build room picks from the current queue and history.",
-        items: getForYouItems(items, currentItem),
+        items: getForYouItems(items.filter(isListenSuggestion), currentItem),
         source: "room-queue",
         sourceLabel: "Queue based",
       };
@@ -288,7 +318,7 @@ function getRecommendedFromRoom(
   return uniqueByPlayableSource([
     ...related.filter((item) => item.status === "queued"),
     ...related.filter((item) => item.status === "played"),
-    ...getForYouItems(items, currentItem),
+    ...getForYouItems(items.filter(isListenSuggestion), currentItem),
   ]).slice(0, 8);
 }
 
@@ -406,4 +436,9 @@ function mostCommon(values: string[]) {
   }
 
   return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+}
+
+// Uploaded media remains available in manual queue/history, never automatic Listen picks.
+function isListenSuggestion(item: RoomQueueItem) {
+  return !item.sourceUrl?.trim().startsWith("mw-uploaded-asset:");
 }

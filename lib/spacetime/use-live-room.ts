@@ -1,4 +1,5 @@
 "use client";
+import { removeSharedMemberAction } from "@/lib/rooms/shared-actions";
 import type { QueuePlacement } from "@/lib/queue/move-intent";
 
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
@@ -186,6 +187,16 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       return;
     }
 
+    if (room.kind === "shared") {
+      void removeSharedMemberAction(room.id, memberId)
+        .then((result) => {
+          if (result.error) setErrorMessage(result.error);
+        })
+        .catch(() =>
+          setErrorMessage("Membership removal failed. Please retry."),
+        );
+      return;
+    }
     void reducers.kickMember({
       actorMemberId: currentMember.id,
       roomId: room.id,

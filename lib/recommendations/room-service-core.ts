@@ -21,6 +21,8 @@ export type RoomRecommendationPrincipal = {
   catalogueScope: "allowlisted" | "none" | "owner";
   identityKey: string;
   roomId: string;
+  roomKind?: string;
+  roomMode?: string;
 };
 
 export type UploadedRecommendationAsset = {
@@ -77,12 +79,22 @@ export function createRoomRecommendationService(
         return unavailable("Recommendation room context is no longer valid.");
       }
 
+      if (access.roomKind === "temporary") return unavailable("Automatic suggestions are not enabled for Temporary rooms.");
+      if (access.roomKind === "themed") {
+        return unavailable(
+          "Theme filtering is not ready. Add media manually; your room direction stays unchanged.",
+        );
+      }
+
       const cacheKey = recommendationCacheKey(
         access,
         request,
         sessionPreferences,
       );
-      const cached = cache.get(cacheKey);
+      const cacheablePolicy = !access.roomKind || access.roomKind === "legacy";
+      const cached = cacheablePolicy
+        ? cache.get(cacheKey)
+        : { value: undefined };
 
       if (cached.value) {
         return { ...cached.value, cache: "hit" };
@@ -137,7 +149,7 @@ export function createRoomRecommendationService(
           status: "available",
         };
 
-        cache.set(cacheKey, response);
+        if (cacheablePolicy) cache.set(cacheKey, response);
         return { ...response, cache: "miss" };
       } catch {
         const response = unavailable(
@@ -145,7 +157,7 @@ export function createRoomRecommendationService(
         );
         const { cache: _cache, ...cacheable } = response;
 
-        cache.set(cacheKey, cacheable, failureTtlMs);
+        if (cacheablePolicy) cache.set(cacheKey, cacheable, failureTtlMs);
         return response;
       }
     },
@@ -163,23 +175,28 @@ function applyCatalogueAuthorization({
 }) {
   const assetById = new Map(uploadedAssets.map((asset) => [asset.id, asset]));
 
-  return candidates.map((candidate) => {
-    if (candidate.sourceType !== "uploaded") {
-      return candidate;
-    }
+  return candidates
+    .filter(
+      (candidate) =>
+        access.roomMode !== "listen" || candidate.sourceType !== "uploaded",
+    )
+    .map((candidate) => {
+      if (candidate.sourceType !== "uploaded") {
+        return candidate;
+      }
 
-    const asset = assetById.get(candidate.mediaId);
-    const catalogueAuthorized = Boolean(
-      asset &&
-      asset.status === "ready" &&
-      access.catalogueScope !== "none" &&
-      (asset.visibility === "public" ||
-        (access.catalogueScope === "owner" &&
-          asset.ownerUserId === access.accountUserId)),
-    );
+      const asset = assetById.get(candidate.mediaId);
+      const catalogueAuthorized = Boolean(
+        asset &&
+        asset.status === "ready" &&
+        access.catalogueScope !== "none" &&
+        (asset.visibility === "public" ||
+          (access.catalogueScope === "owner" &&
+            asset.ownerUserId === access.accountUserId)),
+      );
 
-    return { ...candidate, catalogueAuthorized };
-  });
+      return { ...candidate, catalogueAuthorized };
+    });
 }
 
 function recommendationCacheKey(
@@ -209,6 +226,7 @@ function recommendationCacheKey(
     access.roomId,
     access.identityKey,
     access.catalogueScope,
+    access.roomMode ?? "watch",
     digest,
   ].join(":");
 }

@@ -1,0 +1,21 @@
+-- Same assertions run before and after TASK-028.1. Tests roll back all mutations.
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(9);
+select is((select count(*)::int from public.rooms where invite_code like 'QA28%'),4,'all existing room states present');
+select is((select invite_token_hash from public.rooms where invite_code='QA28G'),'fixture-guest','guest invitation identity retained');
+select is((select count(*)::int from public.queue_items where room_id='28000000-0000-4000-8000-000000000011'),1,'queue retained');
+select is((select count(*)::int from public.member_permissions where room_id='28000000-0000-4000-8000-000000000011'),1,'permissions retained');
+set local role authenticated;
+select set_config('request.jwt.claim.sub','28000000-0000-4000-8000-000000000001',true);
+select is((select count(*)::int from public.rooms where invite_code='QA28S'),1,'owner can still read saved room');
+select set_config('request.jwt.claim.sub','28000000-0000-4000-8000-000000000002',true);
+select is((select count(*)::int from public.rooms where invite_code='QA28S'),0,'unrelated account cannot read saved room');
+reset role;
+update public.rooms set idle_deadline_at=now()-interval '2 hours' where invite_code in ('QA28S','QA28G');
+select private.close_idle_unsaved_rooms(now());
+select is((select status from public.rooms where invite_code='QA28S'),'open','saved room survives cleanup');
+select is((select status from public.rooms where invite_code='QA28G'),'closed','inactive unsaved guest room still expires');
+select is((select status from public.rooms where invite_code='QA28A'),'archived','archived room stays archived');
+select * from finish();
+rollback;

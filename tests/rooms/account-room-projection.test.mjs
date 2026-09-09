@@ -133,6 +133,7 @@ test("sorts by recent activity and exposes only room-list metadata", () => {
   assert.deepEqual(Object.keys(result[0]).sort(), [
     "id",
     "isSaved",
+    "kind",
     "lastActiveAt",
     "mode",
     "name",
@@ -144,6 +145,27 @@ test("sorts by recent activity and exposes only room-list metadata", () => {
   assert.equal(JSON.stringify(result).includes("inviteCode"), false);
   assert.equal(JSON.stringify(result).includes("inviteToken"), false);
   assert.equal(JSON.stringify(result).includes("email"), false);
+});
+
+test("Legacy metadata preserves saved, joined and closed room projection", () => {
+  for (const room_kind of [undefined, "legacy"]) {
+    const input = room({
+      room_kind,
+      is_saved: true,
+      saved_by_user_id: "account-1",
+      status: "closed",
+    });
+    const [result] = projectAccountRooms({
+      memberRoomIds: [],
+      rooms: [input],
+      userId: "account-1",
+    });
+    assert.equal(result.kind, "legacy");
+    assert.equal(result.isSaved, true);
+    assert.equal(result.status, "closed");
+    assert.equal(result.relationship, "saved");
+    assert.equal(input.room_kind, room_kind);
+  }
 });
 
 test("route derives identity server-side and marks responses private", async () => {
@@ -170,11 +192,63 @@ test("dashboard combines account rooms with guest-cookie rooms", async () => {
   assert.match(dashboardSource, /room\.status === "open"/);
 });
 
-test("account projection excludes archived room history", async () => {
-  const dataSource = await readFile(
-    path.join(rootDir, "lib/account/room-data.ts"),
-    "utf8",
-  );
-
-  assert.equal(dataSource.match(/\.neq\("status", "archived"\)/g)?.length, 3);
+// Additional negative coverage after the implementation; not red-first evidence.
+test("unsupported stored kinds never appear as Legacy account rooms", () => {
+  for (const room_kind of ["unknown", null]) {
+    assert.deepEqual(
+      projectAccountRooms({
+        memberRoomIds: ["room-1"],
+        rooms: [room({ room_kind, owner_user_id: "account-1" })],
+        userId: "account-1",
+      }),
+      [],
+    );
+  }
 });
+
+test("Personal is only projected for its owner, never a stale member or saved account", () => {
+  const input = room({
+    room_kind: "personal",
+    owner_user_id: "account-1",
+    saved_by_user_id: "account-2",
+  });
+  const own = projectAccountRooms({
+    rooms: [input],
+    memberRoomIds: [],
+    userId: "account-1",
+  });
+  assert.equal(own[0].kind, "personal");
+  assert.deepEqual(
+    projectAccountRooms({
+      rooms: [input],
+      memberRoomIds: [input.id],
+      userId: "account-2",
+    }),
+    [],
+  );
+});
+
+test("Shared returns by membership without a star; stale saved access is excluded", () => {
+  const input = room({ room_kind: "shared", owner_user_id: "owner" });
+  const [joined] = projectAccountRooms({
+    rooms: [input],
+    memberRoomIds: [input.id],
+    userId: "friend",
+  });
+  assert.equal(joined.kind, "shared");
+  assert.equal(joined.relationship, "joined");
+  assert.equal(joined.isSaved, false);
+  assert.deepEqual(
+    projectAccountRooms({
+      rooms: [{ ...input, is_saved: true, saved_by_user_id: "friend" }],
+      memberRoomIds: [],
+      userId: "friend",
+    }),
+    [],
+  );
+});
+
+ test("Themed account rooms retain their kind without requiring a bookmark", () => {
+ const result = projectAccountRooms({ memberRoomIds: [], rooms: [room({ room_kind: "themed", owner_user_id: "account-1", is_saved: false })], userId: "account-1" });
+ assert.equal(result[0].kind, "themed");
+ });

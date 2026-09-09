@@ -209,5 +209,6 @@ test("drain route uses the production cron-secret boundary", async () => {
       path: "/api/media/uploads/cleanup",
       schedule: "0 2 * * *",
     },
+    {path:"/api/rooms/cleanup",schedule:"0 3 * * *"},
   ]);
 });

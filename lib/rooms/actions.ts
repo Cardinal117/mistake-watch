@@ -1,7 +1,17 @@
 "use server";
 
+import { after } from "next/server";
+import {
+  cleanupPersistentRooms,
+  hasPersistentRoomEnded,
+} from "./persistent-retirement";
+
+import { createTemporaryRoom } from "@/lib/identity/temporary-room";
+import { accessTemporaryRoom, hasTemporaryRoomEnded } from "./temporary";
+import { hashRoomScopedToken } from "@/lib/identity/guest-token";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 import {
   getAccountSummary,
@@ -20,6 +30,7 @@ import {
   type Tables,
 } from "@/lib/supabase";
 
+import { canAccessAccountRoom } from "./personal-access";
 import { touchSignedInRoomActivity } from "./activity";
 import { buildRoomInvitePath, parseRoomInviteInput } from "./invite";
 
@@ -29,11 +40,30 @@ export async function createRoomAction(formData: FormData) {
   let redirectPath = "/";
 
   try {
+    // Older forms still create Legacy; Temporary has its own default-off gate.
+    const roomKind = formData.get("room-kind");
+    if (
+      roomKind !== null &&
+      roomKind !== "legacy" &&
+      !(
+        roomKind === "temporary" &&
+        process.env.TEMPORARY_ROOMS_ENABLED === "true"
+      )
+    ) {
+      throw new Error("This room type is not available yet.");
+    }
+    if (roomKind === "temporary") {
+      const account = await getAccountSummary();
+      if (account.status === "signed-in" && account.accountStatus !== "active")
+        throw new Error("An active account is required.");
+    }
     const roomName = readFormString(formData, "room-name");
     const displayName = readFormString(formData, "display-name");
     const mode =
       readFormString(formData, "room-mode") === "listen" ? "listen" : "watch";
-    const session = await createGuestHostedRoom({
+    const session = await (
+      roomKind === "temporary" ? createTemporaryRoom : createGuestHostedRoom
+    )({
       displayName,
       mode,
       roomName,
@@ -43,6 +73,7 @@ export async function createRoomAction(formData: FormData) {
     await attachRoomToCurrentAccountIfSignedIn(session.room.id);
     redirectPath = buildRoomInvitePath(session.room, session.inviteToken);
   } catch (error) {
+    if (isRedirectError(error)) throw error;
     redirect(`/?error=${encodeURIComponent(getActionErrorMessage(error))}`);
   }
 
@@ -56,6 +87,24 @@ export async function joinRoomAction(formData: FormData) {
     const displayName = readFormString(formData, "display-name");
     const roomInvite = readFormString(formData, "room-invite");
     const parsedInvite = parseRoomInviteInput(roomInvite);
+    // Shared invite codes/links lead to account approval, never guest creation.
+    const admin = createSupabaseAdminClient();
+    const query = admin
+      .from("rooms")
+      .select("id,invite_code")
+      .eq("room_kind", "shared")
+      .eq("status", "open");
+    const { data: shared } = await (
+      parsedInvite.type === "link"
+        ? query
+            .eq("id", parsedInvite.roomId)
+            .eq("invite_code", parsedInvite.inviteToken)
+        : query.eq("invite_code", parsedInvite.inviteCode.toLowerCase())
+    ).maybeSingle();
+    if (shared)
+      redirect(
+        `/rooms/${shared.id}?invite=${encodeURIComponent(shared.invite_code)}`,
+      );
     const session =
       parsedInvite.type === "link"
         ? await joinRoomAsGuestByInviteLink({
@@ -72,6 +121,7 @@ export async function joinRoomAction(formData: FormData) {
     await attachRoomToCurrentAccountIfSignedIn(session.room.id);
     redirectPath = `/rooms/${session.room.id}`;
   } catch (error) {
+    if (isRedirectError(error)) throw error;
     redirect(`/?error=${encodeURIComponent(getActionErrorMessage(error))}`);
   }
 
@@ -97,6 +147,7 @@ export async function joinRoomFromInviteAction(formData: FormData) {
     await attachRoomToCurrentAccountIfSignedIn(session.room.id);
     redirectPath = `/rooms/${session.room.id}`;
   } catch (error) {
+    if (isRedirectError(error)) throw error;
     redirect(`/?error=${encodeURIComponent(getActionErrorMessage(error))}`);
   }
 
@@ -133,6 +184,13 @@ export async function setRoomSavedAction(input: {
   roomId: string;
   saved: boolean;
 }) {
+  const { data: kind } = await createSupabaseAdminClient()
+    .from("rooms")
+    .select("room_kind")
+    .eq("id", input.roomId)
+    .maybeSingle();
+  if (kind?.room_kind === "temporary")
+    throw new Error("Temporary rooms cannot be saved.");
   await attachRoomToCurrentAccountIfSignedIn(input.roomId);
   const authority = await requireRoomHostAuthority(
     input.roomId,
@@ -189,6 +247,86 @@ export async function setRoomModeAction(input: {
 }
 
 export async function touchRoomActivityAction(input: { roomId: string }) {
+  const admin = createSupabaseAdminClient();
+  const { data: kind, error } = await admin
+    .from("rooms")
+    .select("room_kind,status")
+    .eq("id", input.roomId)
+    .maybeSingle();
+  if (error) throw error;
+  if (
+    (!kind || kind.room_kind !== "temporary") &&
+    (await hasPersistentRoomEnded(input.roomId))
+  ) {
+    after(async () => {
+      await cleanupPersistentRooms(input.roomId).catch(() => null);
+    });
+    return { touched: false, ended: true };
+  }
+  if (!kind)
+    return {
+      touched: false,
+      expired: await hasTemporaryRoomEnded(input.roomId),
+    };
+  if (kind.room_kind === "temporary") {
+    if (await hasTemporaryRoomEnded(input.roomId))
+      return { touched: false, expired: true };
+    const account = await getAccountSummary();
+    if (
+      account.status === "signed-in" &&
+      account.accountStatus === "active" &&
+      !account.isAnonymous
+    ) {
+      const { data: member } = await admin
+        .from("room_members")
+        .select("id")
+        .eq("room_id", input.roomId)
+        .eq("user_id", account.id)
+        .maybeSingle();
+      if (member) {
+        const touched = await accessTemporaryRoom({
+          roomId: input.roomId,
+          memberId: member.id,
+          accountId: account.id,
+        });
+        return {
+          touched,
+          expired: !touched && (await hasTemporaryRoomEnded(input.roomId)),
+        };
+      }
+    }
+    const token = (await cookies()).get(
+      getGuestIdentityCookieName(input.roomId),
+    )?.value;
+    if (token) {
+      const { data: guest } = await admin
+        .from("guest_identities")
+        .select("id")
+        .eq("room_id", input.roomId)
+        .eq("token_hash", hashRoomScopedToken(input.roomId, token))
+        .maybeSingle();
+      const { data: member } = guest
+        ? await admin
+            .from("room_members")
+            .select("id")
+            .eq("room_id", input.roomId)
+            .eq("guest_identity_id", guest.id)
+            .maybeSingle()
+        : { data: null };
+      if (member) {
+        const touched = await accessTemporaryRoom({
+          roomId: input.roomId,
+          memberId: member.id,
+          guestHash: hashRoomScopedToken(input.roomId, token),
+        });
+        return {
+          touched,
+          expired: !touched && (await hasTemporaryRoomEnded(input.roomId)),
+        };
+      }
+    }
+    return { touched: false, expired: false };
+  }
   const cookieStore = await cookies();
   const token = cookieStore.get(
     getGuestIdentityCookieName(input.roomId),
@@ -257,7 +395,7 @@ async function getSignedInHostAuthority(roomId: string) {
   const supabase = createSupabaseAdminClient();
   const { data: room, error: roomError } = await supabase
     .from("rooms")
-    .select("id, owner_user_id, status")
+    .select("id, owner_user_id, status, room_kind")
     .eq("id", roomId)
     .maybeSingle();
 
@@ -268,6 +406,8 @@ async function getSignedInHostAuthority(roomId: string) {
   if (!room || room.status !== "open") {
     return null;
   }
+
+  if (!(await canAccessAccountRoom(room))) return null;
 
   const { data: member, error: memberError } = await supabase
     .from("room_members")

@@ -11,9 +11,10 @@ import { cx } from "@/lib/ui";
 
 type CreateRoomFormProps = {
   attached?: boolean;
+  temporary?:boolean;
 };
 
-export function CreateRoomForm({ attached = false }: CreateRoomFormProps) {
+export function CreateRoomForm({ attached = false, temporary=false }: CreateRoomFormProps) {
   return (
     <form
       action={createRoomAction}
@@ -24,11 +25,13 @@ export function CreateRoomForm({ attached = false }: CreateRoomFormProps) {
           : "rounded-xl border border-white/10 bg-surface-container/70 p-4 backdrop-blur-xl",
       )}
     >
+      {temporary && <input type="hidden" name="room-kind" value="temporary" />}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
         <Input
           className="h-12"
           label="Room name"
           name="room-name"
+          maxLength={temporary ? 60 : undefined}
           placeholder="Friday screening"
           required
         />
@@ -36,19 +39,20 @@ export function CreateRoomForm({ attached = false }: CreateRoomFormProps) {
           className="h-12"
           label="Your display name"
           name="display-name"
+          maxLength={temporary ? 32 : undefined}
           placeholder="Mistake Host"
           required
         />
       </div>
 
-      <label className="block space-y-2" htmlFor="room-mode">
+      <label className="block space-y-2" htmlFor={temporary ? "temporary-room-mode" : "room-mode"}>
         <span className="technical-label block text-on-surface-variant">
           Room mode
         </span>
         <select
           className="h-12 w-full rounded-md border border-white/10 bg-surface-container-low px-3 text-body-md text-on-surface transition duration-200 focus:border-primary-fixed-dim focus:bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim/20"
           defaultValue="watch"
-          id="room-mode"
+          id={temporary ? "temporary-room-mode" : "room-mode"}
           name="room-mode"
         >
           <option value="watch">Watch</option>

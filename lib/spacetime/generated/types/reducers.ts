@@ -29,7 +29,9 @@ import PublishRoomRhythmProfileReducer from "../publish_room_rhythm_profile_redu
 import RemoveIdleMemberReducer from "../remove_idle_member_reducer";
 import RemoveQueueItemReducer from "../remove_queue_item_reducer";
 import ReportMediaFailureReducer from "../report_media_failure_reducer";
+import RetireRoomReducer from "../retire_room_reducer";
 import RevokeRoomControlReducer from "../revoke_room_control_reducer";
+import RevokeRoomMembershipReducer from "../revoke_room_membership_reducer";
 import SeedRoomSessionReducer from "../seed_room_session_reducer";
 import SendRoomChatMessageReducer from "../send_room_chat_message_reducer";
 import SetGuestMediaPreferenceReducer from "../set_guest_media_preference_reducer";
@@ -67,7 +69,9 @@ export type PublishRoomRhythmProfileParams = __Infer<typeof PublishRoomRhythmPro
 export type RemoveIdleMemberParams = __Infer<typeof RemoveIdleMemberReducer>;
 export type RemoveQueueItemParams = __Infer<typeof RemoveQueueItemReducer>;
 export type ReportMediaFailureParams = __Infer<typeof ReportMediaFailureReducer>;
+export type RetireRoomParams = __Infer<typeof RetireRoomReducer>;
 export type RevokeRoomControlParams = __Infer<typeof RevokeRoomControlReducer>;
+export type RevokeRoomMembershipParams = __Infer<typeof RevokeRoomMembershipReducer>;
 export type SeedRoomSessionParams = __Infer<typeof SeedRoomSessionReducer>;
 export type SendRoomChatMessageParams = __Infer<typeof SendRoomChatMessageReducer>;
 export type SetGuestMediaPreferenceParams = __Infer<typeof SetGuestMediaPreferenceReducer>;

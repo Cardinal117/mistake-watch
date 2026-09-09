@@ -67,7 +67,7 @@ export function WatchRoomHeader({
             liveRoom={liveRoom}
           />
           <ListenRoomSaveButton
-            canSave={liveRoom.canManageAuthority}
+            canSave={room.kind !== "temporary" && liveRoom.canManageAuthority}
             initialSaved={room.isSaved}
             key={`${room.id}:${room.isSaved}`}
             roomId={room.id}
@@ -101,22 +101,24 @@ export function WatchRoomHeader({
           <Users />
           Social
         </button>
-        <details
-          className="watch-invite-menu"
-          ref={inviteRef}
-          onKeyDown={(event) => {
-            if (event.key === "Escape" && inviteRef.current) {
-              event.stopPropagation();
-              inviteRef.current.open = false;
-              inviteRef.current.querySelector("summary")?.focus();
-            }
-          }}
-        >
-          <summary>Invite</summary>
-          <div>
-            <InviteActions inviteUrl={room.inviteUrl} roomCode={room.code} />
-          </div>
-        </details>
+        {room.kind !== "personal" && (
+          <details
+            className="watch-invite-menu"
+            ref={inviteRef}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && inviteRef.current) {
+                event.stopPropagation();
+                inviteRef.current.open = false;
+                inviteRef.current.querySelector("summary")?.focus();
+              }
+            }}
+          >
+            <summary>Invite</summary>
+            <div>
+              <InviteActions inviteUrl={room.inviteUrl} roomCode={room.code} />
+            </div>
+          </details>
+        )}
       </nav>
       <div className="watch-header-people">
         <div className="watch-header-audience">
