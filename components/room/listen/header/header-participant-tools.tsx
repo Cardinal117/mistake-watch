@@ -16,9 +16,11 @@ export function ListenMemberAvatarRow({
   participants,
   maxVisibleParticipants,
   themeStyle,
+  sharedRoomId,
 }: {
   maxVisibleParticipants?: number;
   themeStyle?: CSSProperties;
+  sharedRoomId: string | null;
   controllerMemberId: string | null;
   currentMemberId?: string | null;
   liveRoom: LiveRoomState;
@@ -101,6 +103,7 @@ export function ListenMemberAvatarRow({
         ) : null}
       </button>
       <ListenPermissionsDialog
+        sharedRoomId={sharedRoomId}
         controllerMemberId={controllerMemberId}
         currentMemberId={currentMemberId}
         liveRoom={liveRoom}

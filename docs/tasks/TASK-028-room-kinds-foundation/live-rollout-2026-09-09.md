@@ -3,6 +3,15 @@
 Owner explicitly approved the existing production environment and main release.
 This record supersedes earlier local-only, approval-blocked and pending-rollout notes.
 
+## Owner acceptance and desktop follow-up
+
+The owner reports all live QA checks passed except reaching Shared membership
+approvals on desktop. The [bounded desktop access fix](desktop-membership-access.md)
+is verified locally and deployed as `de25e89` / `dpl_54qR6ftS6vEan9pJ3vTV5yJdQzMn`.
+Live health/readiness pass; database and realtime releases below remain unchanged.
+The fix is pushed on the task branch; main merge remains outstanding.
+The desktop settings overhaul is deferred.
+
 ## Released services
 
 - Application source: `bfe898abfee4ece7ac2880f75ec956ac0cbf59c1`; functional commit `17242f7`.

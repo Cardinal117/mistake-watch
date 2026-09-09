@@ -262,6 +262,7 @@ export function ListenRoomSettingsMenu({
   onTvSettingsChange,
   roomCode,
   roomId,
+  sharedRoomId,
   tvSettings,
   showPermissionsAction = true,
   showSaveAction = true,
@@ -277,6 +278,7 @@ export function ListenRoomSettingsMenu({
   onTvSettingsChange: Dispatch<SetStateAction<ListenTvSettings>>;
   roomCode: string;
   roomId: string;
+  sharedRoomId: string | null;
   tvSettings: ListenTvSettings;
   showPermissionsAction?: boolean;
   showSaveAction?: boolean;
@@ -484,6 +486,7 @@ export function ListenRoomSettingsMenu({
         </div>
       ) : null}
       <ListenPermissionsDialog
+        sharedRoomId={sharedRoomId}
         controllerMemberId={controllerMemberId}
         currentMemberId={currentMemberId}
         liveRoom={liveRoom}

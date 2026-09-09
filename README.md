@@ -13,7 +13,10 @@ Production:
 
 ## Room kinds foundation — live September 9, 2026
 
-PR #15 is merged into main as `6fc445a`; the verified production application matches main.
+PR #15 is merged into main as `6fc445a`. The desktop Shared membership access
+follow-up (`de25e89`) is pushed and live; merging that follow-up to main remains
+outstanding. Open the members icon beside account settings to approve requests
+in both Watch and Listen.
 See the TASK-028 live rollout record for the full release receipt.
 
 [TASK-028 release record](docs/tasks/TASK-028-room-kinds-foundation/live-rollout-2026-09-09.md)
