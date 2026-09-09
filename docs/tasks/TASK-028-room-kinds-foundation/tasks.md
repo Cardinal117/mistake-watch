@@ -2,7 +2,7 @@
 
 ## Current status — production rollout
 
-028.1–028.7 including R3 are implemented and deployed with owner authorization. All four gates are enabled; production entry/access smoke checks passed. See [live rollout](live-rollout-2026-09-09.md). Earlier local-only and no-Git/deployment statements below describe historical checkpoints. The owner reports live QA passed except desktop Shared request access. That access fix is now verified locally; see [desktop membership access](desktop-membership-access.md). It is committed as `de25e89`, pushed on the task branch and deployed; main merge remains outstanding. Recommendation quality and the hub are follow-on work.
+028.1–028.7 including R3 are implemented and deployed with owner authorization. All four gates are enabled; production entry/access smoke checks passed. See [live rollout](live-rollout-2026-09-09.md). Earlier local-only and no-Git/deployment statements below describe historical checkpoints. The owner reports live QA passed except desktop Shared request access. That access fix is now verified locally; see [desktop membership access](desktop-membership-access.md). It is committed as `de25e89`, pushed, deployed and merged through PR #16 as `8186d0a`. Recommendation quality and the hub are follow-on work.
 
 > **2026-09-09 audit corrections:** All five findings in the [task-by-task audit](audit-2026-09-09.md) are fixed and verified locally. See [corrections and final evidence](fixes-2026-09-09.md): 674 Node tests, 191 SQL assertions and four combined browser tests passed. Earlier results below describe their respective checkpoints; release/hosted acceptance remains outstanding.
 

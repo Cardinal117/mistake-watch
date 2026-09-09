@@ -56,6 +56,4 @@ include <https://watch.mistakestudios.com>. Remote production build passed;
 live health and readiness returned 200; both development design routes returned
 404. No Supabase or Spacetime deployment was needed. Existing playback was not
 interrupted for a fresh live approval action: interaction evidence is the local
-real-backend regression run above. Main remains at `23cd524`; this fix is pushed
-on the task branch and live, but has not been merged to main.
-
+real-backend regression run above. PR #16 merged as `8186d0a`; main matches deployed application code.

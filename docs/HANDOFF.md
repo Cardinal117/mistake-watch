@@ -6,8 +6,8 @@ Owner-reported live QA passed except desktop Shared approvals. Both room headers
 now expose the existing Shared membership/learning panel through the members icon
 beside account settings. Local browser integration, responsive checks, 690 tests,
 typecheck and build pass. Commit `de25e89` is pushed and live as
-`dpl_54qR6ftS6vEan9pJ3vTV5yJdQzMn`; health/readiness pass. Main merge remains
-outstanding (main is `23cd524`). See
+`dpl_54qR6ftS6vEan9pJ3vTV5yJdQzMn`; health/readiness pass. PR #16 merged as `8186d0a`; main matches the deployed
+application code. See
 [scope and evidence](tasks/TASK-028-room-kinds-foundation/desktop-membership-access.md).
 Broader desktop settings redesign remains deferred.
 

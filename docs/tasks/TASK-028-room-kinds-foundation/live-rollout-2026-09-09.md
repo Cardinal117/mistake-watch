@@ -9,7 +9,7 @@ The owner reports all live QA checks passed except reaching Shared membership
 approvals on desktop. The [bounded desktop access fix](desktop-membership-access.md)
 is verified locally and deployed as `de25e89` / `dpl_54qR6ftS6vEan9pJ3vTV5yJdQzMn`.
 Live health/readiness pass; database and realtime releases below remain unchanged.
-The fix is pushed on the task branch; main merge remains outstanding.
+The fix is merged through PR #16 as `8186d0a`; main matches deployed application code.
 The desktop settings overhaul is deferred.
 
 ## Released services
