@@ -1,0 +1,162 @@
+# TASK-028 proposed atomic commit scope
+
+Report-only manifest. No files staged. Recheck the exact diff before staging.
+
+## 1. Recommendation direction
+
+- `docs/recommendation-engine-direction.md`
+
+## 2. Complete guarded room foundation
+
+- `.env.example`
+- `app/api/rooms/cleanup/route.ts`
+- `app/api/youtube/recommendations/route.ts`
+- `app/dev/room-kinds/page.tsx`
+- `app/page.tsx`
+- `app/rooms/[roomId]/page.tsx`
+- `components/account/account-room-list-view.tsx`
+- `components/dashboard/create-room-form.tsx`
+- `components/dashboard/dashboard-room-notice.tsx`
+- `components/dashboard/dashboard-shell.tsx`
+- `components/dashboard/personal-room-entry.tsx`
+- `components/dashboard/room-rows.tsx`
+- `components/dashboard/saved-rooms.tsx`
+- `components/dashboard/shared-room-entry.tsx`
+- `components/dashboard/themed-room-entry.tsx`
+- `components/room/invite-actions.tsx`
+- `components/room/listen/discovery/discovery-panel.tsx`
+- `components/room/listen/header/header-tools.tsx`
+- `components/room/listen/header/technical-room-header.tsx`
+- `components/room/listen/mobile/mobile-room-tools.tsx`
+- `components/room/listen/settings/settings-dialogs.tsx`
+- `components/room/room-navigation-panel.tsx`
+- `components/room/shared/add-media/add-media-dialog.tsx`
+- `components/room/shared/add-media/add-media-embedded.css`
+- `components/room/shared/room-direction.tsx`
+- `components/room/shared/room-settings.tsx`
+- `components/room/shared/shared-join-gate.tsx`
+- `components/room/shared/shared-membership-panel.tsx`
+- `components/room/shared/social-invite-bar.tsx`
+- `components/room/shared/social-members.tsx`
+- `components/room/shared/temporary-room-notice.tsx`
+- `components/room/watch/header/watch-signal-band.tsx`
+- `components/room/watch/watch-room-header.tsx`
+- `components/room/watch/watch-room.css`
+- `lib/account/actions.ts`
+- `lib/account/room-data.ts`
+- `lib/account/room-management-policy.ts`
+- `lib/account/room-projection.ts`
+- `lib/account/server.ts`
+- `lib/account/types.ts`
+- `lib/identity/guest-room.ts`
+- `lib/identity/temporary-room.ts`
+- `lib/media/room-media-sessions.ts`
+- `lib/recommendations/listen-discovery.ts`
+- `lib/recommendations/room-authorization.ts`
+- `lib/recommendations/room-service-core.ts`
+- `lib/recommendations/room-service.ts`
+- `lib/rooms/actions.ts`
+- `lib/rooms/activity.ts`
+- `lib/rooms/cleanup-core.ts`
+- `lib/rooms/data.ts`
+- `lib/rooms/lifecycle.ts`
+- `lib/rooms/membership.ts`
+- `lib/rooms/persistent-retirement.ts`
+- `lib/rooms/personal-access.ts`
+- `lib/rooms/personal-actions.ts`
+- `lib/rooms/request-guards.ts`
+- `lib/rooms/shared-actions.ts`
+- `lib/rooms/shared-live-revocation.ts`
+- `lib/rooms/temporary-cleanup.ts`
+- `lib/rooms/temporary.ts`
+- `lib/rooms/themed-actions.ts`
+- `lib/rooms/types.ts`
+- `lib/spacetime/generated/index.ts`
+- `lib/spacetime/generated/retire_room_reducer.ts`
+- `lib/spacetime/generated/revoke_room_membership_reducer.ts`
+- `lib/spacetime/generated/types.ts`
+- `lib/spacetime/generated/types/reducers.ts`
+- `lib/spacetime/live-room/use-room-connection.ts`
+- `lib/spacetime/use-live-room.ts`
+- `lib/supabase/database.types.ts`
+- `scripts/qa/persistent-retirement-concurrency.mjs`
+- `scripts/qa/shared-concurrency.mjs`
+- `scripts/qa/shared-revocation.mjs`
+- `scripts/qa/task028-personal-concurrency.mjs`
+- `scripts/qa/temporary-concurrency.mjs`
+- `scripts/qa/themed-concurrency.mjs`
+- `spacetime/src/index.ts`
+- `spacetime/src/module-schema.ts`
+- `spacetime/src/room-admission.ts`
+- `spacetime/src/room-participation.ts`
+- `spacetime/src/room-retirement.ts`
+- `spacetime/src/room-tables.ts`
+- `supabase/.gitignore`
+- `supabase/config.toml`
+- `supabase/fixtures/task028-before.sql`
+- `supabase/migrations/20260908110656_room_kind_legacy_foundation.sql`
+- `supabase/migrations/20260908110657_personal_room_creation_and_access.sql`
+- `supabase/migrations/20260908124308_recommendation_learning_policy.sql`
+- `supabase/migrations/20260908131607_shared_room_membership_and_consent.sql`
+- `supabase/migrations/20260909073834_room_kind_audit_corrections.sql`
+- `supabase/migrations/20260909080558_themed_room_direction.sql`
+- `supabase/migrations/20260909085012_temporary_room_lifecycle.sql`
+- `supabase/migrations/20260909102917_persistent_room_retirement.sql`
+- `supabase/tests/database/audit-corrections.test.sql`
+- `supabase/tests/database/learning-policy.test.sql`
+- `supabase/tests/database/legacy-room-contract.test.sql`
+- `supabase/tests/database/persistent-retirement.test.sql`
+- `supabase/tests/database/personal-room.test.sql`
+- `supabase/tests/database/room-kind.test.sql`
+- `supabase/tests/database/shared-room.test.sql`
+- `supabase/tests/database/shared-withdrawal.test.sql`
+- `supabase/tests/database/temporary-room.test.sql`
+- `supabase/tests/database/themed-room.test.sql`
+- `tests/e2e/legacy-rooms.spec.ts`
+- `tests/e2e/personal-rooms.spec.ts`
+- `tests/e2e/shared-rooms.spec.ts`
+- `tests/e2e/support/shared-playback.ts`
+- `tests/e2e/temporary-rooms.spec.ts`
+- `tests/e2e/themed-rooms.spec.ts`
+- `tests/fixtures/legacy-rooms-qa-fixture.tsx`
+- `tests/identity/account-room-membership.test.mjs`
+- `tests/recommendations/listen-discovery.test.mjs`
+- `tests/recommendations/persistence-behavior.test.mjs`
+- `tests/recommendations/room-service.test.mjs`
+- `tests/rooms/account-room-projection.test.mjs`
+- `tests/rooms/persistent-retirement.test.mjs`
+- `tests/rooms/personal-room-access.test.mjs`
+- `tests/rooms/room-kind-creation.test.mjs`
+- `tests/rooms/shared-actions.test.mjs`
+- `tests/rooms/shared-audit-regressions.test.mjs`
+- `tests/rooms/temporary-cleanup.test.mjs`
+- `tests/spacetime/replay-command.test.mjs`
+- `tests/spacetime/room-clock-reconnect.test.mjs`
+- `vercel.json`
+
+## 3. Task and verification documentation
+
+- `README.md`
+- `docs/HANDOFF.md`
+- `docs/tasks/TASK-028-room-kinds-foundation/acceptance-criteria.md`
+- `docs/tasks/TASK-028-room-kinds-foundation/audit-2026-09-09.md`
+- `docs/tasks/TASK-028-room-kinds-foundation/brain-dump.md`
+- `docs/tasks/TASK-028-room-kinds-foundation/commit-review-2026-09-09.md`
+- `docs/tasks/TASK-028-room-kinds-foundation/commit-scope-2026-09-09.md`
+- `docs/tasks/TASK-028-room-kinds-foundation/design.md`
+- `docs/tasks/TASK-028-room-kinds-foundation/fixes-2026-09-09.md`
+- `docs/tasks/TASK-028-room-kinds-foundation/implementation-028.1.md`
+- `docs/tasks/TASK-028-room-kinds-foundation/implementation-028.2.md`
+- `docs/tasks/TASK-028-room-kinds-foundation/implementation-028.3.md`
+- `docs/tasks/TASK-028-room-kinds-foundation/implementation-028.4.md`
+- `docs/tasks/TASK-028-room-kinds-foundation/implementation-028.5.md`
+- `docs/tasks/TASK-028-room-kinds-foundation/implementation-028.6.md`
+- `docs/tasks/TASK-028-room-kinds-foundation/implementation-028.7-R3.md`
+- `docs/tasks/TASK-028-room-kinds-foundation/implementation-028.7.md`
+- `docs/tasks/TASK-028-room-kinds-foundation/proposal.md`
+- `docs/tasks/TASK-028-room-kinds-foundation/review-notes.md`
+- `docs/tasks/TASK-028-room-kinds-foundation/tasks.md`
+
+## Excluded: separate owner performance capture
+
+- `docs/product-intake/INBOX.md`

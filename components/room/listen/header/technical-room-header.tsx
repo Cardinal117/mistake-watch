@@ -181,7 +181,7 @@ export function ListenTechnicalRoomHeader({
                   value={visibleRoomName}
                 />
                 <ListenRoomSaveButton
-                  canSave={liveRoom.canManageAuthority}
+                  canSave={room.kind !== "temporary" && liveRoom.canManageAuthority}
                   initialSaved={room.isSaved}
                   key={`${room.id}:${room.isSaved}`}
                   roomId={room.id}
@@ -229,7 +229,11 @@ export function ListenTechnicalRoomHeader({
                     {index > 0 ? <span className="opacity-45">*</span> : null}
                     {Icon ? <Icon className="h-3.5 w-3.5" aria-hidden /> : null}
                     <span className="transition-colors duration-300">
-                      {index === 0 ? `Room ID: ${stat.value}` : stat.value}
+                      {index === 0
+                        ? room.kind === "personal"
+                          ? "Personal room"
+                          : `Room ID: ${stat.value}`
+                        : stat.value}
                     </span>
                   </span>
                 );
@@ -280,7 +284,9 @@ export function ListenTechnicalRoomHeader({
               roomId={room.id}
             />
             <ListenRoomSettingsMenu
-              canSave={liveRoom.canManageAuthority}
+              themedRoomId={room.kind === "themed" ? room.id : undefined}
+              temporary={room.kind === "temporary"}
+              canSave={room.kind !== "temporary" && liveRoom.canManageAuthority}
               controllerMemberId={controllerMemberId}
               currentMemberId={room.currentMember?.id}
               initialSaved={room.isSaved}

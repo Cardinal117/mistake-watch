@@ -1,3 +1,4 @@
+import { createSupabaseAdminClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 
 import { requireRoomMemberRequestContext } from "@/lib/rooms/request-guards";
@@ -6,9 +7,7 @@ import {
   type YouTubeRecommendationKind,
 } from "@/lib/youtube/recommendations";
 
-const VALID_KINDS = new Set<YouTubeRecommendationKind>([
-  "recommended",
-]);
+const VALID_KINDS = new Set<YouTubeRecommendationKind>(["recommended"]);
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -41,6 +40,24 @@ export async function GET(request: Request) {
       { status: 400 },
     );
   }
+
+  const { data: room, error } = await createSupabaseAdminClient()
+    .from("rooms")
+    .select("room_kind")
+    .eq("id", context.roomId)
+    .eq("status", "open")
+    .maybeSingle();
+  if (error || !room || room.room_kind === "themed" || room.room_kind === "temporary")
+    return NextResponse.json(
+      {
+        items: [],
+        reason:
+          room?.room_kind === "temporary" ? "Automatic suggestions are not enabled for Temporary rooms." : "Theme-filtered recommendations are not available for this room.",
+        source: "unavailable",
+        status: "unavailable",
+      },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
 
   const response = await getYouTubeRecommendations({
     kind,

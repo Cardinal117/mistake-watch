@@ -59,6 +59,46 @@ export function useRoomConnection(room: RoomSnapshot) {
   }, [room]);
   const tokenStorageKey = `mw_spacetime_token_${room.id}`;
 
+  const participantPresent = snapshot.participants.some(
+    (participant) => participant.memberId === currentMember?.id,
+  );
+  useEffect(() => {
+    let disposed = false;
+    let pending = false;
+    const checkActivity = async () => {
+      if (disposed || pending) return;
+      pending = true;
+      try {
+        const result = await touchRoomActivityAction({ roomId: room.id });
+        if (!disposed && "expired" in result && result.expired)
+          window.location.replace("/?notice=temporary-room-expired");
+        else if (!disposed && "ended" in result && result.ended)
+          window.location.replace("/?notice=room-ended");
+      } catch {
+        /* A network failure is not proof of expiry. Retry when online. */
+      } finally {
+        pending = false;
+      }
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void checkActivity();
+    };
+    const timer = window.setInterval(() => void checkActivity(), 60_000);
+    window.addEventListener("focus", onVisible);
+    window.addEventListener("pageshow", onVisible);
+    window.addEventListener("online", onVisible);
+    document.addEventListener("visibilitychange", onVisible);
+    void checkActivity();
+    return () => {
+      disposed = true;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", onVisible);
+      window.removeEventListener("pageshow", onVisible);
+      window.removeEventListener("online", onVisible);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [room.id, room.kind, memberMissingNotice, participantPresent]);
+
   function retryConnection() {
     if (reconnectTimerRef.current !== null) {
       window.clearTimeout(reconnectTimerRef.current);
@@ -84,7 +124,6 @@ export function useRoomConnection(room: RoomSnapshot) {
     const hostMemberId = room.hostMemberId;
     let disposed = false;
     let heartbeatTimer: number | undefined;
-    let durableHeartbeatTimer: number | undefined;
     let liveDb: LiveDb | undefined;
     let activeReducers: LiveReducers | undefined;
     let shouldLeaveOnCleanup = true;
@@ -141,11 +180,6 @@ export function useRoomConnection(room: RoomSnapshot) {
       if (heartbeatTimer) {
         window.clearInterval(heartbeatTimer);
         heartbeatTimer = undefined;
-      }
-
-      if (durableHeartbeatTimer) {
-        window.clearInterval(durableHeartbeatTimer);
-        durableHeartbeatTimer = undefined;
       }
     };
 
@@ -324,10 +358,6 @@ export function useRoomConnection(room: RoomSnapshot) {
               roomId: room.id,
             });
           }, 15_000);
-
-          durableHeartbeatTimer = window.setInterval(() => {
-            void touchRoomActivityAction({ roomId: room.id });
-          }, 60_000);
         })().catch((error: unknown) => {
           const message =
             error instanceof Error && error.message.trim()

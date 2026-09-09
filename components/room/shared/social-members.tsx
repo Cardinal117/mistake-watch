@@ -1,4 +1,5 @@
 "use client";
+import { SharedMembershipPanel } from "./shared-membership-panel";
 import { MembersPanel } from "../members-panel";
 import type { WatchModeLayoutProps } from "../watch/contracts";
 export function SocialMembers({
@@ -8,6 +9,7 @@ export function SocialMembers({
   const connected = liveRoom.connectionStatus === "connected";
   return (
     <div className="room-social-members">
+      {room.kind === "shared" && <SharedMembershipPanel roomId={room.id} />}
       <MembersPanel
         participants={liveRoom.participants}
         canManageAuthority={liveRoom.canManageAuthority && connected}

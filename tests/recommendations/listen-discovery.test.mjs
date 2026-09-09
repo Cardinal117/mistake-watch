@@ -45,6 +45,16 @@ test.after(async () => {
   await rm(tempDir, { force: true, recursive: true });
 });
 
+test("Themed discovery preserves factual history but never recommends manual off-theme items", () => {
+  const track = { id: "manual", title: "Off-theme song", addedBy: "Owner", duration: "1:00", status: "played", sourceType: "youtube", sourceUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" };
+  const shelves = buildListenDiscoveryShelves({ currentItem: null, items: [track], providerItems: [track], roomName: "Fantasy", roomKind: "themed" });
+  assert.ok(shelves.some(s => s.id === "recently-played"));
+  assert.ok(shelves.every(s => ["recently-played", "room-playlists"].includes(s.id)));
+  for (const activeTab of ["for-you", "recommended", "top-listened"]) {
+    assert.equal(buildListenDiscoveryResult({ activeTab, currentItem: null, items: [track], providerItems: [track], roomKind: "themed" }).items.length, 0);
+  }
+});
+
 const queueItems = [
   item({
     id: "now",
@@ -334,3 +344,38 @@ function item(overrides) {
     ...overrides,
   };
 }
+
+for (const providerUnavailable of [false, true])
+  test(`Listen automatic suggestions exclude catalogue, factual history stays: fallback=${providerUnavailable}`, () => {
+    const upload = item({
+      id: "upload",
+      videoId: undefined,
+      sourceType: "direct",
+      sourceUrl: "mw-uploaded-asset:11111111-1111-4111-8111-111111111111",
+      status: "played",
+    });
+    const song = item({ id: "song", status: "played" });
+    const shelves = buildListenDiscoveryShelves({
+      currentItem: null,
+      items: [upload, song],
+      providerItems: providerUnavailable ? [] : [upload, song],
+      providerUnavailable,
+      roomName: "Room",
+    });
+    for (const shelf of shelves.filter((s) =>
+      ["room-picks", "because-listened", "most-listened"].includes(s.id),
+    ))
+      assert.ok(!shelf.items.some((i) => i.id === "upload"), shelf.id);
+    assert.ok(
+      shelves
+        .find((s) => s.id === "recently-played")
+        ?.items.some((i) => i.id === "upload"),
+    );
+    const recommended = buildListenDiscoveryResult({
+      activeTab: "recommended",
+      currentItem: null,
+      items: [upload, song],
+      providerItems: [upload, song],
+    });
+    assert.ok(!recommended.items.some((i) => i.id === "upload"));
+  });

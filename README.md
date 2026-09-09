@@ -11,6 +11,34 @@ Production:
 - https://watch.mistakestudios.com
 - https://mistake-watch.vercel.app
 
+## Room kinds foundation — live September 9, 2026
+
+[TASK-028 release record](docs/tasks/TASK-028-room-kinds-foundation/live-rollout-2026-09-09.md)
+contains migration, recovery, deployment, QA and rollback evidence.
+
+- **Personal:** one private persistent room per signed-in account, reusable across devices.
+- **Shared:** persistent account membership with owner approval; playback permissions
+  and learning consent remain separate decisions.
+- **Themed:** explicit owner-editable direction; manual media never changes that direction.
+  Theme-filtered recommendations are not enabled until the classifier is ready.
+- **Temporary:** guest/account throwaway rooms, one-hour inactivity grace, then closure;
+  cleanup eligible after 24 hours closed. Explicit Likes and catalogue files remain.
+  Expired room links/tabs return home with an explanation.
+- **Legacy:** all existing rooms preserved and grouped under Saved Rooms.
+
+Watch and Listen remain presentation modes within these kinds. Catalogue access
+remains separately authorized. Trusted learning attribution, consent withdrawal,
+duplicate-event protection and Temporary implicit-learning exclusion are implemented;
+a new recommendation engine and continuous Autoplay are follow-on work.
+
+All eight durable migrations and the compatible live module are deployed. All four
+new-kind gates are enabled. Production health/readiness, access-denial and entry-flow
+smokes passed. Committed-code checks: **690 Node tests, 290 SQL assertions, seven
+combined browser tests**, separate owner-deletion verification, concurrency/replay,
+typecheck, lint and build. New physical multi-device acceptance remains distinct.
+
+Maintenance/prototype schedules and release notices are recorded as future work.
+
 ## Current Release and Next Acceptance
 
 Live QA update (2026-09-08): account membership alignment (`dc3ba38`), draggable

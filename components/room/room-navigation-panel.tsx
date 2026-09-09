@@ -125,7 +125,7 @@ export function RoomNavigationPanel({
         <InviteActions inviteUrl={room.inviteUrl} roomCode={room.code} />
         <div className={compact ? "grid grid-cols-2 gap-2" : "flex gap-2"}>
           <SavedRoomToggle
-            canSave={liveRoom.canManageAuthority}
+            canSave={room.kind !== "temporary" && liveRoom.canManageAuthority}
             initialSaved={room.isSaved}
             roomId={room.id}
           />

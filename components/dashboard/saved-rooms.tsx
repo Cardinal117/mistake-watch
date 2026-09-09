@@ -7,14 +7,52 @@ type SavedRoomsProps = {
 
 export function SavedRooms({ rooms }: SavedRoomsProps) {
   return (
-    <RoomRows
-      actionLabel="Save a room"
-      description="Reusable rooms for regular watch nights, listening sessions, or family invite links."
-      emptyDescription="Saved rooms will become useful once room persistence is wired. For now, they model the dashboard layout and future workflow."
-      emptyTitle="No saved rooms"
-      removableSavedRooms
-      rooms={rooms}
-      title="Saved Rooms"
-    />
+    <>
+      {rooms.some((room) => room.kind === "personal") && (
+        <RoomRows
+          title="Personal"
+          description="Your private room, across your devices."
+          emptyTitle=""
+          emptyDescription=""
+          actionLabel="Open room"
+          rooms={rooms.filter((room) => room.kind === "personal")}
+        />
+      )}
+      {rooms.some((room) => room.kind === "shared") && (
+        <RoomRows
+          title="Shared"
+          description="Your approved rooms, ready to return to."
+          emptyTitle=""
+          emptyDescription=""
+          actionLabel="Open room"
+          rooms={rooms.filter((room) => room.kind === "shared")}
+        />
+      )}
+      {rooms.some((room) => room.kind === "themed") && (
+        <RoomRows
+          title="Themed"
+          description="Rooms with an explicit direction."
+          emptyTitle=""
+          emptyDescription=""
+          actionLabel="Open room"
+          rooms={rooms.filter((room) => room.kind === "themed")}
+        />
+      )}
+      <RoomRows
+        actionLabel="Save a room"
+        description="Reusable rooms for regular watch nights, listening sessions, or family invite links."
+        emptyDescription="Save a room to keep it available here for your next session."
+        emptyTitle="No saved rooms"
+        removableSavedRooms
+        groupLabel="Legacy"
+        rooms={rooms.filter(
+          (room) =>
+            room.kind !== "personal" &&
+            room.kind !== "shared" &&
+            room.kind !== "themed" && room.kind !== "temporary",
+        )}
+        title="Saved Rooms"
+      />
+    </>
   );
 }

@@ -98,7 +98,7 @@ export function WatchSignalBand({
           onClick={() => onOpenSurface("audience")}
         />
         <WatchSavedRoomToggle
-          canSave={liveRoom.canManageAuthority}
+          canSave={room.kind !== "temporary" && liveRoom.canManageAuthority}
           initialSaved={room.isSaved}
           roomId={room.id}
         />

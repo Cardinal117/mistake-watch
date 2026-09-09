@@ -5,6 +5,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type Dispatch,
   type ReactNode,
   type SetStateAction,
@@ -264,6 +265,8 @@ export function ListenRoomSettingsMenu({
   tvSettings,
   showPermissionsAction = true,
   showSaveAction = true,
+  themedRoomId,
+  temporary=false,
 }: {
   canSave: boolean;
   controllerMemberId: string | null;
@@ -277,10 +280,13 @@ export function ListenRoomSettingsMenu({
   tvSettings: ListenTvSettings;
   showPermissionsAction?: boolean;
   showSaveAction?: boolean;
+  themedRoomId?: string;
+  temporary?:boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTheme, setSettingsTheme] = useState<CSSProperties>({});
   const [isSaved, setIsSaved] = useState(initialSaved);
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -393,28 +399,32 @@ export function ListenRoomSettingsMenu({
       </button>
       {open ? (
         <div className="absolute right-0 top-[calc(100%+0.55rem)] z-50 w-64 overflow-hidden rounded-md border border-white/10 bg-surface/94 p-2 shadow-[0_22px_54px_rgb(0_0_0_/_0.48),0_0_30px_rgb(var(--listen-shadow)/0.12)] backdrop-blur-xl">
-          <ListenMenuButton
-            icon={<Copy className="h-4 w-4" aria-hidden />}
-            label="Copy Room ID"
-            onClick={() => void writeClipboard(roomCode, "Room ID")}
-          />
-          <ListenMenuButton
-            icon={<Copy className="h-4 w-4" aria-hidden />}
-            label="Copy Room Link"
-            onClick={() => {
-              const roomLink = getCopyableRoomLink(inviteUrl, roomId);
+          {roomCode && (
+            <>
+              <ListenMenuButton
+                icon={<Copy className="h-4 w-4" aria-hidden />}
+                label="Copy Room ID"
+                onClick={() => void writeClipboard(roomCode, "Room ID")}
+              />
+              <ListenMenuButton
+                icon={<Copy className="h-4 w-4" aria-hidden />}
+                label="Copy Room Link"
+                onClick={() => {
+                  const roomLink = getCopyableRoomLink(inviteUrl, roomId);
 
-              return roomLink
-                ? void writeClipboard(roomLink, "Room link")
-                : setStatusMessage("Room link is not available yet.");
-            }}
-          />
-          <ListenMenuButton
-            icon={<Share2 className="h-4 w-4" aria-hidden />}
-            label="Share Room"
-            onClick={() => void shareRoom()}
-          />
-          <div className="my-2 h-px bg-white/10" />
+                  return roomLink
+                    ? void writeClipboard(roomLink, "Room link")
+                    : setStatusMessage("Room link is not available yet.");
+                }}
+              />
+              <ListenMenuButton
+                icon={<Share2 className="h-4 w-4" aria-hidden />}
+                label="Share Room"
+                onClick={() => void shareRoom()}
+              />
+              <div className="my-2 h-px bg-white/10" />
+            </>
+          )}
           {showSaveAction ? (
             <ListenMenuButton
               disabled={!canSave || saving}
@@ -433,6 +443,14 @@ export function ListenRoomSettingsMenu({
             icon={<Settings className="h-4 w-4" aria-hidden />}
             label="Room Settings"
             onClick={() => {
+              if (menuRef.current) {
+                const theme = getComputedStyle(menuRef.current);
+                setSettingsTheme({
+                  "--listen-primary":
+                    theme.getPropertyValue("--listen-primary"),
+                  "--listen-shadow": theme.getPropertyValue("--listen-shadow"),
+                } as CSSProperties);
+              }
               setSettingsOpen(true);
               setOpen(false);
             }}
@@ -473,6 +491,9 @@ export function ListenRoomSettingsMenu({
         open={permissionsOpen}
       />
       <ListenRoomSettingsDialog
+        themeStyle={settingsTheme}
+        themedRoomId={themedRoomId}
+        temporary={temporary}
         onChange={onTvSettingsChange}
         onClose={() => setSettingsOpen(false)}
         open={settingsOpen}

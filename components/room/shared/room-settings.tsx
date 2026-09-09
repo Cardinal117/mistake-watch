@@ -1,4 +1,5 @@
 "use client";
+import {TemporaryRoomNotice} from "./temporary-room-notice";
 import { useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -13,6 +14,8 @@ import {
   Bookmark,
 } from "lucide-react";
 import { AccountCommandPanel } from "@/components/account";
+import { RoomDirectionPanel } from "./room-direction";
+import { SharedMembershipPanel } from "./shared-membership-panel";
 import { MembersPanel } from "../members-panel";
 import { InviteActions } from "../invite-actions";
 import { WatchSavedRoomToggle } from "../watch/header/watch-signal-band";
@@ -73,7 +76,11 @@ export function RoomSettings({
                 <Icon aria-hidden />
                 <span>
                   <strong>{title}</strong>
-                  <small>{description}</small>
+                  <small>
+                    {id === "room" && room.kind === "personal"
+                      ? "Personal room bookmark"
+                      : description}
+                  </small>
                 </span>
                 <ChevronRight aria-hidden />
               </button>
@@ -110,34 +117,44 @@ export function RoomSettings({
           <div className="room-settings-detail">
             {category === "room" ? (
               <>
-                <h3>Invite people</h3>
+                {room.kind === "themed" && (
+                  <RoomDirectionPanel roomId={room.id} />
+                )}
+                {room.kind !== "personal" && <h3>Invite people</h3>}
                 <InviteActions
                   inviteUrl={room.inviteUrl}
                   roomCode={room.code}
                 />
+                {room.kind === "temporary" ? <TemporaryRoomNotice/> : <>
                 <h3>Save this room</h3>
                 <WatchSavedRoomToggle
                   canSave={connected && liveRoom.canManageAuthority}
                   initialSaved={room.isSaved}
                   roomId={room.id}
-                />
+                /></>}
               </>
             ) : category === "people" ? (
-              <MembersPanel
-                participants={liveRoom.participants}
-                canManageAuthority={connected && liveRoom.canManageAuthority}
-                connectionStatus={liveRoom.connectionStatus}
-                controllerMemberId={
-                  liveRoom.participants.find((p) => p.isController)?.id
-                }
-                currentMemberId={room.currentMember?.id}
-                errorMessage={liveRoom.errorMessage}
-                grantControl={liveRoom.grantControl}
-                kickMember={liveRoom.kickMember}
-                onPermissionChange={liveRoom.setPermission}
-                removeIdleMember={liveRoom.removeIdleMember}
-                revokeControl={liveRoom.revokeControl}
-              />
+              <>
+                {" "}
+                {room.kind === "shared" && (
+                  <SharedMembershipPanel roomId={room.id} />
+                )}
+                <MembersPanel
+                  participants={liveRoom.participants}
+                  canManageAuthority={connected && liveRoom.canManageAuthority}
+                  connectionStatus={liveRoom.connectionStatus}
+                  controllerMemberId={
+                    liveRoom.participants.find((p) => p.isController)?.id
+                  }
+                  currentMemberId={room.currentMember?.id}
+                  errorMessage={liveRoom.errorMessage}
+                  grantControl={liveRoom.grantControl}
+                  kickMember={liveRoom.kickMember}
+                  onPermissionChange={liveRoom.setPermission}
+                  removeIdleMember={liveRoom.removeIdleMember}
+                  revokeControl={liveRoom.revokeControl}
+                />
+              </>
             ) : (
               <>
                 {category === "privacy" && (

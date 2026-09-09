@@ -19,4 +19,5 @@ export type AccountSummary =
       role: AccountRole;
       accountStatus: AccountStatus;
       canUseCompactPlayback?: boolean;
+      isAnonymous?: boolean;
     };

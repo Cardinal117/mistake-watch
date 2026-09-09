@@ -10,6 +10,7 @@ import { touchAccountRoomActivity } from "./activity-core";
 export async function touchSignedInRoomActivity(roomId: string) {
   const serverClient = await createSupabaseServerClient();
   const admin = createSupabaseAdminClient();
+  let verifiedPersonalOwnerId: string | null = null;
 
   return touchAccountRoomActivity(roomId, {
     findMember: async (targetRoomId, userId) => {
@@ -29,7 +30,7 @@ export async function touchSignedInRoomActivity(roomId: string) {
     findOpenRoom: async (targetRoomId) => {
       const { data, error } = await admin
         .from("rooms")
-        .select("id, is_saved")
+        .select("id, is_saved, room_kind, owner_user_id")
         .eq("id", targetRoomId)
         .eq("status", "open")
         .maybeSingle();
@@ -38,10 +39,19 @@ export async function touchSignedInRoomActivity(roomId: string) {
         throw error;
       }
 
+      if (
+        data?.room_kind === "personal" &&
+        !(data.owner_user_id === verifiedPersonalOwnerId)
+      )
+        return null;
       return data
         ? {
             id: data.id,
-            isSaved: data.is_saved,
+            isSaved:
+              data.is_saved ||
+              data.room_kind === "personal" ||
+              data.room_kind === "shared" ||
+              data.room_kind === "themed",
           }
         : null;
     },
@@ -62,6 +72,12 @@ export async function touchSignedInRoomActivity(roomId: string) {
         throw profileError;
       }
 
+      // The core resolves this identity before reading the room. Reuse the
+      // existing auth/profile checks instead of adding heartbeat round trips.
+      verifiedPersonalOwnerId =
+        profile?.account_status === "active" && data.user.is_anonymous === false
+          ? data.user.id
+          : null;
       return profile?.account_status === "active" ? data.user.id : null;
     },
     now: () => new Date(),

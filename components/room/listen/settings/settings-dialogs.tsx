@@ -1,4 +1,5 @@
 "use client";
+import {TemporaryRoomNotice} from "../../shared/temporary-room-notice";
 
 import {
   useEffect,
@@ -6,6 +7,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
+import { RoomDirectionPanel } from "@/components/room/shared/room-direction";
 import { createPortal } from "react-dom";
 import { Pause, X } from "lucide-react";
 import { IconButton } from "@/components/ui";
@@ -22,11 +24,17 @@ export function ListenRoomSettingsDialog({
   onClose,
   open,
   settings,
+  themedRoomId,
+  temporary=false,
+  themeStyle,
 }: {
   onChange: Dispatch<SetStateAction<ListenTvSettings>>;
   onClose(): void;
   open: boolean;
   settings: ListenTvSettings;
+  themedRoomId?: string;
+  temporary?:boolean;
+  themeStyle?: CSSProperties;
 }) {
   useEffect(() => {
     if (!open) {
@@ -59,7 +67,10 @@ export function ListenRoomSettingsDialog({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[120] grid place-items-center bg-black/48 px-4 backdrop-blur-md">
+    <div
+      style={themeStyle}
+      className="fixed inset-0 z-[120] grid place-items-center bg-black/48 px-4 backdrop-blur-md"
+    >
       <div
         id="listen-room-settings-dialog"
         className="w-full max-w-2xl overflow-hidden rounded-md border border-white/10 bg-surface/94 shadow-[0_28px_80px_rgb(0_0_0_/_0.58),0_0_46px_rgb(var(--listen-shadow)/0.16)]"
@@ -76,7 +87,7 @@ export function ListenRoomSettingsDialog({
               className="mt-1 text-title-lg font-semibold text-on-surface"
               id="listen-room-settings-title"
             >
-              TV mode display
+              {themedRoomId ? "Room settings" : "TV mode display"}
             </h2>
           </div>
           <IconButton
@@ -89,7 +100,14 @@ export function ListenRoomSettingsDialog({
           </IconButton>
         </div>
 
-        <div className="grid gap-5 p-5 md:grid-cols-[minmax(0,1fr)_16rem]">
+        <div className="grid max-h-[75dvh] gap-5 overflow-y-auto p-5 md:grid-cols-[minmax(0,1fr)_16rem]">
+          {temporary && <TemporaryRoomNotice/>}
+            {themedRoomId && (
+            <div className="min-w-0 md:col-span-2">
+              <RoomDirectionPanel listenTone roomId={themedRoomId} />
+              <h3 className="mt-5">TV mode display</h3>
+            </div>
+          )}
           <div className="grid gap-5">
             <ListenTvSettingsSlider
               label="Background dimness"

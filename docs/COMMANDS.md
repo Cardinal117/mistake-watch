@@ -1,5 +1,9 @@
 # Mistake Watch Commands
 
+## TASK-028 production operations
+
+Production has all eight TASK-028 migrations and all four new-kind creation gates enabled. The room cleanup endpoint is /api/rooms/cleanup, requires CRON_SECRET bearer authorization, and runs daily at 03:00 UTC plus opportunistically. Never print that secret. Disable creation if needed while retaining kind-aware access and retirement guards; old unrestricted frontend rollback is unsafe after new kinds exist. See [rollout record](tasks/TASK-028-room-kinds-foundation/live-rollout-2026-09-09.md).
+
 This file documents the operational commands another agent should use before relying on chat context.
 
 ## Local Development

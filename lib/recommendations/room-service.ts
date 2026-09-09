@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { normalizeRecommendationMediaIdentity } from "./media-identity";
 import type { Database, Tables } from "@/lib/supabase/database.types";
 import type { RecommendationRoomAccess } from "./room-authorization";
 import type {
@@ -53,8 +54,59 @@ export async function getRoomRecommendations({
 
 async function loadAggregates(
   client: RecommendationClient,
-  access: Pick<RecommendationRoomAccess, "accountUserId" | "roomId">,
+  access: Pick<
+    RecommendationRoomAccess,
+    "accountUserId" | "roomId" | "roomKind"
+  >,
 ) {
+  const kind = access.roomKind ?? "legacy";
+  if (kind !== "legacy") {
+    // New kinds read revocable evidence; never trust the old mixed aggregate totals.
+    if (kind !== "personal" && kind !== "shared") return [];
+    const { data, error } = await client.rpc("read_room_learning_aggregates", {
+      target_room: access.roomId,
+      ...(access.accountUserId ? { target_account: access.accountUserId } : {}),
+    });
+    if (error) throw error;
+    if (!Array.isArray(data))
+      throw new Error("Invalid learning aggregate response.");
+    return data.flatMap((value) => {
+      if (!value || typeof value !== "object" || Array.isArray(value))
+        return [];
+      if (
+        typeof value.source_type !== "string" ||
+        typeof value.media_id !== "string"
+      )
+        return [];
+      const identity = normalizeRecommendationMediaIdentity({
+        sourceType: value.source_type,
+        mediaId: value.media_id,
+      });
+      if (
+        !identity ||
+        (value.scope_type !== "account" && value.scope_type !== "room_session")
+      )
+        return [];
+      return [
+        {
+          ...identity,
+          scopeType: value.scope_type,
+          queueAddedCount:
+            typeof value.queue_added_count === "number"
+              ? value.queue_added_count
+              : 0,
+          playNextCount:
+            typeof value.play_next_count === "number"
+              ? value.play_next_count
+              : 0,
+          lastEventAtMs:
+            typeof value.last_event_at === "string"
+              ? Date.parse(value.last_event_at)
+              : 0,
+        } satisfies RecommendationAggregate,
+      ];
+    });
+  }
   const now = new Date().toISOString();
   const roomQuery = client
     .from("recommendation_media_aggregates")

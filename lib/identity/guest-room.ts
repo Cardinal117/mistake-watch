@@ -1,4 +1,5 @@
 import "server-only";
+import { accessTemporaryRoom } from "@/lib/rooms/temporary";
 
 import { createSupabaseAdminClient } from "@/lib/supabase";
 import type { Tables } from "@/lib/supabase";
@@ -53,6 +54,7 @@ export type JoinRoomAsGuestByInviteLinkInput = {
 };
 
 export type ReclaimGuestMembershipInput = {
+  touchActivity?: boolean;
   roomId: string;
   token: string;
 };
@@ -243,6 +245,14 @@ async function createGuestMembership({
   room: Tables<"rooms">;
 }): Promise<GuestRoomSession> {
   const supabase = createSupabaseAdminClient();
+  if (
+    room.room_kind !== undefined &&
+    room.room_kind !== "legacy" &&
+    room.room_kind !== "themed" &&
+    room.room_kind !== "temporary"
+  ) {
+    throw new Error("This room does not accept invitations.");
+  }
   const tokenBundle = createGuestTokenBundle(room.id);
   let guestIdentityId: string | null = null;
 
@@ -310,6 +320,7 @@ async function createGuestMembership({
 export async function reclaimGuestMembership({
   roomId,
   token,
+  touchActivity = true,
 }: ReclaimGuestMembershipInput): Promise<GuestRoomSession | null> {
   const supabase = createSupabaseAdminClient();
   const tokenHash = hashRoomScopedToken(roomId, token);
@@ -355,10 +366,34 @@ export async function reclaimGuestMembership({
     throw roomError;
   }
 
-  if (room.status !== "open") {
+  if (
+    room.status !== "open" ||
+    (room.room_kind !== undefined &&
+      room.room_kind !== "legacy" &&
+      room.room_kind !== "themed" &&
+      room.room_kind !== "temporary")
+  ) {
     return null;
   }
 
+  if (room.room_kind === "temporary") {
+    if (
+      !(await accessTemporaryRoom({
+        roomId,
+        memberId: member.id,
+        guestHash: tokenHash,
+        touch: touchActivity,
+      }))
+    )
+      return null;
+    return {
+      guestIdentity,
+      member,
+      room,
+      token,
+      tokenCookieName: getGuestIdentityCookieName(roomId),
+    };
+  }
   await Promise.all([
     supabase
       .from("guest_identities")

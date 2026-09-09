@@ -9,12 +9,15 @@ export type AccountRoomRecord = {
   name: string;
   owner_user_id: string | null;
   privacy: string;
+  room_kind?: string;
   saved_by_user_id: string | null;
   status: string;
   updated_at: string;
 };
 
 export type AccountRoomSummary = {
+  // Optional for snapshots from an older server during the additive rollout.
+  kind?: "legacy" | "personal" | "shared" | "themed" | "temporary";
   id: string;
   isSaved: boolean;
   lastActiveAt: string;
@@ -38,6 +41,19 @@ export function projectAccountRooms({
   const projected = new Map<string, AccountRoomSummary>();
 
   for (const room of rooms) {
+    // Only an absent pre-migration field has a compatibility default.
+    // Unsupported values must never be presented as ordinary Legacy rooms.
+    if (
+      room.room_kind !== undefined &&
+      room.room_kind !== "legacy" &&
+      room.room_kind !== "personal" &&
+      room.room_kind !== "shared" &&
+      room.room_kind !== "themed" && room.room_kind !== "temporary"
+    )
+      continue;
+    if (room.room_kind === "personal" && room.owner_user_id !== userId)
+      continue;
+    if (room.room_kind === "shared" && !memberships.has(room.id)) continue;
     const relationship = getRelationship(room, memberships, userId);
 
     if (!relationship || projected.has(room.id)) {
@@ -46,6 +62,15 @@ export function projectAccountRooms({
 
     projected.set(room.id, {
       id: room.id,
+      kind:
+        room.room_kind === "personal"
+          ? "personal"
+          : room.room_kind === "shared"
+            ? "shared"
+            : room.room_kind === "themed"
+              ? "themed"
+              : room.room_kind === "temporary" ? "temporary"
+              : "legacy",
       isSaved: room.is_saved && room.saved_by_user_id === userId,
       lastActiveAt: room.last_active_at ?? room.updated_at ?? room.created_at,
       mode: room.mode === "listen" ? "listen" : "watch",

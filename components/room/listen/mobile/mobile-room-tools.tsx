@@ -103,7 +103,7 @@ export function ListenMobileRoomTools({
             />
             <div className="grid gap-2">
               <ListenSavedRoomToggle
-                canSave={liveRoom.canManageAuthority}
+                canSave={room.kind !== "temporary" && liveRoom.canManageAuthority}
                 compact
                 initialSaved={room.isSaved}
                 roomId={room.id}

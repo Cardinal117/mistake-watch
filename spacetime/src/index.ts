@@ -86,6 +86,7 @@ export {
   publish_room_rhythm_profile,
 } from "./room-rhythm";
 
+export { retire_room } from "./room-retirement";
 export default spacetimedb;
 
 function getValidRoomSeedGrant(
@@ -94,6 +95,7 @@ function getValidRoomSeedGrant(
   hostMemberId: string,
   seedToken: string,
 ) {
+  if(ctx.db.retired_room.room_id.find(roomId)) return null;
   const grant = ctx.db.room_seed_grant.grant_key.find(
     roomSeedGrantKey(roomId, hostMemberId),
   );
@@ -718,6 +720,7 @@ export const issue_room_seed_grant = spacetimedb.reducer(
       return;
     }
 
+    if(ctx.db.retired_room.room_id.find(room_id)) throw new Error("Room is closed");
     const trimmedToken = seed_token.trim();
     const now = nowMs();
     const maxExpiryMs = now + BigInt(5 * 60 * 1000);
@@ -770,6 +773,7 @@ export const seed_room_session = spacetimedb.reducer(
     seed_token: t.string(),
   },
   (ctx, { host_member_id, mode, room_name, room_id, seed_token }) => {
+    if(ctx.db.retired_room.room_id.find(room_id)) throw new Error("Room is closed");
     const existing = ctx.db.room_session.room_id.find(room_id);
 
     if (existing) {
@@ -2120,3 +2124,34 @@ export const move_queue_item_relative = registerRelativeQueueMove({
   replaceQueueItem,
   recordQueueRecommendationEvent,
 });
+
+// Trusted durable membership decisions only; never accepts an end-user host identity as proof.
+export const revoke_room_membership = spacetimedb.reducer(
+  { room_id: t.string(), member_id: t.string() },
+  (ctx, { room_id, member_id }) => {
+    if (!isTrustedRecommendationAuthority(ctx))
+      throw new Error("Trusted authority required");
+    const target = getParticipant(ctx, room_id, member_id);
+    if (target?.role === "host") throw new Error("Owner cannot be removed");
+    const key = `${room_id}:${member_id}`;
+    if (!ctx.db.room_member_revocation.revocation_key.find(key))
+      ctx.db.room_member_revocation.insert({
+        revocation_key: key,
+        room_id,
+        member_id,
+      });
+    for (const grant of [...ctx.db.room_admission_grant.iter()])
+      if (grant.room_id === room_id && grant.member_id === member_id)
+        ctx.db.room_admission_grant.delete(grant);
+    if (target) deleteParticipantAndPermissions(ctx, target);
+    const prior = ctx.db.room_kick.kick_key.find(kickKey(room_id, member_id));
+    if (prior) ctx.db.room_kick.delete(prior);
+    ctx.db.room_kick.insert({
+      actor_member_id: "durable-owner",
+      created_ms: nowMs(),
+      kick_key: kickKey(room_id, member_id),
+      member_id,
+      room_id,
+    });
+  },
+);

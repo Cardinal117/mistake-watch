@@ -1,4 +1,7 @@
 import "server-only";
+import { after } from "next/server";
+import { cleanupPersistentRooms } from "./persistent-retirement";
+import { cleanupTemporaryRooms } from "./temporary-cleanup";
 
 import { createSupabaseAdminClient } from "@/lib/supabase";
 
@@ -6,6 +9,17 @@ const IDLE_ROOM_TTL_MS = 60 * 60 * 1000;
 
 export async function closeIdleUnsavedRooms() {
   const supabase = createSupabaseAdminClient();
+  // Close expired durable rooms before listing. Slow/retryable live cleanup runs
+  // after the response so a transport outage cannot hold up returning home.
+  const pending = await supabase.rpc("pending_temporary_room_cleanup");
+  if (!pending.error && Array.isArray(pending.data) && pending.data.length) {
+    after(async () => {
+      await cleanupTemporaryRooms().catch(() => null);
+    });
+  }
+  after(async () => {
+    await cleanupPersistentRooms().catch(() => null);
+  });
   const now = new Date();
   const nowIso = now.toISOString();
   const freshnessCutoffIso = new Date(
@@ -16,7 +30,8 @@ export async function closeIdleUnsavedRooms() {
     .from("rooms")
     .select("id, created_at, idle_deadline_at, last_active_at")
     .eq("status", "open")
-    .eq("is_saved", false);
+    .eq("is_saved", false)
+    .eq("room_kind", "legacy");
 
   if (roomsError) {
     throw roomsError;
@@ -64,6 +79,7 @@ export async function closeIdleUnsavedRooms() {
         })
         .eq("id", room.id)
         .eq("is_saved", false)
+        .eq("room_kind", "legacy")
         .eq("status", "open");
     }),
   );

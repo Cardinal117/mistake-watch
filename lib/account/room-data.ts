@@ -1,6 +1,11 @@
 import "server-only";
+import { isPersonalRoomOwner } from "@/lib/rooms/personal-access";
 
-import { createSupabaseAdminClient, type Tables } from "@/lib/supabase";
+import {
+  createSupabaseAdminClient,
+  createSupabaseServerClient,
+  type Tables,
+} from "@/lib/supabase";
 
 import {
   projectAccountRooms,
@@ -9,7 +14,7 @@ import {
 } from "./room-projection";
 
 const ROOM_COLUMNS =
-  "id, name, mode, status, privacy, is_saved, owner_user_id, saved_by_user_id, last_active_at, updated_at, created_at";
+  "id, name, mode, status, privacy, room_kind, is_saved, owner_user_id, saved_by_user_id, last_active_at, updated_at, created_at";
 
 type RoomRow = Tables<"rooms">;
 
@@ -66,9 +71,29 @@ export async function listAccountRooms(
     memberRooms = data as unknown as AccountRoomRecord[];
   }
 
+  const allRooms = mergeRoomRows(attributedRooms, memberRooms);
+  const personal = allRooms.find((room) => room.room_kind === "personal");
+  const personalAllowed = personal
+    ? await isPersonalRoomOwner(personal)
+    : false;
+  const sharedIds = new Set<string>();
+  if (allRooms.some((room) => room.room_kind === "shared")) {
+    const client = await createSupabaseServerClient();
+    const { data, error } = await client
+      .from("rooms")
+      .select("id")
+      .eq("room_kind", "shared")
+      .neq("status", "archived");
+    if (error) throw error;
+    for (const room of data ?? []) sharedIds.add(room.id);
+  }
   return projectAccountRooms({
     memberRoomIds,
-    rooms: mergeRoomRows(attributedRooms, memberRooms),
+    rooms: allRooms.filter(
+      (room) =>
+        (room.room_kind !== "personal" || personalAllowed) &&
+        (room.room_kind !== "shared" || sharedIds.has(room.id)),
+    ),
     userId,
   });
 }

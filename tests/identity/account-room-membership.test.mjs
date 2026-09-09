@@ -17,12 +17,16 @@ function fixture({
   open = true,
   dbError = false,
   role = "guest",
+  kind = "legacy",
+  owner = "account-A",
+  anonymous = false,
 } = {}) {
   const account = signedIn
     ? {
         status: "signed-in",
         accountStatus: active ? "active" : "suspended",
         id: "account-A",
+        isAnonymous: anonymous,
       }
     : { status: "signed-out" };
   const db = {
@@ -39,7 +43,7 @@ function fixture({
             data:
               table === "rooms"
                 ? open
-                  ? { id: "room" }
+                  ? { id: "room", room_kind: kind, owner_user_id: owner }
                   : null
                 : accountMember
                   ? { id: "account-member", role }
@@ -63,7 +67,11 @@ function fixture({
       reclaimGuestMembership: async () =>
         guest
           ? {
-              room: { id: "room", status: open ? "open" : "closed" },
+              room: {
+                id: "room",
+                room_kind: kind,
+                status: open ? "open" : "closed",
+              },
               member: { id: "guest-member", role: "guest" },
             }
           : null,
@@ -159,3 +167,40 @@ test("account lookup failure cannot downgrade to a guest cookie", async () => {
   assert.equal(await f.page(), null);
   await assert.rejects(f.admission, /database unavailable/);
 });
+
+for (const options of [
+  { owner: "another-account" },
+  { accountMember: false },
+  { anonymous: true },
+  { signedIn: false },
+]) {
+  test(`Personal page and live grant reject stale memberships/cookies: ${JSON.stringify(options)}`, async () => {
+    const f = fixture({ kind: "personal", ...options });
+    assert.equal(await f.page(), null);
+    assert.equal(await f.admission(), null);
+  });
+}
+test("Personal owner devices use one account membership", async () => {
+  const f = fixture({ kind: "personal", role: "host" });
+  assert.equal((await f.page())?.currentMember.id, "account-member");
+  assert.equal((await f.admission())?.memberId, "account-member");
+});
+
+test("Shared approved account uses one durable member for page and live admission", async () => {
+  const f = fixture({ kind: "shared", guest: false });
+  assert.equal((await f.page())?.currentMember.id, "account-member");
+  assert.equal((await f.admission())?.memberId, "account-member");
+});
+
+for (const options of [
+  { active: false },
+  { anonymous: true },
+  { signedIn: false },
+  { accountMember: false },
+]) {
+  test(`Shared denies account/cookie fallback: ${JSON.stringify(options)}`, async () => {
+    const f = fixture({ kind: "shared", ...options });
+    assert.equal(await f.page(), null);
+    assert.equal(await f.admission(), null);
+  });
+}

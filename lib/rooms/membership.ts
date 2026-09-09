@@ -1,4 +1,5 @@
 import "server-only";
+import { accessTemporaryRoom } from "./temporary";
 
 import { cookies } from "next/headers";
 import { getAccountSummary } from "@/lib/account/server";
@@ -32,7 +33,7 @@ export async function resolveRoomMembership(
     ] = await Promise.all([
       admin
         .from("rooms")
-        .select("id")
+        .select("id, room_kind, owner_user_id")
         .eq("id", roomId)
         .eq("status", "open")
         .maybeSingle(),
@@ -48,7 +49,40 @@ export async function resolveRoomMembership(
       throw roomError ?? memberError;
     }
 
+    if (
+      room?.room_kind === "personal" &&
+      (room.owner_user_id !== account.id ||
+        account.isAnonymous !== false ||
+        !member)
+    ) {
+      return null;
+    }
+    if (
+      room &&
+      room.room_kind !== undefined &&
+      room.room_kind !== "legacy" &&
+      room.room_kind !== "personal" &&
+      room.room_kind !== "shared" &&
+      room.room_kind !== "themed" &&
+      room.room_kind !== "temporary"
+    )
+      return null;
+
+    if (
+      room?.room_kind === "shared" &&
+      (account.isAnonymous !== false || !member)
+    )
+      return null;
     if (room && member) {
+      if (
+        room.room_kind === "temporary" &&
+        !(await accessTemporaryRoom({
+          roomId,
+          memberId: member.id,
+          accountId: account.id,
+        }))
+      )
+        return null;
       return {
         authorizationKind: "account",
         memberId: member.id,
@@ -63,7 +97,14 @@ export async function resolveRoomMembership(
     ? await reclaimGuestMembership({ roomId, token })
     : null;
 
-  if (!session || session.room.status !== "open") {
+  if (
+    !session ||
+    session.room.status !== "open" ||
+    (session.room.room_kind !== undefined &&
+      session.room.room_kind !== "legacy" &&
+      session.room.room_kind !== "themed" &&
+      session.room.room_kind !== "temporary")
+  ) {
     return null;
   }
 

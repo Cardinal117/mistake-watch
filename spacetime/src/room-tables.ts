@@ -1,5 +1,10 @@
 import { table, t } from "spacetimedb/server";
 
+export const retiredRoom = table(
+  { name: "retired_room" },
+  { room_id: t.string().primaryKey() },
+);
+
 export const roomSession = table(
   { name: "room_session", public: true },
   {
@@ -255,5 +260,15 @@ export const trustedSeedIssuer = table(
     created_ms: t.i64(),
     identity_hex: t.string().primaryKey(),
     label: t.string(),
+  },
+);
+
+// Retired Shared membership IDs never regain live authority from a stale grant.
+export const roomMemberRevocation = table(
+  { name: "room_member_revocation" },
+  {
+    revocation_key: t.string().primaryKey(),
+    room_id: t.string(),
+    member_id: t.string(),
   },
 );

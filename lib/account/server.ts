@@ -1,4 +1,5 @@
 import "server-only";
+import { isPersonalRoomOwner } from "@/lib/rooms/personal-access";
 import { canUseCompactPlayback } from "./compact-playback";
 
 import { cookies } from "next/headers";
@@ -50,6 +51,7 @@ export async function getAccountSummary(): Promise<AccountSummary> {
     googleAvatarUrl: profile.google_avatar_url,
     handle: profile.handle,
     id: profile.id,
+    isAnonymous: data.user.is_anonymous !== false,
     role: normalizeAccountRole(profile.role),
     status: "signed-in",
   };
@@ -77,6 +79,19 @@ export async function migrateCurrentGuestRoomToAccount(roomId: string) {
 
   if (error || !data.user) {
     throw new Error("Sign in before attaching a guest room.");
+  }
+
+  const { data: targetRoom, error: targetError } =
+    await createSupabaseAdminClient()
+      .from("rooms")
+      .select("room_kind,owner_user_id")
+      .eq("id", roomId)
+      .maybeSingle();
+  if (targetError) throw targetError;
+  if (targetRoom?.room_kind === "personal") {
+    if (!(await isPersonalRoomOwner(targetRoom)))
+      throw new Error("This room is private.");
+    return { roomId, transferredOwnership: false };
   }
 
   const cookieStore = await cookies();

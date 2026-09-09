@@ -178,6 +178,8 @@ function client({
       return nextTimer++;
     },
     clearInterval() {},
+    addEventListener() {},
+    removeEventListener() {},
   };
   const cache = new Map();
   const replacements = {
@@ -187,7 +189,9 @@ function client({
       getDeterministicAvatarKey: () => "fixture",
       isAvatarKey: () => true,
     },
-    "@/lib/rooms/actions": { touchRoomActivityAction: async () => {} },
+    "@/lib/rooms/actions": {
+      touchRoomActivityAction: async () => ({ touched: true }),
+    },
   };
   function load(file) {
     file = path.resolve(file);
@@ -233,6 +237,11 @@ function client({
         exports: testModule.exports,
         require,
         window,
+        document: {
+          visibilityState: "visible",
+          addEventListener() {},
+          removeEventListener() {},
+        },
         console,
         Date: class extends Date {
           static now() {

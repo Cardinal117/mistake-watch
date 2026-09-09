@@ -52,6 +52,12 @@ export function getValidRoomAdmissionGrant(
   ctx: ReducerContext,
   claim: AdmissionClaim,
 ) {
+  if (
+    ctx.db.room_member_revocation.revocation_key.find(
+      `${claim.roomId}:${claim.memberId}`,
+    )
+  )
+    return null;
   const grant = ctx.db.room_admission_grant.admission_token.find(
     claim.admissionToken.trim(),
   );
@@ -71,10 +77,7 @@ export function getValidRoomAdmissionGrant(
     grant.member_id !== claim.memberId ||
     grant.role !== claim.role ||
     grant.identity_hex !== senderIdentityHex(ctx) ||
-    !constantTimeStringEqual(
-      grant.admission_token,
-      claim.admissionToken.trim(),
-    )
+    !constantTimeStringEqual(grant.admission_token, claim.admissionToken.trim())
   ) {
     return null;
   }

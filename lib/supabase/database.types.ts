@@ -1098,6 +1098,7 @@ export type Database = {
           name: string;
           owner_user_id: string | null;
           privacy: string;
+          room_kind: string;
           saved_by_guest_identity_id: string | null;
           saved_by_user_id: string | null;
           status: string;
@@ -1117,6 +1118,7 @@ export type Database = {
           name: string;
           owner_user_id?: string | null;
           privacy?: string;
+          room_kind?: string;
           saved_by_guest_identity_id?: string | null;
           saved_by_user_id?: string | null;
           status?: string;
@@ -1136,6 +1138,7 @@ export type Database = {
           name?: string;
           owner_user_id?: string | null;
           privacy?: string;
+          room_kind?: string;
           saved_by_guest_identity_id?: string | null;
           saved_by_user_id?: string | null;
           status?: string;
@@ -1148,6 +1151,117 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      has_persistent_room_ended: {
+        Args: { target_room: string };
+        Returns: boolean;
+      };
+      pending_persistent_room_retirements: {
+        Args: { target_room?: string };
+        Returns: Json;
+      };
+      finish_persistent_room_retirement: {
+        Args: { target_room: string; purge: boolean };
+        Returns: boolean;
+      };
+      has_temporary_room_ended: {
+        Args: { target_room: string };
+        Returns: boolean;
+      };
+      is_temporary_room_open: {
+        Args: { target_room: string };
+        Returns: boolean;
+      };
+      create_temporary_room: {
+        Args: {
+          target_room: string;
+          room_name: string;
+          display_name: string;
+          room_mode: string;
+          invite_code: string;
+          invite_hash: string;
+          guest_hash: string;
+        };
+        Returns: Json;
+      };
+      access_temporary_room: {
+        Args: {
+          target_room: string;
+          member_id: string;
+          account_id: string | null;
+          guest_hash: string | null;
+          touch_activity: boolean;
+        };
+        Returns: boolean;
+      };
+      pending_temporary_room_cleanup: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
+      finish_temporary_room_cleanup: {
+        Args: { target_room: string; purge: boolean };
+        Returns: boolean;
+      };
+      create_themed_room: {
+        Args: {
+          room_name: string;
+          direction: string;
+          exclusions: string;
+          request_id: string;
+        };
+        Returns: string;
+      };
+      change_room_direction: {
+        Args: {
+          target_room: string;
+          expected_version: number;
+          direction: string;
+          exclusions: string;
+        };
+        Returns: Json;
+      };
+      read_owned_room_direction: {
+        Args: { target_room: string };
+        Returns: Json;
+      };
+      read_room_direction: { Args: { target_room: string }; Returns: Json };
+      leave_shared_room: {
+        Args: { target_room: string };
+        Returns: string;
+      };
+      create_shared_room: {
+        Args: { room_name: string; request_id: string };
+        Returns: string;
+      };
+      request_shared_membership: {
+        Args: { target_room: string; invite: string };
+        Returns: string;
+      };
+      decide_shared_membership: {
+        Args: { target_room: string; target_user: string; approve: boolean };
+        Returns: string;
+      };
+      shared_room_context: {
+        Args: { target_room: string; invite?: string };
+        Returns: Json;
+      };
+      ack_shared_revocation: {
+        Args: { target_room: string; target_member: string };
+        Returns: undefined;
+      };
+
+      read_room_learning_aggregates: {
+        Args: { target_room: string; target_account?: string };
+        Returns: Json;
+      };
+      set_room_learning_consent: {
+        Args: {
+          target_room: string;
+          allow_contribution: boolean;
+          allow_individual: boolean;
+        };
+        Returns: undefined;
+      };
+      open_personal_room: { Args: never; Returns: string };
       ingest_recommendation_events: {
         Args: { event_batch: Json };
         Returns: Json;

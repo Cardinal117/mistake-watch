@@ -1,6 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
+import "./add-media-embedded.css";
 import { ListPlus, Play, Plus, X } from "lucide-react";
 
 import { Badge, Button, SignalInlineStatus } from "@/components/ui";

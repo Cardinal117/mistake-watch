@@ -7,6 +7,10 @@
     {
       "path": "/api/media/uploads/cleanup",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/rooms/cleanup",
+      "schedule": "0 3 * * *"
     }
   ]
 }

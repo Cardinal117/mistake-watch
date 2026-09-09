@@ -11,7 +11,13 @@ import {
   Users,
   Video,
 } from "lucide-react";
-import { Badge, Button, Panel, PendingLink, buttonClassName } from "@/components/ui";
+import {
+  Badge,
+  Button,
+  Panel,
+  PendingLink,
+  buttonClassName,
+} from "@/components/ui";
 import { cx } from "@/lib/ui";
 import type { DashboardRoomSummary } from "@/lib/rooms";
 import { setRoomSavedAction } from "@/lib/rooms/actions";
@@ -26,6 +32,7 @@ type RoomRowsProps = {
   actionLabel?: string;
   gated?: boolean;
   removableSavedRooms?: boolean;
+  groupLabel?: string;
 };
 
 const modeConfig = {
@@ -315,6 +322,7 @@ export function RoomRows({
   rooms,
   title,
   removableSavedRooms,
+  groupLabel,
 }: RoomRowsProps) {
   const headingId = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-heading`;
   const [removedRoomIds, setRemovedRoomIds] = useState<Set<string>>(
@@ -346,17 +354,24 @@ export function RoomRows({
       </div>
 
       {visibleRooms.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {visibleRooms.map((room) => (
-            <RoomCard
-              key={room.id}
-              onRemoved={() =>
-                setRemovedRoomIds((current) => new Set(current).add(room.id))
-              }
-              removableSavedRooms={removableSavedRooms}
-              room={room}
-            />
-          ))}
+        <div className="space-y-3">
+          {groupLabel ? (
+            <h3 className="technical-label text-on-surface-variant">
+              {groupLabel}
+            </h3>
+          ) : null}
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {visibleRooms.map((room) => (
+              <RoomCard
+                key={room.id}
+                onRemoved={() =>
+                  setRemovedRoomIds((current) => new Set(current).add(room.id))
+                }
+                removableSavedRooms={removableSavedRooms}
+                room={room}
+              />
+            ))}
+          </div>
         </div>
       ) : (
         <EmptyState
