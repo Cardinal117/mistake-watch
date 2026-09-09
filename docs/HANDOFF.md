@@ -1,11 +1,13 @@
 # Mistake Watch Handoff
 
-## Desktop membership access - local follow-up
+## Desktop membership access - deployed follow-up
 
 Owner-reported live QA passed except desktop Shared approvals. Both room headers
 now expose the existing Shared membership/learning panel through the members icon
 beside account settings. Local browser integration, responsive checks, 690 tests,
-typecheck and build pass; this fix is not committed or deployed. See
+typecheck and build pass. Commit `de25e89` is pushed and live as
+`dpl_54qR6ftS6vEan9pJ3vTV5yJdQzMn`; health/readiness pass. Main merge remains
+outstanding (main is `23cd524`). See
 [scope and evidence](tasks/TASK-028-room-kinds-foundation/desktop-membership-access.md).
 Broader desktop settings redesign remains deferred.
 

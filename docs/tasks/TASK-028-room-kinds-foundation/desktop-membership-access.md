@@ -43,7 +43,19 @@ Desktop path: members/avatar group beside account settings > Shared membership
 
 Local app: <http://127.0.0.1:5384/>. Only synthetic accounts in the isolated local
 backend were used and cleaned up by the integration test. Owner-reported live QA
-and this agent's local regression evidence are separate. No new commit, push or
-production deployment has occurred for this fix.
+and this agent's local regression evidence are separate. The initial local handoff preceded the approved release recorded below.
 
 The broader desktop settings/account screen overhaul remains future work.
+
+## Production release - 2026-09-09
+
+Owner authorized commit, push and deployment. Implementation commit `de25e89`
+was pushed to `codex/task-028-room-kinds` and deployed from a clean Git archive.
+Vercel deployment `dpl_54qR6ftS6vEan9pJ3vTV5yJdQzMn` is Ready and its aliases
+include <https://watch.mistakestudios.com>. Remote production build passed;
+live health and readiness returned 200; both development design routes returned
+404. No Supabase or Spacetime deployment was needed. Existing playback was not
+interrupted for a fresh live approval action: interaction evidence is the local
+real-backend regression run above. Main remains at `23cd524`; this fix is pushed
+on the task branch and live, but has not been merged to main.
+
