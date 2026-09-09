@@ -24,7 +24,7 @@ const tracks = Array.from({ length: 12 }, (_, index) => ({
 
 async function setup(
   page: import("@playwright/test").Page,
-  options: { rankingFails?: boolean; omitFirstPreference?: boolean } = {},
+  options: { rankingFails?: boolean; omitFirstPreference?: boolean; empty?: boolean } = {},
 ) {
   let feedback: Array<{
     mediaId: string;
@@ -129,7 +129,7 @@ async function setup(
     }
     return route.fulfill({ json: { items: [], status: "unavailable" } });
   });
-  await page.goto("/dev/listen-design?personal&owner&network");
+  await page.goto(`/dev/listen-design?personal&owner&network${options.empty ? "&empty" : ""}`);
   return {
     replaceFeedback: (value: typeof feedback) => {
       feedback = value;
@@ -360,6 +360,27 @@ qa(
     ).toBe(true);
   },
 );
+
+qa("Empty-player desktop Discover keeps its last recommendation fully above the queue", async ({ page }) => {
+  await page.setViewportSize({ width: 1874, height: 916 });
+  await setup(page, { empty: true });
+  const scroller = page.locator(".personal-discovery");
+  const lastRow = page.locator(".personal-recommendations .personal-track-row").last();
+  await expect(lastRow).toBeVisible();
+  await scroller.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+  const bounds = await lastRow.evaluate((element) => {
+    const row = element.getBoundingClientRect();
+    const workspace = element.closest(".listen-mobile-discovery")!.getBoundingClientRect();
+    const scroll = element.closest(".personal-discovery")!.getBoundingClientRect();
+    return { rowBottom: row.bottom, workspaceBottom: workspace.bottom, scrollBottom: scroll.bottom };
+  });
+  expect(bounds.scrollBottom).toBeLessThanOrEqual(bounds.workspaceBottom + 1);
+  expect(bounds.rowBottom).toBeLessThanOrEqual(bounds.workspaceBottom - 12);
+  await lastRow.getByRole("button", { name: /More options/ }).click();
+  await expect(page.getByRole("menuitem", { name: "Not now · 7 days" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.screenshot({ path: "test-results/personal-discover-empty-bottom.png", animations: "disabled" });
+});
 
 for (const [width, height] of [
   [390, 844],
