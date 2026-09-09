@@ -63,14 +63,14 @@ Hosted checks:
 - All four database gates read back enabled. No anon/authenticated grants exist
   on private tables. Existing room count/type preservation verified before QA creation.
 - Authenticated production dashboard displays all four entry paths and Legacy Saved
-  Rooms grouping. Personal creation connects, Watch/Listen switch works, and a
+  Rooms grouping. Personal creation/resume returns the same room identity, Watch/Listen switch works, and a
   separate guest session is returned home with an unavailable-room explanation.
 - Shared account creation, Themed creation and guest Temporary creation connect.
   Themed Discover explicitly suppresses unfiltered recommendation claims.
 - Guest without catalogue access gets YouTube/links; authorized account retains
   catalogue access. Two independent browser sessions joined the Temporary QA room,
   showed two participants, and retained host-only mode controls.
-- Two-session YouTube preview/load/play and pause passed with matching paused position.
+- Two-session YouTube preview/load/play, pause and paused +10-second seek passed with matching positions.
   This verifies browser/provider behavior, not physical audio-latency equivalence.
 - Mobile 390x844 production Temporary Add surface visually inspected without clipping.
 
@@ -111,5 +111,15 @@ This is the room/learning-policy foundation. It does not ship a new recommendati
 ranker, fair taste blend, theme classifier, continuous Autoplay or redesigned hub.
 Next: owner live acceptance, then approved recommendation quality work.
 
-Git main integration is recorded below after remote verification. GitHub has no
-configured CI check runs; local and hosted checks above are the actual evidence.
+## Main integration
+
+[PR #15](https://github.com/Cardinal117/mistake-watch/pull/15) merged at
+2026-09-09 13:05:42 UTC as `6fc445a4fe0927401450f62347fc7bff0491f77f`, preserving
+all atomic commits. Base `c64196e` was unchanged; GitHub reported CLEAN/MERGEABLE.
+Release docs `2ab29bb` and separate future-intake capture `f487e0e` are included.
+Remote main ancestry and zero application/schema diff against deployed `bfe898a`
+were verified. Custom-domain read-back still resolves to Ready deployment
+`dpl_7nxRW5PByNWH4yCunQDjtadhX5YP`. No duplicate deployment is needed for docs-only
+changes. This final receipt is a separately authorized documentation-only follow-up.
+GitHub has no configured CI check runs; the local and hosted checks above are the
+actual verification evidence. No unrelated worktree source was staged or reset.

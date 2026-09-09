@@ -13,6 +13,9 @@ Production:
 
 ## Room kinds foundation — live September 9, 2026
 
+PR #15 is merged into main as `6fc445a`; the verified production application matches main.
+See the TASK-028 live rollout record for the full release receipt.
+
 [TASK-028 release record](docs/tasks/TASK-028-room-kinds-foundation/live-rollout-2026-09-09.md)
 contains migration, recovery, deployment, QA and rollback evidence.
 

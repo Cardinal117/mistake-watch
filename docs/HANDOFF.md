@@ -2,6 +2,9 @@
 
 ## TASK-028 live release — 2026-09-09
 
+PR #15 is merged into main as `6fc445a`; the verified production application matches main.
+See the TASK-028 live rollout record for the full release receipt.
+
 All eight reviewed durable migrations, the compatible Maincloud module and the matching Vercel frontend are deployed. Personal, Shared, Themed and Temporary creation are enabled. All 127 original rooms were preserved as Legacy; all 114 non-purge retirement receipts completed. Current source is bfe898a; follow-on documentation does not change the application. The owner authorized main live; earlier pending/approval statements below are historical. See [live rollout](tasks/TASK-028-room-kinds-foundation/live-rollout-2026-09-09.md) for exact evidence, advisor follow-ups and remaining physical QA.
 
 ## TASK-028 approved Git handoff - 2026-09-09
