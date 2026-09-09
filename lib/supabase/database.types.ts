@@ -1151,6 +1151,14 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      read_personal_discover: {
+        Args: { target_room: string; target_account: string };
+        Returns: Json;
+      };
+      record_personal_discover: {
+        Args: { target_room: string; target_account: string; observation: Json };
+        Returns: Json;
+      };
       has_persistent_room_ended: {
         Args: { target_room: string };
         Returns: boolean;

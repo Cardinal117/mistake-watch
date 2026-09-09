@@ -1,6 +1,7 @@
 export type RecommendationRequestKind =
   | "preference-read"
   | "preference-write"
+  | "discover-observation"
   | "recommendation-read";
 
 export type RequestBudgetState = {
@@ -14,6 +15,7 @@ export const recommendationRequestLimits: Record<
 > = {
   "preference-read": 60,
   "preference-write": 20,
+  "discover-observation": 120,
   "recommendation-read": 30,
 };
 

@@ -302,6 +302,18 @@ function assertNoPrivateFields(value) {
 const ROOM_A = "00000000-0000-4000-8000-000000000003";
 const ROOM_B = "00000000-0000-4000-8000-000000000004";
 
+test("Personal suppression is applied before ranking even to liked candidates", async () => {
+  const item = candidate(1);
+  const service = createRoomRecommendationService({
+    loadAggregates: async () => [], loadPreferences: async () => [{ ...item, state: "liked" }],
+    loadUploadedAssets: async () => [], loadSuppressedMedia: async () => [item.mediaId],
+  });
+  const result = await service.getRecommendations({
+    access: { ...recommendationAccess(), roomKind: "personal" }, request: recommendationRequest(),
+  });
+  assert.deepEqual(result.items, []);
+});
+
 test("new-kind policy reads cannot reuse cached consent-dependent recommendations", async () => {
   const fixture = serviceFixture();
   const access = { ...fixture.access, roomKind: "personal" };

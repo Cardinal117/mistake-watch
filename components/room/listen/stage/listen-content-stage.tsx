@@ -108,14 +108,31 @@ export function ListenContentStage({
   return (
     <section
       {...swipe}
-      className="relative min-h-[28rem] min-w-0 overflow-hidden rounded-xl border border-white/8 bg-background/46 shadow-[0_24px_70px_rgb(0_0_0/0.24)] xl:h-full xl:min-h-0"
+      className="relative flex min-h-[28rem] min-w-0 flex-col overflow-hidden rounded-xl border border-white/8 bg-background/30 xl:h-full xl:min-h-0"
     >
       {!mobile && (
-        <div className="pointer-events-none absolute inset-x-0 top-2 z-20 flex justify-center px-3 sm:px-4">
+        <div className="shrink-0 border-b border-white/10 px-4 sm:px-6">
           <div
             aria-label="Listen workspace"
-            className="pointer-events-auto inline-flex rounded-full border border-white/8 bg-background/72 p-1 backdrop-blur-md"
+            className="flex w-fit gap-2"
             role="tablist"
+            onKeyDown={(event) => {
+              if (
+                !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)
+              )
+                return;
+              event.preventDefault();
+              const next =
+                event.key === "Home"
+                  ? "discover"
+                  : event.key === "End"
+                    ? "visualizer"
+                    : view === "discover"
+                      ? "visualizer"
+                      : "discover";
+              selectView(next);
+              document.getElementById(`listen-stage-tab-${next}`)?.focus();
+            }}
           >
             <StageTab
               controls="listen-discover-panel"
@@ -137,7 +154,7 @@ export function ListenContentStage({
 
       <div
         aria-labelledby="listen-stage-tab-discover"
-        className="h-full min-h-0 overflow-hidden"
+        className="min-h-0 flex-1 overflow-hidden"
         hidden={view !== "discover"}
         id="listen-discover-panel"
         role="tabpanel"
@@ -146,7 +163,7 @@ export function ListenContentStage({
           canAddQueue={canAddQueue}
           canLoadSource={canLoadSource}
           canPlay={canPlay}
-          currentItem={currentItem}
+          currentItem={room.kind === "personal" ? preferenceItem : currentItem}
           items={items}
           mediaPreferences={mediaPreferences}
           onAddQueueItem={onAddQueueItem}
@@ -160,7 +177,7 @@ export function ListenContentStage({
       {view === "visualizer" ? (
         <div
           aria-labelledby="listen-stage-tab-visualizer"
-          className="h-full min-h-0"
+          className="min-h-0 flex-1"
           id="listen-visualizer-panel"
           role="tabpanel"
         >
@@ -209,14 +226,15 @@ function StageTab({
       aria-controls={controls}
       aria-selected={selected}
       className={cx(
-        "inline-flex h-8 min-w-28 items-center justify-center gap-2 rounded-full border px-3.5 text-label-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--listen-primary))]",
+        "inline-flex h-12 min-w-28 items-center justify-center gap-2 border-b-2 px-3 text-label-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--listen-primary))]",
         selected
-          ? "border-[rgb(var(--listen-primary)/0.7)] bg-[rgb(var(--listen-primary)/0.12)] text-[rgb(var(--listen-primary))]"
+          ? "border-[rgb(var(--listen-primary))] text-[rgb(var(--listen-primary))]"
           : "border-transparent text-on-surface-variant hover:bg-white/5 hover:text-on-surface",
       )}
       id={`listen-stage-tab-${label.toLowerCase()}`}
       onClick={onSelect}
       role="tab"
+      tabIndex={selected ? 0 : -1}
       type="button"
     >
       {icon}

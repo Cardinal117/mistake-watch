@@ -1,4 +1,5 @@
 import "server-only";
+import { loadDiscoverSuppressedMedia } from "./discover-service";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -22,6 +23,7 @@ const PREFERENCE_LIMIT = 250;
 type RecommendationClient = SupabaseClient<Database>;
 
 const service = createRoomRecommendationService({
+  loadSuppressedMedia: loadDiscoverSuppressedMedia,
   loadAggregates: (access) =>
     loadAggregates(createSupabaseAdminClient(), access),
   loadPreferences: (access) =>

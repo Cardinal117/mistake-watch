@@ -108,6 +108,17 @@ spacing:
 ---
 
 ## Brand & Style
+
+### TASK-029 Personal Discover approval (2026-09-09)
+
+Personal Discover uses a compact regulars artwork grid, aligned recommendation
+rows and subordinate Rediscover section. Desktop Discover/Visualizer controls are
+left-aligned underline tabs. Preserve the existing per-song ambient gradient and
+accent from artwork; the neutral canvas in the reference image is explicitly
+overridden by owner instruction. Keep translucent content surfaces, existing
+tokens, one vertical discovery scroller and stable playback. See
+`docs/tasks/TASK-029-recommendation-quality-baseline/design.md`.
+
 The design system is engineered for Mistake Watch, a premium watch/listen-together media experience evoking the atmosphere of a high-end private screening room combined with a futuristic command center. The target audience consists of close friends and family who value immersion, comfort, and technical precision.
 
 The aesthetic follows a **Modern-Technical** approach:

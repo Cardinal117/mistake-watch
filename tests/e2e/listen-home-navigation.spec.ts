@@ -46,6 +46,7 @@ qa(
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/dev/listen-design");
     const cdp = await page.context().newCDPSession(page);
+    await expect(page.locator("#listen-discover-panel")).toBeVisible();
     async function swipe(x: number, end: number, y = 140) {
       await cdp.send("Input.dispatchTouchEvent", {
         type: "touchStart",
