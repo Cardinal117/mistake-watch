@@ -1,5 +1,9 @@
 # Acceptance and verification plan
 
+## Hosted rollout checkpoint
+
+Owner-authorized main-live rollout completed on 2026-09-09. See [live rollout evidence](live-rollout-2026-09-09.md) for completed production smoke checks and the remaining physical/device acceptance matrix. Preserve that distinction; do not treat local test results as physical-device certification.
+
 > **2026-09-09 audit corrections:** All five findings in the [task-by-task audit](audit-2026-09-09.md) are fixed and verified locally. See [corrections and final evidence](fixes-2026-09-09.md): 674 Node tests, 191 SQL assertions and four combined browser tests passed. Earlier results below describe their respective checkpoints; release/hosted acceptance remains outstanding.
 
 Status: 028.1-028.6 local slice evidence is recorded in their implementation reports.

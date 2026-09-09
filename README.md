@@ -11,51 +11,33 @@ Production:
 - https://watch.mistakestudios.com
 - https://mistake-watch.vercel.app
 
-## Local room-kinds foundation
+## Room kinds foundation — live September 9, 2026
 
-[TASK-028.1](docs/tasks/TASK-028-room-kinds-foundation/implementation-028.1.md)
-adds Legacy metadata and Saved Rooms grouping.
-[TASK-028.2](docs/tasks/TASK-028-room-kinds-foundation/implementation-028.2.md)
-adds one private, persistent Personal room per active signed-in account, atomic
-creation/resume and owner-only access across devices.
-[TASK-028.3](docs/tasks/TASK-028-room-kinds-foundation/implementation-028.3.md)
-adds trusted learning eligibility, revocable consent, duplicate suppression and
-Temporary implicit-history exclusion.
-[TASK-028.4](docs/tasks/TASK-028-room-kinds-foundation/implementation-028.4.md)
-adds persistent Shared rooms for active accounts, owner-approved membership,
-independent learning choices and removal across devices. Personal and Shared reuse
-the existing Watch/Listen shell and playback authority.
-[TASK-028.5](docs/tasks/TASK-028-room-kinds-foundation/implementation-028.5.md)
-adds persistent Themed rooms, explicit owner-editable direction with conflict
-protection, invited guest access and suppression of unfiltered automatic suggestions.
-Manual media stays available; theme classification/ranking is later work.
-[TASK-028.6](docs/tasks/TASK-028-room-kinds-foundation/implementation-028.6.md)
-adds guest/account Temporary rooms with one-hour inactivity grace, safe cleanup
-after 24 hours closed, preserved explicit Likes/catalogue assets and graceful
-expired-tab/link return home.
+[TASK-028 release record](docs/tasks/TASK-028-room-kinds-foundation/live-rollout-2026-09-09.md)
+contains migration, recovery, deployment, QA and rollback evidence.
 
-The [five audit corrections](docs/tasks/TASK-028-room-kinds-foundation/fixes-2026-09-09.md)
-close Shared listing/Leave gaps, preserve independent consent evidence, recognize
-the real Play Next event and exclude catalogue uploads from automatic Listen suggestions.
-Verified locally through 028.6: **683 Node tests, 267 database assertions, six combined
-browser tests**, fresh migration replay with unchanged populated Legacy fixtures,
-concurrency checks, database advisors, typecheck, lint and build.
-Local app: <http://127.0.0.1:5384/>. Integration QA uses synthetic accounts.
+- **Personal:** one private persistent room per signed-in account, reusable across devices.
+- **Shared:** persistent account membership with owner approval; playback permissions
+  and learning consent remain separate decisions.
+- **Themed:** explicit owner-editable direction; manual media never changes that direction.
+  Theme-filtered recommendations are not enabled until the classifier is ready.
+- **Temporary:** guest/account throwaway rooms, one-hour inactivity grace, then closure;
+  cleanup eligible after 24 hours closed. Explicit Likes and catalogue files remain.
+  Expired room links/tabs return home with an explanation.
+- **Legacy:** all existing rooms preserved and grouped under Saved Rooms.
 
-Personal, Shared, Themed and Temporary creation gates default off; enabled only
-in isolated local QA. Database error-level lint/advisors are clear; one inherited
-Shared jsonb-cast warning remains. Cleanup eligibility is 24h after closure, with
-execution at the next successful scheduled/opportunistic maintenance run.
-No new ranker/Autoplay, production schema change, commit or deployment is included.
-[028.7 integration review](docs/tasks/TASK-028-room-kinds-foundation/implementation-028.7.md)
-found a persistent-room closure/live-authority gap. The approved
-[R3 correction](docs/tasks/TASK-028-room-kinds-foundation/implementation-028.7-R3.md)
-now passes locally: **690 Node tests, 290 database assertions, seven combined
-browser tests**, a separate owner-deletion run, concurrency, migration replay,
-typecheck, lint, build and database advisors. Closed/deleted rooms end live access
-and return connected clients home with an explanation; failed work remains retryable.
-The user approved the three reviewed commits and branch push; foundation code is
-`17242f7`. Hosted acceptance, migrations, main merge and deployment remain pending.
+Watch and Listen remain presentation modes within these kinds. Catalogue access
+remains separately authorized. Trusted learning attribution, consent withdrawal,
+duplicate-event protection and Temporary implicit-learning exclusion are implemented;
+a new recommendation engine and continuous Autoplay are follow-on work.
+
+All eight durable migrations and the compatible live module are deployed. All four
+new-kind gates are enabled. Production health/readiness, access-denial and entry-flow
+smokes passed. Committed-code checks: **690 Node tests, 290 SQL assertions, seven
+combined browser tests**, separate owner-deletion verification, concurrency/replay,
+typecheck, lint and build. New physical multi-device acceptance remains distinct.
+
+Maintenance/prototype schedules and release notices are recorded as future work.
 
 ## Current Release and Next Acceptance
 

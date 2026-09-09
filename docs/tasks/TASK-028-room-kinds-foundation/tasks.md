@@ -1,5 +1,9 @@
 # TASK-028 implementation sequence
 
+## Current status — production rollout
+
+028.1–028.7 including R3 are implemented and deployed with owner authorization. All four gates are enabled; production entry/access smoke checks passed. See [live rollout](live-rollout-2026-09-09.md). Earlier local-only and no-Git/deployment statements below describe historical checkpoints. Physical multi-device acceptance remains ongoing; recommendation quality and the hub are follow-on work.
+
 > **2026-09-09 audit corrections:** All five findings in the [task-by-task audit](audit-2026-09-09.md) are fixed and verified locally. See [corrections and final evidence](fixes-2026-09-09.md): 674 Node tests, 191 SQL assertions and four combined browser tests passed. Earlier results below describe their respective checkpoints; release/hosted acceptance remains outstanding.
 
 Status: 028.1 approved and implemented locally on 2026-09-08; local QA passed.
