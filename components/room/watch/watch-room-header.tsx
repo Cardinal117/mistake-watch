@@ -123,6 +123,7 @@ export function WatchRoomHeader({
       <div className="watch-header-people">
         <div className="watch-header-audience">
           <ListenMemberAvatarRow
+            sharedRoomId={room.kind === "shared" ? room.id : null}
             controllerMemberId={
               liveRoom.participants.find((p) => p.isController)?.id ?? null
             }

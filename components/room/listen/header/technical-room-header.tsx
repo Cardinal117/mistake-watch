@@ -200,6 +200,7 @@ export function ListenTechnicalRoomHeader({
               </div>
               {!desktopShell && (
                 <ListenMemberAvatarRow
+                  sharedRoomId={room.kind === "shared" ? room.id : null}
                   controllerMemberId={controllerMemberId}
                   currentMemberId={room.currentMember?.id}
                   liveRoom={liveRoom}
@@ -268,6 +269,7 @@ export function ListenTechnicalRoomHeader({
               TV Mode
             </Button>
             <ListenMemberAvatarRow
+              sharedRoomId={room.kind === "shared" ? room.id : null}
               controllerMemberId={controllerMemberId}
               currentMemberId={room.currentMember?.id}
               liveRoom={liveRoom}
@@ -284,6 +286,7 @@ export function ListenTechnicalRoomHeader({
               roomId={room.id}
             />
             <ListenRoomSettingsMenu
+              sharedRoomId={room.kind === "shared" ? room.id : null}
               themedRoomId={room.kind === "themed" ? room.id : undefined}
               temporary={room.kind === "temporary"}
               canSave={room.kind !== "temporary" && liveRoom.canManageAuthority}

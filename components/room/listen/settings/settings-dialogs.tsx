@@ -13,6 +13,7 @@ import { Pause, X } from "lucide-react";
 import { IconButton } from "@/components/ui";
 import type { RoomQueueItem } from "@/lib/rooms";
 import type { LiveRoomState } from "@/lib/spacetime";
+import { SharedMembershipPanel } from "@/components/room/shared/shared-membership-panel";
 import { MembersPanel } from "@/components/room/members-panel";
 import { useNextItemPreparation } from "@/components/room/use-next-item-preparation";
 import { type ListenTvSettings } from "@/components/room/listen/shared";
@@ -237,6 +238,7 @@ export function ListenPermissionsDialog({
   onClose,
   open,
   themeStyle,
+  sharedRoomId,
 }: {
   controllerMemberId: string | null;
   currentMemberId?: string | null;
@@ -244,6 +246,7 @@ export function ListenPermissionsDialog({
   onClose(): void;
   open: boolean;
   themeStyle?: CSSProperties;
+  sharedRoomId: string | null;
 }) {
   if (!open || typeof document === "undefined") {
     return null;
@@ -296,6 +299,7 @@ export function ListenPermissionsDialog({
           </button>
         </div>
         <div className="min-h-0 overflow-y-auto p-4 [scrollbar-color:rgb(var(--listen-primary)/0.34)_transparent] [scrollbar-width:thin]">
+          {sharedRoomId && <SharedMembershipPanel roomId={sharedRoomId} />}
           <MembersPanel
             canManageAuthority={liveRoom.canManageAuthority}
             connectionStatus={liveRoom.connectionStatus}

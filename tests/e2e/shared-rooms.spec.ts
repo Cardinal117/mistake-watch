@@ -159,10 +159,62 @@ qa(
           )
         ).status(),
       ).toBe(403);
+      // Approval must be reachable from the desktop header in either mode.
+      await desktop
+        .getByRole("button", { name: /Open audience panel/ })
+        .click();
+      const audience = desktop.getByRole("dialog", {
+        name: "Room members and controls",
+      });
+      await expect(
+        audience.getByRole("button", {
+          name: "Approve Shared QA friend",
+          exact: true,
+        }),
+      ).toBeVisible();
+      await desktop.screenshot({ path: ".tmp/desktop-membership-listen.png" });
+      for (const viewport of [
+        { width: 1280, height: 600 },
+        { width: 390, height: 844 },
+      ]) {
+        await desktop.setViewportSize(viewport);
+        await audience
+          .getByRole("button", {
+            name: "Approve Shared QA friend",
+            exact: true,
+          })
+          .scrollIntoViewIfNeeded();
+        const bounds = await audience.boundingBox();
+        expect(bounds).not.toBeNull();
+        expect(bounds!.x).toBeGreaterThanOrEqual(0);
+        expect(bounds!.y).toBeGreaterThanOrEqual(0);
+        expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport.width);
+        expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport.height);
+        await expect(
+          audience.getByRole("button", { name: "Close permissions" }),
+        ).toBeInViewport();
+        await expect(
+          audience.getByRole("button", {
+            name: "Approve Shared QA friend",
+            exact: true,
+          }),
+        ).toBeInViewport();
+        await desktop.screenshot({
+          path: `.tmp/desktop-membership-${viewport.width}.png`,
+        });
+      }
+      await desktop.setViewportSize({ width: 1440, height: 900 });
+      await audience.getByRole("button", { name: "Close permissions" }).click();
       await desktop.getByRole("tab", { name: "Watch", exact: true }).click();
       await desktop
-        .getByRole("button", { name: "Social", exact: true })
+        .getByRole("button", { name: /Open audience panel/ })
         .click();
+      await expect(
+        audience.getByRole("button", {
+          name: "Approve Shared QA friend",
+          exact: true,
+        }),
+      ).toBeVisible();
       await desktop.screenshot({
         path: ".tmp/shared-before-approve.png",
         fullPage: true,
@@ -173,11 +225,32 @@ qa(
       await expect(
         desktop.getByText("Shared QA friend · approved", { exact: true }),
       ).toBeVisible();
+      await audience.getByRole("button", { name: "Close permissions" }).click();
       await mobile.getByRole("button", { name: "Check approval" }).click();
       await expect(
         mobile.getByRole("button", { name: "Social", exact: true }),
       ).toBeVisible();
       await second.goto(url);
+      await second.getByRole("button", { name: /Open audience panel/ }).click();
+      const memberAudience = second.getByRole("dialog", {
+        name: "Room members and controls",
+      });
+      await expect(
+        memberAudience.getByRole("checkbox", { name: /Use my choices/ }),
+      ).toBeVisible();
+      await expect(
+        memberAudience.getByRole("heading", {
+          name: "Requests & return access",
+        }),
+      ).toHaveCount(0);
+      await expect(
+        memberAudience.getByRole("button", {
+          name: /^Approve |^Remove Shared/,
+        }),
+      ).toHaveCount(0);
+      await memberAudience
+        .getByRole("button", { name: "Close permissions" })
+        .click();
       await expect(
         second.getByRole("button", { name: "Social", exact: true }),
       ).toBeVisible();
