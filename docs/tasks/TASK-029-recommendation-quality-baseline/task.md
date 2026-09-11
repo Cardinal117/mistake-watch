@@ -1,6 +1,11 @@
 # TASK-029: Recommendation quality baseline and evaluation
 
 Status: Discover UI and required Personal functionality released to production on 2026-09-09. See live-rollout-2026-09-09.md for exact receipts and verification limits.
+
+Follow-on: [TASK-030 Personal music catalogue](../TASK-030-personal-music-catalogue/proposal.md)
+owns the owner-approved 2026-09-11 plan-then-implement catalogue/cache and
+Personal candidate-supply correction. Do not reopen this released UI slice or
+claim it already delivered catalogue recommendations.
 Documentation level: Expanded implementation packet; this file retains planning history.
 Updated: 2026-09-09.
 Baseline: `77c1943c3e712ccfec57054eee8d99254ddba205` (main).

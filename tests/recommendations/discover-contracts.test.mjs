@@ -16,6 +16,20 @@ const base = {
   surface: "recommended",
 };
 
+test("Decision correlation accepts only opaque recommended-surface IDs", () => {
+  const decisionId = "03000000-0000-4000-8000-000000000001";
+  assert.equal(
+    normalizeDiscoverMutation({ ...base, decisionId }).decisionId,
+    decisionId,
+  );
+  for (const extra of [
+    { decisionId: "https://private.example" },
+    { decisionId, surface: "regulars" },
+    { decisionId, reason: "fabricated" },
+  ])
+    assert.equal(normalizeDiscoverMutation({ ...base, ...extra }), null);
+});
+
 test("Discover accepts bounded observations without asserting trusted playback", () => {
   for (const kind of [
     "shown",

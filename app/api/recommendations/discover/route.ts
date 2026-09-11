@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
+import { preparePersonalCatalogue } from "@/lib/recommendations/catalogue-service";
 import { readBoundedJson } from "@/lib/recommendations/bounded-json";
 import {
   normalizeDiscoverMutation,
@@ -34,7 +35,16 @@ export async function GET(request: Request) {
   if (auth.access.roomKind !== "personal" || !auth.access.accountUserId)
     return unavailable("Personal Discover requires your Personal room.", 403);
   try {
-    return NextResponse.json(await getPersonalDiscover(auth.access), {
+    const result = await getPersonalDiscover(auth.access);
+    const accountUserId = auth.access.accountUserId;
+    after(async () => {
+      try {
+        await preparePersonalCatalogue(roomId, accountUserId);
+      } catch {
+        console.warn("[catalogue:background] Preparation unavailable");
+      }
+    });
+    return NextResponse.json(result, {
       headers,
     });
   } catch {

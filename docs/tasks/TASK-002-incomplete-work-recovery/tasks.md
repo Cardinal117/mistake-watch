@@ -1537,6 +1537,13 @@ Safe commit point:
 
 ## TASK-002.10B: AI DJ / Session Intelligence
 
+Current bounded recommendation follow-on (2026-09-11):
+[TASK-030 Personal music catalogue](../TASK-030-personal-music-catalogue/proposal.md),
+with [approved ordered Stage 1 work](../TASK-030-personal-music-catalogue/tasks.md).
+Owner authorized planning then local implementation after review. This is
+deterministic catalogue infrastructure and Personal candidate selection, not
+authorization to implement the broader AI DJ, enrichment or Autoplay scope.
+
 Source task: later listen-room AI DJ direction.
 
 Work:

@@ -1151,6 +1151,30 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      read_personal_catalogue: {
+        Args: { target_room: string; target_account: string };
+        Returns: Json;
+      };
+      reconcile_personal_catalogue: {
+        Args: { target_room: string; target_account: string; preview_ids?: string[] | null };
+        Returns: Json;
+      };
+      claim_music_catalogue_jobs: {
+        Args: { request_limit?: number };
+        Returns: Json;
+      };
+      complete_music_catalogue_jobs: {
+        Args: { lease_token: string; results: Json };
+        Returns: Json;
+      };
+      prune_music_catalogue: {
+        Args: { prune_at?: string };
+        Returns: Json;
+      };
+      issue_personal_catalogue_decision: {
+        Args: { target_room: string; target_account: string; selected_ids: string[] };
+        Returns: Json;
+      };
       read_personal_discover: {
         Args: { target_room: string; target_account: string };
         Returns: Json;

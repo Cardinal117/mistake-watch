@@ -1,5 +1,28 @@
 # Mistake Watch Commands
 
+## TASK-030 catalogue candidate (local implementation; not deployed)
+
+See [catalogue release plan](tasks/TASK-030-personal-music-catalogue/release-plan.md)
+and [QA evidence](tasks/TASK-030-personal-music-catalogue/review-notes.md).
+`MUSIC_CATALOGUE_METADATA_DAILY_LIMIT=0` disables the catalogue worker's provider
+fetches without disabling expiry cleanup; maximum/default 100 videos.list batches
+per UTC day, with at most 50 IDs per batch. Existing manual-search budgets remain
+separate. The existing `/api/recommendations/drain` cron entry is reused; do not
+add a duplicate scheduler or remove cleanup while rolling back cached data.
+
+Targeted application checks:
+
+```powershell
+node --test tests/recommendations/*.test.mjs tests/youtube/*.test.mjs
+$env:WATCH_DESIGN_QA='1'
+$env:PLAYWRIGHT_BASE_URL='http://127.0.0.1:5371'
+npx playwright test tests/e2e/personal-discover.spec.ts --workers=1
+```
+
+Database checks must target the isolated synthetic `task030_catalogue` database,
+never the active local `postgres` database or a hosted URL. See the task evidence
+for exact clone/migration/concurrency commands and their verification limits.
+
 ## TASK-028 production operations
 
 Production has all eight TASK-028 migrations and all four new-kind creation gates enabled. The room cleanup endpoint is /api/rooms/cleanup, requires CRON_SECRET bearer authorization, and runs daily at 03:00 UTC plus opportunistically. Never print that secret. Disable creation if needed while retaining kind-aware access and retirement guards; old unrestricted frontend rollback is unsafe after new kinds exist. See [rollout record](tasks/TASK-028-room-kinds-foundation/live-rollout-2026-09-09.md).

@@ -1,141 +1,159 @@
 import { expect, test } from "@playwright/test";
-import { previewArtwork } from "../fixtures/watch-preview-data";
+import {
+  personalDiscoverTracks as tracks,
+  setupPersonalDiscover as setup,
+} from "../fixtures/personal-discover-fixture";
 const qa = process.env.WATCH_DESIGN_QA === "1" ? test : test.skip;
-const tracks = Array.from({ length: 12 }, (_, index) => ({
-  mediaId: `dQw4w9Wg${String(index).padStart(3, "0")}`,
-  sourceType: "youtube",
-  title: [
-    "Sicilian Defense",
-    "Fiery Dragon",
-    "Paint It Black",
-    "Dawn of Faith",
-    "Hordes",
-    "Arrival to Earth",
-    "Guardians at the Gate",
-    "Quantum Field",
-  ][index % 8],
-  artist: "Orchestral artist",
-  thumbnailUrl: previewArtwork(index),
-  completedPlayCount: 20 - index,
-  liked: index < 3,
-  lastCompletedAt: new Date(Date.now() - (index + 1) * 86400000).toISOString(),
-  durationSeconds: 200,
-}));
 
-async function setup(
-  page: import("@playwright/test").Page,
-  options: { rankingFails?: boolean; omitFirstPreference?: boolean; empty?: boolean } = {},
-) {
-  let feedback: Array<{
-    mediaId: string;
-    state: string;
-    revision: number;
-    expiresAt: string | null;
-  }> = [];
-  await page.route("**/api/**", async (route) => {
-    const url = route.request().url();
-    if (url.includes("/recommendations/discover")) {
-      if (route.request().method() === "GET")
-        return route.fulfill({
-          json: {
-            status: "available",
-            items: tracks,
-            feedback,
-            countWindowDays: 180,
-          },
-        });
-      const body = route.request().postDataJSON();
-      if (body.kind === "feedback") {
-        const existing = feedback.find((f) => f.mediaId === body.mediaId);
-        if ((existing?.revision ?? 0) !== body.expectedRevision)
-          return route.fulfill({
-            status: 409,
-            json: {
-              reason:
-                "Feedback changed on another device. Refresh and try again.",
-            },
-          });
-        const item = {
-          mediaId: body.mediaId,
-          state: body.state,
-          revision: body.expectedRevision + 1,
-          expiresAt: null,
-        };
-        feedback = [
-          ...feedback.filter((f) => f.mediaId !== item.mediaId),
-          item,
-        ];
-        return route.fulfill({ json: { item } });
-      }
-      return route.fulfill({ json: { ok: true } });
-    }
-    if (url.includes("/youtube/recommendations"))
-      return route.fulfill({
-        json: {
-          status: "available",
-          items: tracks.slice(4, 8).map((t) => ({
-            ...t,
-            videoId: t.mediaId,
-            channelTitle: t.artist,
-            availability: { playable: true },
-          })),
-        },
-      });
-    if (url.includes("/recommendations/room")) {
-      const body = route.request().postDataJSON();
-      return route.fulfill({
-        json: options.rankingFails
-          ? { status: "unavailable", items: [] }
-          : {
-              status: "available",
-              items: body.candidates
-                .filter(
-                  (c: { mediaId: string }) =>
-                    !body.queuedMedia.some(
-                      (q: { mediaId: string }) => q.mediaId === c.mediaId,
-                    ),
-                )
-                .map((c: { candidateId: string }) => ({
-                  candidateId: c.candidateId,
-                  reasons: [{ label: "Because you enjoy orchestral music" }],
-                })),
-            },
-      });
-    }
-    if (url.includes("/preferences")) {
-      if (route.request().method() === "PUT") {
-        const body = route.request().postDataJSON();
-        return route.fulfill({
-          json: {
-            item: {
-              ...body,
-              mediaKey: `youtube:${body.mediaId}`,
-              revision: body.expectedRevision + 1,
-            },
-          },
-        });
-      }
-      return route.fulfill({
-        json: {
-          items: tracks
-            .filter((_, i) => !options.omitFirstPreference || i !== 0)
-            .map((t) => ({
-              ...t,
-              mediaKey: `youtube:${t.mediaId}`,
-              revision: 0,
-            })),
-        },
-      });
-    }
-    return route.fulfill({ json: { items: [], status: "unavailable" } });
-  });
-  await page.goto(`/dev/listen-design?personal&owner&network${options.empty ? "&empty" : ""}`);
-  return {
-    replaceFeedback: (value: typeof feedback) => {
-      feedback = value;
-    },
-  };
-}
+qa(
+  "Personal catalogue makes no automatic provider search on mount or song change",
+  async ({ page }) => {
+    const searches: string[] = [];
+    page.on("request", (request) => {
+      if (
+        /\/api\/(youtube\/(recommendations|search)|recommendations\/room)/.test(
+          request.url(),
+        )
+      )
+        searches.push(request.url());
+    });
+    await setup(page);
+    await expect(
+      page.locator(".personal-recommendations .personal-track-row").first(),
+    ).toBeVisible();
+    await page
+      .locator('.personal-regular[data-media-id="dQw4w9Wg001"]')
+      .getByRole("button", { name: "Play Fiery Dragon", exact: true })
+      .click();
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          window.watchQA!.calls.some((call) => call.action === "load"),
+        ),
+      )
+      .toBe(true);
+    expect(searches).toEqual([]);
+  },
+);
+
+qa(
+  "Recommendation observations retain the displayed decision through pending queue confirmation",
+  async ({ page }) => {
+    await page.setViewportSize({ width: 1680, height: 960 });
+    const original = "00000000-0000-4000-8000-000000000030";
+    const replacement = "00000000-0000-4000-8000-000000000031";
+    const observations: Array<Record<string, unknown>> = [];
+    page.on("request", (request) => {
+      if (
+        request.url().includes("/recommendations/discover") &&
+        request.method() === "POST"
+      )
+        observations.push(request.postDataJSON());
+    });
+    const state = await setup(page, { decisionId: original });
+    const row = page.locator(
+      '.personal-recommendations [data-media-id="dQw4w9Wg004"]',
+    );
+    await row.scrollIntoViewIfNeeded();
+    await expect
+      .poll(
+        () =>
+          observations.find(
+            (entry) =>
+              entry.kind === "shown" &&
+              entry.surface === "recommended" &&
+              entry.mediaId === "dQw4w9Wg004",
+          )?.decisionId,
+      )
+      .toBe(original);
+    await row
+      .getByRole("button", { name: "Add to queue · Hordes", exact: true })
+      .click();
+    await expect
+      .poll(
+        () =>
+          observations.find(
+            (entry) =>
+              entry.kind === "add_requested" && entry.mediaId === "dQw4w9Wg004",
+          )?.decisionId,
+      )
+      .toBe(original);
+    state.replaceDecision(replacement);
+    const refreshed = page.waitForResponse(
+      (response) =>
+        response.url().includes("/recommendations/discover") &&
+        response.request().method() === "GET",
+    );
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await refreshed;
+    await expect
+      .poll(() =>
+        observations.some(
+          (entry) =>
+            entry.kind === "shown" &&
+            entry.mediaId === "dQw4w9Wg004" &&
+            entry.decisionId === replacement,
+        ),
+      )
+      .toBe(true);
+    await page.evaluate(() =>
+      window.watchQA!.confirmPersonalAdd("dQw4w9Wg004", "Hordes"),
+    );
+    await expect
+      .poll(
+        () =>
+          observations.find(
+            (entry) =>
+              entry.kind === "queue_observed" &&
+              entry.mediaId === "dQw4w9Wg004",
+          )?.decisionId,
+      )
+      .toBe(original);
+    await expect(
+      row.getByRole("button", { name: "Added · Hordes", exact: true }),
+    ).toBeDisabled();
+    await row.getByRole("button", { name: /More options/ }).click();
+    await page
+      .getByRole("menuitem", { name: "Don't suggest this track", exact: true })
+      .click();
+    await expect
+      .poll(
+        () =>
+          observations.find(
+            (entry) =>
+              entry.kind === "feedback" && entry.mediaId === "dQw4w9Wg004",
+          )?.decisionId,
+      )
+      .toBe(replacement);
+    expect(
+      observations
+        .filter((entry) => entry.surface !== "recommended")
+        .every((entry) => entry.decisionId === undefined),
+    ).toBe(true);
+  },
+);
+
+qa(
+  "Recommended overview stays bounded while View all exposes the full catalogue selection",
+  async ({ page }) => {
+    await setup(page, { recommendationCount: 36 });
+    await expect(
+      page.locator(".personal-recommendations .personal-track-row"),
+    ).toHaveCount(12);
+    const viewAll = page.getByRole("button", {
+      name: "View all recommendations",
+    });
+    await viewAll.click();
+    await expect(
+      page.locator(".personal-discovery .personal-track-row"),
+    ).toHaveCount(36);
+    await page.getByRole("button", { name: "Back to Discover" }).click();
+    await expect(viewAll).toBeFocused();
+    await expect(
+      page.locator(".personal-recommendations .personal-track-row"),
+    ).toHaveCount(12);
+  },
+);
 
 qa(
   "Personal Discover uses counted regulars, stable queue actions and reversible feedback",
@@ -275,12 +293,12 @@ qa(
 );
 
 qa(
-  "Unavailable personal ranking does not fall back to unfiltered provider results",
+  "Limited personal catalogue does not fall back to provider search",
   async ({ page }) => {
-    await setup(page, { rankingFails: true });
+    await setup(page, { catalogueLimited: true });
     await expect(
       page.getByText(
-        "Suggestions are temporarily unavailable. Your regulars and manual search are still available.",
+        "Some saved music is unavailable right now. You can still use manual search.",
       ),
     ).toBeVisible();
     await expect(
@@ -311,7 +329,7 @@ qa(
 );
 
 qa(
-  "Song artwork still changes the accent gradient and direct Play seeds recommendations",
+  "Song artwork still changes the accent gradient and direct Play remains explicit",
   async ({ page }) => {
     await page.setViewportSize({ width: 1680, height: 960 });
     await setup(page);
@@ -341,18 +359,10 @@ qa(
     await expect(
       page.locator('[style*="radial-gradient(circle at 0% 18%"]'),
     ).toHaveCount(1);
-    const request = page.waitForRequest(
-      (req) =>
-        req.url().includes("/api/youtube/recommendations") &&
-        new URL(req.url()).searchParams
-          .get("query")
-          ?.includes("Fiery Dragon") === true,
-    );
     await page
       .locator('.personal-regular[data-media-id="dQw4w9Wg001"]')
       .getByRole("button", { name: "Play Fiery Dragon", exact: true })
       .click();
-    await request;
     expect(
       await page.evaluate(() =>
         window.watchQA!.calls.some((c) => c.action === "load"),
@@ -361,26 +371,185 @@ qa(
   },
 );
 
-qa("Empty-player desktop Discover keeps its last recommendation fully above the queue", async ({ page }) => {
-  await page.setViewportSize({ width: 1874, height: 916 });
-  await setup(page, { empty: true });
-  const scroller = page.locator(".personal-discovery");
-  const lastRow = page.locator(".personal-recommendations .personal-track-row").last();
-  await expect(lastRow).toBeVisible();
-  await scroller.evaluate((element) => { element.scrollTop = element.scrollHeight; });
-  const bounds = await lastRow.evaluate((element) => {
-    const row = element.getBoundingClientRect();
-    const workspace = element.closest(".listen-mobile-discovery")!.getBoundingClientRect();
-    const scroll = element.closest(".personal-discovery")!.getBoundingClientRect();
-    return { rowBottom: row.bottom, workspaceBottom: workspace.bottom, scrollBottom: scroll.bottom };
-  });
-  expect(bounds.scrollBottom).toBeLessThanOrEqual(bounds.workspaceBottom + 1);
-  expect(bounds.rowBottom).toBeLessThanOrEqual(bounds.workspaceBottom - 12);
-  await lastRow.getByRole("button", { name: /More options/ }).click();
-  await expect(page.getByRole("menuitem", { name: "Not now · 7 days" })).toBeVisible();
-  await page.keyboard.press("Escape");
-  await page.screenshot({ path: "test-results/personal-discover-empty-bottom.png", animations: "disabled" });
-});
+qa(
+  "Empty-player desktop Discover keeps its last recommendation fully above the queue",
+  async ({ page }) => {
+    await page.setViewportSize({ width: 1874, height: 916 });
+    await setup(page, { empty: true });
+    const scroller = page.locator(".personal-discovery");
+    const lastRow = page
+      .locator(".personal-recommendations .personal-track-row")
+      .last();
+    await expect(lastRow).toBeVisible();
+    await scroller.evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+    const bounds = await lastRow.evaluate((element) => {
+      const row = element.getBoundingClientRect();
+      const workspace = element
+        .closest(".listen-mobile-discovery")!
+        .getBoundingClientRect();
+      const scroll = element
+        .closest(".personal-discovery")!
+        .getBoundingClientRect();
+      return {
+        rowBottom: row.bottom,
+        workspaceBottom: workspace.bottom,
+        scrollBottom: scroll.bottom,
+      };
+    });
+    expect(bounds.scrollBottom).toBeLessThanOrEqual(bounds.workspaceBottom + 1);
+    expect(bounds.rowBottom).toBeLessThanOrEqual(bounds.workspaceBottom - 12);
+    await lastRow.getByRole("button", { name: /More options/ }).click();
+    await expect(
+      page.getByRole("menuitem", { name: "Not now · 7 days" }),
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
+    await page.screenshot({
+      path: "test-results/personal-discover-empty-bottom.png",
+      animations: "disabled",
+    });
+  },
+);
+
+qa(
+  "An empty catalogue warms without inventing candidates or starting playback",
+  async ({ page }) => {
+    const state = await setup(page, { warming: true });
+    await expect(
+      page.getByText(
+        "Preparing your saved music. Your likes and recorded plays stay saved.",
+      ),
+    ).toBeVisible();
+    await expect(
+      page.locator(".personal-recommendations .personal-track-row"),
+    ).toHaveCount(0);
+    expect(await page.evaluate(() => window.watchQA!.calls)).toEqual([]);
+    state.finishWarmup();
+    const refresh = page.waitForResponse(
+      (response) =>
+        response.url().includes("/recommendations/discover") &&
+        response.request().method() === "GET",
+    );
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await refresh;
+    await expect(
+      page.locator(".personal-recommendations .personal-track-row"),
+    ).toHaveCount(4);
+    await expect(
+      page.getByText("From your listening history", { exact: true }).first(),
+    ).toBeVisible();
+    expect(await page.evaluate(() => window.watchQA!.calls)).toEqual([]);
+  },
+);
+
+for (const width of [390, 1680]) {
+  qa(
+    `Cached recommendations retain queue feedback and exclude the current song at ${width}`,
+    async ({ page }) => {
+      await page.setViewportSize({ width, height: 960 });
+      const requests: string[] = [];
+      page.on("request", (request) => {
+        if (
+          /\/api\/(youtube\/(recommendations|search)|recommendations\/room)/.test(
+            request.url(),
+          )
+        )
+          requests.push(request.url());
+      });
+      await setup(page);
+      const queued = page.locator(
+        '.personal-recommendations [data-media-id="dQw4w9Wg004"]',
+      );
+      await queued
+        .getByRole("button", { name: "Add to queue · Hordes", exact: true })
+        .click();
+      await page.evaluate(() =>
+        window.watchQA!.confirmPersonalAdd("dQw4w9Wg004", "Hordes"),
+      );
+      await expect(
+        queued.getByRole("button", { name: "Added · Hordes", exact: true }),
+      ).toBeDisabled();
+      const refresh = page.waitForResponse(
+        (response) =>
+          response.url().includes("/recommendations/discover") &&
+          response.request().method() === "GET",
+      );
+      await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+      await refresh;
+      await expect(
+        queued.getByRole("button", { name: "Added · Hordes", exact: true }),
+      ).toBeDisabled();
+      const current = page.locator(
+        '.personal-recommendations [data-media-id="dQw4w9Wg005"]',
+      );
+      await current
+        .getByRole("button", { name: "Play Arrival to Earth", exact: true })
+        .click();
+      await expect(current).toHaveCount(0);
+      await queued.getByRole("button", { name: /More options/ }).click();
+      await page
+        .getByRole("menuitem", {
+          name: "Don't suggest this track",
+          exact: true,
+        })
+        .click();
+      await expect(queued).toHaveCount(0);
+      await page.getByRole("button", { name: "Undo", exact: true }).click();
+      await expect(
+        queued.getByRole("button", { name: "Added · Hordes", exact: true }),
+      ).toBeDisabled();
+      expect(requests).toEqual([]);
+    },
+  );
+
+  qa(
+    `Mounted catalogue metadata expires without waiting for polling at ${width}`,
+    async ({ page }) => {
+      await page.setViewportSize({ width, height: 960 });
+      await page.clock.install({ time: new Date() });
+      let reads = 0;
+      page.on("request", (request) => {
+        if (
+          request.url().includes("/recommendations/discover") &&
+          request.method() === "GET"
+        )
+          reads++;
+      });
+      await setup(page, {
+        metadataExpiresAt: new Date(Date.now() + 10_000).toISOString(),
+      });
+      await expect(page.locator(".personal-regular")).toHaveCount(8);
+      await expect(
+        page.locator(".personal-recommendations .personal-track-row"),
+      ).toHaveCount(4);
+      await expect(
+        page.locator(".personal-regular").first().locator(".personal-like"),
+      ).toBeEnabled();
+      // Let the initial preference-revision refresh run before measuring reads;
+      // otherwise fastForward can execute its already-scheduled zero-delay timer.
+      await page.clock.runFor(100);
+      const initialReads = reads;
+      await page.clock.fastForward(11_000);
+      await expect(page.locator(".personal-regular")).toHaveCount(0);
+      await expect(
+        page.locator(".personal-recommendations .personal-track-row"),
+      ).toHaveCount(0);
+      expect(reads).toBe(initialReads);
+      const refresh = page.waitForResponse(
+        (response) =>
+          response.url().includes("/recommendations/discover") &&
+          response.request().method() === "GET",
+      );
+      await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+      await refresh;
+      await expect(page.locator(".personal-regular")).toHaveCount(0);
+      await expect(
+        page.locator(".personal-recommendations .personal-track-row"),
+      ).toHaveCount(0);
+    },
+  );
+}
 
 for (const [width, height] of [
   [390, 844],

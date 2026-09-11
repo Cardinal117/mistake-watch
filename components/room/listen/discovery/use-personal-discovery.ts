@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RoomQueueItem } from "@/lib/rooms";
 import type {
+  DiscoverItem,
   DiscoverFeedback,
   DiscoverFeedbackState,
   DiscoverMutation,
@@ -12,6 +13,38 @@ import type {
 import { queuedPersonalTrack } from "@/lib/recommendations/personal-discovery-model";
 import { queueItemToDiscoveryQueueCommand } from "@/lib/recommendations/listen-discovery-interactions";
 import type { QueueAddInput } from "../shared";
+
+function removeExpiredMetadata(value: DiscoverResponse): DiscoverResponse {
+  const now = Date.now();
+  const fresh = (item: DiscoverItem) =>
+    item.metadataExpiresAt === undefined ||
+    Date.parse(item.metadataExpiresAt) > now;
+  return {
+    ...value,
+    items: value.items.filter(fresh),
+    ...(value.recommendations
+      ? { recommendations: value.recommendations.filter(fresh) }
+      : {}),
+  };
+}
+
+function recommendationDecision(
+  value: DiscoverResponse | null,
+  mediaId: string,
+  surface: DiscoverSurface,
+) {
+  if (
+    surface !== "recommended" ||
+    !value?.recommendations?.some((item) => item.mediaId === mediaId)
+  )
+    return undefined;
+  if (
+    value.decisionExpiresAt &&
+    Date.parse(value.decisionExpiresAt) <= Date.now()
+  )
+    return undefined;
+  return value.decisionId;
+}
 
 export function usePersonalDiscovery(
   roomId: string,
@@ -37,11 +70,35 @@ export function usePersonalDiscovery(
       {
         item: RoomQueueItem;
         surface: DiscoverSurface;
+        decisionId: string | null;
         timer: ReturnType<typeof setTimeout>;
       }
     >(),
   );
   const feedbackLock = useRef(false);
+  // Provider cache expiry applies to already-mounted results, including while
+  // a refresh is stalled or the tab is offline. Re-arm long timers safely.
+  useEffect(() => {
+    if (!data) return;
+    const expiries = [...data.items, ...(data.recommendations ?? [])]
+      .flatMap((item) =>
+        item.metadataExpiresAt ? [Date.parse(item.metadataExpiresAt)] : [],
+      )
+      .filter(Number.isFinite);
+    if (!expiries.length) return;
+    const timer = setTimeout(
+      () => {
+        setData((current) => {
+          if (!current) return current;
+          const fresh = removeExpiredMetadata(current);
+          dataRef.current = fresh;
+          return fresh;
+        });
+      },
+      Math.min(2_147_483_647, Math.max(0, Math.min(...expiries) - Date.now())),
+    );
+    return () => clearTimeout(timer);
+  }, [data]);
   useEffect(() => {
     mounted.current = true;
     const pendingRequests = inFlight.current;
@@ -70,8 +127,9 @@ export function usePersonalDiscovery(
         version === requestVersion.current &&
         mutation === mutationVersion.current
       ) {
-        dataRef.current = body;
-        setData(body);
+        const fresh = removeExpiredMetadata(body);
+        dataRef.current = fresh;
+        setData(fresh);
         setError(null);
       }
     } catch (err) {
@@ -109,9 +167,23 @@ export function usePersonalDiscovery(
       mediaId: string,
       surface: DiscoverSurface,
       kind: DiscoverMutation["kind"],
+      capturedDecisionId?: string | null,
     ) => {
+      const current = dataRef.current;
+      if (
+        surface === "recommended" &&
+        capturedDecisionId === undefined &&
+        !current?.recommendations?.some((item) => item.mediaId === mediaId)
+      )
+        return;
+      const decisionId =
+        surface === "recommended"
+          ? capturedDecisionId === undefined
+            ? recommendationDecision(current, mediaId, surface)
+            : (capturedDecisionId ?? undefined)
+          : undefined;
       if (kind === "shown") {
-        const key = `${surface}:${mediaId}`;
+        const key = `${decisionId ?? "legacy"}:${surface}:${mediaId}`;
         if (observed.current.has(key)) return;
         observed.current.add(key);
       }
@@ -125,6 +197,7 @@ export function usePersonalDiscovery(
           surface,
           kind,
           actionId: crypto.randomUUID(),
+          ...(decisionId ? { decisionId } : {}),
         }),
       }).catch(() => {
         /* Telemetry must not interrupt ordinary listening. */
@@ -144,7 +217,7 @@ export function usePersonalDiscovery(
         return next;
       });
       setAdded((current) => new Set(current).add(mediaId));
-      observe(mediaId, request.surface, "queue_observed");
+      observe(mediaId, request.surface, "queue_observed", request.decisionId);
     }
   }, [queue, observe]);
 
@@ -182,9 +255,16 @@ export function usePersonalDiscovery(
         ),
       12_000,
     );
-    inFlight.current.set(mediaId, { item, surface, timer });
+    const decisionId =
+      recommendationDecision(dataRef.current, mediaId, surface) ?? null;
+    inFlight.current.set(mediaId, { item, surface, timer, decisionId });
     setPending((current) => new Set(current).add(mediaId));
-    observe(mediaId, surface, next ? "play_next_requested" : "add_requested");
+    observe(
+      mediaId,
+      surface,
+      next ? "play_next_requested" : "add_requested",
+      decisionId,
+    );
     try {
       // A resolved request alone is not evidence that the live queue accepted it.
       void Promise.resolve(
@@ -212,6 +292,11 @@ export function usePersonalDiscovery(
     const current = dataRef.current?.feedback.find(
       (f) => f.mediaId === mediaId,
     );
+    const decisionId = recommendationDecision(
+      dataRef.current,
+      mediaId,
+      surface,
+    );
     try {
       const response = await fetch("/api/recommendations/discover", {
         method: "POST",
@@ -224,6 +309,7 @@ export function usePersonalDiscovery(
           state,
           expectedRevision: expected ?? current?.revision ?? 0,
           actionId: crypto.randomUUID(),
+          ...(decisionId ? { decisionId } : {}),
         }),
       });
       const body = await response.json();

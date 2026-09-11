@@ -5,7 +5,7 @@ import {
   type DiscoverItem,
   type DiscoverResponse,
 } from "./discover-contracts";
-import type { YouTubeMetadataResponse } from "../youtube/metadata";
+import { catalogueDiscovery } from "./catalogue-discovery";
 
 type ProjectionItem = Omit<
   DiscoverItem,
@@ -18,38 +18,12 @@ export type DiscoverProjection = {
 };
 const MEDIA = /^[A-Za-z0-9_-]{6,64}$/;
 
-export function createPersonalDiscoverReader(
-  read: () => Promise<unknown>,
-  metadata: (mediaId: string) => Promise<YouTubeMetadataResponse>,
-) {
+export function createPersonalDiscoverReader(read: () => Promise<unknown>) {
   return async (): Promise<DiscoverResponse> => {
-    const projection = parseDiscoverProjection(await read());
-    const items: DiscoverItem[] = [];
-    for (let offset = 0; offset < projection.items.length; offset += 8) {
-      const batch = await Promise.all(
-        projection.items.slice(offset, offset + 8).map(async (item) => {
-          const response = await metadata(item.mediaId).catch(() => null);
-          if (response?.availability.playable === false) return null;
-          const known = response?.metadata;
-          return {
-            ...item,
-            title: known?.title || "Title unavailable",
-            ...(known?.channelTitle ? { artist: known.channelTitle } : {}),
-            thumbnailUrl:
-              known?.thumbnailUrl ||
-              `https://i.ytimg.com/vi/${item.mediaId}/hqdefault.jpg`,
-            ...(known?.durationSeconds
-              ? { durationSeconds: known.durationSeconds }
-              : {}),
-          } satisfies DiscoverItem;
-        }),
-      );
-      for (const item of batch) if (item) items.push(item);
-    }
-    return { ...projection, items, status: "available" };
+    const value = await read();
+    return catalogueDiscovery(value, parseDiscoverProjection(value));
   };
 }
-
 export function parseDiscoverProjection(value: unknown): DiscoverProjection {
   const input = object(value);
   if (

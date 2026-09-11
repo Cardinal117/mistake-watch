@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { drainDurableRecommendationOutbox } from "@/lib/recommendations/durable-outbox-drain";
+import { runMusicCatalogueMaintenance } from "@/lib/recommendations/catalogue-service";
+import { maintainBeforeRoomDrain } from "@/lib/recommendations/catalogue-worker-core";
 
 function isAuthorizedDrainRequest(request: NextRequest) {
   if (process.env.NODE_ENV !== "production") {
@@ -19,7 +21,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    return NextResponse.json(await drainDurableRecommendationOutbox());
+    return NextResponse.json(
+      await maintainBeforeRoomDrain(
+        runMusicCatalogueMaintenance,
+        drainDurableRecommendationOutbox,
+      ),
+    );
   } catch (error) {
     console.error("[recommendations:drain]", error);
     return NextResponse.json(

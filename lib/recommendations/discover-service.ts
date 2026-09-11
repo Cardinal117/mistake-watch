@@ -2,7 +2,8 @@ import "server-only";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/database.types";
-import { getYouTubeMetadata } from "@/lib/youtube/metadata";
+import { catalogueReason } from "./catalogue-discovery";
+import { catalogueObject } from "./catalogue-contracts";
 import type { RecommendationRoomAccess } from "./room-authorization";
 import type { RoomRecommendationPrincipal } from "./room-service-core";
 import {
@@ -20,11 +21,11 @@ type PersonalAccess = Pick<
   "accountUserId" | "roomId" | "roomKind"
 >;
 
-async function readProjection(access: PersonalAccess) {
+async function readProjection(access: PersonalAccess, catalogue = false) {
   if (access.roomKind !== "personal" || !access.accountUserId)
     throw new Error("Personal owner required");
   const { data, error } = await createSupabaseAdminClient().rpc(
-    "read_personal_discover",
+    catalogue ? "read_personal_catalogue" : "read_personal_discover",
     {
       target_room: access.roomId,
       target_account: access.accountUserId,
@@ -35,10 +36,50 @@ async function readProjection(access: PersonalAccess) {
 }
 
 export async function getPersonalDiscover(access: RecommendationRoomAccess) {
-  return createPersonalDiscoverReader(
-    () => readProjection(access),
-    getYouTubeMetadata,
+  const result = await createPersonalDiscoverReader(() =>
+    readProjection(access, true),
   )();
+  const ids = result.recommendations?.map((item) => item.mediaId) ?? [];
+  if (!ids.length) return result;
+  const decision = await createSupabaseAdminClient().rpc(
+    "issue_personal_catalogue_decision",
+    {
+      target_room: access.roomId,
+      target_account: access.accountUserId!,
+      selected_ids: ids,
+    },
+  );
+  if (decision.error) throw new Error("Catalogue decision recording failed");
+  const body = decision.data;
+  if (
+    !body ||
+    typeof body !== "object" ||
+    Array.isArray(body) ||
+    typeof body.decisionId !== "string" ||
+    typeof body.expiresAt !== "string"
+  )
+    throw new Error("Invalid catalogue decision");
+  if (!Array.isArray(body.candidates) || body.candidates.length !== ids.length)
+    throw new Error("Invalid catalogue decision candidates");
+  const reasons = new Map(
+    body.candidates.map((value) => {
+      const item = catalogueObject(value);
+      if (typeof item.mediaId !== "string" || !ids.includes(item.mediaId))
+        throw new Error("Invalid catalogue decision identity");
+      return [item.mediaId, catalogueReason(item.reason)] as const;
+    }),
+  );
+  if (reasons.size !== ids.length)
+    throw new Error("Duplicate catalogue decision identity");
+  return {
+    ...result,
+    recommendations: result.recommendations?.map((item) => ({
+      ...item,
+      reason: reasons.get(item.mediaId)!,
+    })),
+    decisionId: body.decisionId,
+    decisionExpiresAt: body.expiresAt,
+  };
 }
 
 // Read explicit exclusions without metadata/provider requests. Missing schema fails

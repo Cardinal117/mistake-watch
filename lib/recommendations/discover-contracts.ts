@@ -24,6 +24,13 @@ export type DiscoverItem = {
   completedPlayCount: number;
   lastCompletedAt: string | null;
   liked: boolean;
+  metadataExpiresAt?: string;
+};
+export type DiscoverRecommendation = DiscoverItem & {
+  reason: {
+    code: "liked" | "chosen" | "history";
+    label: string;
+  };
 };
 export type DiscoverMutation = {
   roomId: string;
@@ -39,12 +46,20 @@ export type DiscoverMutation = {
   surface: DiscoverSurface;
   state?: DiscoverFeedbackState;
   expectedRevision?: number;
+  decisionId?: string;
 };
 export type DiscoverResponse = {
   status: "available";
   items: DiscoverItem[];
   feedback: DiscoverFeedback[];
   countWindowDays: number;
+  decisionId?: string;
+  decisionExpiresAt?: string;
+  recommendations?: DiscoverRecommendation[];
+  catalogue?: {
+    status: "ready" | "warming" | "limited";
+    pendingCount: number;
+  };
 };
 
 const UUID =
@@ -67,6 +82,7 @@ const FIELDS = new Set([
   "surface",
   "state",
   "expectedRevision",
+  "decisionId",
 ]);
 
 export function normalizeDiscoverRoomId(value: unknown): string | null {
@@ -89,6 +105,13 @@ export function normalizeDiscoverMutation(
     !KINDS.has(input.kind) ||
     typeof input.surface !== "string" ||
     !SURFACES.has(input.surface)
+  )
+    return null;
+  if (
+    "decisionId" in input &&
+    (input.surface !== "recommended" ||
+      typeof input.decisionId !== "string" ||
+      !UUID.test(input.decisionId))
   )
     return null;
   if (input.kind === "feedback") {
