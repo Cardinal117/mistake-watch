@@ -134,8 +134,6 @@ qa(
           .map((call) => call.input),
       ),
     ).toEqual([expect.objectContaining({ isPlayNext: true })]);
-    await expect(
-      row.getByRole("button", { name: "Adding… · Hordes", exact: true }),
-    ).toBeDisabled();
+    await expect(row).toHaveCount(0);
   },
 );

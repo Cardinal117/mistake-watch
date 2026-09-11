@@ -2,6 +2,32 @@
 
 ## Active: TASK-030 Personal music catalogue — 2026-09-11
 
+Current release candidate: compact Discover/desktop queue, immediate queue feedback,
+Shared listening permission/history clearing, and eligible-source listener records.
+See [current QA and deployment evidence](tasks/TASK-030-personal-music-catalogue/listening-rollout-qa.md).
+The owner authorized Git and deployment after QA. Pending UI does not manufacture
+confirmed learning events; retries correlate to the same canonical request.
+
+Latest local work: [compact browse follow-up](tasks/TASK-030-personal-music-catalogue/compact-browse-follow-up.md)
+implements responsive recommendation/Regulars lists, search/count controls,
+compact queue icons, display-only Topic cleanup and artwork card styling. First
+bounded listening-contract step also has local SQL QA:
+[owned-Themed explicit choices](tasks/TASK-030-personal-music-catalogue/owned-themed-choice-qa.md).
+These changes are in final local release QA; use the current release note for
+publication status. Preserve unrelated owner notes and worktrees.
+
+Next approved direction: [030.10 account-wide listening contract](tasks/TASK-030-personal-music-catalogue/account-wide-listening-contract.md),
+then [Stage 2 identity/classification](tasks/TASK-030-personal-music-catalogue/stage-2-identity-and-classification.md).
+Planning and implementation are complete for eligible sources; final review and
+deployment are underway. Personal and owned Themed learning are primary; Shared passive learning
+needs a new individual permission. Likes remain account-wide. Existing room
+events identify actors, not every listener, so validated listener receipts must
+precede account-wide counts. Old Shared action consent has not been broadened.
+The owner confirmed the latest fixes and increasing Personal counts work. Current
+badges remain Personal-room YouTube completions over 180 days. New direct/HLS
+counts are separate private account data; YouTube passive expansion still needs
+provider-use approval. Two assistants were authorized for this release.
+
 Latest owner follow-up 030.9: repeated deliberate queue adds with duplicate
 indicators, coordinated expandable cards and compact numeric play-count badges.
 Fixed completion classification using the running server clock; IVORY TOWER had

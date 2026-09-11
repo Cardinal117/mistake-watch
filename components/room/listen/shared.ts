@@ -20,6 +20,7 @@ export type SourceLoadInput = {
   sourceUrl: string;
 };
 export type QueueAddInput = SourceLoadInput & {
+  clientActionId?: string;
   artist?: string;
   channelName?: string;
   durationSeconds?: number;

@@ -21,6 +21,14 @@ Mistake Watch is a polished, room-based watch and listen experience for synchron
 
 ## Core Experience
 
+Approved learning direction (TASK-030, 2026-09-11; implementation pending):
+Personal and an account's own Themed rooms are the primary taste-learning sources.
+Shared-room listening, including music chosen by other participants, requires
+explicit individual listening permission. App Likes remain account-wide explicit
+preferences in every room. Queuing a track does not imply that everyone likes it
+or listened to it. See the [account-wide listening contract](docs/tasks/TASK-030-personal-music-catalogue/account-wide-listening-contract.md)
+for attribution, consent, count scope and the ordered implementation.
+
 The room is the product. Media remains visually primary while participants, queue state, transport controls, permissions, and synchronization status remain clear and compact. Supabase owns durable product data; SpacetimeDB owns latency-sensitive live room state. Every presentation mode should consume the same authoritative room and playback contracts rather than inventing a parallel product.
 
 ## Product Surfaces

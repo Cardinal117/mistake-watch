@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type Hls from "hls.js";
+import { useLocalListener } from "@/lib/recommendations/use-local-listener";
 import { boundDirectPlaybackState } from "@/lib/player/direct-media-sync";
 import type { LiveRoomState } from "@/lib/spacetime";
 import {
@@ -70,6 +71,7 @@ function DirectMediaPlayerCore({
   poster,
 }: DirectMediaPlayerCoreProps) {
   const mediaRef = useRef<HTMLMediaElement | null>(null);
+  useLocalListener(mediaRef, liveRoom);
   const hlsRef = useRef<Hls | null>(null);
   const applyingRemoteState = useRef(false);
   const handleEndedRef = useRef<() => void>(() => {});

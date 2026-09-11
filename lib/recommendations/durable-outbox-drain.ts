@@ -4,6 +4,10 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { withTrustedRecommendationOutbox } from "./outbox-bridge";
 import { drainRecommendationEventBatch } from "./outbox-drain";
 import {
+  drainListenerReceipts,
+  pruneListenerReceipts,
+} from "./listener-receipts-service";
+import {
   persistRecommendationEventBatch,
   pruneDurableRecommendationData,
 } from "./persistence";
@@ -39,8 +43,29 @@ export async function deliverRecommendationEvents(limit = 100) {
         },
       }),
     );
+    const operationalProgress = { ...progress };
+    const listenerResult = await drainListenerReceipts({
+      client,
+      limit,
+      onProgress: (value) => {
+        const oldest = [
+          operationalProgress.oldestPendingMs,
+          value.oldestPendingMs,
+        ].filter((at): at is number => at !== null);
+        progress = {
+          status:
+            operationalProgress.status === "partial" ||
+            value.status === "partial"
+              ? "partial"
+              : "empty",
+          processed: operationalProgress.processed + value.processed,
+          oldestPendingMs: oldest.length ? Math.min(...oldest) : null,
+        };
+      },
+    });
     return {
-      ...result,
+      read: result.read + listenerResult.read,
+      acknowledged: result.acknowledged + listenerResult.acknowledged,
       status: progress.status,
       oldestPendingMs: progress.oldestPendingMs,
     };
@@ -67,7 +92,8 @@ export async function deliverRecommendationEvents(limit = 100) {
 export async function drainDurableRecommendationOutbox(limit = 100) {
   const result = await deliverRecommendationEvents(limit);
   const pruned = await pruneDurableRecommendationData();
-  return { ...result, pruned };
+  const listenerPruned = await pruneListenerReceipts();
+  return { ...result, pruned, listenerPruned };
 }
 
 export async function deliverRecommendationEventsInBackground() {

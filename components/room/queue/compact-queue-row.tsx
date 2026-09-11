@@ -1,6 +1,7 @@
 "use client";
 import { useContext, useEffect, useRef, useState } from "react";
 import { QueueDragContext } from "./virtual-queue-list";
+import { OptimisticQueueContext } from "./use-optimistic-adds";
 import {
   GripVertical,
   ListPlus,
@@ -68,6 +69,7 @@ export function CompactQueueRow({
     onRemove: () => onRemove?.(item.id),
   });
   const virtual = useContext(QueueDragContext);
+  const optimistic = useContext(OptimisticQueueContext);
   const queued = item.status === "queued";
   const menuRef = useRef<HTMLDetailsElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -92,6 +94,7 @@ export function CompactQueueRow({
       ref={row}
       className="watch-queue-row"
       data-queue-id={item.id}
+      data-pending-add={Boolean(item.pendingAdd)}
       data-queue-index={index}
       data-active={item.status === "now"}
       data-dragging={dragging}
@@ -183,25 +186,58 @@ export function CompactQueueRow({
           title={queued ? "Drag to reorder; hold on touch" : undefined}
         >
           <strong className="flex items-center gap-2">
-            <span className="min-w-0 truncate">{title}</span>
+            <span className="min-w-0 truncate" title={title}>
+              {title}
+            </span>
             {item.status !== "played" && (
               <QueueDuplicateIndicator count={duplicateCount} />
             )}
           </strong>
           <small>
+            {item.pendingAdd
+              ? item.pendingAdd === "sending"
+                ? "Adding… · "
+                : "Not confirmed · "
+              : ""}
             {item.status === "now"
               ? "Now playing · "
               : index === 0
                 ? "Next · "
                 : ""}
-            {channel ? `${channel} · ` : ""}
-            {duration}
-            {blocked ? " · Unavailable" : ""}
+            {channel || "Room source"}
+            <span className="compact-queue-inline-duration"> · {duration}</span>
+            {blocked && !item.pendingAdd ? " · Unavailable" : ""}
             {item.isPinned ? " · Pinned" : ""}
             {item.isPlayNext ? " · Play next" : ""}
           </small>
         </div>
-        {item.status !== "now" && (
+        <span className="desktop-queue-duration">{duration}</span>
+        {item.status === "now" && (
+          <span className="desktop-queue-next-space" aria-hidden />
+        )}
+        {item.pendingAdd && optimistic ? (
+          <>
+            <button
+              className="watch-queue-next"
+              disabled={item.pendingAdd === "sending"}
+              title="Retry the same addition"
+              aria-label={`Retry adding ${title}`}
+              onClick={() => optimistic.retry(item.id)}
+            >
+              Retry
+            </button>
+            <button
+              className="watch-queue-next"
+              disabled={item.pendingAdd === "sending"}
+              title="Hide this pending status; a delayed addition can still arrive"
+              aria-label={`Hide pending status for ${title}`}
+              onClick={() => optimistic.dismiss(item.id)}
+            >
+              <Trash2 aria-hidden />
+            </button>
+          </>
+        ) : null}
+        {!item.pendingAdd && item.status !== "now" && (
           <button
             className="watch-queue-next"
             disabled={disabled}
@@ -215,6 +251,7 @@ export function CompactQueueRow({
           </button>
         )}
         <details
+          hidden={Boolean(item.pendingAdd)}
           className="watch-queue-menu"
           data-queue-menu
           ref={menuRef}

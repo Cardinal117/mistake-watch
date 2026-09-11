@@ -49,7 +49,7 @@ function recommendationDecision(
 export function usePersonalDiscovery(
   roomId: string,
   queue: RoomQueueItem[],
-  add: (input: QueueAddInput) => void,
+  add: (input: QueueAddInput) => void | Promise<void>,
   preferenceRevision = 0,
 ) {
   const [data, setData] = useState<DiscoverResponse | null>(null);
@@ -74,11 +74,13 @@ export function usePersonalDiscovery(
         decisionId: string | null;
         existingOccurrenceIds: Set<string>;
         token: symbol;
+        timedOut?: boolean;
         timer: ReturnType<typeof setTimeout>;
       }
     >(),
   );
   const feedbackLock = useRef(false);
+  const retryActionIds = useRef(new Map<string, string>());
   // Provider cache expiry applies to already-mounted results, including while
   // a refresh is stalled or the tab is offline. Re-arm long timers safely.
   useEffect(() => {
@@ -131,6 +133,8 @@ export function usePersonalDiscovery(
         mutation === mutationVersion.current
       ) {
         const fresh = removeExpiredMetadata(body);
+        if (dataRef.current?.decisionId !== fresh.decisionId)
+          setAdded(new Set());
         dataRef.current = fresh;
         setData(fresh);
         setError(null);
@@ -156,11 +160,13 @@ export function usePersonalDiscovery(
     };
     const interval = setInterval(whenVisible, 30_000);
     window.addEventListener("focus", whenVisible);
+    window.addEventListener("mw-listening-settings-changed", whenVisible);
     document.addEventListener("visibilitychange", whenVisible);
     return () => {
       clearTimeout(initial);
       clearInterval(interval);
       window.removeEventListener("focus", whenVisible);
+      window.removeEventListener("mw-listening-settings-changed", whenVisible);
       document.removeEventListener("visibilitychange", whenVisible);
     };
   }, [refresh, preferenceRevision]);
@@ -214,7 +220,12 @@ export function usePersonalDiscovery(
       if (
         !queuedPersonalTrack(
           request.item,
-          queue.filter((item) => !request.existingOccurrenceIds.has(item.id)),
+          queue.filter(
+            (item) =>
+              !item.pendingAdd &&
+              item.clientActionId === retryActionIds.current.get(mediaId) &&
+              !request.existingOccurrenceIds.has(item.id),
+          ),
         )
       )
         continue;
@@ -225,7 +236,9 @@ export function usePersonalDiscovery(
         next.delete(mediaId);
         return next;
       });
-      setAdded((current) => new Set(current).add(mediaId));
+      if (request.decisionId === (dataRef.current?.decisionId ?? null))
+        setAdded((current) => new Set(current).add(mediaId));
+      retryActionIds.current.delete(mediaId);
       observe(mediaId, request.surface, "queue_observed", request.decisionId);
     }
   }, [queue, observe]);
@@ -236,14 +249,26 @@ export function usePersonalDiscovery(
     next = false,
   ) {
     const mediaId = item.videoId;
-    if (!mediaId || inFlight.current.has(mediaId)) return;
+    if (
+      !mediaId ||
+      (inFlight.current.has(mediaId) &&
+        !inFlight.current.get(mediaId)?.timedOut)
+    )
+      return;
     setActionError(null);
     const token = Symbol("queue-add");
-    const fail = (message: string) => {
+    const clientActionId =
+      retryActionIds.current.get(mediaId) ?? crypto.randomUUID();
+    retryActionIds.current.set(mediaId, clientActionId);
+    const fail = (message: string, uncertain = false) => {
       const entry = inFlight.current.get(mediaId);
       if (!entry || entry.token !== token) return;
       clearTimeout(entry.timer);
-      inFlight.current.delete(mediaId);
+      if (uncertain) entry.timedOut = true;
+      else {
+        inFlight.current.delete(mediaId);
+        retryActionIds.current.delete(mediaId);
+      }
       if (mounted.current) {
         setPending((current) => {
           const result = new Set(current);
@@ -257,6 +282,7 @@ export function usePersonalDiscovery(
       () =>
         fail(
           "Queue addition was not confirmed. Check your connection and try again.",
+          true,
         ),
       12_000,
     );
@@ -282,6 +308,7 @@ export function usePersonalDiscovery(
       void Promise.resolve(
         add({
           ...queueItemToDiscoveryQueueCommand(item, { isPlayNext: next }),
+          clientActionId,
           allowDuplicate: true,
         }),
       ).catch(() => fail("Could not add this track. Please try again."));

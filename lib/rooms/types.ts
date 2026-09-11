@@ -18,6 +18,8 @@ export type DashboardRoomSummary = {
 };
 
 export type RoomQueueItem = {
+  clientActionId?: string;
+  pendingAdd?: "sending" | "unconfirmed";
   id: string;
   title: string;
   addedBy: string;

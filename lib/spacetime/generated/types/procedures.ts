@@ -6,10 +6,13 @@
 import { type Infer as __Infer } from "spacetimedb";
 
 // Import all procedure arg schemas
+import * as ReadListenerReceiptsProcedure from "../read_listener_receipts_procedure";
 import * as ReadMyGuestMediaPreferencesProcedure from "../read_my_guest_media_preferences_procedure";
 import * as ReadRecommendationEventOutboxProcedure from "../read_recommendation_event_outbox_procedure";
 import * as ReadVerifiedRoomMediaPreferencesProcedure from "../read_verified_room_media_preferences_procedure";
 
+export type ReadListenerReceiptsArgs = __Infer<typeof ReadListenerReceiptsProcedure.params>;
+export type ReadListenerReceiptsResult = __Infer<typeof ReadListenerReceiptsProcedure.returnType>;
 export type ReadMyGuestMediaPreferencesArgs = __Infer<typeof ReadMyGuestMediaPreferencesProcedure.params>;
 export type ReadMyGuestMediaPreferencesResult = __Infer<typeof ReadMyGuestMediaPreferencesProcedure.returnType>;
 export type ReadRecommendationEventOutboxArgs = __Infer<typeof ReadRecommendationEventOutboxProcedure.params>;

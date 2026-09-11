@@ -131,6 +131,7 @@ export function WatchDesignFixture({
   );
   const [owner, setOwner] = useState(false);
   const [personal, setPersonal] = useState(false);
+  const [listenerPreview, setListenerPreview] = useState(false);
   const [compactAccount, setCompactAccount] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
   const calls = useRef<Array<{ action: string; input: unknown }>>([]);
@@ -189,6 +190,8 @@ export function WatchDesignFixture({
   };
   const queueRejections = useRef<Array<(reason: Error) => void>>([]);
   const liveRoom = {
+    listenerConnection: listenerPreview ? { roomId: id, admissionId: "a".repeat(24), identityHex: "a".repeat(64) } : undefined,
+    observeListenerPlayback: (sample: unknown) => record("listener", sample),
     youtubeAutoplayPreparation,
     snapshot: {
       session,
@@ -246,6 +249,7 @@ export function WatchDesignFixture({
       placement?: QueuePlacement,
     ) => {
       record("move", { id, position });
+      record("movePlacement", { id, placement });
       await new Promise((resolve) => setTimeout(resolve, moveDelay.current));
       if (moveFailure.current) throw new Error("Queue move rejected for QA");
       setQueueState((current) => {
@@ -373,6 +377,7 @@ export function WatchDesignFixture({
       };
     const frame = requestAnimationFrame(() => {
       setPersonal(new URLSearchParams(location.search).has("personal"));
+      setListenerPreview(new URLSearchParams(location.search).has("listener"));
       setOwner(new URLSearchParams(location.search).has("owner"));
       setCompactAccount(new URLSearchParams(location.search).has("compact"));
       if (new URLSearchParams(location.search).has("youtube"))
@@ -394,6 +399,7 @@ export function WatchDesignFixture({
           {
             ...queue[0],
             queueItemId: `qa:${videoId}:${crypto.randomUUID()}`,
+            clientActionId: (calls.current.findLast(c => c.action === "add" && (c.input as { sourceUrl?: string }).sourceUrl?.includes(videoId))?.input as { clientActionId?: string } | undefined)?.clientActionId,
             position: current.length,
             title,
             sourceType: "youtube",

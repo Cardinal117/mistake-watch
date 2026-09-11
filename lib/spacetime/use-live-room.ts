@@ -24,6 +24,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
   const currentMember = room.currentMember;
   const {
     admissionId,
+    listenerIdentity,
     connectionReadiness,
     connectionStatus,
     errorMessage,
@@ -273,6 +274,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
   }
 
   function addQueueItem(input: {
+    clientActionId?: string;
     artist?: string;
     channelName?: string;
     durationSeconds?: number;
@@ -288,16 +290,18 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     thumbnailUrl?: string;
   }) {
     if (!currentMember || !canAddQueue || !reducers) {
-      return;
+      const request = Promise.reject(new Error("Queue permission or connection is unavailable."));
+      void request.catch(() => setErrorMessage("Queue permission or connection is unavailable."));
+      return request;
     }
 
-    void reducers.addQueueItem({
+    const request = reducers.addQueueItem({
       actorMemberId: currentMember.id,
       artist: input.artist ?? "",
       channelName: input.channelName,
       durationSeconds: input.durationSeconds,
       allowDuplicate: input.allowDuplicate ?? false,
-      clientActionId: crypto.randomUUID(),
+      clientActionId: input.clientActionId ?? crypto.randomUUID(),
       isPinned: input.isPinned ?? false,
       isPlayNext: input.isPlayNext ?? false,
       isUnavailable: input.isUnavailable ?? false,
@@ -309,6 +313,8 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       sourceUrl: input.sourceUrl,
       thumbnailUrl: input.thumbnailUrl,
     });
+    void request.catch(() => setErrorMessage("Could not add this track. Please try again."));
+    return request;
   }
 
   function playQueueItem(queueItemId: string) {
@@ -745,6 +751,11 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
   }
 
   return {
+    listenerConnection: hasCurrentLiveAuthority && admissionId && listenerIdentity ? { admissionId, identityHex: listenerIdentity, roomId: room.id } : undefined,
+    observeListenerPlayback(sample) {
+      if (!hasCurrentLiveAuthority || !reducers || !currentMember) return;
+      void reducers.observeListenerPlayback({ ...sample, roomId: room.id, memberId: currentMember.id }).catch(() => { /* Telemetry never interrupts playback. */ });
+    },
     youtubeAutoplayPreparation,
     addQueueItem,
     advanceToNextQueueItem,

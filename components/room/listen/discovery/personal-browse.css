@@ -1,0 +1,157 @@
+/* Every row owns its responsive layout, including within split browse lists. */
+.personal-discovery .personal-track-row {
+  display: block;
+  min-width: 0;
+  container: personal-row / inline-size;
+}
+.personal-track-row .personal-row-details {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 124px 64px 92px 44px;
+  grid-template-areas: "art text reason duration actions more";
+  align-items: center;
+  gap: 8px;
+}
+.personal-track-row .personal-row-details > .personal-artwork {
+  grid-area: art;
+  width: 48px;
+  height: 48px;
+}
+.personal-track-row .personal-row-details > .personal-track-text {
+  grid-area: text;
+}
+.personal-track-row .personal-row-details > .personal-track-reason {
+  grid-area: reason;
+  min-width: 0;
+  overflow-wrap: normal;
+}
+.personal-track-row .personal-row-details > .personal-like {
+  grid-area: reason;
+  justify-self: end;
+  align-self: center;
+  width: 44px;
+  min-height: 44px;
+  border: 0;
+}
+.personal-track-row .personal-row-details > .personal-duration {
+  grid-area: duration;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.personal-duplicate-slot {
+  display: inline-flex;
+  width: 16px;
+  flex-shrink: 0;
+}
+.personal-track-row .personal-row-details > .personal-queue-actions {
+  grid-area: actions;
+  justify-self: stretch;
+  min-height: 44px;
+}
+.personal-track-row .personal-row-details .personal-queue-actions button {
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  flex: none;
+}
+.personal-track-row .personal-row-details > .personal-more {
+  grid-area: more;
+  width: 44px;
+  min-height: 44px;
+}
+.personal-track-row .personal-row-details > .personal-track-error {
+  grid-column: 1 / -1;
+}
+.personal-browse-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 24px;
+}
+.personal-browse-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+}
+.personal-browse-tools label {
+  display: grid;
+  gap: 4px;
+  font-size: var(--text-label-sm);
+  color: var(--color-on-surface-variant);
+  min-width: 0;
+}
+.personal-browse-tools label:first-child {
+  flex: 1 1 200px;
+}
+.personal-browse-tools input:not([type="checkbox"]),
+.personal-browse-tools select {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-outline-variant);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-container);
+  color: var(--color-on-surface);
+}
+.personal-browse-tools input[type="number"] {
+  max-width: 160px;
+}
+.personal-browse-tools input::placeholder {
+  color: var(--color-on-surface-variant);
+}
+.personal-browse-tools :is(input, select):focus-visible {
+  outline: 2px solid rgb(var(--listen-primary));
+  outline-offset: 2px;
+}
+.personal-browse-tools .personal-browse-check {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  gap: 8px;
+}
+.personal-browse-tools input[type="checkbox"] {
+  accent-color: rgb(var(--listen-primary));
+}
+.personal-browse-tools button {
+  min-height: 44px;
+  color: rgb(var(--listen-primary));
+  font-size: var(--text-label-sm);
+}
+.personal-browse-summary {
+  margin: 12px 0;
+  font-size: var(--text-label-sm);
+  color: var(--color-on-surface-variant);
+}
+@container (min-width: 1120px) {
+  .personal-browse-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container personal-row (max-width: 640px) {
+  .personal-track-row .personal-row-details {
+    grid-template-columns: 48px minmax(0, 1fr) 64px 92px 44px;
+    grid-template-areas: "art text duration actions more" "art reason reason reason reason";
+    row-gap: 0;
+  }
+  .personal-track-row .personal-row-details > .personal-like {
+    grid-area: reason;
+    justify-self: start;
+  }
+}
+@container personal-row (max-width: 400px) {
+  .personal-track-row .personal-row-details {
+    grid-template-columns: 64px minmax(0, 1fr) 92px 44px;
+    grid-template-areas: "art text text more" "duration reason actions actions";
+    row-gap: 4px;
+  }
+  .personal-track-row .personal-row-details > .personal-duration {
+    justify-self: start;
+  }
+  .personal-track-row .personal-row-details > .personal-queue-actions {
+    justify-self: end;
+  }
+}

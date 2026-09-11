@@ -1,5 +1,7 @@
 "use client";
 
+import { artistLabel } from "@/lib/ui/artist-label";
+
 import {
   useEffect,
   useRef,
@@ -104,11 +106,12 @@ export function ListenTvModeLayout({
     (youtubeSource ? getYouTubeThumbnailUrl(liveSource) : null);
   const title =
     session?.sourceTitle ?? currentItem?.title ?? room.nowPlaying.title;
-  const artist =
+  const artist = artistLabel(
     currentItem?.artist ??
-    currentItem?.channelName ??
-    room.nowPlaying.artist ??
-    "Room source";
+      currentItem?.channelName ??
+      room.nowPlaying.artist ??
+      "Room source",
+  );
   const isPlaying = session?.status === "playing";
   const progressMax =
     durationSeconds || Math.max(100, Math.ceil(currentPosition));
@@ -379,6 +382,7 @@ export function ListenTvModeLayout({
         <span className="sr-only">TV mode is active.</span>
       </div>
       <ListenRoomSettingsDialog
+        listeningRoomId={room.id}
         onChange={onTvSettingsChange}
         onClose={closeSettings}
         open={settingsOpen}
@@ -446,7 +450,9 @@ export function ListenTvUpNextCard({
               {nextItem.title}
             </p>
             <p className="mt-1 truncate text-label-sm text-on-surface-variant">
-              {nextItem.artist ?? nextItem.channelName ?? nextItem.addedBy}
+              {artistLabel(
+                nextItem.artist ?? nextItem.channelName ?? nextItem.addedBy,
+              )}
             </p>
           </div>
         </div>

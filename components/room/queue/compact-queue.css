@@ -1,4 +1,9 @@
 /* Shared queue: compact rows, direct manipulation, and explicit accessible fallbacks. */
+.desktop-queue-duration {
+  display: none;
+}
+.desktop-queue-next-space { display: none; }
+.compact-virtual-queue[data-desktop-rows="true"] .desktop-queue-next-space { display: block; width: 44px; flex: 0 0 44px; }
 .watch-queue-row {
   position: relative;
   min-width: 0;
@@ -223,4 +228,88 @@
 }
 .compact-virtual-queue .watch-queue-art > svg {
   inset: 12px;
+}
+
+/* Desktop Listen keeps one ordered list, with its 60px pitch shared by virtualization. */
+.compact-virtual-queue[data-desktop-rows="true"] .compact-queue-slot,
+.compact-virtual-queue[data-desktop-rows="true"] .compact-queue-gap {
+  height: 60px;
+}
+.compact-virtual-queue[data-desktop-rows="true"] .watch-queue-row {
+  height: 60px;
+  border: 0;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--color-outline) 24%, transparent);
+  border-radius: 0;
+  background: transparent;
+}
+.compact-virtual-queue[data-desktop-rows="true"] .watch-queue-face {
+  height: 59px;
+  min-height: 59px;
+  padding: 6px 8px;
+  gap: 12px;
+  background: transparent;
+}
+.compact-virtual-queue[data-desktop-rows="true"] .watch-queue-face:hover,
+.compact-virtual-queue[data-desktop-rows="true"]
+  .watch-queue-face:focus-within {
+  background: rgb(var(--listen-primary) / 0.06);
+}
+.compact-virtual-queue[data-desktop-rows="true"]
+  .watch-queue-row[data-active="true"]
+  .watch-queue-face {
+  background: rgb(var(--listen-primary) / 0.1);
+}
+.compact-virtual-queue[data-desktop-rows="true"] .watch-queue-copy,
+.compact-virtual-queue[data-desktop-rows="true"] .watch-queue-play {
+  min-height: 44px;
+}
+.compact-virtual-queue[data-desktop-rows="true"] .watch-queue-copy {
+  gap: 2px;
+}
+.compact-virtual-queue[data-desktop-rows="true"] .watch-queue-copy strong {
+  font-size: var(--text-label-md);
+}
+.compact-virtual-queue[data-desktop-rows="true"] .watch-queue-grip {
+  width: 24px;
+  min-height: 44px;
+}
+.compact-virtual-queue[data-desktop-rows="true"] .desktop-queue-duration {
+  display: block;
+  width: 56px;
+  flex: 0 0 56px;
+  text-align: right;
+  font-size: var(--text-label-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-on-surface-variant);
+}
+.compact-virtual-queue[data-desktop-rows="true"]
+  .compact-queue-inline-duration {
+  display: none;
+}
+.compact-virtual-queue[data-desktop-rows="true"] .watch-queue-menu summary {
+  width: 44px;
+}
+.compact-virtual-queue[data-desktop-rows="true"] .watch-queue-art > svg {
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+.compact-virtual-queue[data-desktop-rows="true"]
+  .watch-queue-play:hover
+  .watch-queue-art
+  > svg,
+.compact-virtual-queue[data-desktop-rows="true"]
+  .watch-queue-play:focus-visible
+  .watch-queue-art
+  > svg {
+  opacity: 1;
+}
+.compact-virtual-queue[data-desktop-rows="true"]
+  .watch-queue-row[data-dragging="true"] {
+  background: var(--color-surface-container);
+}
+@media (prefers-reduced-motion: reduce) {
+  .compact-virtual-queue[data-desktop-rows="true"] .watch-queue-art > svg {
+    transition: none;
+  }
 }

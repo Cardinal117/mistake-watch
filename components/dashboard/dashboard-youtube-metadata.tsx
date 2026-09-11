@@ -1,5 +1,8 @@
 "use client";
 
+import { artistLabel } from "@/lib/ui/artist-label";
+
+
 import { Eye, ThumbsUp } from "lucide-react";
 
 import { MetadataPlaceholderChips } from "@/components/room/metadata-placeholder-chips";
@@ -37,7 +40,7 @@ export function DashboardYouTubeMetadata({
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-label-sm text-on-surface-variant">
       {metadata.channelTitle ? (
-        <span className="min-w-0 truncate">{metadata.channelTitle}</span>
+        <span className="min-w-0 truncate">{artistLabel(metadata.channelTitle)}</span>
       ) : null}
       <span className="inline-flex items-center gap-1">
         <Eye className="h-3.5 w-3.5 text-primary-fixed-dim" aria-hidden />

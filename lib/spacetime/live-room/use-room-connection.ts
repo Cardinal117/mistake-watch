@@ -43,6 +43,7 @@ export function useRoomConnection(room: RoomSnapshot) {
     null,
   );
   const [admissionId, setAdmissionId] = useState<string | null>(null);
+  const [listenerIdentity, setListenerIdentity] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<LiveRoomSnapshot>(() =>
     buildFallbackSnapshot(room),
   );
@@ -274,6 +275,7 @@ export function useRoomConnection(room: RoomSnapshot) {
           .onConnectError(onConnectError)
           .build(),
       onConnect: ({ connected, identityHex, token }) => {
+        setListenerIdentity(identityHex);
         reconnectAttemptRef.current = 0;
         window.localStorage.setItem(tokenStorageKey, token);
         setConnectionStatus("connected");
@@ -413,6 +415,7 @@ export function useRoomConnection(room: RoomSnapshot) {
 
   return {
     admissionId,
+    listenerIdentity,
     connectionReadiness,
     connectionStatus,
     errorMessage,

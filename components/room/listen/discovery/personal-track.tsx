@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { createPortal } from "react-dom";
 import {
   Check,
@@ -20,6 +26,9 @@ import type {
 import type { MediaPreferenceController } from "@/lib/recommendations/use-media-preferences";
 import { QueueArtwork } from "./media-cards";
 import { useRegularExpansion } from "./use-regular-expansion";
+import { artistLabel } from "@/lib/ui/artist-label";
+import { getListenTheme, useArtworkTheme } from "../theme/listen-theme";
+import { readableWatchAccent } from "@/components/room/watch/watch-accent";
 
 export function PersonalTrackView({
   item,
@@ -57,6 +66,10 @@ export function PersonalTrackView({
   observationKey?: string;
 }) {
   const article = useRef<HTMLElement>(null);
+  const artworkTheme = useArtworkTheme(
+    regular ? item.thumbnailUrl : null,
+    getListenTheme(item.videoId),
+  );
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const preview = useRef<HTMLButtonElement>(null);
@@ -124,9 +137,35 @@ export function PersonalTrackView({
     callback();
   }
   const label = pending ? "Adding…" : "Add to queue";
+  function queueTrack(next = false) {
+    const node = article.current;
+    if (surface === "recommended" && node?.contains(document.activeElement)) {
+      const neighbour = node.nextElementSibling ?? node.previousElementSibling;
+      const target =
+        neighbour?.querySelector<HTMLButtonElement>("button:not(:disabled)") ??
+        node
+          .closest(".personal-discovery")
+          ?.querySelector<HTMLButtonElement>(
+            ".personal-back, #personal-view-recommended",
+          );
+      requestAnimationFrame(
+        () => target?.isConnected && target.focus({ preventScroll: true }),
+      );
+    }
+    onAdd(next);
+  }
   return (
     <article
       ref={article}
+      style={
+        regular
+          ? ({
+              "--personal-artwork-accent": readableWatchAccent(
+                artworkTheme.primary,
+              ),
+            } as CSSProperties)
+          : undefined
+      }
       className={regular ? "personal-regular" : "personal-track-row"}
       data-media-id={item.videoId}
       data-expanded={
@@ -195,15 +234,20 @@ export function PersonalTrackView({
           </p>
           <p
             className="personal-track-artist"
-            title={item.artist ?? item.channelName}
+            title={artistLabel(item.artist ?? item.channelName)}
           >
-            {item.artist ?? item.channelName ?? "YouTube"}
+            {artistLabel(item.artist ?? item.channelName ?? "YouTube")}
           </p>
+          {!regular && surface === "regulars" && (
+            <p className="personal-track-count">
+              {item.completedPlayCount ?? 0} recorded plays
+            </p>
+          )}
         </div>
         {!regular && reason && (
           <p className="personal-track-reason">{reason}</p>
         )}
-        {regular ? (
+        {(regular || surface === "regulars") && (
           <button
             className="personal-like"
             aria-label={`${liked ? "Remove Like from" : "Like"} ${item.title}`}
@@ -228,15 +272,28 @@ export function PersonalTrackView({
               aria-hidden
             />
           </button>
-        ) : (
+        )}
+        {!regular && (
           <span className="personal-duration">
-            {item.durationSeconds
-              ? `${Math.floor(item.durationSeconds / 60)}:${String(Math.floor(item.durationSeconds % 60)).padStart(2, "0")}`
-              : ""}
+            <span>
+              {item.durationSeconds
+                ? `${Math.floor(item.durationSeconds / 60)}:${String(Math.floor(item.durationSeconds % 60)).padStart(2, "0")}`
+                : ""}
+            </span>
+            <span className="personal-duplicate-slot">
+              {queued && (
+                <span
+                  title="Already in queue; you can add another copy"
+                  aria-label="Already in queue"
+                >
+                  <Copy size={14} aria-hidden />
+                </span>
+              )}
+            </span>
           </span>
         )}
         <div className="personal-queue-actions">
-          {queued && (
+          {regular && queued && (
             <span
               title="Already in queue; you can add another copy"
               aria-label="Already in queue"
@@ -246,24 +303,25 @@ export function PersonalTrackView({
           )}
           <button
             className="personal-add"
-            onClick={() => onAdd()}
+            onClick={() => queueTrack()}
             disabled={!canAdd || pending || item.isUnavailable}
             type="button"
             aria-label={`${label} · ${item.title}`}
+            title={label}
           >
             {added && !pending ? (
               <Check size={15} aria-hidden />
             ) : (
               <Plus size={15} aria-hidden />
             )}
-            <span>{label}</span>
+            {regular && <span>{label}</span>}
           </button>
           <button
             className="personal-next"
             type="button"
             aria-label={`Add next · ${item.title}`}
             title="Add next"
-            onClick={() => onAdd(true)}
+            onClick={() => queueTrack(true)}
             disabled={!canAdd || pending || item.isUnavailable}
           >
             <ListPlus size={17} aria-hidden />
@@ -334,7 +392,7 @@ export function PersonalTrackView({
             <button
               role="menuitem"
               disabled={!canAdd || pending || item.isUnavailable}
-              onClick={() => action(() => onAdd())}
+              onClick={() => action(() => queueTrack())}
             >
               <Plus size={16} aria-hidden />
               Add to queue
@@ -342,7 +400,7 @@ export function PersonalTrackView({
             <button
               role="menuitem"
               disabled={!canAdd || pending || item.isUnavailable}
-              onClick={() => action(() => onAdd(true))}
+              onClick={() => action(() => queueTrack(true))}
             >
               <Play size={16} aria-hidden />
               Play next

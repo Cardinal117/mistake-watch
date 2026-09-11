@@ -1,4 +1,5 @@
 "use client";
+import { ListeningLearningSettings } from "./listening-learning-settings";
 import {TemporaryRoomNotice} from "../../shared/temporary-room-notice";
 
 import {
@@ -26,6 +27,7 @@ export function ListenRoomSettingsDialog({
   open,
   settings,
   themedRoomId,
+  listeningRoomId,
   temporary=false,
   themeStyle,
 }: {
@@ -34,6 +36,7 @@ export function ListenRoomSettingsDialog({
   open: boolean;
   settings: ListenTvSettings;
   themedRoomId?: string;
+  listeningRoomId?: string;
   temporary?:boolean;
   themeStyle?: CSSProperties;
 }) {
@@ -88,7 +91,7 @@ export function ListenRoomSettingsDialog({
               className="mt-1 text-title-lg font-semibold text-on-surface"
               id="listen-room-settings-title"
             >
-              {themedRoomId ? "Room settings" : "TV mode display"}
+              {themedRoomId || listeningRoomId ? "Room settings" : "TV mode display"}
             </h2>
           </div>
           <IconButton
@@ -102,6 +105,7 @@ export function ListenRoomSettingsDialog({
         </div>
 
         <div className="grid max-h-[75dvh] gap-5 overflow-y-auto p-5 md:grid-cols-[minmax(0,1fr)_16rem]">
+          {listeningRoomId && !temporary && <div className="md:col-span-2"><ListeningLearningSettings key={listeningRoomId} roomId={listeningRoomId} /></div>}
           {temporary && <TemporaryRoomNotice/>}
             {themedRoomId && (
             <div className="min-w-0 md:col-span-2">

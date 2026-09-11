@@ -24,8 +24,68 @@ export const GuestMediaPreference = __t.object("GuestMediaPreference", {
 });
 export type GuestMediaPreference = __Infer<typeof GuestMediaPreference>;
 
+export const ListenerCoverage = __t.object("ListenerCoverage", {
+  partitionKey: __t.string(),
+  roomId: __t.string(),
+  accountId: __t.string(),
+  occurrenceId: __t.string(),
+  consentEpoch: __t.string(),
+  historyGeneration: __t.u64(),
+  intervalsJson: __t.string(),
+  firstObservedMs: __t.i64(),
+  updatedMs: __t.i64(),
+  emitted: __t.bool(),
+});
+export type ListenerCoverage = __Infer<typeof ListenerCoverage>;
+
+export const ListenerCursor = __t.object("ListenerCursor", {
+  sessionKey: __t.string(),
+  roomId: __t.string(),
+  partitionKey: __t.string(),
+  atMs: __t.i64(),
+  anchorMs: __t.i64(),
+  position: __t.f64(),
+  sequence: __t.u64(),
+  audible: __t.bool(),
+});
+export type ListenerCursor = __Infer<typeof ListenerCursor>;
+
+export const ListenerGrant = __t.object("ListenerGrant", {
+  sessionKey: __t.string(),
+  roomId: __t.string(),
+  memberId: __t.string(),
+  admissionId: __t.string(),
+  connectionId: __t.connectionId(),
+  accountId: __t.string(),
+  consentEpoch: __t.string(),
+  historyGeneration: __t.u64(),
+  validFromMs: __t.i64(),
+  expiresMs: __t.i64(),
+});
+export type ListenerGrant = __Infer<typeof ListenerGrant>;
+
+export const ListenerReceiptOutbox = __t.object("ListenerReceiptOutbox", {
+  receiptId: __t.string(),
+  roomId: __t.string(),
+  memberId: __t.string(),
+  accountId: __t.string(),
+  occurrenceId: __t.string(),
+  consentEpoch: __t.string(),
+  historyGeneration: __t.u64(),
+  sourceType: __t.string(),
+  sourceReference: __t.string(),
+  durationSeconds: __t.u32(),
+  coverageJson: __t.string(),
+  firstObservedMs: __t.i64(),
+  lastObservedMs: __t.i64(),
+  createdMs: __t.i64(),
+  methodologyVersion: __t.u32(),
+});
+export type ListenerReceiptOutbox = __Infer<typeof ListenerReceiptOutbox>;
+
 export const LiveQueueItem = __t.object("LiveQueueItem", {
   addedByMemberId: __t.string(),
+  clientActionId: __t.option(__t.string()),
   artist: __t.option(__t.string()),
   durationSeconds: __t.option(__t.u32()),
   position: __t.u32(),

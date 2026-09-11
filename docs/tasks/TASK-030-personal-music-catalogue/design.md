@@ -136,3 +136,13 @@ backfill and deployment require their own reviewed release step. UI defaults to
 honest unavailable state if the new schema is absent, never automatic search.
 Emergency catalogue worker disable must preserve manual playback and cached
 reads; rollback must keep independent expiry maintenance until cache is purged.
+
+## Approved follow-on architecture — 2026-09-11
+
+The [account-wide listening contract](account-wide-listening-contract.md) extends
+the approved direction with owned Themed learning and explicitly opted-in Shared
+listening. It separates listener subjects from queue/playback actors, preserves
+account Likes and keeps legacy Personal counts distinct. Implementation is pending.
+The [Stage 2 plan](stage-2-identity-and-classification.md) defines recording/version
+identity and independently evidenced classification after that gate. Neither plan
+changes the existing dynamic song accent, card controls or room authority.

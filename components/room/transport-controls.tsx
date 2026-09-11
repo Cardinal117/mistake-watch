@@ -1,5 +1,7 @@
 "use client";
 
+import { artistLabel } from "@/lib/ui/artist-label";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Film,
@@ -250,7 +252,7 @@ export function TransportControls({
               <div className="mt-1 flex min-w-0 flex-wrap items-center gap-2">
                 {room.nowPlaying.artist ? (
                   <span className="truncate text-label-sm text-on-surface-variant">
-                    {room.nowPlaying.artist}
+                    {artistLabel(room.nowPlaying.artist)}
                   </span>
                 ) : null}
                 {session?.sourceType === "youtube" ? (
@@ -487,7 +489,7 @@ export function TransportControls({
             </p>
             {room.nowPlaying.artist ? (
               <p className="truncate text-label-sm text-on-surface-variant">
-                {room.nowPlaying.artist}
+                {artistLabel(room.nowPlaying.artist)}
               </p>
             ) : null}
             {session?.sourceType === "youtube" ? (

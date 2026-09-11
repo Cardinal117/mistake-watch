@@ -1,5 +1,7 @@
 "use client";
 
+import { artistLabel } from "@/lib/ui/artist-label";
+
 import type { ReactNode } from "react";
 import {
   ArrowDown,
@@ -64,7 +66,9 @@ export function QueueRow({
     },
   );
   const title = metadata.metadata?.title ?? item.title;
-  const channel = metadata.metadata?.channelTitle ?? item.channelName;
+  const channel = artistLabel(
+    metadata.metadata?.channelTitle ?? item.channelName ?? item.artist,
+  );
   const thumbnailUrl = metadata.metadata?.thumbnailUrl ?? item.thumbnailUrl;
   const duration =
     metadata.metadata?.durationSeconds !== null &&
@@ -89,8 +93,8 @@ export function QueueRow({
         channel={channel}
         thumbnailUrl={thumbnailUrl}
         duration={duration}
-        blocked={Boolean(isBlocked)}
-        disabled={manageDisabled}
+        blocked={Boolean(isBlocked || item.pendingAdd)}
+        disabled={manageDisabled || Boolean(item.pendingAdd)}
         onMove={onMoveQueueItem}
         onPin={onPin}
         onNext={onPlayNext}
@@ -131,7 +135,11 @@ export function QueueRow({
           </p>
         </div>
         <p className="mt-0.5 truncate text-[11px] text-on-surface-variant">
-          {channel ? `${channel} / ` : item.artist ? `${item.artist} / ` : null}
+          {channel
+            ? `${channel} / `
+            : item.artist
+              ? `${artistLabel(item.artist)} / `
+              : null}
           {duration}
         </p>
         <div className="mt-1 flex flex-wrap gap-1">

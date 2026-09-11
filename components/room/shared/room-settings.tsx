@@ -1,4 +1,5 @@
 "use client";
+import { ListeningLearningSettings } from "../listen/settings/listening-learning-settings";
 import {TemporaryRoomNotice} from "./temporary-room-notice";
 import { useRef, useState } from "react";
 import {
@@ -117,6 +118,7 @@ export function RoomSettings({
           <div className="room-settings-detail">
             {category === "room" ? (
               <>
+                {room.kind !== "temporary" && <ListeningLearningSettings key={room.id} roomId={room.id} />}
                 {room.kind === "themed" && (
                   <RoomDirectionPanel roomId={room.id} />
                 )}

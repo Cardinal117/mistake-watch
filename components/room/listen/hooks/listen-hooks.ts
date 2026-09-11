@@ -47,6 +47,7 @@ export function useListenQueueItems(
     }
 
     return liveRoom.snapshot.queue.map((item) => ({
+      clientActionId: item.clientActionId,
       addedBy:
         participantsById.get(item.addedByMemberId)?.name ??
         (item.addedByMemberId ? "Guest" : "Room"),

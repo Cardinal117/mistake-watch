@@ -196,6 +196,7 @@ export function readLiveSnapshot(liveDb: LiveDb): LiveRoomSnapshot {
       })
       .map((item) => ({
         addedByMemberId: item.addedByMemberId,
+        clientActionId: item.clientActionId,
         artist: item.artist ?? null,
         channelName: item.channelName ?? null,
         durationSeconds:

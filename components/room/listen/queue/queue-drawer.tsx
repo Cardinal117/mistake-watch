@@ -623,6 +623,7 @@ export function ListenQueueDrawer({
             {visibleItems.length > 0 ? (
               drawerView === "queue" ? (
                 <VirtualQueueList
+                  desktopRows={desktopShell}
                   items={visibleItems}
                   indices={queuedIndexById}
                 >

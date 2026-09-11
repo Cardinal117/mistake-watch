@@ -1,5 +1,8 @@
 "use client";
 
+import { artistLabel } from "@/lib/ui/artist-label";
+import { cardArtworkUrl } from "@/lib/ui/card-artwork";
+
 import { useContext, useRef, type ReactNode } from "react";
 import { useCardExpansion } from "./use-card-expansion";
 import { ListenMobilePresentation } from "../mobile/listen-mobile-context";
@@ -172,9 +175,9 @@ export function RecommendationCard({
         </p>
         <p
           className="mt-0.5 truncate text-label-sm text-on-surface-variant"
-          title={channel ?? "Room source"}
+          title={artistLabel(channel ?? "Room source")}
         >
-          {channel ?? "Room source"}
+          {artistLabel(channel ?? "Room source")}
         </p>
         <div className="mt-1 flex min-w-0 items-center gap-2">
           {queuedCount > 0 && (
@@ -254,7 +257,7 @@ export function SmallMediaCard({
           {item.title}
         </p>
         <p className="truncate text-label-sm text-on-surface-variant">
-          {item.artist ?? item.channelName ?? "Room source"}
+          {artistLabel(item.artist ?? item.channelName ?? "Room source")}
         </p>
       </div>
       <span className="text-label-sm text-on-surface-variant">
@@ -311,7 +314,11 @@ export function QueueArtwork({
           className="h-full w-full object-cover"
           decoding="async"
           loading="lazy"
-          src={thumbnailUrl}
+          src={cardArtworkUrl(thumbnailUrl)}
+          onError={(event) => {
+            if (event.currentTarget.getAttribute("src") !== thumbnailUrl)
+              event.currentTarget.src = thumbnailUrl;
+          }}
         />
       ) : (
         <span className="flex h-full w-full items-center justify-center text-[rgb(var(--listen-primary))]">

@@ -8,7 +8,10 @@ export type RecommendationOutboxTransport = {
   read(limit: number): Promise<RecommendationEventContract[]>;
 };
 
-export async function drainRecommendationEventBatch({
+export async function drainRecommendationEventBatch<
+  Event extends { eventId: string; createdMs: bigint } =
+    RecommendationEventContract,
+>({
   consume,
   limit = 50,
   maxBatches = 1,
@@ -17,7 +20,7 @@ export async function drainRecommendationEventBatch({
   maxDurationMs = 20_000,
   transport,
 }: {
-  consume(events: RecommendationEventContract[]): Promise<void>;
+  consume(events: Event[]): Promise<void>;
   limit?: number;
   maxBatches?: number;
   now?: () => number;
@@ -27,7 +30,11 @@ export async function drainRecommendationEventBatch({
     processed: number;
     oldestPendingMs: number | null;
   }) => void;
-  transport: RecommendationOutboxTransport;
+  transport: {
+    acknowledge(eventIds: string[]): Promise<void>;
+    close(): void;
+    read(limit: number): Promise<Event[]>;
+  };
 }) {
   const boundedLimit = Number.isFinite(limit)
     ? Math.max(1, Math.min(OUTBOX_MAX_BATCH, Math.floor(limit)))

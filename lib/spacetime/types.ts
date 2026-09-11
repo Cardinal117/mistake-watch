@@ -61,6 +61,7 @@ export type LivePermission = {
 };
 
 export type LiveQueueItem = {
+  clientActionId?: string;
   queueItemId: string;
   roomId: string;
   position: number;

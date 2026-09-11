@@ -197,6 +197,18 @@ function workerMocks({ token = "lease", fail = false, stale = false } = {}) {
           throw new Error("Interactive pump must not prune");
         },
       },
+      "./listener-receipts-service": {
+        drainListenerReceipts: async () => {
+          calls.push({ name: "listener-receipts" });
+          return {
+            read: 0,
+            acknowledged: 0,
+            processed: 0,
+            status: "empty",
+            oldestPendingMs: null,
+          };
+        },
+      },
     },
   };
 }
@@ -220,6 +232,10 @@ test("event-only delivery finishes lease without loading providers or pruning", 
   );
   assert.equal((await loaded.deliverRecommendationEvents()).status, "empty");
   assert.equal(f.calls.at(-1).args.processed, 100);
+  assert.equal(
+    f.calls.some((call) => call.name === "listener-receipts"),
+    true,
+  );
 });
 test("failed batch persists failed receipt and oldest pending timestamp", async () => {
   const f = workerMocks({ fail: true });

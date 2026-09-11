@@ -10,6 +10,12 @@ import {
 } from "./recommendation-events";
 import { roomRhythmProfile } from "./room-rhythm-table";
 import {
+  listenerGrant,
+  listenerCursor,
+  listenerCoverage,
+  listenerReceiptOutbox,
+} from "./listener-tables";
+import {
   retiredRoom,
   liveQueueItem,
   roomMemberRevocation,
@@ -27,6 +33,10 @@ import {
 } from "./room-tables";
 
 export const spacetimedb = schema({
+  listener_grant: listenerGrant,
+  listener_cursor: listenerCursor,
+  listener_coverage: listenerCoverage,
+  listener_receipt_outbox: listenerReceiptOutbox,
   retired_room: retiredRoom,
   guest_media_preference: guestMediaPreference,
   live_queue_item: liveQueueItem,

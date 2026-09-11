@@ -3,6 +3,7 @@ const qa = process.env.WATCH_DESIGN_QA === "1" ? test : test.skip;
 qa("drop updates locally before 600ms confirmation", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/dev/watch-design");
+  await page.waitForFunction(() => Boolean(window.watchQA));
   await page.evaluate(() => window.watchQA!.setMoveDelay(600));
   await page
     .getByRole("navigation", { name: "Room navigation" })

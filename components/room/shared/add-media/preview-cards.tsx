@@ -1,4 +1,6 @@
 "use client";
+
+import { artistLabel } from "@/lib/ui/artist-label";
 import "./playlist-preview.css";
 
 import { useState } from "react";
@@ -294,8 +296,8 @@ export function PlaylistPreviewCard({
                 <span className="block truncate text-label-sm font-semibold text-on-surface">
                   {item.title}
                 </span>
-                <span className="block truncate text-[11px] text-on-surface-variant">
-                  {item.channelTitle ?? "YouTube"}
+                <span className="block truncate text-label-sm text-on-surface-variant">
+                  {artistLabel(item.channelTitle ?? "YouTube")}
                 </span>
               </span>
               {unavailable ? (

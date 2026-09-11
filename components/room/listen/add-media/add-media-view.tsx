@@ -1,5 +1,8 @@
 "use client";
 
+import { artistLabel } from "@/lib/ui/artist-label";
+
+
 import type { Dispatch, FormEvent, SetStateAction } from "react";
 import { createPortal } from "react-dom";
 import { ListMusic, ListPlus, Play, Plus, X } from "lucide-react";
@@ -281,9 +284,7 @@ export function ListenAddMediaView({
                         {singlePreview.sourceTitle}
                       </p>
                       <p className="truncate text-label-sm text-on-surface-variant">
-                        {singlePreview.channelName ??
-                          singlePreview.artist ??
-                          singlePreview.sourceType}
+                        {artistLabel(singlePreview.channelName ?? singlePreview.artist ?? singlePreview.sourceType)}
                         {singlePreview.durationSeconds
                           ? ` / ${formatDurationSeconds(singlePreview.durationSeconds)}`
                           : ""}

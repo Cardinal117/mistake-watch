@@ -76,6 +76,39 @@ investigations. Git publication is complete: `55b4837` on main and the task bran
 
 The owner subsequently approved 030.6 catalogue admission, 030.7 account Like consistency and 030.8 compact Discover controls. Implementation, QA and deployment are complete, including the additional claim timeout and persistent Undo notice fixes. See [scope and acceptance](approved-follow-ups.md) and [live release receipt](follow-up-release-2026-09-11.md). The live catalogue reached 308 ready references and zero pending. Final source `4d6d515` is published on main and promoted as `dpl_7MoZvQqUPzXKBcQ48RdVYSoUFthi`.
 
-Stage 2 identity/enrichment/theme verification and Stage 3 community consent/
-similarity need new approved slices. Autoplay remains separate. Do not create
-placeholder claims, fake tags or fabricated related listeners to fill the UI.
+## 030.10 Account-wide listening — eligible-source implementation in final QA
+
+Next owner-requested interaction slice: [immediate recommendation-to-queue
+feedback](optimistic-discovery-queue.md). Hide an accepted suggestion immediately,
+show a shared pending queue projection, and reconcile by request identity. This
+is implemented locally with pending rows, failure rollback, uncertain retry identity,
+late confirmation and decision-scoped suggestion suppression. See the release QA note.
+
+Owner inserted [compact browse/UI follow-up](compact-browse-follow-up.md) before
+continuing this work. That local implementation includes subsequent Topic-label,
+cover-fitting and per-artwork card accent requests. See its QA record.
+
+The first bounded part of 030.10a is implemented locally:
+[owned-Themed explicit choice eligibility](owned-themed-choice-qa.md), prospective
+policy version 2, 219 isolated SQL assertions passed. The subsequent permission,
+history generation and listener receipt migrations are now implemented and tested.
+See [permission/history QA](listening-permission-history-qa.md) and
+[release QA](listening-rollout-qa.md) for current readiness and deployment evidence.
+
+Owner approved the learning direction and ordered continuation on September 11.
+The [contract](account-wide-listening-contract.md) specifies policy/consent first,
+validated listener receipts second, private account readers third and QA/pilot
+fourth. Two approved assistants covered permission/history and receipt authority;
+independent review also checked root integration. Direct/HLS eligible listener
+counts are private and separate from legacy Personal YouTube completions. New
+YouTube-derived listening measurement remains gated pending the provider-use review;
+do not describe the entire cross-provider contract as activated.
+
+## 030.11 Stage 2 — follow-on plan prepared
+
+Proceed after 030.10 acceptance with the [identity/classification plan](stage-2-identity-and-classification.md).
+Field-level provenance/provider review gates live enrichment. Independently
+supplied identities and labelled fixtures allow useful preparation without
+fabricated classifications. Stage 3 community consent/similarity still needs a
+separate slice. Autoplay remains separate. Never create fake tags or fabricated
+related listeners to fill the UI.

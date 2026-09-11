@@ -1,5 +1,8 @@
 "use client";
 
+import { artistLabel } from "@/lib/ui/artist-label";
+
+
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, ListMusic, Search, SlidersHorizontal, X } from "lucide-react";
@@ -278,7 +281,7 @@ export function ListenPlaylistReviewOverlay({
                           {item.title}
                         </span>
                         <span className="block truncate text-label-sm text-on-surface-variant">
-                          {item.channelTitle ?? "YouTube"}
+                          {artistLabel(item.channelTitle ?? "YouTube")}
                         </span>
                       </span>
                       <span className="grid justify-items-end gap-1 text-right">

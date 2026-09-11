@@ -1,5 +1,11 @@
 "use client";
 
+import { artistLabel } from "@/lib/ui/artist-label";
+import {
+  OptimisticQueueContext,
+  useOptimisticAdds,
+} from "../queue/use-optimistic-adds";
+
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
 import { dispatchPlayerVolume } from "@/lib/player/local-controls";
@@ -81,7 +87,14 @@ export function ListenModeLayout({
     identityKey: `${account.status === "signed-in" ? account.id : "guest"}:${room.currentMember?.id ?? "none"}`,
     roomId: room.id,
   });
-  const liveQueueItems = useListenQueueItems(liveRoom, room);
+  const canonicalQueueItems = useListenQueueItems(liveRoom, room);
+  const optimisticAdds = useOptimisticAdds(
+    `${room.id}:${room.currentMember?.id ?? "none"}:${account.status === "signed-in" ? account.id : "guest"}`,
+    canonicalQueueItems,
+    liveRoom.canAddQueue && liveRoom.connectionStatus === "connected",
+    liveRoom.addQueueItem,
+  );
+  const liveQueueItems = optimisticAdds.items;
   const queueState = useMemo(
     () => deriveQueueState(liveQueueItems),
     [liveQueueItems],
@@ -154,11 +167,12 @@ export function ListenModeLayout({
     0;
   const activeTitle =
     session?.sourceTitle ?? currentItem?.title ?? room.nowPlaying.title;
-  const activeArtist =
+  const activeArtist = artistLabel(
     currentItem?.artist ??
-    currentItem?.channelName ??
-    room.nowPlaying.artist ??
-    "Room source";
+      currentItem?.channelName ??
+      room.nowPlaying.artist ??
+      "Room source",
+  );
   const activeMediaId = parseYouTubeVideoId(session?.sourceUrl ?? "");
   const hasSharedRhythm = Boolean(
     activeMediaId &&
@@ -238,7 +252,7 @@ export function ListenModeLayout({
   }
 
   function playNext() {
-    const next = queuedItems[0];
+    const next = queuedItems.find((item) => !item.pendingAdd);
 
     if (next) {
       liveRoom.playQueueItemNow(next.id);
@@ -254,7 +268,9 @@ export function ListenModeLayout({
       ...previousItems,
       ...(currentItem ? [currentItem] : []),
     ].map(toSmartShuffleItem);
-    const queued = queuedItems.map(toSmartShuffleItem);
+    const queued = queuedItems
+      .filter((item) => !item.pendingAdd)
+      .map(toSmartShuffleItem);
     const originalPositions = new Map(
       queued.map((item) => [item.queueItemId, item.position]),
     );
@@ -350,7 +366,7 @@ export function ListenModeLayout({
       desktopShell={desktopShell}
       historyCount={previousItems.length}
       liveRoom={liveRoom}
-      onAddQueueItem={liveRoom.addQueueItem}
+      onAddQueueItem={optimisticAdds.add}
       onEnterTvMode={() => setTvMode(true)}
       onLoadSource={liveRoom.loadMediaSource}
       queueItems={liveQueueItems}
@@ -379,7 +395,7 @@ export function ListenModeLayout({
       items={liveQueueItems}
       mediaPreferences={mediaPreferences}
       nowMs={clockMs}
-      onAddQueueItem={liveRoom.addQueueItem}
+      onAddQueueItem={optimisticAdds.add}
       onLoadSource={liveRoom.loadMediaSource}
       onPlayQueueItem={liveRoom.playQueueItemNow}
       playbackOccurrenceId={session?.playbackOccurrenceId}
@@ -428,64 +444,66 @@ export function ListenModeLayout({
   }
 
   return (
-    <ListenMobileLayout
-      account={account}
-      accountNotice={accountNotice}
-      room={room}
-      liveRoom={liveRoom}
-      items={liveQueueItems}
-      header={header}
-      player={nowPlaying}
-      discovery={discovery}
-      style={listenThemeStyle}
-      title={activeTitle}
-      artist={activeArtist}
-      onPlaybackChange={setPlayback}
-      onNext={playNext}
-      onEnterTv={() => setTvMode(true)}
-      desktopShell={desktopShell}
-      desktopQueue={
-        <ListenQueueDrawer
-          canAddQueue={liveRoom.canAddQueue}
-          canManageQueue={canManageQueue}
-          isConnected={isConnected}
-          nextPreparation={nextPreparation}
-          onOpenChange={setQueueDrawerOpen}
-          onAddQueueItem={liveRoom.addQueueItem}
-          onClearQueue={liveRoom.clearQueue}
-          onMoveQueueItem={liveRoom.moveQueueItem}
-          onPinnedFirst={() => applyQueueShuffle("pinned")}
-          onPlayQueueItem={liveRoom.playQueueItemNow}
-          onQueueItemPriorityChange={liveRoom.setQueueItemPriority}
-          onRemoveQueueItem={liveRoom.removeQueueItem}
-          onShuffle={() => applyQueueShuffle("shuffle")}
-          onSmartShuffle={() => applyQueueShuffle("smart")}
-          queueState={queueState}
-          queueMode={session?.queueMode ?? "normal"}
-          open={queueDrawerOpen}
-          remainingLoading={remainingQueueMetadataLoading}
-          remainingSeconds={remainingQueueSeconds}
-          desktopShell={desktopShell}
-        />
-      }
-      backdrop={
-        <>
-          {desktopShell && effectiveVisualizationMode !== "off" ? (
-            <ListenAmbientBackdrop mode={effectiveVisualizationMode} />
-          ) : null}
-          {effectiveVisualizationMode !== "off" ? (
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 transition-opacity duration-1000"
-              style={{
-                background:
-                  "radial-gradient(circle at 0% 18%, rgb(var(--listen-primary) / 0.3), transparent 44%), radial-gradient(circle at 18% 62%, rgb(var(--listen-secondary) / 0.18), transparent 40%), radial-gradient(circle at 38% 100%, rgb(var(--listen-wave) / 0.1), transparent 46%), linear-gradient(90deg, rgb(var(--listen-primary) / 0.05), rgb(14 14 15 / var(--listen-room-dim-middle,0.64)) 34%, rgb(19 19 20 / var(--listen-room-dim-end,0.97)) 100%)",
-              }}
-            />
-          ) : null}
-        </>
-      }
-    />
+    <OptimisticQueueContext.Provider value={optimisticAdds.actions}>
+      <ListenMobileLayout
+        account={account}
+        accountNotice={accountNotice}
+        room={room}
+        liveRoom={liveRoom}
+        items={liveQueueItems}
+        header={header}
+        player={nowPlaying}
+        discovery={discovery}
+        style={listenThemeStyle}
+        title={activeTitle}
+        artist={activeArtist}
+        onPlaybackChange={setPlayback}
+        onNext={playNext}
+        onEnterTv={() => setTvMode(true)}
+        desktopShell={desktopShell}
+        desktopQueue={
+          <ListenQueueDrawer
+            canAddQueue={liveRoom.canAddQueue}
+            canManageQueue={canManageQueue}
+            isConnected={isConnected}
+            nextPreparation={nextPreparation}
+            onOpenChange={setQueueDrawerOpen}
+            onAddQueueItem={optimisticAdds.add}
+            onClearQueue={liveRoom.clearQueue}
+            onMoveQueueItem={liveRoom.moveQueueItem}
+            onPinnedFirst={() => applyQueueShuffle("pinned")}
+            onPlayQueueItem={liveRoom.playQueueItemNow}
+            onQueueItemPriorityChange={liveRoom.setQueueItemPriority}
+            onRemoveQueueItem={liveRoom.removeQueueItem}
+            onShuffle={() => applyQueueShuffle("shuffle")}
+            onSmartShuffle={() => applyQueueShuffle("smart")}
+            queueState={queueState}
+            queueMode={session?.queueMode ?? "normal"}
+            open={queueDrawerOpen}
+            remainingLoading={remainingQueueMetadataLoading}
+            remainingSeconds={remainingQueueSeconds}
+            desktopShell={desktopShell}
+          />
+        }
+        backdrop={
+          <>
+            {desktopShell && effectiveVisualizationMode !== "off" ? (
+              <ListenAmbientBackdrop mode={effectiveVisualizationMode} />
+            ) : null}
+            {effectiveVisualizationMode !== "off" ? (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 transition-opacity duration-1000"
+                style={{
+                  background:
+                    "radial-gradient(circle at 0% 18%, rgb(var(--listen-primary) / 0.3), transparent 44%), radial-gradient(circle at 18% 62%, rgb(var(--listen-secondary) / 0.18), transparent 40%), radial-gradient(circle at 38% 100%, rgb(var(--listen-wave) / 0.1), transparent 46%), linear-gradient(90deg, rgb(var(--listen-primary) / 0.05), rgb(14 14 15 / var(--listen-room-dim-middle,0.64)) 34%, rgb(19 19 20 / var(--listen-room-dim-end,0.97)) 100%)",
+                }}
+              />
+            ) : null}
+          </>
+        }
+      />
+    </OptimisticQueueContext.Provider>
   );
 }
 

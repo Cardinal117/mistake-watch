@@ -1,5 +1,7 @@
 "use client";
 
+import { artistLabel } from "@/lib/ui/artist-label";
+
 import { Eye, PlaySquare, ThumbsUp } from "lucide-react";
 
 import { MetadataPlaceholderChips } from "./metadata-placeholder-chips";
@@ -87,17 +89,28 @@ export function YouTubeMetadataLine({
       )}
     >
       {showChannel && metadata.channelTitle ? (
-        <span className="min-w-0 truncate">{metadata.channelTitle}</span>
+        <span className="min-w-0 truncate">
+          {artistLabel(metadata.channelTitle)}
+        </span>
       ) : null}
-      <span className="inline-flex h-6 items-center gap-1 rounded-sm border border-white/10 bg-surface-container-low/70 px-2" title="Source">
+      <span
+        className="inline-flex h-6 items-center gap-1 rounded-sm border border-white/10 bg-surface-container-low/70 px-2"
+        title="Source"
+      >
         <PlaySquare className={cx("h-3.5 w-3.5", accent)} aria-hidden />
         YouTube
       </span>
-      <span className="inline-flex h-6 items-center gap-1 rounded-sm border border-white/10 bg-surface-container-low/70 px-2" title="Views">
+      <span
+        className="inline-flex h-6 items-center gap-1 rounded-sm border border-white/10 bg-surface-container-low/70 px-2"
+        title="Views"
+      >
         <Eye className={cx("h-3.5 w-3.5", accent)} aria-hidden />
         {viewCount ? `${viewCount} views` : "Views unavailable"}
       </span>
-      <span className="inline-flex h-6 items-center gap-1 rounded-sm border border-white/10 bg-surface-container-low/70 px-2" title="Likes">
+      <span
+        className="inline-flex h-6 items-center gap-1 rounded-sm border border-white/10 bg-surface-container-low/70 px-2"
+        title="Likes"
+      >
         <ThumbsUp className={cx("h-3.5 w-3.5", accent)} aria-hidden />
         {likeCount ? `${likeCount} likes` : "Likes unavailable"}
       </span>

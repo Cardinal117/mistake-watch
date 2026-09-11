@@ -9,7 +9,7 @@ const source = await readFile(
 const js = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ES2022 },
 }).outputText;
-const { projectQueueMove, queuePlacement } = await import(
+const { projectQueueMove, queuePlacement, canonicalQueuePlacement } = await import(
   `data:text/javascript;base64,${Buffer.from(js).toString("base64")}`
 );
 const initial = [
@@ -24,6 +24,12 @@ const initial = [
     })),
   { id: "past", status: "played" },
 ];
+test("pending additions never become authoritative move anchors or move targets", () => {
+  const rows = ["a", "pending:x", "b", "c"].map(id => ({ id, status: "queued", pendingAdd: id.startsWith("pending:") ? "sending" : undefined }));
+  assert.deepEqual(canonicalQueuePlacement(rows, "c", 1), { position: 1, placement: { edge: "before", anchorQueueItemId: "b" } });
+  assert.deepEqual(canonicalQueuePlacement(rows, "a", 2), { position: 1, placement: { edge: "before", anchorQueueItemId: "c" } });
+  assert.equal(canonicalQueuePlacement(rows, "pending:x", 0), null);
+});
 const order = (items) => items.map((i) => i.id).join(",");
 const intent = (id, position) => ({
   id,

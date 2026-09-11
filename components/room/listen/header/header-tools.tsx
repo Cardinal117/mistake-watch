@@ -494,6 +494,7 @@ export function ListenRoomSettingsMenu({
         open={permissionsOpen}
       />
       <ListenRoomSettingsDialog
+        listeningRoomId={roomId}
         themeStyle={settingsTheme}
         themedRoomId={themedRoomId}
         temporary={temporary}

@@ -1151,6 +1151,21 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      read_listening_settings: {
+        Args: { target_room: string; target_account: string };
+        Returns: { roomKind: string; allowed: boolean; purposeVersion: number; epoch: string | null; activatedAt: string | null; historyGeneration: number; historyClearedAt: string | null; memberId: string };
+      };
+      set_room_listening_consent: {
+        Args: { target_room: string; target_account: string; allow_listening: boolean; purpose_version: number; expected_epoch?: string | null };
+        Returns: Json;
+      };
+      clear_account_listening_history: {
+        Args: { target_account: string; expected_generation: number };
+        Returns: Json;
+      };
+      ingest_listener_receipts: { Args: { receipt_batch: Json }; Returns: Json };
+      read_account_listening_counts: { Args: { target_account: string; source_ids?: string[] | null }; Returns: Json };
+      prune_listener_receipts: { Args: Record<PropertyKey, never>; Returns: number };
       claim_recommendation_delivery: {
         Args: Record<PropertyKey, never>;
         Returns: string | null;

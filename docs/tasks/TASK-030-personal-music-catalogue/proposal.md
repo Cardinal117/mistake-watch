@@ -56,7 +56,17 @@ sole live playback/queue authority; Supabase owns durable catalogue data.
 - Existing regulars/feedback actions continue; source availability is distinct
   from preference. Missing metadata may temporarily reduce visible results.
 
-## Later stages (planned, not approved for this implementation)
+## Subsequent approved direction — September 11
+
+The owner subsequently authorized the [account-wide listening contract](account-wide-listening-contract.md)
+and proceeding to Stage 2 after its checks. Personal and owned Themed rooms are
+the primary learning contexts; Shared passive learning needs new individual
+permission, and app Likes stay account-wide. The reviewed contract and
+[Stage 2 plan](stage-2-identity-and-classification.md) now govern that follow-on
+work. Their implementation is pending. This supersedes earlier planning exclusions
+for those scoped slices, not the completed Stage 1 release's evidence.
+
+## Later stages and activation boundaries
 
 Stage 2: recording identities, optional MusicBrainz IDs, provenance-bearing
 classification, version correction and strict Fantasy/orchestral evaluation.
@@ -69,9 +79,10 @@ contribution withdrawal and minimum cohort evidence for explanations. Never
 expose who listened or private/unlisted sources. Existing Shared consent is not
 global contribution consent.
 
-Deferred: external provider integration, Google history import/scopes, lyrics,
+Deferred beyond the reviewed Stage 2 adapter scope: Google history import/scopes, lyrics,
 BPM catalogue analysis, embeddings/AI, learned per-user weights, time-of-day
-ranking, skip learning, Autoplay, automatic queue refill, other room-kind changes.
+ranking, skip learning, Autoplay, automatic queue refill and room-kind changes
+beyond the account-wide contract. Stage 3 still needs a separate approved slice.
 
 ## Success and review
 

@@ -12,6 +12,7 @@ import {
 
 export default __t.row({
   addedByMemberId: __t.string().name("added_by_member_id"),
+  clientActionId: __t.option(__t.string()).name("client_action_id"),
   artist: __t.option(__t.string()),
   durationSeconds: __t.option(__t.u32()).name("duration_seconds"),
   position: __t.u32(),

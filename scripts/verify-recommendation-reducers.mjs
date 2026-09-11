@@ -284,7 +284,8 @@ try {
     ["Runtime C", "https://www.youtube.com/watch?v=9bZkp7q19f0"],
   ];
 
-  for (const [title, sourceUrl] of sources) {
+  // A network retry reuses the action ID; it must not create another occurrence.
+  for (const [title, sourceUrl] of [...sources, sources[0]]) {
     await connection.reducers.addQueueItem({
       actorMemberId: hostMemberId,
       allowDuplicate: true,
@@ -312,6 +313,8 @@ try {
     3,
   );
   const itemA = queueItemId("Runtime A");
+  assert.match(sql(`SELECT client_action_id FROM live_queue_item WHERE queue_item_id = '${itemA}'`), /add:Runtime A/,
+    "canonical queue publishes request correlation for optimistic reconciliation");
   const itemB = queueItemId("Runtime B");
   const itemC = queueItemId("Runtime C");
 

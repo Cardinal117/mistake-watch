@@ -4,8 +4,9 @@ const qa = process.env.WATCH_DESIGN_QA === "1" ? test : test.skip;
 
 qa("A late failure from a confirmed addition does not cancel its newer repeat", async ({ page }) => {
   await setup(page);
-  const row = page.locator('.personal-recommendations [data-media-id="dQw4w9Wg004"]');
+  const row = page.locator('.personal-regular[data-media-id="dQw4w9Wg004"]');
   await expect(row).toBeVisible();
+  await row.getByRole("button", { name: /Show actions/ }).click();
   await page.evaluate(() => { window.watchQA!.deferQueueAdds = true; });
   const next = row.getByRole("button", { name: "Add next · Hordes", exact: true });
   await next.click();
@@ -24,9 +25,10 @@ qa(
   async ({ page }) => {
     await setup(page);
     const row = page.locator(
-      '.personal-recommendations [data-media-id="dQw4w9Wg004"]',
+      '.personal-regular[data-media-id="dQw4w9Wg004"]',
     );
     await expect(row).toBeVisible();
+  await row.getByRole("button", { name: /Show actions/ }).click();
     await page.evaluate(() =>
       window.watchQA!.confirmPersonalAdd("dQw4w9Wg004", "Hordes"),
     );

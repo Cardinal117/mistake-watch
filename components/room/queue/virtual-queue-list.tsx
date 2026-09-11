@@ -19,7 +19,6 @@ export const QueueDragContext = createContext<{
   target(y: number): number;
   finish(): void;
 } | null>(null);
-const ROW_HEIGHT = 82;
 
 /** One scroll owner; one held row is retained while the visible window recycles. */
 export function VirtualQueueList({
@@ -28,13 +27,16 @@ export function VirtualQueueList({
   children,
   enabled = true,
   label = "Queue items",
+  desktopRows = false,
 }: {
   items: RoomQueueItem[];
   indices: Map<string, number>;
   children(item: RoomQueueItem): ReactNode;
   label?: string;
   enabled?: boolean;
+  desktopRows?: boolean;
 }) {
+  const rowHeight = desktopRows ? 60 : 82;
   const list = useRef<HTMLDivElement>(null);
   const [viewport, setViewport] = useState({ top: 0, height: 600 });
   const [held, setHeld] = useState<string | null>(null);
@@ -119,16 +121,16 @@ export function VirtualQueueList({
       const y =
         node.getBoundingClientRect().top -
         owner.getBoundingClientRect().top +
-        focusIndex * ROW_HEIGHT;
+        focusIndex * rowHeight;
       if (y < 0) owner.scrollTop += y;
-      else if (y + ROW_HEIGHT > owner.clientHeight)
-        owner.scrollTop += y + ROW_HEIGHT - owner.clientHeight;
+      else if (y + rowHeight > owner.clientHeight)
+        owner.scrollTop += y + rowHeight - owner.clientHeight;
     }
     previousFocusIndex.current = focusIndex;
-  }, [focusIndex, focused, held]);
+  }, [focusIndex, focused, held, rowHeight]);
   const windowed = getQueueVirtualWindow({
     itemCount: items.length,
-    rowHeight: ROW_HEIGHT,
+    rowHeight: rowHeight,
     scrollTop: viewport.top,
     viewportHeight: viewport.height,
   });
@@ -147,7 +149,7 @@ export function VirtualQueueList({
       if (!bounds) return -1;
       let index = Math.max(
         0,
-        Math.min(items.length - 1, Math.floor((y - bounds.top) / ROW_HEIGHT)),
+        Math.min(items.length - 1, Math.floor((y - bounds.top) / rowHeight)),
       );
       if ((indices.get(items[index]?.id) ?? -1) < 0) {
         const firstQueued = items.findIndex((item) => indices.has(item.id));
@@ -160,7 +162,7 @@ export function VirtualQueueList({
       }
       return queueIndex;
     },
-    [items, indices],
+    [items, indices, rowHeight],
   );
   const context = useMemo(
     () => ({
@@ -205,6 +207,7 @@ export function VirtualQueueList({
             setFocused(null);
         }}
         className="compact-virtual-queue"
+        data-desktop-rows={desktopRows}
         style={{ height: windowed.totalHeight }}
       >
         {mounted.map((index) => {
@@ -213,9 +216,9 @@ export function VirtualQueueList({
             from < 0 || destination < 0 || index === from
               ? 0
               : from < destination && index > from && index <= destination
-                ? -ROW_HEIGHT
+                ? -rowHeight
                 : from > destination && index >= destination && index < from
-                  ? ROW_HEIGHT
+                  ? rowHeight
                   : 0;
           return (
             <div
@@ -227,7 +230,7 @@ export function VirtualQueueList({
               data-held={item.id === held}
               data-released={item.id === released}
               style={{
-                transform: `translateY(${index * ROW_HEIGHT + shift}px)`,
+                transform: `translateY(${index * rowHeight + shift}px)`,
               }}
             >
               {children(item)}
@@ -239,7 +242,7 @@ export function VirtualQueueList({
             role="presentation"
             aria-hidden
             className="compact-queue-gap"
-            style={{ transform: `translateY(${destination * ROW_HEIGHT}px)` }}
+            style={{ transform: `translateY(${destination * rowHeight}px)` }}
           />
         )}
       </div>

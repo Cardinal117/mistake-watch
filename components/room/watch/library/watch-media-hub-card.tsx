@@ -1,5 +1,8 @@
 "use client";
 
+import { artistLabel } from "@/lib/ui/artist-label";
+
+
 import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 import { createPortal } from "react-dom";
@@ -471,7 +474,7 @@ export function WatchMediaHubCard({
             ) : null}
           </div>
           <span className="truncate text-[11px] text-on-surface-variant">
-            {item.artist ?? item.channelName ?? item.duration} / {item.duration}
+            {artistLabel(item.artist ?? item.channelName ?? item.duration)} / {item.duration}
           </span>
         </div>
         <div className="grid grid-cols-3 gap-1 md:w-44">
@@ -568,7 +571,7 @@ export function WatchMediaHubCard({
           {item.title}
         </span>
         <span className="truncate text-[11px] text-on-surface-variant">
-          {item.artist ?? item.channelName ?? item.duration}
+          {artistLabel(item.artist ?? item.channelName ?? item.duration)}
         </span>
         {hidden ? (
           <span className="technical-label text-secondary-fixed-dim">

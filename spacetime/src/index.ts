@@ -88,6 +88,7 @@ export {
 } from "./room-rhythm";
 
 export { retire_room } from "./room-retirement";
+export { grant_listener_learning, observe_listener_playback, read_listener_receipts, acknowledge_listener_receipts } from "./listener-authority";
 export default spacetimedb;
 
 function getValidRoomSeedGrant(
@@ -1222,6 +1223,7 @@ export const add_queue_item = spacetimedb.reducer(
 
     const queueItem = ctx.db.live_queue_item.insert({
       added_by_member_id: actor_member_id,
+      client_action_id: client_action_id.trim().slice(0, 100) || undefined,
       artist: artist?.trim() || undefined,
       channel_name: channel_name?.trim() || undefined,
       duration_seconds: normalizeDurationSeconds(duration_seconds),

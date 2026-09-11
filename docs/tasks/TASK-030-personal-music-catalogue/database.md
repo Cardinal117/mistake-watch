@@ -17,7 +17,16 @@ ordering remain authoritative. See [reliability scope](reliability-follow-up.md)
 
 These are the implemented Stage 1 contracts, verified against the local migration
 and application reader. The migration is additive and preserves existing data,
-history and consent. No hosted schema has been changed.
+history and consent. Stage 1 and the documented reliability/admission follow-up
+migrations have since been released; see the live rollout and follow-up receipts.
+
+Next planned schema changes are specified in the
+[account-wide listening contract](account-wide-listening-contract.md): versioned
+listening consent, distinct listener subjects, compact occurrence receipts and
+private account evidence. [Stage 2](stage-2-identity-and-classification.md) follows
+with reviewed recording links and classification provenance. These new contracts
+are not deployed schema. Existing actor events must not be expanded into guessed
+listener histories or reinterpreted under old Shared action consent.
 
 ## Tables
 
@@ -71,7 +80,8 @@ from the preview. Rerun is idempotent. Prioritize unregistered IDs so repeated
 references are refreshed by jobs, not by repeatedly filling the preview window.
 Existing retained source IDs need fresh provider verification
 before cache admission; never copy a queue snapshot as verified API metadata.
-No production backfill during this task. Avoid collecting private user payloads
+The original local slice excluded production backfill; the later bounded release
+reconciliation is recorded in its rollout receipt. Avoid collecting private user payloads
 in preview reports; local tests use synthetic data only.
 
 ## Query and concurrency contracts

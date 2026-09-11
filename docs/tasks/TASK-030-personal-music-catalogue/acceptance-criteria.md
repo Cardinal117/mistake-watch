@@ -58,3 +58,13 @@ Local test layers: unit reader/ranking/worker, pgTAP access/expiry/consent and
 concurrency, targeted existing suites, desktop/mobile actual component route.
 Real listening usefulness, real provider quota consumption, production schema/
 scheduler health and physical-device checks are separate release/pilot evidence.
+
+## Follow-on account-wide and Stage 2 gates — approved September 11
+
+The [030.10 contract](account-wide-listening-contract.md) and
+[030.11 Stage 2 plan](stage-2-identity-and-classification.md) provide the acceptance
+criteria for subsequent authorized work. They do not change Stage 1's completed
+QA claims. Required additions cover listener/actor separation, fresh Shared
+permission, Themed ownership, device deduplication, consent/history generations,
+legacy count distinction, private account reads, recording-version identity and
+classification provenance. Implementation and those new tests are pending.

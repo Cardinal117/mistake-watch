@@ -10,6 +10,27 @@ export type MoveQueueAction = (
 ) => void | Promise<void>;
 export type QueueMoveIntent = QueuePlacement & { id: string; actionId: string };
 
+export function canonicalQueuePlacement(
+  rows: { id: string; status: string; pendingAdd?: string }[],
+  id: string,
+  position: number,
+) {
+  if (!Number.isFinite(position)) return null;
+  const queued = rows.filter((row) => row.status === "queued");
+  const canonical = queued.filter((row) => !row.pendingAdd);
+  const remaining = queued.filter((row) => row.id !== id);
+  const target = Math.max(0, Math.min(remaining.length, Math.floor(position)));
+  const canonicalPosition = remaining
+    .slice(0, target)
+    .filter((row) => !row.pendingAdd).length;
+  const placement = queuePlacement(
+    canonical.map((row) => row.id),
+    id,
+    canonicalPosition,
+  );
+  return placement ? { position: canonicalPosition, placement } : null;
+}
+
 export function queuePlacement(
   ids: string[],
   id: string,

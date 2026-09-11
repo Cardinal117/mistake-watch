@@ -1,5 +1,7 @@
 "use client";
 
+import { artistLabel } from "@/lib/ui/artist-label";
+
 import { useMemo, useState } from "react";
 import {
   Disc3,
@@ -125,7 +127,9 @@ export function MusicStage({ liveRoom, room }: MusicStageProps) {
                 {liveTitle ?? room.nowPlaying.title}
               </h2>
               {artist ? (
-                <p className="mt-2 text-body-lg text-on-surface">{artist}</p>
+                <p className="mt-2 text-body-lg text-on-surface">
+                  {artistLabel(artist)}
+                </p>
               ) : null}
               {youtubeSource ? (
                 <YouTubeMetadataLine

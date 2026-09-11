@@ -15,10 +15,12 @@ import {
 import { queueItemToDiscoverySourceCommand } from "@/lib/recommendations/listen-discovery-interactions";
 import type { DiscoveryPanelProps } from "./discovery-panel";
 import { PersonalTrackView } from "./personal-track";
+import { PersonalBrowse } from "./personal-browse";
 import { PersonalFeedbackNotice } from "./personal-feedback-notice";
 import { usePersonalDiscovery } from "./use-personal-discovery";
 import "./personal-discovery.css";
 import "./personal-regular-controls.css";
+import "./personal-browse.css";
 
 export function PersonalDiscoveryPanel(props: DiscoveryPanelProps) {
   const {
@@ -49,6 +51,8 @@ export function PersonalDiscoveryPanel(props: DiscoveryPanelProps) {
     .filter(
       (item) =>
         !shelves.blocked.has(item.mediaId) &&
+        !discovery.pending.has(item.mediaId) &&
+        !discovery.added.has(item.mediaId) &&
         item.mediaId !== currentItem?.videoId &&
         `https://www.youtube.com/watch?v=${item.mediaId}` !==
           currentItem?.sourceUrl,
@@ -66,7 +70,7 @@ export function PersonalDiscoveryPanel(props: DiscoveryPanelProps) {
   const activeFeedback =
     data?.feedback.filter((f) => isDiscoverSuppressed(f)) ?? [];
   function play(item: PersonalTrack, surface: DiscoverSurface) {
-    const queued = queuedPersonalTrack(item, items);
+    const queued = queuedPersonalTrack(item, items.filter(entry => !entry.pendingAdd));
     if (queued ? !canPlay : !canLoadSource) return;
     observe(item.videoId!, surface, "play_requested");
     if (queued) props.onPlayQueueItem(queued.id);
@@ -157,17 +161,17 @@ export function PersonalDiscoveryPanel(props: DiscoveryPanelProps) {
               <header className="personal-section-header">
                 <h2>{titles[browse]}</h2>
               </header>
-              <div
-                className={
-                  browse === "regulars"
-                    ? "personal-regular-grid"
-                    : "personal-track-list"
-                }
-              >
-                {selected.map((item) =>
-                  renderTrack(item, browse, browse === "regulars"),
-                )}
-              </div>
+              <PersonalBrowse
+                key={browse}
+                items={selected.map((item) => {
+                  const preference = mediaPreferences.getPreference(item);
+                  return preference.loaded
+                    ? { ...item, liked: preference.liked }
+                    : item;
+                })}
+                regulars={browse === "regulars"}
+                renderTrack={(item) => renderTrack(item, browse)}
+              />
             </>
           ) : (
             <>
@@ -176,7 +180,7 @@ export function PersonalDiscoveryPanel(props: DiscoveryPanelProps) {
                   <h2>Your regulars</h2>
                   <p>Favourites and music you return to</p>
                 </div>
-                {shelves.regulars.length > 8 && (
+                {shelves.regulars.length > 0 && (
                   <button
                     id="personal-view-regulars"
                     onClick={() => viewAll("regulars")}

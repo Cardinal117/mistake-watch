@@ -1,5 +1,7 @@
 "use client";
 
+import { artistLabel } from "@/lib/ui/artist-label";
+
 import { useState } from "react";
 import {
   ArrowDown,
@@ -111,7 +113,7 @@ export function ListenQueueRow({
           )}
           title={item.failureReason ?? undefined}
         >
-          {item.failureReason ?? channel ?? "Room source"}
+          {item.failureReason ?? artistLabel(channel ?? "Room source")}
           {!desktopShell ? <span> · {duration}</span> : null}
         </p>
         <p

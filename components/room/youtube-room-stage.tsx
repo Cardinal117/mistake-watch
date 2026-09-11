@@ -1,5 +1,7 @@
 "use client";
 
+import { artistLabel } from "@/lib/ui/artist-label";
+
 import { useMemo, useState } from "react";
 import {
   Film,
@@ -178,7 +180,7 @@ export function YoutubeRoomStage({
                 </h2>
                 {activeQueueItem?.artist ? (
                   <p className="mt-2 text-body-lg text-on-surface">
-                    {activeQueueItem.artist}
+                    {artistLabel(activeQueueItem.artist)}
                   </p>
                 ) : null}
                 <YouTubeMetadataLine

@@ -6,12 +6,14 @@
 import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
+import AcknowledgeListenerReceiptsReducer from "../acknowledge_listener_receipts_reducer";
 import AcknowledgeRecommendationEventOutboxReducer from "../acknowledge_recommendation_event_outbox_reducer";
 import AddQueueItemReducer from "../add_queue_item_reducer";
 import AdvanceQueueItemReducer from "../advance_queue_item_reducer";
 import AdvanceUploadedQueueItemReducer from "../advance_uploaded_queue_item_reducer";
 import ClearQueueReducer from "../clear_queue_reducer";
 import ClearRoomRhythmProfileReducer from "../clear_room_rhythm_profile_reducer";
+import GrantListenerLearningReducer from "../grant_listener_learning_reducer";
 import GrantRoomControlReducer from "../grant_room_control_reducer";
 import HeartbeatReducer from "../heartbeat_reducer";
 import IssueRoomAdmissionGrantReducer from "../issue_room_admission_grant_reducer";
@@ -22,6 +24,7 @@ import LeaveRoomReducer from "../leave_room_reducer";
 import LoadMediaSourceReducer from "../load_media_source_reducer";
 import MoveQueueItemReducer from "../move_queue_item_reducer";
 import MoveQueueItemRelativeReducer from "../move_queue_item_relative_reducer";
+import ObserveListenerPlaybackReducer from "../observe_listener_playback_reducer";
 import PlayQueueItemReducer from "../play_queue_item_reducer";
 import PlayUploadedQueueItemReducer from "../play_uploaded_queue_item_reducer";
 import PrepareYoutubeAutoplayReducer from "../prepare_youtube_autoplay_reducer";
@@ -47,12 +50,14 @@ import UpdateMediaTitleReducer from "../update_media_title_reducer";
 import UpdateRoomModeReducer from "../update_room_mode_reducer";
 import UpdateRoomNameReducer from "../update_room_name_reducer";
 
+export type AcknowledgeListenerReceiptsParams = __Infer<typeof AcknowledgeListenerReceiptsReducer>;
 export type AcknowledgeRecommendationEventOutboxParams = __Infer<typeof AcknowledgeRecommendationEventOutboxReducer>;
 export type AddQueueItemParams = __Infer<typeof AddQueueItemReducer>;
 export type AdvanceQueueItemParams = __Infer<typeof AdvanceQueueItemReducer>;
 export type AdvanceUploadedQueueItemParams = __Infer<typeof AdvanceUploadedQueueItemReducer>;
 export type ClearQueueParams = __Infer<typeof ClearQueueReducer>;
 export type ClearRoomRhythmProfileParams = __Infer<typeof ClearRoomRhythmProfileReducer>;
+export type GrantListenerLearningParams = __Infer<typeof GrantListenerLearningReducer>;
 export type GrantRoomControlParams = __Infer<typeof GrantRoomControlReducer>;
 export type HeartbeatParams = __Infer<typeof HeartbeatReducer>;
 export type IssueRoomAdmissionGrantParams = __Infer<typeof IssueRoomAdmissionGrantReducer>;
@@ -63,6 +68,7 @@ export type LeaveRoomParams = __Infer<typeof LeaveRoomReducer>;
 export type LoadMediaSourceParams = __Infer<typeof LoadMediaSourceReducer>;
 export type MoveQueueItemParams = __Infer<typeof MoveQueueItemReducer>;
 export type MoveQueueItemRelativeParams = __Infer<typeof MoveQueueItemRelativeReducer>;
+export type ObserveListenerPlaybackParams = __Infer<typeof ObserveListenerPlaybackReducer>;
 export type PlayQueueItemParams = __Infer<typeof PlayQueueItemReducer>;
 export type PlayUploadedQueueItemParams = __Infer<typeof PlayUploadedQueueItemReducer>;
 export type PrepareYoutubeAutoplayParams = __Infer<typeof PrepareYoutubeAutoplayReducer>;

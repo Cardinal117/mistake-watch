@@ -1,5 +1,7 @@
 "use client";
 
+import { artistLabel } from "@/lib/ui/artist-label";
+
 import { ListMusic } from "lucide-react";
 import type { RoomQueueItem } from "@/lib/rooms";
 import { cx } from "@/lib/ui";
@@ -63,7 +65,9 @@ export function ListenUpNextPreview({
                   {item.title}
                 </span>
                 <span className="mt-0.5 block truncate text-[11px] text-on-surface-variant">
-                  {item.artist ?? item.channelName ?? "Room source"}
+                  {artistLabel(
+                    item.artist ?? item.channelName ?? "Room source",
+                  )}
                 </span>
               </span>
               <span className="text-[11px] tabular-nums text-on-surface-variant">

@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   projectQueueMove,
-  queuePlacement,
+  canonicalQueuePlacement,
   type MoveQueueAction,
   type QueueMoveIntent,
 } from "@/lib/queue/move-intent";
@@ -45,12 +45,9 @@ export function useOptimisticQueue(
       setNotice("Waiting for the room to confirm recent moves.");
       return;
     }
-    const placement = queuePlacement(
-      projected.filter((i) => i.status === "queued").map((i) => i.id),
-      id,
-      position,
-    );
-    if (!placement) return;
+    const canonical = canonicalQueuePlacement(projected, id, position);
+    if (!canonical) return;
+    const { placement } = canonical;
     const actionId = crypto.randomUUID(),
       epoch = generation.current;
     const intent = { ...placement, id, actionId };
@@ -74,7 +71,7 @@ export function useOptimisticQueue(
       ),
     );
     try {
-      const result = onMove(id, position, actionId, placement);
+      const result = onMove(id, canonical.position, actionId, placement);
       if (result && typeof result.then === "function")
         result.then(
           () => settle(),

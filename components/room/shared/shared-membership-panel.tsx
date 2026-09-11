@@ -1,4 +1,5 @@
 "use client";
+import { ListeningLearningSettings } from "../listen/settings/listening-learning-settings";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui";
 import {
@@ -106,6 +107,7 @@ export function SharedMembershipPanel({ roomId }: { roomId: string }) {
           </Button>
         </>
       )}
+      {data?.state === "approved" && <ListeningLearningSettings key={roomId} roomId={roomId} />}
       {data?.owner && (
         <>
           <h4 className="font-semibold">Requests &amp; return access</h4>

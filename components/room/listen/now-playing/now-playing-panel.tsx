@@ -1,5 +1,7 @@
 "use client";
 
+import { artistLabel } from "@/lib/ui/artist-label";
+
 import { useContext, type ReactNode } from "react";
 import {
   Disc3,
@@ -83,11 +85,12 @@ export function ListenNowPlayingPanel({
     (youtubeSource ? getYouTubeThumbnailUrl(liveSource) : null);
   const title =
     session?.sourceTitle ?? currentItem?.title ?? room.nowPlaying.title;
-  const artist =
+  const artist = artistLabel(
     currentItem?.artist ??
-    currentItem?.channelName ??
-    room.nowPlaying.artist ??
-    "Room source";
+      currentItem?.channelName ??
+      room.nowPlaying.artist ??
+      "Room source",
+  );
   const isPlaying = session?.status === "playing";
   const awaitingMedia = !liveSource;
   const progressMax =

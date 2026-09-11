@@ -90,6 +90,9 @@ qa(
     );
     await page.evaluate(() => window.dispatchEvent(new Event("focus")));
     await refreshed;
+    await page.evaluate(() =>
+      window.watchQA!.confirmPersonalAdd("dQw4w9Wg004", "Hordes"),
+    );
     await expect
       .poll(() =>
         observations.some(
@@ -100,9 +103,6 @@ qa(
         ),
       )
       .toBe(true);
-    await page.evaluate(() =>
-      window.watchQA!.confirmPersonalAdd("dQw4w9Wg004", "Hordes"),
-    );
     await expect
       .poll(
         () =>
@@ -227,9 +227,7 @@ qa(
         (el as HTMLButtonElement).click();
         (el as HTMLButtonElement).click();
       });
-    await expect(
-      row.getByRole("button", { name: "Adding… · Hordes", exact: true }),
-    ).toBeDisabled();
+    await expect(row).toHaveCount(0);
     expect(
       await page.evaluate(
         () => window.watchQA!.calls.filter((c) => c.action === "add").length,
@@ -238,9 +236,7 @@ qa(
     await page.evaluate(() =>
       window.watchQA!.confirmPersonalAdd("dQw4w9Wg004", "Hordes"),
     );
-    await expect(
-      row.getByRole("button", { name: "Add to queue · Hordes", exact: true }),
-    ).toBeEnabled();
+    await expect(row).toHaveCount(0);
     const second = page.locator(
       '.personal-recommendations [data-media-id="dQw4w9Wg005"]',
     );
@@ -472,7 +468,7 @@ for (const width of [390, 1680]) {
         )
           requests.push(request.url());
       });
-      await setup(page);
+      const state = await setup(page);
       const queued = page.locator(
         '.personal-recommendations [data-media-id="dQw4w9Wg004"]',
       );
@@ -482,12 +478,7 @@ for (const width of [390, 1680]) {
       await page.evaluate(() =>
         window.watchQA!.confirmPersonalAdd("dQw4w9Wg004", "Hordes"),
       );
-      await expect(
-        queued.getByRole("button", {
-          name: "Add to queue · Hordes",
-          exact: true,
-        }),
-      ).toBeEnabled();
+      await expect(queued).toHaveCount(0);
       const refresh = page.waitForResponse(
         (response) =>
           response.url().includes("/recommendations/discover") &&
@@ -495,12 +486,7 @@ for (const width of [390, 1680]) {
       );
       await page.evaluate(() => window.dispatchEvent(new Event("focus")));
       await refresh;
-      await expect(
-        queued.getByRole("button", {
-          name: "Add to queue · Hordes",
-          exact: true,
-        }),
-      ).toBeEnabled();
+      await expect(queued).toHaveCount(0);
       const current = page.locator(
         '.personal-recommendations [data-media-id="dQw4w9Wg005"]',
       );
@@ -508,6 +494,9 @@ for (const width of [390, 1680]) {
         .getByRole("button", { name: "Play Arrival to Earth", exact: true })
         .click();
       await expect(current).toHaveCount(0);
+      state.replaceDecision("22222222-2222-4222-8222-222222222222");
+      await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+      await expect(queued).toBeVisible();
       await queued.getByRole("button", { name: /More options/ }).click();
       await page
         .getByRole("menuitem", {

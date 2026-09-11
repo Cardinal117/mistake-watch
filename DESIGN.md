@@ -109,6 +109,13 @@ spacing:
 
 ## Brand & Style
 
+Approved Personal Discover refinement (2026-09-11): compact list actions retain
+44px touch targets and accessible tooltips/names. View all uses a list by default,
+with two columns only when the content area supports readable rows. Regular tile
+borders and count badges use each tile's artwork-derived accent with readable
+text contrast; room backgrounds remain driven by current playback. Artwork fills
+card frames with centered cover crops. See TASK-030's compact browse follow-up.
+
 ### TASK-029 Personal Discover approval (2026-09-09)
 
 Personal Discover uses a compact regulars artwork grid, aligned recommendation

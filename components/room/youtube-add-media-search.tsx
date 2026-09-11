@@ -1,5 +1,8 @@
 "use client";
 
+import { artistLabel } from "@/lib/ui/artist-label";
+
+
 import { useEffect, useRef, useState } from "react";
 import { ListPlus, Plus, Play, Search, X } from "lucide-react";
 
@@ -322,7 +325,7 @@ function SearchResultRow({
           {item.title}
         </h4>
         <p className="mt-0.5 truncate text-label-sm text-on-surface-variant">
-          {item.channelTitle ?? "YouTube"}
+          {artistLabel(item.channelTitle ?? "YouTube")}
           {item.durationSeconds ? ` / ${formatDuration(item.durationSeconds)}` : ""}
         </p>
         {unavailable ? (
