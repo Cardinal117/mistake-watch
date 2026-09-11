@@ -1,5 +1,12 @@
 # Supabase schema and service boundary
 
+Claim efficiency follow-up: migration `20260911100302` materializes the full due
+set, deduplicates relevant accounts and computes canonical owner evidence once
+per account. Eligible IDs are joined back to jobs for the existing ordered,
+locked 50-item claim. Consent, inactivity, expiry, lease fencing, global budget
+and service-only privileges remain unchanged. See the September 11 follow-up
+release receipt for realistic backlog, concurrency and live recovery evidence.
+
 Approved reliability follow-up: one private singleton `recommendation_delivery`
 row holds a lease UUID/deadline, cooldown, last status, counts and oldest pending
 timestamp. No user/media IDs or raw event payloads. RLS enabled, no browser grants;

@@ -8,6 +8,7 @@ import {
   normalizeCatalogueVideos,
   runCatalogueWorker,
 } from "./catalogue-worker-core";
+export { cataloguePreparationFailureStage } from "./catalogue-worker-core";
 
 export async function preparePersonalCatalogue(
   roomId: string,

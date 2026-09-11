@@ -6,6 +6,7 @@ const {
   normalizeCatalogueVideos,
   catalogueDailyLimit,
   maintainBeforeRoomDrain,
+  cataloguePreparationFailureStage,
 } = await loadRecommendationModule("catalogue-worker-core.ts");
 const token = "03000000-0000-4000-8000-000000000001";
 const ids = ["catalogue01", "catalogue02"];
@@ -27,6 +28,26 @@ const publicVideo = {
   statistics: { likeCount: "42", viewCount: "1000" },
 };
 const duration = (input) => (input === "PT3M" ? 180 : null);
+test("Preparation diagnostics expose only fixed stages, never provider or SQL payloads", () => {
+  assert.equal(
+    cataloguePreparationFailureStage(new Error("Catalogue claim failed")),
+    "claim",
+  );
+  assert.equal(
+    cataloguePreparationFailureStage(
+      new Error("Catalogue reconciliation failed"),
+    ),
+    "reconcile",
+  );
+  assert.equal(
+    cataloguePreparationFailureStage(new Error("secret provider URL")),
+    "unknown",
+  );
+  assert.equal(
+    cataloguePreparationFailureStage({ message: "private history" }),
+    "unknown",
+  );
+});
 test("Catalogue admission requires explicit public, embeddable and processed status", () => {
   const result = normalizeCatalogueVideos(
     { items: [publicVideo] },

@@ -15,6 +15,28 @@ export type CatalogueWorkerDependencies = {
   fetchBatch: (ids: string[]) => Promise<CatalogueResult[]>;
   complete: (token: string, results: CatalogueResult[]) => Promise<unknown>;
 };
+export function cataloguePreparationFailureStage(error: unknown) {
+  if (!(error instanceof Error)) return "unknown";
+  switch (error.message) {
+    case "Catalogue reconciliation preview failed":
+      return "preview";
+    case "Invalid catalogue reconciliation preview":
+      return "preview-contract";
+    case "Catalogue reconciliation failed":
+      return "reconcile";
+    case "Catalogue cleanup failed":
+      return "cleanup";
+    case "Catalogue claim failed":
+      return "claim";
+    case "Invalid catalogue claim":
+    case "Invalid catalogue lease":
+      return "claim-contract";
+    case "Catalogue completion failed":
+      return "complete";
+    default:
+      return "unknown";
+  }
+}
 export function catalogueDailyLimit(value: string | undefined) {
   if (value === undefined) return CATALOGUE_DAILY_LIMIT;
   const parsed = Number(value);

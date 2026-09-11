@@ -2,7 +2,10 @@
 
 Owner authorized the four ordered follow-ups and two assistants. Delivery repair
 030.5 is published as `55b4837` on main and the task branch. Remaining release
-is in progress; do not treat local evidence as deployment acceptance.
+source was published as `5bcd7d0`, built from a clean Git archive and promoted as
+`dpl_FUaaRwQMAfFBHfdB5okKgtzPELpv`. Custom-domain alias and protected health200
+were verified. Live Personal UI shows compact regulars and Add next. No live
+queue, playback or preference test actions were performed.
 
 ## Catalogue cause and repair
 
@@ -38,7 +41,7 @@ cases passed. Additional country filtering/ownership/expiry/legacy/starvation
 checks are post-hoc strengthening:40 SQL assertions green plus77 existing.
 Worker10 tests green. Country header contract tests are post-hoc.
 
-Final combined recommendation/YouTube suite **162 passed**. Typecheck,
+Final combined recommendation/YouTube suite **164 passed**. Typecheck,
 build and file-length gate passed (0 violations,22 pre-existing warnings).
 Full lint exited0; temporary release archives introduced80 generated warnings;
 source-only rerun excluded ignored .tmp/test-results and passed with no warnings
@@ -58,10 +61,35 @@ missing module-local tsc warning is covered by the explicit module check.
 Production database read-back confirms131 rooms/2 accounts preserved,
 browser access to country RPC denied and unknown-country restriction enforced.
 
-Publish additive trusted account-intent reducer before frontend; old reducers
-and table contracts stay compatible. Deploy a clean Git archive, verify protected
-health then promote, preserving live user playback. Requeue previously excluded
-referenced catalogue jobs once under the unchanged global worker budget, with
-the two supplied IDs first. Verify saved Likes, country-eligible projection,
-counts and live application response without synthetic user actions. The toast
-auto-dismiss follow-up must pass before the final frontend release.
+The additive reducer preceded the frontend. A bounded one-time requeue admitted
+269 existing referenced retries under the unchanged daily budget, prioritizing
+the two supplied IDs. Live verification then exposed the claim bottleneck below.
+
+## Backlog query repair
+
+With 308 eligible owner references, claim recomputed account evidence for every
+due job and exceeded the eight-second database timeout (57014). Migration
+`20260911100302_catalogue_claim_reference_batch.sql` materializes evidence once
+per relevant account, preserving canonical consent checks, full due-job coverage,
+ordering, 50-item leases, concurrency fencing and one batch budget reservation.
+Applied to production on September 11. Independent SQL review found no blocker.
+
+The old query timed out with 4,500 fixture events, 308 referenced jobs and 400
+older orphan jobs. New regression: 10/10 passed in a 3.002-second transaction,
+including two claims, 50-item completion and withdrawn/inactive evidence checks.
+Existing 77 SQL assertions and concurrency checks passed. Production rolled-back
+service-role claim returned 50 within the same 8-second statement timeout;
+the measured 6.217-second tool round trip includes network overhead.
+
+Normal live activity resumed hydration: both supplied IDs became public at
+10:03:18 UTC. ZA projection now includes `vlrN8Mso-6Y` as liked with one recorded
+completion. The other supplied ID has eligible metadata; limited regulars do not
+guarantee every liked track is displayed. At the initial recovery read, 189
+references were ready and 119 pending, with normal background batches continuing.
+All 131 rooms and 2 accounts remain. Advisor categories and counts are unchanged.
+
+Preparation warnings now include a fixed whitelisted failure stage, never raw
+SQL/provider errors. The integration regression failed before the logging fix
+and passed afterwards; the whitelist secrecy test is additional coverage.
+164 Node tests, targeted lint, typecheck and production build passed. Final
+observability frontend deployment receipt follows after promotion.

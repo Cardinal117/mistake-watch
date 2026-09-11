@@ -69,7 +69,18 @@ and natural-use evidence. No destructive schema changes or account rewrites.
 
 ## Evidence
 
+Live rollout gate found an additional catalogue claim bottleneck after the
+event catch-up:308 owner references,269 due retries; service-role claim under an
+8-second statement timeout failed57014 in per-job catalogue_has_reference.
+Owner's approved backlog-efficiency scope includes resolving this before
+completion. Materialize due-source owners and current eligible evidence once
+per account, reuse for the unchanged50-item claim, preserve ordering/leases/
+budget and consent revalidation. Add fixed preparation-stage log labels (never
+SQL messages/payloads/credentials), isolated realistic-size performance proof,
+and repeat actual rolled-back service-role claim before declaring recovery.
+
 Source audit confirmed stale live precedence, unordered 250-row truncation,
 unknown actionable hearts, room-only client scope, and same-local-state reducer
 early return. These are separate from the now-drained event backlog. Catalogue
-exclusion cause is pending the bounded provider diagnostic.
+exclusion was traced to broad regional-restriction rejection. Country-aware
+admission and the follow-up claim repair are applied; see the release receipt.

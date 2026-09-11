@@ -4,6 +4,7 @@ import test from "node:test";
 import ts from "typescript";
 import { loadRecommendationModule } from "./ranking-test-helpers.mjs";
 const regionModule = await loadRecommendationModule("catalogue-region.ts");
+const workerModule = await loadRecommendationModule("catalogue-worker-core.ts");
 
 async function load(file, mocks) {
   const source = await readFile(
@@ -66,6 +67,8 @@ function routeMocks(allowed) {
         }),
       },
       "@/lib/recommendations/catalogue-service": {
+        cataloguePreparationFailureStage:
+          workerModule.cataloguePreparationFailureStage,
         preparePersonalCatalogue: async () => {},
       },
       "@/lib/recommendations/discover-contracts": {
@@ -105,6 +108,29 @@ for (const route of ["preferences", "discover"]) {
     assert.equal(f.delivered(), 1);
   });
 }
+test("failed background catalogue claim reports a fixed phase without raw error data", async () => {
+  const f = routeMocks(true);
+  f.mocks["@/lib/recommendations/catalogue-service"].preparePersonalCatalogue =
+    async () => {
+      throw new Error("Catalogue claim failed");
+    };
+  const loaded = await load(
+    "app/api/recommendations/discover/route.ts",
+    f.mocks,
+  );
+  await loaded.GET(new Request("https://local.test/api?roomId=room"));
+  const calls = [];
+  const original = console.warn;
+  console.warn = (...args) => calls.push(args);
+  try {
+    for (const job of f.jobs) await job();
+  } finally {
+    console.warn = original;
+  }
+  assert.deepEqual(calls, [
+    ["[catalogue:background] Preparation unavailable", "claim"],
+  ]);
+});
 test("preference write schedules after trusted mutation, unauthorized write does not", async () => {
   for (const allowed of [true, false]) {
     const f = routeMocks(allowed);

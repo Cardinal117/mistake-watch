@@ -1,6 +1,9 @@
 import { after, NextResponse } from "next/server";
 import { deliverRecommendationEventsInBackground } from "@/lib/recommendations/durable-outbox-drain";
-import { preparePersonalCatalogue } from "@/lib/recommendations/catalogue-service";
+import {
+  preparePersonalCatalogue,
+  cataloguePreparationFailureStage,
+} from "@/lib/recommendations/catalogue-service";
 import { catalogueViewerCountry } from "@/lib/recommendations/catalogue-region";
 import { readBoundedJson } from "@/lib/recommendations/bounded-json";
 import {
@@ -47,8 +50,11 @@ export async function GET(request: Request) {
     after(async () => {
       try {
         await preparePersonalCatalogue(roomId, accountUserId);
-      } catch {
-        console.warn("[catalogue:background] Preparation unavailable");
+      } catch (error) {
+        console.warn(
+          "[catalogue:background] Preparation unavailable",
+          cataloguePreparationFailureStage(error),
+        );
       }
     });
     return NextResponse.json(result, {
