@@ -2,8 +2,9 @@ import { t } from "spacetimedb/server";
 import { spacetimedb } from "./module-schema";
 import {
   classifyPlaybackAdvance,
-  completionRatioBps,
+  sessionCompletionRatioBps,
 } from "./recommendation-events";
+import { nowMs } from "./room-keys";
 type Context = Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0];
 type Session = NonNullable<
   ReturnType<Context["db"]["room_session"]["room_id"]["find"]>
@@ -93,10 +94,7 @@ export function registerPreparedYouTubeReducers(helpers: Helpers) {
           actorMemberId: args.actor_member_id,
           ...classifyPlaybackAdvance({
             autoplay: true,
-            completionRatioBps: completionRatioBps(
-              session.position_seconds,
-              session.source_duration_seconds,
-            ),
+            completionRatioBps: sessionCompletionRatioBps(session, nowMs()),
             playbackStatus: session.status,
           }),
         },

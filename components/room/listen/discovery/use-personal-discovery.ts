@@ -72,6 +72,8 @@ export function usePersonalDiscovery(
         item: RoomQueueItem;
         surface: DiscoverSurface;
         decisionId: string | null;
+        existingOccurrenceIds: Set<string>;
+        token: symbol;
         timer: ReturnType<typeof setTimeout>;
       }
     >(),
@@ -209,7 +211,13 @@ export function usePersonalDiscovery(
 
   useEffect(() => {
     for (const [mediaId, request] of inFlight.current) {
-      if (!queuedPersonalTrack(request.item, queue)) continue;
+      if (
+        !queuedPersonalTrack(
+          request.item,
+          queue.filter((item) => !request.existingOccurrenceIds.has(item.id)),
+        )
+      )
+        continue;
       clearTimeout(request.timer);
       inFlight.current.delete(mediaId);
       setPending((current) => {
@@ -228,16 +236,12 @@ export function usePersonalDiscovery(
     next = false,
   ) {
     const mediaId = item.videoId;
-    if (
-      !mediaId ||
-      inFlight.current.has(mediaId) ||
-      queuedPersonalTrack(item, queue)
-    )
-      return;
+    if (!mediaId || inFlight.current.has(mediaId)) return;
     setActionError(null);
+    const token = Symbol("queue-add");
     const fail = (message: string) => {
       const entry = inFlight.current.get(mediaId);
-      if (!entry) return;
+      if (!entry || entry.token !== token) return;
       clearTimeout(entry.timer);
       inFlight.current.delete(mediaId);
       if (mounted.current) {
@@ -258,7 +262,14 @@ export function usePersonalDiscovery(
     );
     const decisionId =
       recommendationDecision(dataRef.current, mediaId, surface) ?? null;
-    inFlight.current.set(mediaId, { item, surface, timer, decisionId });
+    inFlight.current.set(mediaId, {
+      item,
+      surface,
+      timer,
+      decisionId,
+      existingOccurrenceIds: new Set(queue.map((entry) => entry.id)),
+      token,
+    });
     setPending((current) => new Set(current).add(mediaId));
     observe(
       mediaId,
@@ -271,7 +282,7 @@ export function usePersonalDiscovery(
       void Promise.resolve(
         add({
           ...queueItemToDiscoveryQueueCommand(item, { isPlayNext: next }),
-          allowDuplicate: false,
+          allowDuplicate: true,
         }),
       ).catch(() => fail("Could not add this track. Please try again."));
     } catch {

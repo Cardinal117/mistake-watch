@@ -11,10 +11,12 @@ import {
 } from "lucide-react";
 import type { RoomQueueItem } from "@/lib/rooms";
 import { QueueImage } from "./queue-row";
+import { QueueDuplicateIndicator } from "./queue-duplicate-indicator";
 import { useQueueGestures } from "./use-queue-gestures";
 
 export function CompactQueueRow({
   item,
+  duplicateCount = 0,
   title,
   channel,
   thumbnailUrl,
@@ -31,6 +33,7 @@ export function CompactQueueRow({
   onRequeue,
 }: {
   item: RoomQueueItem;
+  duplicateCount?: number;
   title: string;
   channel?: string | null;
   thumbnailUrl?: string | null;
@@ -179,7 +182,12 @@ export function CompactQueueRow({
           className="watch-queue-copy"
           title={queued ? "Drag to reorder; hold on touch" : undefined}
         >
-          <strong>{title}</strong>
+          <strong className="flex items-center gap-2">
+            <span className="min-w-0 truncate">{title}</span>
+            {item.status !== "played" && (
+              <QueueDuplicateIndicator count={duplicateCount} />
+            )}
+          </strong>
           <small>
             {item.status === "now"
               ? "Now playing · "

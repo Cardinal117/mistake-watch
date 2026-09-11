@@ -19,6 +19,10 @@ import {
   reduceListenDiscoveryBrowseState,
 } from "@/lib/recommendations/listen-discovery-interactions";
 import type { RoomQueueItem, RoomSnapshot } from "@/lib/rooms";
+import {
+  activeQueueSourceCounts,
+  queueSourceKey,
+} from "@/lib/queue/source-identity";
 import { fetchYouTubeRecommendations } from "@/lib/youtube/recommendations-client";
 import type { YouTubeRecommendationResponse } from "@/lib/youtube/recommendations";
 import {
@@ -77,6 +81,7 @@ function LegacyDiscoveryPanel({
   room: RoomSnapshot;
   embedded?: boolean;
 }) {
+  const queueCounts = useMemo(() => activeQueueSourceCounts(items), [items]);
   const [providerRecommendations, setProviderRecommendations] = useState<{
     key: string;
     response: YouTubeRecommendationResponse;
@@ -293,6 +298,7 @@ function LegacyDiscoveryPanel({
         canPlay={canPlay}
         current={item.id === currentItem?.id}
         inQueue={!item.id.startsWith("provider:")}
+        queuedCount={queueCounts.get(queueSourceKey(item) ?? "") ?? 0}
         item={item}
         key={item.id}
         mediaPreferences={mediaPreferences}

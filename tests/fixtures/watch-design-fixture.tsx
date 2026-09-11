@@ -89,11 +89,13 @@ declare global {
       setAccount(account: AccountSummary): void;
       setQueueCount(count: number): void;
       confirmPersonalAdd(videoId: string, title: string): void;
+      deferQueueAdds?: boolean;
+      rejectQueueAdd(index: number): void;
       setMoveDelay(ms: number): void;
       setMoveFailure(fail: boolean): void;
       changeQueuedItem(
         id: string,
-        status: "queued" | "playing" | "removed",
+        status: "queued" | "playing" | "played" | "removed",
       ): void;
       autoplayYouTube(sourceUrl: string): void;
       calls: Array<{ action: string; input: unknown }>;
@@ -185,6 +187,7 @@ export function WatchDesignFixture({
   const record = (action: string, input?: unknown) => {
     calls.current.push({ action, input });
   };
+  const queueRejections = useRef<Array<(reason: Error) => void>>([]);
   const liveRoom = {
     youtubeAutoplayPreparation,
     snapshot: {
@@ -227,7 +230,11 @@ export function WatchDesignFixture({
       record("load", input);
       setSession((current) => ({ ...current, ...input }));
     },
-    addQueueItem: (input: unknown) => record("add", input),
+    addQueueItem: (input: unknown) => {
+      record("add", input);
+      if (window.watchQA?.deferQueueAdds)
+        return new Promise<void>((_resolve, reject) => queueRejections.current.push(reject));
+    },
     playQueueItemNow: (input: unknown) => record("playQueue", input),
     playQueueItem: (input: unknown) => record("playQueue", input),
     setQueueItemPriority: (id: string, priority: unknown) =>
@@ -380,12 +387,13 @@ export function WatchDesignFixture({
     });
     window.watchQA = {
       calls: calls.current,
+      rejectQueueAdd: (index) => queueRejections.current[index]?.(new Error("Delayed queue rejection")),
       confirmPersonalAdd: (videoId, title) =>
         setQueueState((current) => [
           ...current,
           {
             ...queue[0],
-            queueItemId: `qa:${videoId}`,
+            queueItemId: `qa:${videoId}:${crypto.randomUUID()}`,
             position: current.length,
             title,
             sourceType: "youtube",

@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Check,
+  Copy,
   Heart,
   ListPlus,
   MoreHorizontal,
@@ -122,13 +123,7 @@ export function PersonalTrackView({
     close();
     callback();
   }
-  const label = pending
-    ? "Adding…"
-    : queued
-      ? added
-        ? "Added"
-        : "In queue"
-      : "Add to queue";
+  const label = pending ? "Adding…" : "Add to queue";
   return (
     <article
       ref={article}
@@ -139,6 +134,16 @@ export function PersonalTrackView({
       }
       data-closing={regular ? expansion.closing : undefined}
     >
+      {regular && (
+        <span
+          className="personal-play-count-badge"
+          role="img"
+          aria-label={`${item.completedPlayCount ?? 0} recorded plays`}
+          title={`${item.completedPlayCount ?? 0} recorded completed plays in this Personal room over the last 180 days`}
+        >
+          {item.completedPlayCount ?? 0}
+        </span>
+      )}
       {regular && (
         <button
           ref={preview}
@@ -151,9 +156,14 @@ export function PersonalTrackView({
         >
           <QueueArtwork thumbnailUrl={item.thumbnailUrl} title={item.title} />
           <span className="personal-track-title">{item.title}</span>
-          <span className="personal-track-count">
-            {item.completedPlayCount ?? 0} recorded plays
-          </span>
+          {queued && (
+            <span
+              title="Already in queue; you can add another copy"
+              aria-label="Already in queue"
+            >
+              <Copy size={14} aria-hidden />
+            </span>
+          )}
         </button>
       )}
       <div
@@ -189,14 +199,6 @@ export function PersonalTrackView({
           >
             {item.artist ?? item.channelName ?? "YouTube"}
           </p>
-          {regular && (
-            <p
-              className="personal-track-count"
-              title="Recorded completed playback occurrences in this Personal room over the last 180 days. This is not a lifetime count or proof of uninterrupted listening."
-            >
-              {item.completedPlayCount ?? 0} recorded plays
-            </p>
-          )}
         </div>
         {!regular && reason && (
           <p className="personal-track-reason">{reason}</p>
@@ -234,14 +236,22 @@ export function PersonalTrackView({
           </span>
         )}
         <div className="personal-queue-actions">
+          {queued && (
+            <span
+              title="Already in queue; you can add another copy"
+              aria-label="Already in queue"
+            >
+              <Copy size={14} aria-hidden />
+            </span>
+          )}
           <button
             className="personal-add"
             onClick={() => onAdd()}
-            disabled={!canAdd || queued || pending || item.isUnavailable}
+            disabled={!canAdd || pending || item.isUnavailable}
             type="button"
             aria-label={`${label} · ${item.title}`}
           >
-            {queued ? (
+            {added && !pending ? (
               <Check size={15} aria-hidden />
             ) : (
               <Plus size={15} aria-hidden />
@@ -254,7 +264,7 @@ export function PersonalTrackView({
             aria-label={`Add next · ${item.title}`}
             title="Add next"
             onClick={() => onAdd(true)}
-            disabled={!canAdd || queued || pending || item.isUnavailable}
+            disabled={!canAdd || pending || item.isUnavailable}
           >
             <ListPlus size={17} aria-hidden />
             {regular && <span>Add next</span>}
@@ -323,15 +333,15 @@ export function PersonalTrackView({
             </button>
             <button
               role="menuitem"
-              disabled={!canAdd || queued || pending || item.isUnavailable}
+              disabled={!canAdd || pending || item.isUnavailable}
               onClick={() => action(() => onAdd())}
             >
               <Plus size={16} aria-hidden />
-              {queued ? "In queue" : "Add to queue"}
+              Add to queue
             </button>
             <button
               role="menuitem"
-              disabled={!canAdd || queued || pending || item.isUnavailable}
+              disabled={!canAdd || pending || item.isUnavailable}
               onClick={() => action(() => onAdd(true))}
             >
               <Play size={16} aria-hidden />

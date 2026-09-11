@@ -114,8 +114,8 @@ qa(
       )
       .toBe(original);
     await expect(
-      row.getByRole("button", { name: "Added · Hordes", exact: true }),
-    ).toBeDisabled();
+      row.getByRole("button", { name: "Add to queue · Hordes", exact: true }),
+    ).toBeEnabled();
     await row.getByRole("button", { name: /More options/ }).click();
     await page
       .getByRole("menuitem", { name: "Don't suggest this track", exact: true })
@@ -168,7 +168,7 @@ qa(
       page.getByRole("heading", { name: "Your regulars", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByText("20 recorded plays", { exact: true }).first(),
+      page.getByRole("img", { name: "20 recorded plays", exact: true }).first(),
     ).toBeVisible();
     await expect(
       page.locator(".personal-discovery .listen-discovery-rail"),
@@ -239,8 +239,8 @@ qa(
       window.watchQA!.confirmPersonalAdd("dQw4w9Wg004", "Hordes"),
     );
     await expect(
-      row.getByRole("button", { name: "Added · Hordes", exact: true }),
-    ).toBeDisabled();
+      row.getByRole("button", { name: "Add to queue · Hordes", exact: true }),
+    ).toBeEnabled();
     const second = page.locator(
       '.personal-recommendations [data-media-id="dQw4w9Wg005"]',
     );
@@ -483,8 +483,11 @@ for (const width of [390, 1680]) {
         window.watchQA!.confirmPersonalAdd("dQw4w9Wg004", "Hordes"),
       );
       await expect(
-        queued.getByRole("button", { name: "Added · Hordes", exact: true }),
-      ).toBeDisabled();
+        queued.getByRole("button", {
+          name: "Add to queue · Hordes",
+          exact: true,
+        }),
+      ).toBeEnabled();
       const refresh = page.waitForResponse(
         (response) =>
           response.url().includes("/recommendations/discover") &&
@@ -493,8 +496,11 @@ for (const width of [390, 1680]) {
       await page.evaluate(() => window.dispatchEvent(new Event("focus")));
       await refresh;
       await expect(
-        queued.getByRole("button", { name: "Added · Hordes", exact: true }),
-      ).toBeDisabled();
+        queued.getByRole("button", {
+          name: "Add to queue · Hordes",
+          exact: true,
+        }),
+      ).toBeEnabled();
       const current = page.locator(
         '.personal-recommendations [data-media-id="dQw4w9Wg005"]',
       );
@@ -512,8 +518,11 @@ for (const width of [390, 1680]) {
       await expect(queued).toHaveCount(0);
       await page.getByRole("button", { name: "Undo", exact: true }).click();
       await expect(
-        queued.getByRole("button", { name: "Added · Hordes", exact: true }),
-      ).toBeDisabled();
+        queued.getByRole("button", {
+          name: "Add to queue · Hordes",
+          exact: true,
+        }),
+      ).toBeEnabled();
       expect(requests).toEqual([]);
     },
   );

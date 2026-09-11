@@ -163,17 +163,15 @@ export async function getRoomSnapshotForGuest(
   roomId: string,
   { accountUserId }: { accountUserId?: string | null } = {},
 ): Promise<RoomSnapshot | null> {
-  try {
-    const member = await resolveRoomMembership(roomId);
-    if (!member) return null;
+  const member = await resolveRoomMembership(roomId);
+  if (!member) return null;
 
-    return getRoomSnapshot(roomId, {
-      accountUserId,
-      currentMemberId: member.memberId,
-    });
-  } catch {
-    return null;
-  }
+  // A failed read is not an access denial. Let the room error boundary offer
+  // recovery instead of sending an authorized member back to the dashboard.
+  return getRoomSnapshot(roomId, {
+    accountUserId,
+    currentMemberId: member.memberId,
+  });
 }
 
 export async function getRoomJoinPreview(
@@ -263,8 +261,8 @@ async function getRoomSnapshot(
     .eq("id", roomId)
     .maybeSingle();
 
+  if (roomError) throw roomError;
   if (
-    roomError ||
     !room ||
     (room.room_kind !== undefined &&
       room.room_kind !== "legacy" &&
@@ -279,33 +277,36 @@ async function getRoomSnapshot(
   if (room.room_kind === "personal" && !(await isPersonalRoomOwner(room)))
     return null;
 
-  const [{ data: members }, { data: queueItems }, { data: settings }] =
-    await Promise.all([
-      supabase
-        .from("room_members")
-        .select()
-        .eq("room_id", room.id)
-        .order("joined_at"),
-      supabase
-        .from("queue_items")
-        .select()
-        .eq("room_id", room.id)
-        .neq("status", "removed")
-        .order("position"),
-      supabase
-        .from("room_settings")
-        .select()
-        .eq("room_id", room.id)
-        .maybeSingle(),
-    ]);
+  const [membersResult, queueResult, settingsResult] = await Promise.all([
+    supabase
+      .from("room_members")
+      .select()
+      .eq("room_id", room.id)
+      .order("joined_at"),
+    supabase
+      .from("queue_items")
+      .select()
+      .eq("room_id", room.id)
+      .neq("status", "removed")
+      .order("position"),
+    supabase
+      .from("room_settings")
+      .select()
+      .eq("room_id", room.id)
+      .maybeSingle(),
+  ]);
+
+  for (const result of [membersResult, queueResult, settingsResult]) {
+    if (result.error) throw result.error;
+  }
 
   return mapRoomSnapshot({
     accountUserId,
-    members: members ?? [],
-    queueItems: queueItems ?? [],
+    members: membersResult.data ?? [],
+    queueItems: queueResult.data ?? [],
     room,
     currentMemberId,
-    settings: settings ?? null,
+    settings: settingsResult.data ?? null,
   });
 }
 

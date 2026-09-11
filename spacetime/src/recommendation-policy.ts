@@ -1,5 +1,32 @@
 export const RECOMMENDATION_OUTBOX_BATCH_LIMIT = 100;
 
+/** The stored position is a clock anchor, not a continuously updated playhead. */
+export function sessionCompletionRatioBps(
+  session: {
+    position_seconds: number;
+    server_updated_ms: bigint | number;
+    status: string;
+    playback_rate?: number;
+    source_duration_seconds?: number;
+  },
+  atMs: bigint | number,
+) {
+  const elapsed =
+    Math.max(0, Number(atMs) - Number(session.server_updated_ms)) / 1000;
+  const rate = session.playback_rate ?? 1;
+  const runningSeconds =
+    session.status === "playing" &&
+    Number.isFinite(elapsed) &&
+    Number.isFinite(rate) &&
+    rate > 0
+      ? elapsed * rate
+      : 0;
+  return completionRatioBps(
+    session.position_seconds + runningSeconds,
+    session.source_duration_seconds,
+  );
+}
+
 export function completionRatioBps(
   positionSeconds: number,
   durationSeconds?: number,

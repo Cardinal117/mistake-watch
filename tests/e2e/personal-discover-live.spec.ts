@@ -127,8 +127,8 @@ qa(
       });
       await expect(
         page
-          .locator(".personal-regular-preview")
-          .getByText("2 recorded plays", { exact: true }),
+          .locator(".personal-regular")
+          .getByRole("img", { name: "2 recorded plays", exact: true }),
       ).toBeVisible({ timeout: 30000 });
       const card = page.locator(
         `.personal-regular[data-media-id="${mediaId}"]`,
@@ -159,7 +159,7 @@ qa(
         .getByRole("button", { name: "Allow suggestions again" })
         .click();
       await expect(
-        page.getByText("2 recorded plays", { exact: true }),
+        page.getByRole("img", { name: "2 recorded plays", exact: true }),
       ).toBeVisible({ timeout: 30000 });
       const anonymous = await browser.newContext();
       try {

@@ -9,6 +9,10 @@ import { VirtualQueueList } from "./virtual-queue-list";
 import { useOptimisticQueue } from "./use-optimistic-queue";
 import type { MoveQueueAction } from "@/lib/queue/move-intent";
 import { QueueRow } from "./queue-row";
+import {
+  activeQueueSourceCounts,
+  queueSourceKey,
+} from "@/lib/queue/source-identity";
 
 type MeasureQueueAction = (label: string, action: () => void) => void;
 
@@ -54,6 +58,10 @@ export function QueueContent({
     onMoveQueueItem,
   );
   const upcomingItems = optimistic.items;
+  const duplicateCounts = useMemo(
+    () => activeQueueSourceCounts(canonicalItems),
+    [canonicalItems],
+  );
   const projectedIndices = new Map(
     upcomingItems
       .filter((i) => i.status === "queued")
@@ -111,6 +119,9 @@ export function QueueContent({
 
               return (
                 <QueueRow
+                  duplicateCount={
+                    duplicateCounts.get(queueSourceKey(item) ?? "") ?? 0
+                  }
                   compact={compact}
                   item={item}
                   key={item.id}

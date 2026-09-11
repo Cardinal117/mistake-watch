@@ -164,7 +164,7 @@ for (const options of [
 }
 test("account lookup failure cannot downgrade to a guest cookie", async () => {
   const f = fixture({ dbError: true });
-  assert.equal(await f.page(), null);
+  await assert.rejects(f.page, /database unavailable/);
   await assert.rejects(f.admission, /database unavailable/);
 });
 

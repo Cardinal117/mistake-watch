@@ -18,6 +18,10 @@ import {
 } from "lucide-react";
 import { VirtualQueueList } from "../../queue/virtual-queue-list";
 import { QueueRow } from "../../queue/queue-row";
+import {
+  activeQueueSourceCounts,
+  queueSourceKey,
+} from "@/lib/queue/source-identity";
 import { useOptimisticQueue } from "../../queue/use-optimistic-queue";
 import type { MoveQueueAction } from "@/lib/queue/move-intent";
 import { Button } from "@/components/ui";
@@ -46,6 +50,7 @@ import {
   DEFAULT_LISTEN_DRAWER_HEIGHT,
 } from "@/components/room/listen/shared";
 import { ListenHistoryRows } from "./history-rows";
+import { useMatchingQueueItems, queuedIndices } from "./queue-view-utils";
 import {
   useDenseListenQueueRows,
   readStoredDrawerHeight,
@@ -130,23 +135,14 @@ export function ListenQueueDrawer({
     onMoveQueueItem,
   );
   const queueViewItems = optimistic.items;
-  const queuedIndexById = new Map(
-    queueViewItems
-      .filter((i) => i.status === "queued")
-      .map((i, index) => [i.id, index]),
+  const duplicateCounts = useMemo(
+    () => activeQueueSourceCounts(canonicalQueue),
+    [canonicalQueue],
   );
+  const queuedIndexById = queuedIndices(queueViewItems);
   const baseVisibleItems =
     drawerView === "history" ? historyItems : queueViewItems;
-  const visibleItems = useMemo(() => {
-    const normalizedQuery = query.toLowerCase();
-
-    return baseVisibleItems.filter((item) => {
-      const searchable =
-        `${item.title} ${item.artist ?? ""} ${item.channelName ?? ""}`.toLowerCase();
-
-      return searchable.includes(normalizedQuery);
-    });
-  }, [baseVisibleItems, query]);
+  const visibleItems = useMatchingQueueItems(baseVisibleItems, query);
   const manageDisabled = !canManageQueue || !isConnected;
   const playDisabled = !canManageQueue || !isConnected;
   const activeIndex = currentItem
@@ -632,6 +628,9 @@ export function ListenQueueDrawer({
                 >
                   {(item) => (
                     <QueueRow
+                      duplicateCount={
+                        duplicateCounts.get(queueSourceKey(item) ?? "") ?? 0
+                      }
                       compact
                       item={item}
                       mode="listen"

@@ -1,8 +1,9 @@
 "use client";
 
-import { useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { useContext, useRef, type ReactNode } from "react";
+import { useCardExpansion } from "./use-card-expansion";
 import { ListenMobilePresentation } from "../mobile/listen-mobile-context";
-import { Headphones, ListPlus, Play, Plus } from "lucide-react";
+import { Copy, Headphones, ListPlus, Play, Plus } from "lucide-react";
 import { Badge } from "@/components/ui";
 import type { RoomQueueItem } from "@/lib/rooms";
 import { cx } from "@/lib/ui";
@@ -52,6 +53,7 @@ export function RecommendationCard({
   canPlay,
   current,
   inQueue,
+  queuedCount = 0,
   item,
   mediaPreferences,
   onAddQueue,
@@ -64,6 +66,7 @@ export function RecommendationCard({
   canPlay: boolean;
   current: boolean;
   inQueue: boolean;
+  queuedCount?: number;
   item: RoomQueueItem;
   mediaPreferences: MediaPreferenceController;
   onAddQueue(): void;
@@ -72,46 +75,13 @@ export function RecommendationCard({
   reason?: string;
 }) {
   const mobile = useContext(ListenMobilePresentation);
-  const [expanded, setExpanded] = useState(false);
-  const [closing, setClosing] = useState(false);
-  function collapse() {
-    setExpanded(false);
-    setClosing(!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  }
-  useEffect(() => {
-    if (!closing) return;
-    const timer = setTimeout(() => setClosing(false), 180);
-    return () => clearTimeout(timer);
-  }, [closing]);
   const cardRef = useRef<HTMLElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (!mobile || !expanded) return;
-    function dismiss(event: Event) {
-      if (
-        event.target instanceof Node &&
-        !cardRef.current?.contains(event.target)
-      )
-        collapse();
-    }
-    function escape(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      collapse();
-      requestAnimationFrame(() =>
-        triggerRef.current?.focus({ preventScroll: true }),
-      );
-    }
-    document.addEventListener("pointerdown", dismiss, true);
-    document.addEventListener("focusin", dismiss);
-    cardRef.current?.addEventListener("keydown", escape);
-    const card = cardRef.current;
-    return () => {
-      document.removeEventListener("pointerdown", dismiss, true);
-      document.removeEventListener("focusin", dismiss);
-      card?.removeEventListener("keydown", escape);
-    };
-  }, [expanded, mobile]);
+  const { expanded, closing, expand } = useCardExpansion({
+    card: cardRef,
+    preview: triggerRef,
+    enabled: mobile,
+  });
   const metadata = useYouTubeMetadata(
     item.sourceType === "youtube" ? item.sourceUrl : null,
   );
@@ -145,13 +115,18 @@ export function RecommendationCard({
         ref={triggerRef}
         aria-label={`Show actions for ${title}`}
         aria-expanded={expanded}
-        onClick={() => {
-          setClosing(false);
-          setExpanded(true);
-        }}
+        onClick={expand}
       >
         <QueueArtwork thumbnailUrl={thumbnailUrl} title={title} />
         <span>{title}</span>
+        {queuedCount > 0 && (
+          <span
+            title={`${queuedCount} already in queue; add another copy`}
+            aria-label="Already in queue"
+          >
+            <Copy size={14} aria-hidden />
+          </span>
+        )}
       </button>
       <button
         aria-label={
@@ -202,6 +177,14 @@ export function RecommendationCard({
           {channel ?? "Room source"}
         </p>
         <div className="mt-1 flex min-w-0 items-center gap-2">
+          {queuedCount > 0 && (
+            <span
+              title={`${queuedCount} already in queue; add another copy`}
+              aria-label="Already in queue"
+            >
+              <Copy size={14} aria-hidden />
+            </span>
+          )}
           {duration ? (
             <span className="shrink-0 text-label-sm text-on-surface-variant">
               {duration}

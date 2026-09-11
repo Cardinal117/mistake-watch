@@ -37,7 +37,7 @@ import {
   beginPlaybackOccurrenceIfMissing,
   claimRecommendationAction,
   classifyPlaybackAdvance,
-  completionRatioBps,
+  sessionCompletionRatioBps,
   finishPlaybackOccurrence,
   recommendationMediaIdentity,
   recordQueueRecommendationEvent,
@@ -450,10 +450,7 @@ function commitQueueAdvance(
       recommendationContext(ctx),
       {
         actorMemberId: transition.actorMemberId,
-        completionRatioBps: completionRatioBps(
-          session.position_seconds,
-          session.source_duration_seconds,
-        ),
+        completionRatioBps: sessionCompletionRatioBps(session, nowMs()),
         outcome: transition.outcome,
         reason: transition.reason,
         roomId: session.room_id,
@@ -1479,10 +1476,7 @@ export const advance_queue_item = spacetimedb.reducer(
         actorMemberId: actor_member_id,
         ...classifyPlaybackAdvance({
           autoplay,
-          completionRatioBps: completionRatioBps(
-            authority.session.position_seconds,
-            authority.session.source_duration_seconds,
-          ),
+          completionRatioBps: sessionCompletionRatioBps(authority.session, nowMs()),
           playbackStatus: authority.session.status,
         }),
       },
@@ -1575,10 +1569,7 @@ export const advance_uploaded_queue_item = spacetimedb.reducer(
         actorMemberId: actor_member_id,
         ...classifyPlaybackAdvance({
           autoplay,
-          completionRatioBps: completionRatioBps(
-            authority.session.position_seconds,
-            authority.session.source_duration_seconds,
-          ),
+          completionRatioBps: sessionCompletionRatioBps(authority.session, nowMs()),
           playbackStatus: authority.session.status,
         }),
       },
@@ -1968,10 +1959,7 @@ export const remove_queue_item = spacetimedb.reducer(
         recommendationContext(ctx),
         {
           actorMemberId: actor_member_id,
-          completionRatioBps: completionRatioBps(
-            authority.session.position_seconds,
-            authority.session.source_duration_seconds,
-          ),
+          completionRatioBps: sessionCompletionRatioBps(authority.session, nowMs()),
           outcome: "skipped",
           reason: "active_item_removed",
           roomId: room_id,

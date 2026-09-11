@@ -4,6 +4,16 @@ import vm from "node:vm";
 import test from "node:test";
 import ts from "typescript";
 const source = readFileSync("spacetime/src/prepared-youtube.ts", "utf8");
+const policy = { exports: {} };
+vm.runInNewContext(
+  ts.transpileModule(
+    readFileSync("spacetime/src/recommendation-policy.ts", "utf8"),
+    {
+      compilerOptions: { module: ts.ModuleKind.CommonJS },
+    },
+  ).outputText,
+  { module: policy, exports: policy.exports },
+);
 function run(name, patch = {}, argsPatch = {}) {
   const calls = [];
   const session = {
@@ -46,11 +56,8 @@ function run(name, patch = {}, argsPatch = {}) {
           };
         if (spec === "./module-schema")
           return { spacetimedb: { reducer: (_, fn) => fn } };
-        if (spec === "./recommendation-events")
-          return {
-            classifyPlaybackAdvance: () => ({}),
-            completionRatioBps: () => 10000,
-          };
+        if (spec === "./recommendation-events") return policy.exports;
+        if (spec === "./room-keys") return { nowMs: () => 178100n };
         throw new Error(spec);
       },
     },
@@ -59,7 +66,11 @@ function run(name, patch = {}, argsPatch = {}) {
     getAuthorizedPlaybackActor: () => (patch.denied ? null : { session }),
     nextPlaybackQueueItem: () => next,
     commitQueueAdvance: (...args) =>
-      calls.push({ kind: "prepare", status: args[4] }),
+      calls.push({
+        kind: "prepare",
+        status: args[4],
+        ...(patch.capture ? { outcome: args[5].outcome } : {}),
+      }),
     classifyPlaybackAdvance: () => ({}),
     applyPlaybackUpdate: (...args) =>
       calls.push({ kind: "start", position: args[2], status: args[4] }),
@@ -84,6 +95,18 @@ test("prepare selects the verified next YouTube item without advancing its clock
   assert.deepEqual(run("prepare_youtube_autoplay"), [
     { kind: "prepare", status: "paused" },
   ]));
+test("automatic completion uses the running server clock instead of the start position", () => {
+  assert.deepEqual(
+    run("prepare_youtube_autoplay", {
+      status: "playing",
+      position_seconds: 0.04,
+      playback_rate: 1,
+      source_duration_seconds: 178,
+      capture: true,
+    }),
+    [{ kind: "prepare", status: "paused", outcome: "completed" }],
+  );
+});
 for (const patch of [
   { denied: true },
   { server_updated_ms: 101 },

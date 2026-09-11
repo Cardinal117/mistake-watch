@@ -61,6 +61,9 @@ and typecheck/lint. See review-notes.md for warnings and release limitations.
 
 ## Approved follow-ups
 
+Owner-approved 030.9: [intentional repeats and coordinated card transitions](queue-and-card-follow-up.md).
+Supersedes the Personal duplicate-blocking behavior; implementation in progress.
+
 Approved follow-up completed: **030.5 delivery reliability repair**. Shared lease,
 bounded multi-batch event-only pumping after authorized requests, daily fallback
 and status receipts are implemented and deployed. See

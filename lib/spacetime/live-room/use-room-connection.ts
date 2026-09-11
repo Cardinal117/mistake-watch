@@ -107,6 +107,7 @@ export function useRoomConnection(room: RoomSnapshot) {
 
     reconnectAttemptRef.current = 0;
     setErrorMessage(null);
+    setMemberMissingNotice(null);
     setAdmissionId(null);
     setConnectionStatus("connecting");
     setConnectionReadiness({ status: "connecting" });

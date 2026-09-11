@@ -43,7 +43,9 @@ for (const width of [1680, 390]) {
         name: "Show actions for Fiery Dragon",
       });
       await expect(preview).toBeVisible();
-      await expect(card.getByText("19 recorded plays").first()).toBeVisible();
+      await expect(
+        card.getByRole("img", { name: "19 recorded plays" }),
+      ).toBeVisible();
       const before = await page.evaluate(() => window.watchQA!.calls.length);
       await preview.click();
       await expect(card).toHaveAttribute("data-expanded", "true");

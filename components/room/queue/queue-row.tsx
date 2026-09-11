@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { CompactQueueRow } from "./compact-queue-row";
+import { QueueDuplicateIndicator } from "./queue-duplicate-indicator";
 import { Badge } from "@/components/ui";
 import { MetadataPlaceholderChips } from "../metadata-placeholder-chips";
 import { getQueueMetadataPriority } from "@/lib/queue/metadata-priority";
@@ -25,6 +26,7 @@ import { formatDuration } from "./queue-utils";
 
 export function QueueRow({
   compact = false,
+  duplicateCount = 0,
   item,
   manageDisabled,
   mode,
@@ -38,6 +40,7 @@ export function QueueRow({
   queuedItemsLength,
 }: {
   compact?: boolean;
+  duplicateCount?: number;
   item: RoomQueueItem;
   manageDisabled: boolean;
   mode: "listen" | "watch";
@@ -80,6 +83,7 @@ export function QueueRow({
   if (compact)
     return (
       <CompactQueueRow
+        duplicateCount={duplicateCount}
         item={item}
         title={title}
         channel={channel}
@@ -131,6 +135,9 @@ export function QueueRow({
           {duration}
         </p>
         <div className="mt-1 flex flex-wrap gap-1">
+          {item.status !== "played" && (
+            <QueueDuplicateIndicator count={duplicateCount} />
+          )}
           {item.status === "now" ? (
             <Badge tone={mode === "listen" ? "amber" : "cyan"}>Now</Badge>
           ) : item.status === "played" ? (
