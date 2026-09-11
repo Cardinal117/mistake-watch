@@ -10,6 +10,8 @@ export type RoomMediaPreference = {
   liked: boolean;
   mediaId: string;
   revision: number;
+  updatedAtMs?: number;
+  conflicted?: boolean;
   sourceType: "direct" | "hls" | "uploaded" | "youtube";
 };
 
@@ -22,6 +24,7 @@ type PreferenceConnection = {
     liked: boolean;
     mediaId: string;
     recordNeutralWithoutCurrent: boolean;
+    reassertIntent: boolean;
     sourceType: RoomMediaPreference["sourceType"];
   }): Promise<void>;
 };
@@ -41,6 +44,7 @@ export async function setRoomMediaPreference({
   liked,
   mediaId,
   recordNeutralWithoutCurrent,
+  reassertIntent,
   sourceType,
 }: {
   access: RecommendationRoomAccess;
@@ -49,26 +53,38 @@ export async function setRoomMediaPreference({
   liked: boolean;
   mediaId: string;
   recordNeutralWithoutCurrent: boolean;
+  reassertIntent: boolean;
   sourceType: RoomMediaPreference["sourceType"];
 }) {
   return withTrustedPreferenceConnection(access, async (connection) => {
+    const before = (await connection.read()).find(
+      (preference) =>
+        preference.sourceType === sourceType && preference.mediaId === mediaId,
+    );
+    if ((before?.revision ?? 0) !== expectedRevision) {
+      return before ? { ...before, conflicted: true } : null;
+    }
     await connection.set({
       actionId,
       expectedRevision,
       liked,
       mediaId,
       recordNeutralWithoutCurrent,
+      reassertIntent,
       sourceType,
     });
 
     const preferences = await connection.read();
-    return (
-      preferences.find(
-        (preference) =>
-          preference.sourceType === sourceType &&
-          preference.mediaId === mediaId,
-      ) ?? null
+    const after = preferences.find(
+      (preference) =>
+        preference.sourceType === sourceType && preference.mediaId === mediaId,
     );
+    return after
+      ? {
+          ...after,
+          conflicted: reassertIntent && after.revision !== expectedRevision + 1,
+        }
+      : null;
   });
 }
 
@@ -130,11 +146,21 @@ async function connectTrustedPreference(
               mediaId: string;
               recordNeutralWithoutCurrent: boolean;
               revision: number;
+              updatedMs: bigint;
               sourceType: string;
             }>
           >;
         };
         const reducers = connected.reducers as unknown as {
+          setVerifiedAccountMediaPreferenceIntent(input: {
+            actorMemberId: string;
+            clientActionId: string;
+            expectedRevision: number;
+            liked: boolean;
+            mediaId: string;
+            roomId: string;
+            sourceType: string;
+          }): Promise<void> | void;
           setVerifiedRoomMediaPreference(input: {
             actorMemberId: string;
             clientActionId: string;
@@ -165,6 +191,7 @@ async function connectTrustedPreference(
                   liked: row.liked,
                   mediaId: row.mediaId,
                   revision: row.revision,
+                  updatedAtMs: Number(row.updatedMs),
                   sourceType: row.sourceType,
                 },
               ];
@@ -172,16 +199,27 @@ async function connectTrustedPreference(
           },
           set: (input) =>
             Promise.resolve(
-              reducers.setVerifiedRoomMediaPreference({
-                actorMemberId: access.memberId,
-                clientActionId: input.actionId,
-                expectedRevision: input.expectedRevision,
-                liked: input.liked,
-                mediaId: input.mediaId,
-                recordNeutralWithoutCurrent: input.recordNeutralWithoutCurrent,
-                roomId: access.roomId,
-                sourceType: input.sourceType,
-              }),
+              input.reassertIntent
+                ? reducers.setVerifiedAccountMediaPreferenceIntent({
+                    actorMemberId: access.memberId,
+                    clientActionId: input.actionId,
+                    expectedRevision: input.expectedRevision,
+                    liked: input.liked,
+                    mediaId: input.mediaId,
+                    roomId: access.roomId,
+                    sourceType: input.sourceType,
+                  })
+                : reducers.setVerifiedRoomMediaPreference({
+                    actorMemberId: access.memberId,
+                    clientActionId: input.actionId,
+                    expectedRevision: input.expectedRevision,
+                    liked: input.liked,
+                    mediaId: input.mediaId,
+                    recordNeutralWithoutCurrent:
+                      input.recordNeutralWithoutCurrent,
+                    roomId: access.roomId,
+                    sourceType: input.sourceType,
+                  }),
             ),
         });
       })

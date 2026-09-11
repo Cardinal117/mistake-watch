@@ -62,17 +62,13 @@ test("Malformed or foreign provider identities cannot evict unrelated cached rec
     assert.throws(() => normalizeCatalogueVideos(payload, ids, duration));
 });
 
-test("Unprocessed and explicitly restricted sources are excluded without changing manual playback", () => {
+test("Unprocessed, globally blocked and age-restricted sources stay excluded", () => {
   for (const row of [
     {
       ...publicVideo,
       status: { ...publicVideo.status, uploadStatus: "uploaded" },
     },
     { ...publicVideo, contentDetails: { regionRestriction: { allowed: [] } } },
-    {
-      ...publicVideo,
-      contentDetails: { regionRestriction: { blocked: ["ZA"] } },
-    },
     {
       ...publicVideo,
       contentDetails: { contentRating: { ytRating: "ytAgeRestricted" } },
@@ -82,6 +78,53 @@ test("Unprocessed and explicitly restricted sources are excluded without changin
       normalizeCatalogueVideos({ items: [row] }, [ids[0]], duration)[0].status,
       "unavailable",
     );
+  }
+});
+test("Public country-limited uploads retain compact region metadata for per-viewer filtering", () => {
+  for (const [regionRestriction, allowedCountries, blockedCountries] of [
+    [{ allowed: ["ZA", "US"] }, ["ZA", "US"], null],
+    [{ blocked: ["RU"] }, null, ["RU"]],
+    [{ blocked: [] }, null, null],
+    [undefined, null, null],
+  ]) {
+    const [result] = normalizeCatalogueVideos(
+      {
+        items: [
+          {
+            ...publicVideo,
+            contentDetails: {
+              ...publicVideo.contentDetails,
+              regionRestriction,
+            },
+          },
+        ],
+      },
+      [ids[0]],
+      duration,
+    );
+    assert.equal(result.status, "public");
+    assert.deepEqual(result.allowedCountries, allowedCountries);
+    assert.deepEqual(result.blockedCountries, blockedCountries);
+  }
+});
+test("Malformed or ambiguous country restrictions fail closed", () => {
+  for (const regionRestriction of [
+    null,
+    {},
+    [],
+    { allowed: ["ZA"], blocked: [] },
+    { allowed: ["za"] },
+    { blocked: [null] },
+    { blocked: "ZA" },
+    { allowed: ["ZA"], extra: true },
+    { allowed: Array(251).fill("ZA") },
+  ]) {
+    const [result] = normalizeCatalogueVideos(
+      { items: [{ ...publicVideo, contentDetails: { regionRestriction } }] },
+      [ids[0]],
+      duration,
+    );
+    assert.equal(result.status, "unavailable");
   }
 });
 test("One claimed batch is fetched and completed; failure does not renew metadata", async () => {

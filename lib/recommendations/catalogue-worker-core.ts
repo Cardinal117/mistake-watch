@@ -1,3 +1,4 @@
+import { parseCatalogueRegion } from "./catalogue-region";
 import {
   CATALOGUE_BATCH_SIZE,
   CATALOGUE_DAILY_LIMIT,
@@ -119,12 +120,8 @@ export function normalizeCatalogueVideos(
     const rating = details.contentRating
       ? catalogueObject(details.contentRating)
       : {};
-    // We have no trusted viewer-country context. Keep restricted sources out of
-    // automatic discovery; this does not limit deliberate manual playback.
-    if (
-      details.regionRestriction !== undefined ||
-      rating.ytRating === "ytAgeRestricted"
-    )
+    const region = parseCatalogueRegion(details.regionRestriction);
+    if (!region || rating.ytRating === "ytAgeRestricted")
       return { mediaId, status: "unavailable" };
     const durationSeconds = duration(
       typeof details.duration === "string" ? details.duration : undefined,
@@ -139,6 +136,7 @@ export function normalizeCatalogueVideos(
     return {
       mediaId,
       status: "public",
+      ...region,
       title: snippet.title,
       channelTitle,
       durationSeconds: catalogueCount(durationSeconds) ? durationSeconds : null,

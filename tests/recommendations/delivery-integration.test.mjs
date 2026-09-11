@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import ts from "typescript";
+import { loadRecommendationModule } from "./ranking-test-helpers.mjs";
+const regionModule = await loadRecommendationModule("catalogue-region.ts");
 
 async function load(file, mocks) {
   const source = await readFile(
@@ -28,6 +30,7 @@ function routeMocks(allowed) {
     jobs,
     delivered: () => deliveries,
     mocks: {
+      "@/lib/recommendations/catalogue-region": regionModule,
       "next/server": {
         NextResponse: { json: Response.json },
         after: (fn) => jobs.push(fn),

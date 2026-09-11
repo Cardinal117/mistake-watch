@@ -59,7 +59,7 @@ typecheck/lint/build passed, file-length gate has no violations. Browser fixture
 extraction and expiry timer stabilization were followed by all 18 browser tests
 and typecheck/lint. See review-notes.md for warnings and release limitations.
 
-## Later work — not part of approved implementation
+## Approved follow-ups
 
 Approved follow-up completed: **030.5 delivery reliability repair**. Shared lease,
 bounded multi-batch event-only pumping after authorized requests, daily fallback
@@ -67,7 +67,9 @@ and status receipts are implemented and deployed. See
 [release and QA evidence](delivery-release-2026-09-11.md). The live backlog reached
 zero; supplied Likes and completion are durable. Broader original-Like history,
 stale room precedence, large-library reads and catalogue admission remain distinct
-investigations. Git publication of this follow-up is pending.
+investigations. Git publication is complete: `55b4837` on main and the task branch.
+
+The owner subsequently approved 030.6 catalogue admission, 030.7 account Like consistency and 030.8 compact Discover controls. See [scope and acceptance](approved-follow-ups.md); implementation is in progress.
 
 Stage 2 identity/enrichment/theme verification and Stage 3 community consent/
 similarity need new approved slices. Autoplay remains separate. Do not create

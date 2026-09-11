@@ -23,6 +23,10 @@ qa(
     ).toBeVisible();
     await page
       .locator('.personal-regular[data-media-id="dQw4w9Wg001"]')
+      .getByRole("button", { name: /Show actions/ })
+      .click();
+    await page
+      .locator('.personal-regular[data-media-id="dQw4w9Wg001"]')
       .getByRole("button", { name: "Play Fiery Dragon", exact: true })
       .click();
     await expect
@@ -182,6 +186,7 @@ qa(
       .getByText(/Recorded plays · last 180 days · About counts/)
       .click();
     const first = page.locator(".personal-regular").first();
+    await first.getByRole("button", { name: /Show actions/ }).click();
     await first.getByRole("button", { name: /More options/ }).click();
     await page
       .getByRole("menuitem", { name: "Don't suggest this track", exact: true })
@@ -266,6 +271,11 @@ qa(
     await page
       .locator(".personal-regular")
       .first()
+      .getByRole("button", { name: /Show actions/ })
+      .click();
+    await page
+      .locator(".personal-regular")
+      .first()
       .getByRole("button", { name: /More options/ })
       .click();
     await page.getByRole("menuitem", { name: "Not now · 7 days" }).click();
@@ -309,22 +319,23 @@ qa(
 );
 
 qa(
-  "A projected favourite outside the bounded preference snapshot remains liked and unlikes correctly",
+  "A complete neutral account snapshot overrides stale catalogue Like and allows a new Like",
   async ({ page }) => {
     await setup(page, { omitFirstPreference: true });
     const card = page.locator('.personal-regular[data-media-id="dQw4w9Wg000"]');
+    await card.getByRole("button", { name: /Show actions/ }).click();
     const heart = card.locator(".personal-like");
-    await expect(heart).toHaveAttribute("aria-pressed", "true");
+    await expect(heart).toHaveAttribute("aria-pressed", "false");
     await expect(heart).toBeEnabled();
     const request = page.waitForRequest(
       (req) => req.url().includes("/preferences") && req.method() === "PUT",
     );
     await heart.click();
     expect((await request).postDataJSON()).toMatchObject({
-      liked: false,
+      liked: true,
       expectedRevision: 0,
     });
-    await expect(heart).toHaveAttribute("aria-pressed", "false");
+    await expect(heart).toHaveAttribute("aria-pressed", "true");
   },
 );
 
@@ -359,6 +370,10 @@ qa(
     await expect(
       page.locator('[style*="radial-gradient(circle at 0% 18%"]'),
     ).toHaveCount(1);
+    await page
+      .locator('.personal-regular[data-media-id="dQw4w9Wg001"]')
+      .getByRole("button", { name: /Show actions/ })
+      .click();
     await page
       .locator('.personal-regular[data-media-id="dQw4w9Wg001"]')
       .getByRole("button", { name: "Play Fiery Dragon", exact: true })
@@ -570,6 +585,7 @@ for (const [width, height] of [
         ),
       ).toBe(true);
       const first = page.locator(".personal-regular").first();
+      await first.getByRole("button", { name: /Show actions/ }).click();
       await first.getByRole("button", { name: /More options/ }).click();
       await expect(
         page.getByRole("menuitem", { name: "Not now · 7 days" }),

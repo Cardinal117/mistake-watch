@@ -78,6 +78,7 @@ export function ListenModeLayout({
   const [queueDrawerOpen, setQueueDrawerOpen] = useState(false);
   const mediaPreferences = useMediaPreferences({
     allowUploaded: account.status === "signed-in",
+    identityKey: `${account.status === "signed-in" ? account.id : "guest"}:${room.currentMember?.id ?? "none"}`,
     roomId: room.id,
   });
   const liveQueueItems = useListenQueueItems(liveRoom, room);

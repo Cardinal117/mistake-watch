@@ -78,7 +78,8 @@ may run for due entries under the global budget. Sparse/cold states honestly
 explain that saved music is being prepared or there is not enough history.
 Manual search remains the route to unfamiliar music in this stage.
 
-No CSS redesign. Preserve DESIGN.md tokens, all responsive layout rules,
+Original Stage 1 had no CSS redesign. Approved 030.8 now adds compact expandable
+regulars and visible Add next controls; see approved-follow-ups.md. Preserve DESIGN.md tokens, all responsive layout rules,
 bottom-scroll correction, stage tabs and song-derived accent/gradient. Expired
 metadata must disappear from mounted Personal results at its deadline, not only
 after the next navigation. Feedback revisions continue to protect multi-device
@@ -91,9 +92,11 @@ worker fetches up to 50 IDs in one videos.list request with explicit timeout and
 `cache: no-store` so the stored fetch timestamp reflects an actual provider
 response rather than an older Next cache entry. No search.list fallback.
 
-Require processed status and explicit public/embeddable fields. Conservatively
-exclude explicit region restrictions and YouTube age restrictions because no
-trusted viewer-country context exists here. This is automatic discovery
+Require processed status and explicit public/embeddable fields. Approved 030.6
+retains bounded country rules in the private expiring metadata and filters before
+candidate limits/counts and decision issuance using the Vercel request country.
+Unknown country excludes restricted entries; malformed rules and age restrictions
+remain excluded. Legacy reader/decision RPCs use unknown-country wrappers. This is automatic discovery
 eligibility, not a guarantee of successful playback for every viewer. Manual
 playback/metadata handling stays unchanged.
 

@@ -205,6 +205,63 @@ export const set_verified_room_media_preference = spacetimedb.reducer(
   },
 );
 
+// Additive contract: old clients retain their same-state no-op semantics.
+// The trusted application server chooses this only for an authenticated account.
+export const set_verified_account_media_preference_intent = spacetimedb.reducer(
+  {
+    actor_member_id: t.string(),
+    client_action_id: t.string(),
+    expected_revision: t.u32(),
+    liked: t.bool(),
+    media_id: t.string(),
+    room_id: t.string(),
+    source_type: t.string(),
+  },
+  (ctx, input) => {
+    if (!isTrustedRecommendationAuthority(ctx)) return;
+    const actor = ctx.db.room_participant.participant_key.find(
+      `${input.room_id}:${input.actor_member_id}`,
+    );
+    const media = verifiedPreferenceMedia(ctx, {
+      mediaId: input.media_id,
+      roomId: input.room_id,
+      sourceType: input.source_type,
+    });
+    const createdMs = BigInt(Date.now());
+    if (
+      !actor ||
+      actor.room_id !== input.room_id ||
+      !media ||
+      !claimRecommendationAction(
+        asRecommendationContext(ctx),
+        {
+          actionId: input.client_action_id,
+          actionType: "verified_account_preference_intent",
+          actorMemberId: input.actor_member_id,
+          roomId: input.room_id,
+        },
+        createdMs,
+      )
+    )
+      return;
+    setGuestMediaPreference(
+      asRecommendationContext(ctx),
+      {
+        actorMemberId: input.actor_member_id,
+        expectedRevision: input.expected_revision,
+        liked: input.liked,
+        mediaId: media.mediaId,
+        queueItemId: media.queueItemId,
+        recordNeutralWithoutCurrent: true,
+        reassertIntent: true,
+        roomId: input.room_id,
+        sourceType: media.sourceType,
+      },
+      createdMs,
+    );
+  },
+);
+
 export const read_my_guest_media_preferences = spacetimedb.procedure(
   { actor_member_id: t.string(), room_id: t.string() },
   t.array(guestMediaPreference.rowType),
@@ -214,14 +271,14 @@ export const read_my_guest_media_preferences = spacetimedb.procedure(
         `${room_id}:${actor_member_id}`,
       );
       const actorSession = tx.db.room_participant_session.session_key.find(
-        participantSessionKey(
-          room_id,
-          actor_member_id,
-          senderIdentityHex(ctx),
-        ),
+        participantSessionKey(room_id, actor_member_id, senderIdentityHex(ctx)),
       );
 
-      if (!actor || !actorSession || !actorSession.identity.isEqual(ctx.sender)) {
+      if (
+        !actor ||
+        !actorSession ||
+        !actorSession.identity.isEqual(ctx.sender)
+      ) {
         throw new SenderError("Room-scoped preference access required.");
       }
 

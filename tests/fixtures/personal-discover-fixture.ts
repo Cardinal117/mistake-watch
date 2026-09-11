@@ -104,7 +104,10 @@ export async function setupPersonalDiscover(
           mediaId: body.mediaId,
           state: body.state,
           revision: body.expectedRevision + 1,
-          expiresAt: null,
+          expiresAt:
+            body.state === "not_now"
+              ? new Date(Date.now() + 7 * 86400000).toISOString()
+              : null,
         };
         feedback = [
           ...feedback.filter((f) => f.mediaId !== item.mediaId),

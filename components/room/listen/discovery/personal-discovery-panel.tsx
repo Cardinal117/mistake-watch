@@ -15,8 +15,10 @@ import {
 import { queueItemToDiscoverySourceCommand } from "@/lib/recommendations/listen-discovery-interactions";
 import type { DiscoveryPanelProps } from "./discovery-panel";
 import { PersonalTrackView } from "./personal-track";
+import { PersonalFeedbackNotice } from "./personal-feedback-notice";
 import { usePersonalDiscovery } from "./use-personal-discovery";
 import "./personal-discovery.css";
+import "./personal-regular-controls.css";
 
 export function PersonalDiscoveryPanel(props: DiscoveryPanelProps) {
   const {
@@ -326,28 +328,20 @@ export function PersonalDiscoveryPanel(props: DiscoveryPanelProps) {
         </p>
       )}
       {discovery.undo && (
-        <div className="personal-feedback-notice" role="status">
-          <span>
-            {discovery.undo.state === "not_now"
-              ? "Hidden from suggestions for 7 days."
-              : discovery.undo.state === "wrong_version"
-                ? "This video version is hidden from suggestions."
-                : "This track is hidden from suggestions."}
-          </span>
-          <button
-            disabled={discovery.busyFeedback}
-            onClick={() =>
-              void discovery.feedback(
-                discovery.undo!.mediaId,
-                "recommended",
-                "neutral",
-                discovery.undo!.revision,
-              )
-            }
-          >
-            Undo
-          </button>
-        </div>
+        <PersonalFeedbackNotice
+          key={`${discovery.undo.mediaId}:${discovery.undo.revision}`}
+          feedback={discovery.undo}
+          busy={discovery.busyFeedback}
+          onDismiss={discovery.dismissUndo}
+          onUndo={() =>
+            void discovery.feedback(
+              discovery.undo!.mediaId,
+              "recommended",
+              "neutral",
+              discovery.undo!.revision,
+            )
+          }
+        />
       )}
     </section>
   );

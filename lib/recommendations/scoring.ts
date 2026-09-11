@@ -28,6 +28,7 @@ export type RecommendationAggregate = RecommendationMediaIdentity & {
 
 export type RecommendationPreference = RecommendationMediaIdentity & {
   state: "liked" | "neutral";
+  updatedAtMs?: number;
 };
 
 export type RecommendationSignals = {

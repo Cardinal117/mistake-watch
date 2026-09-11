@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import { BoundedTtlCache } from "./bounded-cache";
 import { recommendationMediaKey } from "./media-identity";
+import { durablePreferenceIsNewer, isExpiredAccountOverlay } from "./preference-freshness";
 import { rankRecommendations } from "./rank";
 import type {
   RoomRecommendationRequest,
@@ -118,6 +119,8 @@ export function createRoomRecommendationService(
         const preferences = mergePreferences(
           durablePreferences,
           sessionPreferences,
+          Boolean(access.accountUserId),
+          now(),
         );
         const suppressed = new Set(suppressedMedia);
         const candidates = applyCatalogueAuthorization({
@@ -239,6 +242,8 @@ function recommendationCacheKey(
 function mergePreferences(
   durable: RecommendationPreference[],
   session: RecommendationPreference[],
+  account: boolean,
+  nowMs: number,
 ) {
   const byKey = new Map(
     durable.map((preference) => [
@@ -248,7 +253,14 @@ function mergePreferences(
   );
 
   for (const preference of session) {
-    byKey.set(recommendationMediaKey(preference), preference);
+    const key = recommendationMediaKey(preference);
+    const durable = byKey.get(key);
+    if (!durable || !durablePreferenceIsNewer(durable.updatedAtMs, preference.updatedAtMs)) {
+      const expired = account && !durable &&
+        (preference.sourceType === "youtube" || preference.sourceType === "uploaded") &&
+        isExpiredAccountOverlay(preference.updatedAtMs, nowMs);
+      byKey.set(key, expired ? { ...preference, state: "neutral" } : preference);
+    }
   }
 
   return [...byKey.values()];

@@ -38,7 +38,7 @@ test("Like hook updates optimistically and restores authoritative state on failu
   assert.match(source, /mutationError\?\.current \?\? current/);
   assert.match(source, /mutationError\?\.status === 403/);
   assert.match(source, /setBlockedKeys/);
-  assert.match(source, /roomIdRef\.current !== roomId/);
+  assert.match(source, /roomIdRef\.current !== scope/);
 });
 
 test("Like hook reconciles active clients without overriding newer local state", async () => {

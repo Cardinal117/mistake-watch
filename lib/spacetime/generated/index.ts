@@ -68,6 +68,7 @@ import SetPlaybackStateReducer from "./set_playback_state_reducer";
 import SetQueueAutoplayReducer from "./set_queue_autoplay_reducer";
 import SetQueueItemPriorityReducer from "./set_queue_item_priority_reducer";
 import SetQueueModeReducer from "./set_queue_mode_reducer";
+import SetVerifiedAccountMediaPreferenceIntentReducer from "./set_verified_account_media_preference_intent_reducer";
 import SetVerifiedRoomMediaPreferenceReducer from "./set_verified_room_media_preference_reducer";
 import StartPreparedYoutubeReducer from "./start_prepared_youtube_reducer";
 import UpdateMediaTitleReducer from "./update_media_title_reducer";
@@ -263,6 +264,7 @@ const reducersSchema = __reducers(
   __reducerSchema("set_queue_autoplay", SetQueueAutoplayReducer),
   __reducerSchema("set_queue_item_priority", SetQueueItemPriorityReducer),
   __reducerSchema("set_queue_mode", SetQueueModeReducer),
+  __reducerSchema("set_verified_account_media_preference_intent", SetVerifiedAccountMediaPreferenceIntentReducer),
   __reducerSchema("set_verified_room_media_preference", SetVerifiedRoomMediaPreferenceReducer),
   __reducerSchema("start_prepared_youtube", StartPreparedYoutubeReducer),
   __reducerSchema("update_media_title", UpdateMediaTitleReducer),

@@ -93,6 +93,7 @@ export function WatchModeLayout({
   const library = useMediaLibrary();
   const preferences = useMediaPreferences({
     roomId: room.id,
+    identityKey: `${account.status === "signed-in" ? account.id : "guest"}:${room.currentMember?.id ?? "none"}`,
     allowUploaded: library.libraryAccess?.canAccessUploadedCatalogue === true,
   });
   const items = useMemo(() => getQueueItems(liveRoom, room), [liveRoom, room]);

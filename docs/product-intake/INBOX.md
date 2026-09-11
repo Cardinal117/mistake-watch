@@ -7,6 +7,45 @@
 
 <!-- QUICK-CAPTURE:START -->
 
+Owner subsequently approved the catalogue admission, account Like consistency
+and compact Discover follow-ups together on 2026-09-11. The two related captures
+below are now in implementation under [030.6–030.8](../tasks/TASK-030-personal-music-catalogue/approved-follow-ups.md);
+their original proposal/future wording is retained as history. The additional
+reported persistent "Hidden from suggestions for 7 days" Undo message is also
+approved for a short auto-dismiss fix, without changing the seven-day exclusion.
+
+### 2026-09-11 - Account Likes appear lost and Personal completion counts remain zero
+
+Owner request (verbatim):
+
+> Agreed, and that liked songs of said accounta re properly shown and used whre it matters as I just had to relike 4 songs I am very confidant I liked before
+>
+> Propose what to do next
+
+Owner reports re-liking four previously liked songs. Whether the durable Likes were lost, a different upload was shown, or the displayed state was stale is not established. The preceding read-only production check found zero stored playback-completed events for the owner's Personal room and six projected regulars with zero completed plays. This proves missing durable completion evidence at that check, not the failure's origin.
+
+Recommended priority: P1 reliability investigation, before Discover UI polish or broader learning. See [proposed investigation and repair gates](../tasks/TASK-030-personal-music-catalogue/reliability-follow-up.md). Proposal only; no application change or preference rewrite authorized by this capture. Preserve the earlier UI requests below.
+
+Subsequent owner-approved delivery repair is deployed: [release evidence](../tasks/TASK-030-personal-music-catalogue/delivery-release-2026-09-11.md). Backlog reached zero; both supplied Like events and one completion reached durable storage. Do not close this entire report: the original remembered Likes are not historically reconstructed, and both uploads remain excluded by separate catalogue admission rules. The UI improvement capture below is still future work.
+
+### 2026-09-11 - Compact expandable regulars and visible Add next actions (future work)
+
+Owner request (verbatim):
+
+> Log these as future things to add, the Your regulars should have an easy add to queue and  add next button shown and added in in an appropriate section, I suggest we use the same method I made for the mobile UI where it shows the thumbnail with small text below it of the name and when you click on this it opens up with an animations(look at how it was done in mobile) Same when closing when you click off it closes with a smooth animation.
+>
+> This allows more refulars to be shown at a time to make it easier for the user(and naturally mobile better)
+> Same with reccomended for you next to add to queue should be add as next icon/button
+
+Capture only; not scheduled or approved for implementation. Two related future improvements:
+
+- **Your regulars:** compact thumbnail tiles with small song titles underneath, allowing more regulars to be visible at once on desktop and mobile. Clicking/tapping a tile opens its details and a clearly placed action section with visible **Add to queue** and **Add next** controls. Match the existing mobile discovery card's smooth opening and click-away closing behaviour. Opening the tile should reveal controls rather than accidentally start playback; retain a separate explicit play action and access to the existing recorded play count.
+- **Recommended for you:** expose an **Add next** icon/button beside **Add to queue**, rather than requiring the overflow menu. Preserve permission checks and pending/confirmed queue feedback.
+
+Source reference checked on 2026-09-11: [RecommendationCard](../../components/room/listen/discovery/media-cards.tsx) already implements mobile compact/expanded state, click-away dismissal, Escape/focus handling and a closing phase. [Mobile discovery styles](../../components/room/listen/mobile/listen-mobile-discovery.css) define thumbnail/title previews and transitions. Use this specific card interaction as the reference, not the mobile player expansion gesture. The Personal surface currently uses [PersonalTrackView](../../components/room/listen/discovery/personal-track.tsx); reuse the interaction pattern without reintroducing provider lookups into catalogue reads.
+
+Future planning should retain the accepted song-derived accent/gradient, recorded-count wording, reduced-motion support, keyboard access and unclipped bottom scrolling. Related: [TASK-029](../tasks/TASK-029-recommendation-quality-baseline/task.md) Discover UI and [TASK-030](../tasks/TASK-030-personal-music-catalogue/proposal.md) catalogue foundation. No ranking, database, provider or automatic queue-refill change requested here.
+
 ### 2026-09-09 - Maintenance, prototype schedules and release notices (future work)
 
 Owner: "we should put a thing into the website that notifies users when we do these maintenence and prototyping events with times schedules and then whats new messages. This can be recorded as later or future work"

@@ -74,6 +74,7 @@ export {
   read_verified_room_media_preferences,
   set_guest_media_preference,
   set_verified_room_media_preference,
+  set_verified_account_media_preference_intent,
 } from "./recommendation-authority";
 export {
   issue_room_admission_grant,

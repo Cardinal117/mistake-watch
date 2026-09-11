@@ -37,6 +37,11 @@
 
 ## Testing strategy
 
+Owner-approved 030.6–030.8 scope and release supersede the original local-only
+AC12 gate for these follow-ups. Acceptance includes country filtering before
+limits and decisions, freshest account Like/CAS/identity isolation, compact
+regular controls and visible Add next. See [follow-up acceptance](approved-follow-ups.md).
+
 Risk: high (privacy, durable data, external API costs and concurrency). Required
 test-first at SQL and pure server boundaries; browser test-first for automatic
 search regression. Existing queue/feedback/layout tests provide characterization.

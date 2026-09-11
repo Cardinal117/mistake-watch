@@ -3,6 +3,7 @@ import type { RecommendationMediaIdentity } from "./media-identity";
 export type DurablePreference = RecommendationMediaIdentity & {
   liked: boolean;
   revision: number;
+  updatedAtMs?: number;
 };
 
 export type PreferenceAssetAccess = {

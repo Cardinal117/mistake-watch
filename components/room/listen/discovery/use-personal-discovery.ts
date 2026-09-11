@@ -56,6 +56,7 @@ export function usePersonalDiscovery(
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [undo, setUndo] = useState<DiscoverFeedback | null>(null);
+  const dismissUndo = useCallback(() => setUndo(null), []);
   const [busyFeedback, setBusyFeedback] = useState(false);
   const [pending, setPending] = useState<Set<string>>(new Set());
   const [added, setAdded] = useState<Set<string>>(new Set());
@@ -351,6 +352,7 @@ export function usePersonalDiscovery(
     refresh,
     actionError,
     undo,
+    dismissUndo,
     feedback,
     busyFeedback,
     addTrack,

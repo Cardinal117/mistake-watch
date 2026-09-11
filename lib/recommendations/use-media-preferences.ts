@@ -41,17 +41,24 @@ export type MediaPreferenceController = {
 export function useMediaPreferences({
   allowUploaded,
   roomId,
+  identityKey,
 }: {
   allowUploaded: boolean;
   roomId: string;
+  identityKey: string;
 }) {
+  const scope = `${roomId}:${identityKey}`;
   const [preferences, setPreferences] = useState<MediaPreferenceMap>({});
   const [loadedRoomId, setLoadedRoomId] = useState<string | null>(null);
   const [pendingKeys, setPendingKeys] = useState<Set<string>>(new Set());
   const [blockedKeys, setBlockedKeys] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [readFailure, setReadFailure] = useState<{
+    scope: string;
+    message: string;
+  } | null>(null);
   const [rankingRevision, setRankingRevision] = useState(0);
-  const roomIdRef = useRef(roomId);
+  const roomIdRef = useRef(scope);
   const preferencesRef = useRef<MediaPreferenceMap>({});
   const pendingKeysRef = useRef<Set<string>>(new Set());
   const mutationGenerationRef = useRef(0);
@@ -67,8 +74,8 @@ export function useMediaPreferences({
   );
 
   useEffect(() => {
-    roomIdRef.current = roomId;
-  }, [roomId]);
+    roomIdRef.current = scope;
+  }, [roomId, scope]);
 
   useEffect(() => {
     let disposed = false;
@@ -81,11 +88,11 @@ export function useMediaPreferences({
       const activeRefresh = activeRefreshRef.current;
       const cooldown = cooldownRef.current;
 
-      if (activeRefresh?.roomId === roomId) {
+      if (activeRefresh?.roomId === scope) {
         return;
       }
 
-      if (cooldown?.roomId === roomId && now < cooldown.until) {
+      if (cooldown?.roomId === scope && now < cooldown.until) {
         return;
       }
 
@@ -100,12 +107,12 @@ export function useMediaPreferences({
       const requestSequence = requestSequenceRef.current + 1;
       const requestMutationGeneration = mutationGenerationRef.current;
       requestSequenceRef.current = requestSequence;
-      activeRefreshRef.current = { roomId, sequence: requestSequence };
+      activeRefreshRef.current = { roomId: scope, sequence: requestSequence };
 
       try {
         const items = await fetchRoomMediaPreferences(roomId);
 
-        if (rateLimitFailuresRef.current?.roomId === roomId) {
+        if (rateLimitFailuresRef.current?.roomId === scope) {
           rateLimitFailuresRef.current = null;
           cooldownRef.current = null;
         }
@@ -117,44 +124,50 @@ export function useMediaPreferences({
             currentRoomId: roomIdRef.current,
             latestRequestSequence: requestSequenceRef.current,
             requestMutationGeneration,
-            requestRoomId: roomId,
+            requestRoomId: scope,
             requestSequence,
           })
         ) {
           return;
         }
 
+        setReadFailure(null);
         const result = reconcileMediaPreferences({
           current: preferencesRef.current,
           incoming: indexMediaPreferences(items),
           pendingKeys: pendingKeysRef.current,
         });
-        const roomChanged = lastAppliedRoomIdRef.current !== roomId;
+        const roomChanged = lastAppliedRoomIdRef.current !== scope;
 
         if (result.changed) {
           preferencesRef.current = result.preferences;
           setPreferences(result.preferences);
         }
 
-        lastAppliedRoomIdRef.current = roomId;
+        lastAppliedRoomIdRef.current = scope;
         if (roomChanged) {
           setPendingKeys(new Set());
           setBlockedKeys(new Set());
           setErrors({});
         }
-        setLoadedRoomId(roomId);
+        setLoadedRoomId(scope);
         if (result.changed || roomChanged) {
           setRankingRevision((current) => current + 1);
         }
       } catch (error) {
+        if (disposed || roomIdRef.current !== scope) return;
+        setReadFailure({
+          scope,
+          message: "Likes are temporarily unavailable. Retrying automatically.",
+        });
         if (error instanceof PreferenceReadError && error.status === 429) {
           const failureCount =
-            rateLimitFailuresRef.current?.roomId === roomId
+            rateLimitFailuresRef.current?.roomId === scope
               ? rateLimitFailuresRef.current.count + 1
               : 1;
-          rateLimitFailuresRef.current = { count: failureCount, roomId };
+          rateLimitFailuresRef.current = { count: failureCount, roomId: scope };
           cooldownRef.current = {
-            roomId,
+            roomId: scope,
             until:
               Date.now() +
               preferenceRateLimitCooldownMs(error.retryAfterMs, failureCount),
@@ -163,7 +176,7 @@ export function useMediaPreferences({
         // Preference reconciliation is non-blocking for playback and queue use.
       } finally {
         if (
-          activeRefreshRef.current?.roomId === roomId &&
+          activeRefreshRef.current?.roomId === scope &&
           activeRefreshRef.current.sequence === requestSequence
         ) {
           activeRefreshRef.current = null;
@@ -195,7 +208,7 @@ export function useMediaPreferences({
       window.removeEventListener("online", refreshOnActivity);
       document.removeEventListener("visibilitychange", refreshOnActivity);
     };
-  }, [roomId]);
+  }, [roomId, scope]);
 
   const getPreference = useCallback(
     (item: RoomQueueItem | null): MediaPreferenceView => {
@@ -206,21 +219,23 @@ export function useMediaPreferences({
       }
 
       const key = recommendationMediaKey(identity);
-      const hasCurrentRoomState = loadedRoomId === roomId;
+      const hasCurrentRoomState = loadedRoomId === scope;
       const isUploaded = identity.sourceType === "uploaded";
       const blocked =
         (hasCurrentRoomState && blockedKeys.has(key)) ||
         (isUploaded && !allowUploaded);
       const current = hasCurrentRoomState ? preferences[key] : undefined;
-      const error = hasCurrentRoomState ? errors[key] : undefined;
+      const error =
+        (hasCurrentRoomState ? errors[key] : undefined) ||
+        (readFailure?.scope === scope ? readFailure.message : undefined);
 
       return {
         loaded: hasCurrentRoomState,
         known: current !== undefined,
-        available: !blocked,
+        available: hasCurrentRoomState && !blocked,
         error: blocked
           ? (error ?? "Like unavailable for this media.")
-          : (error ?? null),
+          : (error ?? (hasCurrentRoomState ? null : "Loading Likes...")),
         liked: current?.liked ?? false,
         pending: hasCurrentRoomState && pendingKeys.has(key),
         revision: current?.revision ?? 0,
@@ -233,12 +248,13 @@ export function useMediaPreferences({
       loadedRoomId,
       pendingKeys,
       preferences,
-      roomId,
+      scope,
+      readFailure,
     ],
   );
 
   const togglePreference = useCallback(
-    async (item: RoomQueueItem, fallbackLiked = false) => {
+    async (item: RoomQueueItem) => {
       const identity = queueItemRecommendationIdentity(item);
 
       if (!identity) {
@@ -246,12 +262,14 @@ export function useMediaPreferences({
       }
 
       const key = recommendationMediaKey(identity);
-      const hasCurrentRoomState = loadedRoomId === roomId;
+      const hasCurrentRoomState = loadedRoomId === scope;
+      if (!hasCurrentRoomState || roomIdRef.current !== scope) return;
       const current = (hasCurrentRoomState
         ? preferencesRef.current[key]
         : undefined) ?? {
         ...identity,
-        liked: fallbackLiked,
+        // The complete loaded snapshot is authoritative, including absent keys.
+        liked: false,
         mediaKey: key,
         revision: 0,
       };
@@ -284,7 +302,7 @@ export function useMediaPreferences({
       }));
       if (!hasCurrentRoomState) {
         setBlockedKeys(new Set());
-        setLoadedRoomId(roomId);
+        setLoadedRoomId(scope);
       }
 
       try {
@@ -296,7 +314,7 @@ export function useMediaPreferences({
           roomId,
           sourceType: identity.sourceType,
         });
-        if (roomIdRef.current !== roomId) {
+        if (roomIdRef.current !== scope) {
           return;
         }
         const updatedPreferences = {
@@ -309,7 +327,7 @@ export function useMediaPreferences({
         setPreferences(updatedPreferences);
         setRankingRevision((state) => state + 1);
       } catch (error) {
-        if (roomIdRef.current !== roomId) {
+        if (roomIdRef.current !== scope) {
           return;
         }
         const mutationError =
@@ -331,7 +349,7 @@ export function useMediaPreferences({
           setBlockedKeys((state) => new Set(state).add(key));
         }
       } finally {
-        if (roomIdRef.current === roomId) {
+        if (roomIdRef.current === scope) {
           const nextPendingKeys = new Set(pendingKeysRef.current);
           nextPendingKeys.delete(key);
           pendingKeysRef.current = nextPendingKeys;
@@ -339,7 +357,7 @@ export function useMediaPreferences({
         }
       }
     },
-    [allowUploaded, blockedKeys, loadedRoomId, roomId],
+    [allowUploaded, blockedKeys, loadedRoomId, roomId, scope],
   );
 
   return useMemo<MediaPreferenceController>(

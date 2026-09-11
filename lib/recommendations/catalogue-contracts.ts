@@ -18,6 +18,8 @@ export type CatalogueResult =
       status: "public";
       viewCount: number | null;
       likeCount: number | null;
+      allowedCountries?: string[] | null;
+      blockedCountries?: string[] | null;
     });
 
 export function catalogueObject(value: unknown): Record<string, unknown> {

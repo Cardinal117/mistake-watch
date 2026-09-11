@@ -8,6 +8,14 @@ const server =
   process.env.MISTAKE_WATCH_SPACETIME_URL ?? "http://127.0.0.1:5372";
 const database =
   process.env.MISTAKE_WATCH_RECOMMENDATION_TEST_DB ?? "task011-reducer-proof";
+if (
+  !["127.0.0.1", "localhost", "[::1]"].includes(new URL(server).hostname) ||
+  !/^(task011-reducer-proof|task030-like-proof)(-[a-z0-9]+)?$/.test(database)
+) {
+  throw new Error(
+    "Reducer fixtures require a loopback server and a dedicated proof database.",
+  );
+}
 const roomId = "task011-runtime-room";
 const hostMemberId = "task011-runtime-host";
 const seedToken = "task011-runtime-seed-token-12345678901234567890";
@@ -122,7 +130,16 @@ async function connectTestClient(DbConnection) {
 }
 
 spacetime(
-  ["publish", database, "--server", server, "--delete-data=always", "--yes"],
+  [
+    "publish",
+    database,
+    "--module-path",
+    "spacetime",
+    "--server",
+    server,
+    "--delete-data=always",
+    "--yes",
+  ],
   { quiet: true },
 );
 
@@ -501,7 +518,115 @@ try {
     1,
   );
 
-  console.log("TASK-011 reducer runtime proof passed.");
+  // The account-only trusted contract must preserve old callers and CAS while
+  // allowing an explicit intent that matches a stale room-local value.
+  const intentMedia = "intentproof01";
+  const initialOutboxCount = scalar(
+    `SELECT COUNT(*) AS total FROM recommendation_event_outbox WHERE room_id = '${roomId}'`,
+  );
+  const intentCount = () =>
+    scalar(
+      `SELECT COUNT(*) AS total FROM recommendation_event_outbox WHERE room_id = '${roomId}'`,
+    ) - initialOutboxCount;
+  const intentRevision = () =>
+    scalar(
+      `SELECT revision FROM guest_media_preference WHERE room_id = '${roomId}' AND media_id = '${intentMedia}'`,
+    );
+  await connection.reducers.setVerifiedAccountMediaPreferenceIntent({
+    actorMemberId: hostMemberId,
+    clientActionId: "untrusted-account-intent",
+    expectedRevision: 0,
+    liked: true,
+    mediaId: intentMedia,
+    roomId,
+    sourceType: "youtube",
+  });
+  assert.equal(
+    intentCount(),
+    0,
+    "untrusted callers cannot reassert account intent",
+  );
+  call(
+    "set_verified_account_media_preference_intent",
+    hostMemberId,
+    "intent:first",
+    0,
+    true,
+    intentMedia,
+    roomId,
+    "youtube",
+  );
+  assert.equal(intentCount(), 1);
+  call(
+    "set_verified_account_media_preference_intent",
+    hostMemberId,
+    "intent:first",
+    0,
+    true,
+    intentMedia,
+    roomId,
+    "youtube",
+  );
+  assert.equal(intentCount(), 1, "action retry must not duplicate its event");
+  call(
+    "set_verified_account_media_preference_intent",
+    hostMemberId,
+    "intent:reassert",
+    1,
+    true,
+    intentMedia,
+    roomId,
+    "youtube",
+  );
+  assert.equal(
+    intentCount(),
+    2,
+    "same-state account intent must reach durability",
+  );
+  assert.equal(intentRevision(), 2);
+  call(
+    "set_verified_account_media_preference_intent",
+    hostMemberId,
+    "intent:stale-cas",
+    1,
+    false,
+    intentMedia,
+    roomId,
+    "youtube",
+  );
+  assert.equal(intentRevision(), 2, "stale CAS cannot override newer intent");
+  call(
+    "set_verified_room_media_preference",
+    hostMemberId,
+    "intent:legacy-noop",
+    2,
+    true,
+    intentMedia,
+    false,
+    roomId,
+    "youtube",
+  );
+  assert.equal(
+    intentCount(),
+    2,
+    "existing reducer clients retain same-state no-op",
+  );
+  call(
+    "set_verified_account_media_preference_intent",
+    hostMemberId,
+    "intent:unlike",
+    2,
+    false,
+    intentMedia,
+    roomId,
+    "youtube",
+  );
+  assert.equal(intentRevision(), 3);
+  assert.equal(intentCount(), 3);
+
+  console.log(
+    "TASK-011 reducer and TASK-030 account Like runtime proofs passed.",
+  );
 } finally {
   for (const activeConnection of connections) {
     activeConnection.disconnect();

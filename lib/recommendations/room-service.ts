@@ -1,4 +1,5 @@
 import "server-only";
+import { readAccountPreferences } from "./account-preference-read";
 import { loadDiscoverSuppressedMedia } from "./discover-service";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -19,7 +20,6 @@ import type { RoomRecommendationRequest } from "./room-contracts";
 import { readRoomMediaPreferences } from "./room-preference-bridge";
 
 const AGGREGATE_LIMIT = 250;
-const PREFERENCE_LIMIT = 250;
 type RecommendationClient = SupabaseClient<Database>;
 
 const service = createRoomRecommendationService({
@@ -44,6 +44,7 @@ export async function getRoomRecommendations({
       mediaId: preference.mediaId,
       sourceType: preference.sourceType,
       state: preference.liked ? "liked" : "neutral",
+      updatedAtMs: preference.updatedAtMs,
     }),
   ) satisfies RecommendationPreference[];
 
@@ -150,15 +151,7 @@ async function loadPreferences(
     return [];
   }
 
-  const { data, error } = await client
-    .from("media_preferences")
-    .select("media_id,preference_state,source_type")
-    .eq("user_id", access.accountUserId)
-    .limit(PREFERENCE_LIMIT);
-
-  if (error) {
-    throw error;
-  }
+  const data = await readAccountPreferences(client, access.accountUserId);
 
   return (data ?? []).flatMap((row) => {
     if (
@@ -177,6 +170,7 @@ async function loadPreferences(
         mediaId: row.media_id,
         sourceType: row.source_type,
         state: row.preference_state,
+        updatedAtMs: Date.parse(row.source_event_at),
       } as RecommendationPreference,
     ];
   });

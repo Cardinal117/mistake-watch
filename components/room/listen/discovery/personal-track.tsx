@@ -2,7 +2,15 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, Heart, MoreHorizontal, Play, Plus, X } from "lucide-react";
+import {
+  Check,
+  Heart,
+  ListPlus,
+  MoreHorizontal,
+  Play,
+  Plus,
+  X,
+} from "lucide-react";
 import type { PersonalTrack } from "@/lib/recommendations/personal-discovery-model";
 import type {
   DiscoverFeedbackState,
@@ -10,6 +18,7 @@ import type {
 } from "@/lib/recommendations/discover-contracts";
 import type { MediaPreferenceController } from "@/lib/recommendations/use-media-preferences";
 import { QueueArtwork } from "./media-cards";
+import { useRegularExpansion } from "./use-regular-expansion";
 
 export function PersonalTrackView({
   item,
@@ -49,11 +58,13 @@ export function PersonalTrackView({
   const article = useRef<HTMLElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
+  const preview = useRef<HTMLButtonElement>(null);
+  const expansion = useRegularExpansion(article, menu, preview);
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState({ left: 0, top: 0 });
   const [likeError, setLikeError] = useState<string | null>(null);
   const preference = preferences.getPreference(item);
-  const liked = preference.known ? preference.liked : item.liked;
+  const liked = preference.loaded ? preference.liked : item.liked;
   const shown = useRef(onShown);
   useEffect(() => {
     shown.current = onShown;
@@ -123,68 +134,106 @@ export function PersonalTrackView({
       ref={article}
       className={regular ? "personal-regular" : "personal-track-row"}
       data-media-id={item.videoId}
+      data-expanded={
+        regular ? expansion.expanded || expansion.closing : undefined
+      }
+      data-closing={regular ? expansion.closing : undefined}
     >
-      <button
-        className="personal-artwork"
-        aria-label={`Play ${item.title}`}
-        disabled={!canPlay || item.isUnavailable}
-        onClick={onPlay}
-        type="button"
-      >
-        <QueueArtwork
-          thumbnailUrl={item.thumbnailUrl}
-          title={item.title}
-          className="h-full w-full rounded-none border-0"
-        />
-        <span className="personal-artwork-play">
-          <Play size={18} fill="currentColor" aria-hidden />
-        </span>
-      </button>
-      <div className="personal-track-text">
-        <p className="personal-track-title" title={item.title}>
-          {item.title}
-        </p>
-        <p
-          className="personal-track-artist"
-          title={item.artist ?? item.channelName}
-        >
-          {item.artist ?? item.channelName ?? "YouTube"}
-        </p>
-        {regular && (
-          <p
-            className="personal-track-count"
-            title="Recorded completed playback occurrences in this Personal room over the last 180 days. This is not a lifetime count or proof of uninterrupted listening."
-          >
-            {item.completedPlayCount ?? 0} recorded plays
-          </p>
-        )}
-      </div>
-      {!regular && reason && <p className="personal-track-reason">{reason}</p>}
-      {regular ? (
+      {regular && (
         <button
-          className="personal-like"
-          aria-label={`${liked ? "Remove Like from" : "Like"} ${item.title}`}
-          aria-pressed={!!liked}
-          disabled={
-            !preference.available || !preference.loaded || preference.pending
-          }
-          onClick={() => {
-            setLikeError(null);
-            void preferences
-              .togglePreference(item, item.liked)
-              .catch(() => setLikeError("Like was not saved."));
-          }}
+          ref={preview}
+          className="personal-regular-preview"
+          hidden={expansion.expanded}
+          aria-label={`Show actions for ${item.title}`}
+          aria-expanded={expansion.expanded}
+          onClick={expansion.expand}
           type="button"
         >
-          <Heart size={17} fill={liked ? "currentColor" : "none"} aria-hidden />
+          <QueueArtwork thumbnailUrl={item.thumbnailUrl} title={item.title} />
+          <span className="personal-track-title">{item.title}</span>
+          <span className="personal-track-count">
+            {item.completedPlayCount ?? 0} recorded plays
+          </span>
         </button>
-      ) : (
-        <>
+      )}
+      <div
+        className={
+          regular ? "personal-regular-details" : "personal-row-details"
+        }
+        inert={regular && !expansion.expanded}
+        aria-hidden={regular && !expansion.expanded ? true : undefined}
+      >
+        <button
+          className="personal-artwork"
+          aria-label={`Play ${item.title}`}
+          disabled={!canPlay || item.isUnavailable}
+          onClick={onPlay}
+          type="button"
+        >
+          <QueueArtwork
+            thumbnailUrl={item.thumbnailUrl}
+            title={item.title}
+            className="h-full w-full rounded-none border-0"
+          />
+          <span className="personal-artwork-play">
+            <Play size={18} fill="currentColor" aria-hidden />
+          </span>
+        </button>
+        <div className="personal-track-text">
+          <p className="personal-track-title" title={item.title}>
+            {item.title}
+          </p>
+          <p
+            className="personal-track-artist"
+            title={item.artist ?? item.channelName}
+          >
+            {item.artist ?? item.channelName ?? "YouTube"}
+          </p>
+          {regular && (
+            <p
+              className="personal-track-count"
+              title="Recorded completed playback occurrences in this Personal room over the last 180 days. This is not a lifetime count or proof of uninterrupted listening."
+            >
+              {item.completedPlayCount ?? 0} recorded plays
+            </p>
+          )}
+        </div>
+        {!regular && reason && (
+          <p className="personal-track-reason">{reason}</p>
+        )}
+        {regular ? (
+          <button
+            className="personal-like"
+            aria-label={`${liked ? "Remove Like from" : "Like"} ${item.title}`}
+            aria-pressed={!!liked}
+            disabled={
+              !preference.available || !preference.loaded || preference.pending
+            }
+            onClick={() => {
+              setLikeError(null);
+              void preferences
+                .togglePreference(
+                  item,
+                  preference.loaded ? preference.liked : item.liked,
+                )
+                .catch(() => setLikeError("Like was not saved."));
+            }}
+            type="button"
+          >
+            <Heart
+              size={17}
+              fill={liked ? "currentColor" : "none"}
+              aria-hidden
+            />
+          </button>
+        ) : (
           <span className="personal-duration">
             {item.durationSeconds
               ? `${Math.floor(item.durationSeconds / 60)}:${String(Math.floor(item.durationSeconds % 60)).padStart(2, "0")}`
               : ""}
           </span>
+        )}
+        <div className="personal-queue-actions">
           <button
             className="personal-add"
             onClick={() => onAdd()}
@@ -199,24 +248,35 @@ export function PersonalTrackView({
             )}
             <span>{label}</span>
           </button>
-        </>
-      )}
-      <button
-        ref={trigger}
-        className="personal-more"
-        type="button"
-        aria-label={`More options for ${item.title}`}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <MoreHorizontal size={18} aria-hidden />
-      </button>
-      {(likeError || preference.error) && (
-        <span className="personal-track-error" role="status">
-          {likeError ?? preference.error}
-        </span>
-      )}
+          <button
+            className="personal-next"
+            type="button"
+            aria-label={`Add next · ${item.title}`}
+            title="Add next"
+            onClick={() => onAdd(true)}
+            disabled={!canAdd || queued || pending || item.isUnavailable}
+          >
+            <ListPlus size={17} aria-hidden />
+            {regular && <span>Add next</span>}
+          </button>
+        </div>
+        <button
+          ref={trigger}
+          className="personal-more"
+          type="button"
+          aria-label={`More options for ${item.title}`}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={() => setOpen((value) => !value)}
+        >
+          <MoreHorizontal size={18} aria-hidden />
+        </button>
+        {(likeError || preference.error) && (
+          <span className="personal-track-error" role="status">
+            {likeError ?? preference.error}
+          </span>
+        )}
+      </div>
       {open &&
         createPortal(
           <div
@@ -255,7 +315,7 @@ export function PersonalTrackView({
           >
             <button
               role="menuitem"
-              disabled={!canPlay}
+              disabled={!canPlay || item.isUnavailable}
               onClick={() => action(onPlay)}
             >
               <Play size={16} aria-hidden />
@@ -263,7 +323,7 @@ export function PersonalTrackView({
             </button>
             <button
               role="menuitem"
-              disabled={!canAdd || queued || pending}
+              disabled={!canAdd || queued || pending || item.isUnavailable}
               onClick={() => action(() => onAdd())}
             >
               <Plus size={16} aria-hidden />
@@ -271,7 +331,7 @@ export function PersonalTrackView({
             </button>
             <button
               role="menuitem"
-              disabled={!canAdd || queued || pending}
+              disabled={!canAdd || queued || pending || item.isUnavailable}
               onClick={() => action(() => onAdd(true))}
             >
               <Play size={16} aria-hidden />

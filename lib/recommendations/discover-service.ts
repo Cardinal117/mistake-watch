@@ -21,32 +21,43 @@ type PersonalAccess = Pick<
   "accountUserId" | "roomId" | "roomKind"
 >;
 
-async function readProjection(access: PersonalAccess, catalogue = false) {
+async function readProjection(
+  access: PersonalAccess,
+  catalogue = false,
+  viewerCountry: string | null = null,
+) {
   if (access.roomKind !== "personal" || !access.accountUserId)
     throw new Error("Personal owner required");
   const { data, error } = await createSupabaseAdminClient().rpc(
-    catalogue ? "read_personal_catalogue" : "read_personal_discover",
+    catalogue
+      ? "read_personal_catalogue_for_country"
+      : "read_personal_discover",
     {
       target_room: access.roomId,
       target_account: access.accountUserId,
+      ...(catalogue ? { viewer_country: viewerCountry } : {}),
     },
   );
   if (error) throw error;
   return data;
 }
 
-export async function getPersonalDiscover(access: RecommendationRoomAccess) {
+export async function getPersonalDiscover(
+  access: RecommendationRoomAccess,
+  viewerCountry: string | null = null,
+) {
   const result = await createPersonalDiscoverReader(() =>
-    readProjection(access, true),
+    readProjection(access, true, viewerCountry),
   )();
   const ids = result.recommendations?.map((item) => item.mediaId) ?? [];
   if (!ids.length) return result;
   const decision = await createSupabaseAdminClient().rpc(
-    "issue_personal_catalogue_decision",
+    "issue_personal_catalogue_decision_for_country",
     {
       target_room: access.roomId,
       target_account: access.accountUserId!,
       selected_ids: ids,
+      viewer_country: viewerCountry,
     },
   );
   if (decision.error) throw new Error("Catalogue decision recording failed");

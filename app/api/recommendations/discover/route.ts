@@ -1,6 +1,7 @@
 import { after, NextResponse } from "next/server";
 import { deliverRecommendationEventsInBackground } from "@/lib/recommendations/durable-outbox-drain";
 import { preparePersonalCatalogue } from "@/lib/recommendations/catalogue-service";
+import { catalogueViewerCountry } from "@/lib/recommendations/catalogue-region";
 import { readBoundedJson } from "@/lib/recommendations/bounded-json";
 import {
   normalizeDiscoverMutation,
@@ -38,7 +39,10 @@ export async function GET(request: Request) {
     return unavailable("Personal Discover requires your Personal room.", 403);
   after(deliverRecommendationEventsInBackground);
   try {
-    const result = await getPersonalDiscover(auth.access);
+    const result = await getPersonalDiscover(
+      auth.access,
+      catalogueViewerCountry(request.headers, process.env.VERCEL),
+    );
     const accountUserId = auth.access.accountUserId;
     after(async () => {
       try {

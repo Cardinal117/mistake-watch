@@ -106,17 +106,15 @@ qa(
         })),
       );
       expect(events.error).toBeNull();
-      const like = await admin
-        .from("media_preferences")
-        .insert({
-          user_id: userId,
-          source_type: "youtube",
-          media_id: mediaId,
-          preference_state: "liked",
-          revision: 1,
-          source_event_id: randomUUID(),
-          source_event_at: stamp,
-        });
+      const like = await admin.from("media_preferences").insert({
+        user_id: userId,
+        source_type: "youtube",
+        media_id: mediaId,
+        preference_state: "liked",
+        revision: 1,
+        source_event_id: randomUUID(),
+        source_event_at: stamp,
+      });
       expect(like.error).toBeNull();
       await page.reload();
       const preferenceResponse = await context.request.get(
@@ -128,11 +126,14 @@ qa(
         ]),
       });
       await expect(
-        page.getByText("2 recorded plays", { exact: true }),
+        page
+          .locator(".personal-regular-preview")
+          .getByText("2 recorded plays", { exact: true }),
       ).toBeVisible({ timeout: 30000 });
       const card = page.locator(
         `.personal-regular[data-media-id="${mediaId}"]`,
       );
+      await card.getByRole("button", { name: /Show actions/ }).click();
       await expect(card.locator(".personal-like")).toHaveAttribute(
         "aria-pressed",
         "true",

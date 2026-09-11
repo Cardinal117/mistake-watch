@@ -1,4 +1,9 @@
 import "server-only";
+import { readAccountPreferences } from "./account-preference-read";
+import {
+  durablePreferenceIsNewer,
+  isExpiredAccountOverlay,
+} from "./preference-freshness";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
@@ -31,14 +36,18 @@ export async function listAuthorizedPreferences(
 
   if (access.accountUserId) {
     const admin = createSupabaseAdminClient();
-    const { data, error } = await admin
-      .from("media_preferences")
-      .select("media_id,preference_state,revision,source_type")
-      .eq("user_id", access.accountUserId)
-      .limit(250);
-
-    if (error) {
-      throw error;
+    const data = await readAccountPreferences(admin, access.accountUserId);
+    const durableKeys = new Set(
+      data.map((row) => `${row.source_type}:${row.media_id}`),
+    );
+    for (const [key, live] of preferenceByKey) {
+      if (
+        (live.sourceType === "youtube" || live.sourceType === "uploaded") &&
+        !durableKeys.has(key) &&
+        isExpiredAccountOverlay(live.updatedAtMs, Date.now())
+      ) {
+        preferenceByKey.set(key, { ...live, liked: false });
+      }
     }
 
     const durablePreferences: DurablePreference[] = (data ?? []).flatMap(
@@ -54,6 +63,7 @@ export async function listAuthorizedPreferences(
                 ...identity,
                 liked: row.preference_state === "liked",
                 revision: 0,
+                updatedAtMs: Date.parse(row.source_event_at),
               },
             ]
           : [];
@@ -64,8 +74,16 @@ export async function listAuthorizedPreferences(
       access,
       durablePreferences,
     )) {
-      if (!preferenceByKey.has(recommendationMediaKey(preference))) {
-        preferenceByKey.set(recommendationMediaKey(preference), preference);
+      const key = recommendationMediaKey(preference);
+      const live = preferenceByKey.get(key);
+      if (
+        !live ||
+        durablePreferenceIsNewer(preference.updatedAtMs, live.updatedAtMs)
+      ) {
+        preferenceByKey.set(key, {
+          ...preference,
+          revision: live?.revision ?? 0,
+        });
       }
     }
   }
@@ -91,21 +109,27 @@ async function filterAuthorizedDurablePreferences(
   }
 
   const admin = createSupabaseAdminClient();
-  const { data, error } = await admin
-    .from("media_assets")
-    .select("id,owner_user_id,status,visibility")
-    .in(
-      "id",
-      uploaded.map((preference) => preference.mediaId),
-    );
+  const assets = [];
+  for (let offset = 0; offset < uploaded.length; offset += 200) {
+    const { data, error } = await admin
+      .from("media_assets")
+      .select("id,owner_user_id,status,visibility")
+      .in(
+        "id",
+        uploaded
+          .slice(offset, offset + 200)
+          .map((preference) => preference.mediaId),
+      );
 
-  if (error) {
-    throw error;
+    if (error) {
+      throw error;
+    }
+    assets.push(...(data ?? []));
   }
 
   return filterDurablePreferencesForAccess({
     accountUserId: access.accountUserId,
-    assets: (data ?? []).map((asset) => ({
+    assets: assets.map((asset) => ({
       id: asset.id,
       ownerUserId: asset.owner_user_id,
       status: asset.status,
@@ -142,6 +166,7 @@ export async function updateAuthorizedPreference({
     liked: input.liked,
     mediaId: input.mediaId,
     recordNeutralWithoutCurrent,
+    reassertIntent: Boolean(access.accountUserId),
     sourceType: input.sourceType,
   });
 
@@ -162,7 +187,7 @@ export async function updateAuthorizedPreference({
     return { reason: "Preference state is no longer current.", status: 409 };
   }
 
-  if (preference.liked !== input.liked) {
+  if (preference.conflicted || preference.liked !== input.liked) {
     return {
       item: toPreferenceResponse(preference),
       reason: "Preference state is no longer current.",

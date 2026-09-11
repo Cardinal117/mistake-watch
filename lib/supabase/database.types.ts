@@ -1163,6 +1163,14 @@ export type Database = {
         Args: { target_room: string; target_account: string };
         Returns: Json;
       };
+      read_personal_catalogue_for_country: {
+        Args: { target_room: string; target_account: string; viewer_country: string | null };
+        Returns: Json;
+      };
+      issue_personal_catalogue_decision_for_country: {
+        Args: { target_room: string; target_account: string; selected_ids: string[]; viewer_country: string | null };
+        Returns: Json;
+      };
       reconcile_personal_catalogue: {
         Args: { target_room: string; target_account: string; preview_ids?: string[] | null };
         Returns: Json;

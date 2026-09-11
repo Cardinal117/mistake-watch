@@ -134,6 +134,19 @@ avoid speculative indexing or unbounded user-by-song materializations.
 
 ## Migration and operations
 
+Approved 030.6 adds nullable `allowed_countries`/`blocked_countries` text arrays
+to private metadata (max250 distinct uppercase two-letter codes, mutually
+exclusive). They share the original 28-day expiry and are never returned to the
+browser. `read_personal_catalogue_for_country` and
+`issue_personal_catalogue_decision_for_country` add service-only `viewer_country`
+arguments; legacy wrappers supply null. No requester location is stored.
+Completion accepts the two optional provider-derived arrays. Existing public,
+age, lease, budget, RLS and retention rules remain. Country-hidden cache rows
+do not count as pending preparation. Production migration `20260911093623` was
+applied after local test-first admission proof, 40 country assertions and77
+existing catalogue assertions; original CLI-created filename was aligned to
+the migration tool's recorded timestamp. See follow-up-release-2026-09-11.md.
+
 Create migration with `supabase migration new` after CLI help/version discovery.
 Use isolated local synthetic database cloned from local schema only, not hosted
 data. Test baseline assertion before implementation, apply transactionally, then
