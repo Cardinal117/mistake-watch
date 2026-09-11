@@ -1,5 +1,13 @@
 # Supabase schema and service boundary
 
+Approved reliability follow-up: one private singleton `recommendation_delivery`
+row holds a lease UUID/deadline, cooldown, last status, counts and oldest pending
+timestamp. No user/media IDs or raw event payloads. RLS enabled, no browser grants;
+service-only `claim_recommendation_delivery` and token-checked
+`finish_recommendation_delivery` RPCs use database time and empty search_path.
+This is additive infrastructure; existing event ingestion/retention and Like
+ordering remain authoritative. See [reliability scope](reliability-follow-up.md).
+
 These are the implemented Stage 1 contracts, verified against the local migration
 and application reader. The migration is additive and preserves existing data,
 history and consent. No hosted schema has been changed.

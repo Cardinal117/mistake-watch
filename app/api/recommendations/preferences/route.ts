@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
+import { deliverRecommendationEventsInBackground } from "@/lib/recommendations/durable-outbox-drain";
 
 import {
   listAuthorizedPreferences,
@@ -9,6 +10,7 @@ import { requireRecommendationRoomAccess } from "@/lib/recommendations/room-auth
 import { readBoundedJson } from "@/lib/recommendations/bounded-json";
 
 const MAX_PREFERENCE_REQUEST_BYTES = 16 * 1024;
+export const maxDuration = 60;
 
 type PreferenceRouteDependencies = {
   authorize: typeof requireRecommendationRoomAccess;
@@ -43,6 +45,7 @@ function createRecommendationPreferenceRoutes(
     }
 
     try {
+      after(deliverRecommendationEventsInBackground);
       const items = await dependencies.listPreferences(authorization.access);
       return NextResponse.json(
         { items, source: "private", status: "available" },
@@ -83,6 +86,7 @@ function createRecommendationPreferenceRoutes(
         access: authorization.access,
         input,
       });
+      after(deliverRecommendationEventsInBackground);
 
       return NextResponse.json(
         result.item

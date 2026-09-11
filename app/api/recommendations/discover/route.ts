@@ -1,4 +1,5 @@
 import { after, NextResponse } from "next/server";
+import { deliverRecommendationEventsInBackground } from "@/lib/recommendations/durable-outbox-drain";
 import { preparePersonalCatalogue } from "@/lib/recommendations/catalogue-service";
 import { readBoundedJson } from "@/lib/recommendations/bounded-json";
 import {
@@ -11,6 +12,7 @@ import {
 } from "@/lib/recommendations/discover-service";
 import { requireRecommendationRoomAccess } from "@/lib/recommendations/room-authorization";
 
+export const maxDuration = 60;
 const headers = {
   "Cache-Control": "private, no-store",
   "X-Content-Type-Options": "nosniff",
@@ -34,6 +36,7 @@ export async function GET(request: Request) {
   if (!auth.ok) return unavailable(auth.body.reason, auth.status);
   if (auth.access.roomKind !== "personal" || !auth.access.accountUserId)
     return unavailable("Personal Discover requires your Personal room.", 403);
+  after(deliverRecommendationEventsInBackground);
   try {
     const result = await getPersonalDiscover(auth.access);
     const accountUserId = auth.access.accountUserId;

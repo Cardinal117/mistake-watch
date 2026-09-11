@@ -1,0 +1,38 @@
+[
+  {
+    "path": "app/api/recommendations/discover/route.ts",
+    "sha256": "e7ce85565a0d799881386d5a4d86d4f67a5cf3dce0096e04df9f094d7907750d"
+  },
+  {
+    "path": "app/api/recommendations/preferences/route.ts",
+    "sha256": "bee0721ac87135ed20cb43b54b019402dbb2e771934d62ba155aa7ce98184cb3"
+  },
+  {
+    "path": "app/api/recommendations/drain/route.ts",
+    "sha256": "03f69a3008b6c102735abd9ee2725dc920a0a14357692ba9e1b5504f7a8a60a9"
+  },
+  {
+    "path": "lib/recommendations/durable-outbox-drain.ts",
+    "sha256": "267bb2080b226181319499161e393357e10b6f14849c4226e4f4e2aaa0ac7400"
+  },
+  {
+    "path": "lib/recommendations/outbox-drain.ts",
+    "sha256": "e22809fc88965a9345e0354b8a8b8c9f7b0f026011f17a98f4ed7a2284de45a1"
+  },
+  {
+    "path": "lib/recommendations/outbox-bridge.ts",
+    "sha256": "05348132c13447a6934babf98c8c7b0c122dd48aeae96937fcc84c0a8f40d115"
+  },
+  {
+    "path": "lib/recommendations/persistence.ts",
+    "sha256": "e89244d44e840b282676e6f73ddc1d4a69e6f0f2a4beeacd881796785c4540f3"
+  },
+  {
+    "path": "lib/supabase/database.types.ts",
+    "sha256": "f7db5e650c04b58e6cbfe71a639faf6e4e1a6bd0555808fc2c38a4ce63032dee"
+  },
+  {
+    "path": "supabase/migrations/20260911085543_recommendation_delivery_lease.sql",
+    "sha256": "e9d175f28b65361f596e0ece7cbeaa33f557af9a3fc6ca4eabb98c86308222bc"
+  }
+]

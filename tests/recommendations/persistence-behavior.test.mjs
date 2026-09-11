@@ -161,12 +161,19 @@ test("persistence rejects invalid rows and inconsistent RPC counts", async () =>
   let rpcCalls = 0;
   const client = {
     from: () => ({
-      select: () => ({ in: async () => ({ data: [], error: null }) }),
+      select: () => ({
+        in: () => ({ abortSignal: async () => ({ data: [], error: null }) }),
+      }),
     }),
-    rpc: async () => {
-      rpcCalls += 1;
-      return { data: { duplicates: 0, inserted: 0, received: 0 }, error: null };
-    },
+    rpc: () => ({
+      abortSignal: async () => {
+        rpcCalls += 1;
+        return {
+          data: { duplicates: 0, inserted: 0, received: 0 },
+          error: null,
+        };
+      },
+    }),
   };
   await assert.rejects(
     persistence.persistRecommendationEventBatch({
@@ -209,6 +216,6 @@ test("drain route uses the production cron-secret boundary", async () => {
       path: "/api/media/uploads/cleanup",
       schedule: "0 2 * * *",
     },
-    {path:"/api/rooms/cleanup",schedule:"0 3 * * *"},
+    { path: "/api/rooms/cleanup", schedule: "0 3 * * *" },
   ]);
 });

@@ -2,6 +2,17 @@
 
 ## Active: TASK-030 Personal music catalogue — 2026-09-11
 
+Delivery reliability repair is now live as `dpl_2wHwwMjnrAsXRiC9uFrPwRQhfB7e`.
+Migration `20260911085543` adds the service-only shared lease. Normal authenticated
+activity cleared the observed 4,503-event backlog to zero; both owner-supplied
+Likes are durable and one supplied track's completion is stored. Catalogue
+admission still excludes both example uploads, independently of saved preference.
+See [repair release](tasks/TASK-030-personal-music-catalogue/delivery-release-2026-09-11.md).
+This repair was deployed from a clean `53065af` archive plus a hashed runtime
+manifest. Its source/tests/docs are not yet committed or pushed; do not overwrite
+production from old main without including the repair. Earlier release below is
+the base Stage 1 deployment, not the currently serving runtime.
+
 Stage 1 is deployed under the owner's full rollout approval. Feature `76a0b10`
 merged through PR #18 as `d4b2b89`; production alias points to
 `dpl_GXKN6uiWS7Cgvsb1Xhmasnk6j57d` with that exact source SHA. Migration history

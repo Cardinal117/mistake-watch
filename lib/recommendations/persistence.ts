@@ -216,9 +216,11 @@ export async function persistRecommendationEventBatch({
     return { duplicates: 0, inserted: 0, received: 0 };
   }
 
-  const { data, error } = await client.rpc("ingest_recommendation_events", {
-    event_batch: eventBatch as unknown as Json,
-  });
+  const { data, error } = await client
+    .rpc("ingest_recommendation_events", {
+      event_batch: eventBatch as unknown as Json,
+    })
+    .abortSignal(AbortSignal.timeout(10_000));
 
   if (error) {
     throw new Error(
@@ -265,7 +267,8 @@ async function loadMemberAttributions(
   const { data, error } = await client
     .from("room_members")
     .select("id,room_id,user_id")
-    .in("id", memberIds);
+    .in("id", memberIds)
+    .abortSignal(AbortSignal.timeout(10_000));
 
   if (error) {
     throw new Error(

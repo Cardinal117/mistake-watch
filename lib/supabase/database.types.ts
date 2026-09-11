@@ -1151,6 +1151,14 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      claim_recommendation_delivery: {
+        Args: Record<PropertyKey, never>;
+        Returns: string | null;
+      };
+      finish_recommendation_delivery: {
+        Args: { claim_token: string; outcome: string; processed: number; oldest_pending_ms?: number | null };
+        Returns: boolean;
+      };
       read_personal_catalogue: {
         Args: { target_room: string; target_account: string };
         Returns: Json;

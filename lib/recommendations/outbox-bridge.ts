@@ -8,6 +8,23 @@ import type { RecommendationOutboxTransport } from "./outbox-drain";
 export { drainRecommendationEventBatch } from "./outbox-drain";
 
 const OUTBOX_TIMEOUT_MS = 5_000;
+async function boundedOperation<T>(operation: Promise<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () =>
+            reject(new Error("Recommendation transport operation timed out")),
+          8_000,
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 export async function withTrustedRecommendationOutbox<T>(
   run: (transport: RecommendationOutboxTransport) => Promise<T>,
 ) {
@@ -67,11 +84,16 @@ async function connectTrustedOutbox(serverToken: string) {
 
         resolve({
           acknowledge: (eventIds) =>
-            Promise.resolve(
-              reducers.acknowledgeRecommendationEventOutbox({ eventIds }),
+            boundedOperation(
+              Promise.resolve(
+                reducers.acknowledgeRecommendationEventOutbox({ eventIds }),
+              ),
             ),
           close: () => connected.disconnect(),
-          read: (limit) => procedures.readRecommendationEventOutbox({ limit }),
+          read: (limit) =>
+            boundedOperation(
+              procedures.readRecommendationEventOutbox({ limit }),
+            ),
         });
       })
       .onConnectError((error) => {

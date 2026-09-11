@@ -61,6 +61,14 @@ and typecheck/lint. See review-notes.md for warnings and release limitations.
 
 ## Later work — not part of approved implementation
 
+Approved follow-up completed: **030.5 delivery reliability repair**. Shared lease,
+bounded multi-batch event-only pumping after authorized requests, daily fallback
+and status receipts are implemented and deployed. See
+[release and QA evidence](delivery-release-2026-09-11.md). The live backlog reached
+zero; supplied Likes and completion are durable. Broader original-Like history,
+stale room precedence, large-library reads and catalogue admission remain distinct
+investigations. Git publication of this follow-up is pending.
+
 Stage 2 identity/enrichment/theme verification and Stage 3 community consent/
 similarity need new approved slices. Autoplay remains separate. Do not create
 placeholder claims, fake tags or fabricated related listeners to fill the UI.
