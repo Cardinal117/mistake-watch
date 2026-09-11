@@ -1,5 +1,29 @@
 # Mistake Watch Commands
 
+## TASK-030 automatic enrichment (local shadow engine)
+
+```powershell
+node --test tests/recommendations/automatic-enrichment.test.mjs tests/recommendations/enrichment-providers.test.mjs
+node scripts/evaluate-recording-matches.mjs .tmp/musicbrainz-evaluation/automatic-replay.json
+node --test tests/recommendations/shadow-worker.test.mjs tests/recommendations/shadow-drain.test.mjs
+node scripts/verify-shadow-enrichment-concurrency.mjs --local-fixture
+```
+
+The replay input is private, ignored and temporary; it is not a committed fixture.
+See [input contract and acceptance limits](tasks/TASK-030-personal-music-catalogue/automatic-enrichment.md).
+The evaluator is offline and does not activate provider adapters or write database
+matches. Never infer production readiness from provisional match counts.
+
+Durable migration: `20260911163915_durable_shadow_enrichment.sql`, tested in
+isolated local `task030_catalogue_replay` and now applied hosted after prerequisites
+`20260911163824` and `20260911163857`. See [pilot rollout](tasks/TASK-030-personal-music-catalogue/shadow-pilot-rollout.md).
+Pilot
+requires server-only `SHADOW_ENRICHMENT_ENABLED=true` plus a valid explicit
+`SHADOW_ENRICHMENT_ACCOUNT`; defaults are disabled/unconfigured. Turning the pilot
+off stops admissions/provider jobs; catalogue maintenance still prunes expired
+shadow payloads. No accepted recording links or recommendation ranking is enabled
+by this flag. See [durable scope/QA](tasks/TASK-030-personal-music-catalogue/durable-enrichment.md).
+
 ## TASK-030 catalogue (Stage 1 deployed 2026-09-11)
 
 Production uses migration `20260911055006` and application merge `d4b2b89`.

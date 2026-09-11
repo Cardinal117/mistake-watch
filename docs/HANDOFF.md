@@ -2,6 +2,69 @@
 
 ## Active: TASK-030 Personal music catalogue — 2026-09-11
 
+Current release: [controlled shadow pilot](tasks/TASK-030-personal-music-catalogue/shadow-pilot-rollout.md).
+The three Stage 2 migrations are now hosted (versions 20260911163824,
+20260911163857, 20260911163915). A clean production candidate is Ready; scope
+excludes the superseded manual-confirmation UI/API. Pilot settings are configured
+for the verified owner only, with manual worker disabled. See rollout receipts
+for promotion/smoke status; older local-only statements below are historical.
+Promotion is currently blocked by automatic approval review pending explicit live
+domain authorization. The candidate passes authenticated health/readiness/access
+checks; the custom domain still uses the previous deployment. Hosted admission/
+claim smoke passed in a rolled-back transaction; deployed provider completion
+remains unverified. Do not describe the pilot as active on the live site.
+
+Latest: [identity acceptance validation](tasks/TASK-030-personal-music-catalogue/identity-acceptance-validation.md)
+now separates synthetic tests from independent accuracy evidence. Saved selected
+replay remains 4 provisional/6 unresolved, zero independent labels. Ten synthetic
+cases expose two known false provisional matches. Next is a scoped provisional-only
+shadow release/pilot; accepted identities and Fantasy/orchestral ranking remain gated.
+
+Owner approved [030.12 automatic enrichment](tasks/TASK-030-personal-music-catalogue/automatic-enrichment.md).
+The [durable continuation](tasks/TASK-030-personal-music-catalogue/durable-enrichment.md)
+is implemented locally: private staged jobs, account-scoped leases, shared provider
+budgets, expiry cleanup and deferred pilot processing. Migration
+`20260911163915` was tested locally and subsequently applied to the hosted DB.
+Both pilot settings remain unconfigured/off; apply migrations before deploying
+the changed catalogue-maintenance code. Do not enable ranking from provisional results.
+Durable QA: 48 SQL assertions, 236 application tests, concurrent-claim/idempotency
+proof, typecheck/build/lint and independent review pass. Local advisors are clean;
+one unrelated pre-existing function lint warning is documented in the QA packet.
+The local shadow engine/adapters and offline evaluator are implemented; 227
+recommendation/YouTube tests pass. Four of ten replayed MusicBrainz source cases
+are provisional; six abstain, no independently labelled accuracy claim. Deferred
+runtime integration now exists behind the disabled pilot flag. Next: measured acceptance
+before Fantasy/orchestral ranking; no listening-time confirmation UI.
+
+Latest owner direction: evaluate automatic MusicBrainz matching against their
+favourites and Last.fm supplementary tags before further provider UI work.
+Manual song-confirmation UI is not wanted during listening and is not a release
+requirement. See [automatic provider evaluation](tasks/TASK-030-personal-music-catalogue/automatic-provider-evaluation.md).
+This read-only trial does not activate local Stage 2 code or write matches.
+Last.fm key verification and 60-source tag tests are complete; Apple metadata was
+tested on 12 separately approved sources. MusicBrainz remains partly evaluated
+with recurring service-busy responses. Returned tags/candidates do not establish
+identity accuracy. See the evaluation continuation and free-provider matrix.
+ListenBrainz is now [tested read-only](tasks/TASK-030-personal-music-catalogue/listenbrainz-evaluation.md):
+token valid; expanded 60-source search completed with 58 HTTP 200 and two HTTP 500.
+Space Song and five of eight artist seeds returned similarity results; original
+five recording seeds remained empty across seven algorithms. Owner stopped further
+expansion in favour of the [AcousticBrainz benchmark](tasks/TASK-030-personal-music-catalogue/acousticbrainz-evaluation.md):
+31 provisional matches tested, five with complete audio-feature fields (16.1%).
+Optional historical enrichment only; no history export, accepted match writes or
+runtime activation. Classifier availability does not establish musical accuracy.
+
+Owner accepted the live listening/UI rollout and authorized Stage 2. Local
+030.11a/b foundation is implemented and reviewed: private recording references,
+reversible source-link revisions, private classification assertions, and strict
+offline selection. See [Stage 2 evidence and remaining gates](tasks/TASK-030-personal-music-catalogue/stage-2-foundation-qa.md).
+Explicit real-reference entry/provider integration is now also implemented locally:
+[recording review](tasks/TASK-030-personal-music-catalogue/recording-reference-review.md).
+Local UI/API/schema checks pass. Real smoke lookups returned retry; successful
+provider connectivity and release/activation remain outstanding. No Stage 2 work
+is deployed or connected to live recommendations. Fantasy/orchestral follows
+real classification evidence and strict filtering before candidate limits.
+
 Current live release: compact Discover/desktop queue, immediate queue feedback,
 Shared listening permission/history clearing, and eligible-source listener records.
 See [current QA and deployment evidence](tasks/TASK-030-personal-music-catalogue/listening-rollout-qa.md).

@@ -1,5 +1,28 @@
 # Ordered implementation
 
+## Current: 030.12 Automatic enrichment — durable shadow jobs verified locally
+
+Subsequent approved step: [controlled shadow rollout](shadow-pilot-rollout.md).
+Additive migrations are hosted and the clean candidate build passes. Promotion and
+one-account smoke receipts are tracked there; local-only notes below are history.
+
+[030.12c acceptance validation](identity-acceptance-validation.md) separates
+synthetic/observational/independent evidence and exposes two metadata-only identity
+limitations. Provisional shadow pilot is justified; accepted-link promotion and
+strict-theme ranking remain unsupported. No hosted activation in this slice.
+
+Owner approved the automatic pipeline after provider research. Follow
+[automatic enrichment](automatic-enrichment.md): tested shadow engine first,
+measured identity acceptance and durable jobs next, then Fantasy/orchestral trial.
+This supersedes the evaluation-only/manual-reference-first next actions below.
+Shadow engine, provider adapters, compact evidence and offline evaluator pass
+15 focused/227 regression tests, typecheck, lint excluding generated `.tmp`, build
+and independent review. The approved continuation implements
+[durable staged jobs](durable-enrichment.md); root concurrency and SQL/application
+QA are recorded there: 48 SQL assertions, 236 application regressions, concurrency,
+typecheck/build/lint and independent review pass. Threshold validation and live
+ranking remain unfinished; pilot and hosted schema remain inactive.
+
 Stage 1 was released under subsequent explicit owner approval on 2026-09-11.
 The local slice boundaries below record implementation chronology. See
 [live rollout](live-rollout-2026-09-11.md) for production evidence and remaining
@@ -104,7 +127,25 @@ counts are private and separate from legacy Personal YouTube completions. New
 YouTube-derived listening measurement remains gated pending the provider-use review;
 do not describe the entire cross-provider contract as activated.
 
-## 030.11 Stage 2 — follow-on plan prepared
+## 030.11 Stage 2 — local reference foundation implemented
+
+Current approved next action is the [automatic provider evaluation](automatic-provider-evaluation.md)
+using the owner's favourites. This supersedes the manual-reference-first next
+delivery below. No listening-time confirmation UI is wanted; no Stage 2 release
+or automatic match writes are part of this evaluation.
+
+The next approved slice now also implements [explicit MusicBrainz reference
+review](recording-reference-review.md): Personal overflow/dialog, verified-account
+API, bounded background lookup, private confirmation and removal. Owner confirmed
+non-commercial use. Local gates pass; real lookup attempts returned retry, so
+successful provider connectivity and release/activation remain outstanding.
+
+Owner accepted 030.10 natural-use QA and authorized Stage 2 with one independent
+reviewer. 030.11a/b now has private reference/link/assertion SQL capabilities and
+an offline strict evaluator. See [foundation QA and provenance](stage-2-foundation-qa.md).
+The reviewer checked edge cases and proved concurrent edits serialize; the blank
+provenance finding was fixed with regression tests. No Stage 2 hosted changes,
+live provider adapter, correction UI or strict-room pilot is activated.
 
 Proceed after 030.10 acceptance with the [identity/classification plan](stage-2-identity-and-classification.md).
 Field-level provenance/provider review gates live enrichment. Independently

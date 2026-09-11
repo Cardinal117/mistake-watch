@@ -1,4 +1,6 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, after, type NextRequest } from "next/server";
+import { runMusicbrainzJobs } from "@/lib/recommendations/musicbrainz-worker";
+import { runDurableShadowEnrichment } from "@/lib/recommendations/shadow-worker";
 
 import { drainDurableRecommendationOutbox } from "@/lib/recommendations/durable-outbox-drain";
 import { runMusicCatalogueMaintenance } from "@/lib/recommendations/catalogue-service";
@@ -17,11 +19,23 @@ function isAuthorizedDrainRequest(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const providerDeadline = Date.now() + 55_000;
   if (!isAuthorizedDrainRequest(request)) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
   try {
+    after(async () => {
+      try {
+        if (process.env.SHADOW_ENRICHMENT_ENABLED === "true") {
+          await runDurableShadowEnrichment(providerDeadline);
+        } else {
+          await runMusicbrainzJobs();
+        }
+      } catch {
+        /* Pending jobs remain retryable. */
+      }
+    });
     return NextResponse.json(
       await maintainBeforeRoomDrain(
         runMusicCatalogueMaintenance,

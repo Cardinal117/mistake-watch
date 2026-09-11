@@ -1,4 +1,5 @@
 import { after, NextResponse } from "next/server";
+import { runDurableShadowEnrichment } from "@/lib/recommendations/shadow-worker";
 import { deliverRecommendationEventsInBackground } from "@/lib/recommendations/durable-outbox-drain";
 import {
   preparePersonalCatalogue,
@@ -29,6 +30,7 @@ function unavailable(reason: string, status: number) {
 }
 
 export async function GET(request: Request) {
+  const providerDeadline = Date.now() + 55_000;
   const roomId = normalizeDiscoverRoomId(
     new URL(request.url).searchParams.get("roomId"),
   );
@@ -50,6 +52,9 @@ export async function GET(request: Request) {
     after(async () => {
       try {
         await preparePersonalCatalogue(roomId, accountUserId);
+        if (accountUserId === process.env.SHADOW_ENRICHMENT_ACCOUNT) {
+          await runDurableShadowEnrichment(providerDeadline);
+        }
       } catch (error) {
         console.warn(
           "[catalogue:background] Preparation unavailable",

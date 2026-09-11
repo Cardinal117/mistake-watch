@@ -31,6 +31,11 @@ function routeMocks(allowed) {
     jobs,
     delivered: () => deliveries,
     mocks: {
+      "@/lib/recommendations/shadow-worker": {
+        runDurableShadowEnrichment: async () => {
+          throw new Error("Non-pilot fixture must not dispatch enrichment");
+        },
+      },
       "@/lib/recommendations/catalogue-region": regionModule,
       "next/server": {
         NextResponse: { json: Response.json },

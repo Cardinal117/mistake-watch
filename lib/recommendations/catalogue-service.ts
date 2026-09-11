@@ -43,6 +43,10 @@ export async function pruneMusicCatalogue() {
     {},
   );
   if (error) throw new Error("Catalogue cleanup failed");
+  const shadow = await createSupabaseAdminClient()
+    .rpc("prune_shadow_enrichment", {})
+    .abortSignal(AbortSignal.timeout(5000));
+  if (shadow.error) throw new Error("Shadow evidence cleanup failed");
   return data;
 }
 

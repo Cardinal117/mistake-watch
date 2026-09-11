@@ -1151,27 +1151,124 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      prune_shadow_enrichment: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
+      enqueue_shadow_enrichment: {
+        Args: { target_account: string; source_id: string };
+        Returns: Json;
+      };
+      enqueue_shadow_enrichment_batch: {
+        Args: { target_account: string; max_sources?: number };
+        Returns: Json;
+      };
+      claim_shadow_enrichment: {
+        Args: { target_account: string; target_stage?: string };
+        Returns: Json;
+      };
+      complete_shadow_enrichment: {
+        Args: { job_id: string; claim_token: string; outcome: Json };
+        Returns: boolean;
+      };
+      read_shadow_enrichment: {
+        Args: { target_account: string; source_id: string };
+        Returns: Json;
+      };
+      queue_musicbrainz_reference: {
+        Args: {
+          target_account: string;
+          source_id: string;
+          recording_mbid: string;
+        };
+        Returns: Json;
+      };
+      claim_musicbrainz_lookup: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
+      complete_musicbrainz_lookup: {
+        Args: { claim_token: string; recording_mbid: string; outcome: Json };
+        Returns: boolean;
+      };
+      read_musicbrainz_review: {
+        Args: { target_account: string; source_id: string };
+        Returns: Json;
+      };
+      confirm_musicbrainz_reference: {
+        Args: {
+          target_account: string;
+          source_id: string;
+          selection: string;
+          expected_revision: number;
+          operation_id: string;
+          exact_version: boolean;
+          expected_fetched_at: string;
+        };
+        Returns: Json;
+      };
+      revise_recording_link: {
+        Args: {
+          target_account: string;
+          source_id: string;
+          recording_id: string | null;
+          expected_revision: number;
+          operation_id: string;
+          link_status: string;
+          evidence_reference: string;
+        };
+        Returns: Json;
+      };
       read_listening_settings: {
         Args: { target_room: string; target_account: string };
-        Returns: { roomKind: string; allowed: boolean; purposeVersion: number; epoch: string | null; activatedAt: string | null; historyGeneration: number; historyClearedAt: string | null; memberId: string };
+        Returns: {
+          roomKind: string;
+          allowed: boolean;
+          purposeVersion: number;
+          epoch: string | null;
+          activatedAt: string | null;
+          historyGeneration: number;
+          historyClearedAt: string | null;
+          memberId: string;
+        };
       };
       set_room_listening_consent: {
-        Args: { target_room: string; target_account: string; allow_listening: boolean; purpose_version: number; expected_epoch?: string | null };
+        Args: {
+          target_room: string;
+          target_account: string;
+          allow_listening: boolean;
+          purpose_version: number;
+          expected_epoch?: string | null;
+        };
         Returns: Json;
       };
       clear_account_listening_history: {
         Args: { target_account: string; expected_generation: number };
         Returns: Json;
       };
-      ingest_listener_receipts: { Args: { receipt_batch: Json }; Returns: Json };
-      read_account_listening_counts: { Args: { target_account: string; source_ids?: string[] | null }; Returns: Json };
-      prune_listener_receipts: { Args: Record<PropertyKey, never>; Returns: number };
+      ingest_listener_receipts: {
+        Args: { receipt_batch: Json };
+        Returns: Json;
+      };
+      read_account_listening_counts: {
+        Args: { target_account: string; source_ids?: string[] | null };
+        Returns: Json;
+      };
+      prune_listener_receipts: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
       claim_recommendation_delivery: {
         Args: Record<PropertyKey, never>;
         Returns: string | null;
       };
       finish_recommendation_delivery: {
-        Args: { claim_token: string; outcome: string; processed: number; oldest_pending_ms?: number | null };
+        Args: {
+          claim_token: string;
+          outcome: string;
+          processed: number;
+          oldest_pending_ms?: number | null;
+        };
         Returns: boolean;
       };
       read_personal_catalogue: {
@@ -1179,15 +1276,28 @@ export type Database = {
         Returns: Json;
       };
       read_personal_catalogue_for_country: {
-        Args: { target_room: string; target_account: string; viewer_country: string | null };
+        Args: {
+          target_room: string;
+          target_account: string;
+          viewer_country: string | null;
+        };
         Returns: Json;
       };
       issue_personal_catalogue_decision_for_country: {
-        Args: { target_room: string; target_account: string; selected_ids: string[]; viewer_country: string | null };
+        Args: {
+          target_room: string;
+          target_account: string;
+          selected_ids: string[];
+          viewer_country: string | null;
+        };
         Returns: Json;
       };
       reconcile_personal_catalogue: {
-        Args: { target_room: string; target_account: string; preview_ids?: string[] | null };
+        Args: {
+          target_room: string;
+          target_account: string;
+          preview_ids?: string[] | null;
+        };
         Returns: Json;
       };
       claim_music_catalogue_jobs: {
@@ -1203,7 +1313,11 @@ export type Database = {
         Returns: Json;
       };
       issue_personal_catalogue_decision: {
-        Args: { target_room: string; target_account: string; selected_ids: string[] };
+        Args: {
+          target_room: string;
+          target_account: string;
+          selected_ids: string[];
+        };
         Returns: Json;
       };
       read_personal_discover: {
@@ -1211,7 +1325,11 @@ export type Database = {
         Returns: Json;
       };
       record_personal_discover: {
-        Args: { target_room: string; target_account: string; observation: Json };
+        Args: {
+          target_room: string;
+          target_account: string;
+          observation: Json;
+        };
         Returns: Json;
       };
       has_persistent_room_ended: {

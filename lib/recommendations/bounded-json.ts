@@ -3,7 +3,7 @@ export type BoundedJsonResult =
   | { ok: false; reason: "invalid" | "too-large" };
 
 export async function readBoundedJson(
-  request: Request,
+  request: Pick<Request, "headers" | "body">,
   maxBytes: number,
 ): Promise<BoundedJsonResult> {
   const contentLength = Number(request.headers.get("content-length") ?? 0);

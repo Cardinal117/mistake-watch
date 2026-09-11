@@ -1,8 +1,36 @@
 # Stage 2 — recording identity and evidenced classification
 
-Updated: 2026-09-11. Status: follow-on direction authorized; plan prepared;
-implementation follows the account-wide listening acceptance gate. No provider
-integration or schema in this document is already live.
+Current owner approval follows the completed provider benchmark: implement
+[030.12 automatic enrichment](automatic-enrichment.md). The local shadow engine
+is implemented; durable jobs, measured acceptance and strict ranking remain next.
+The evaluation/manual-reference chronology below is retained as history.
+
+Latest owner correction (2026-09-11): the next step is an
+[automatic favourites/provider evaluation](automatic-provider-evaluation.md).
+The manual-reference-first delivery sequence below is historical and superseded.
+Do not require listening-time confirmation UI. Evaluate automatic matching quality
+and coverage before selecting provider integration; unresolved is a silent valid
+outcome. Existing private correction infrastructure may be reused internally.
+
+Updated: 2026-09-11. Status: owner accepted the listening/UI rollout and explicitly
+authorized Stage 2 implementation with one independent reviewer at medium effort.
+030.11a/b local foundation is implemented and reviewed; see
+[implementation and QA evidence](stage-2-foundation-qa.md). No Stage 2 provider
+integration or schema is live.
+
+First delivery is a server-only, account-private reference foundation and offline
+strict-selection evaluator. Explicitly entered recording/version references may
+be corrected with revision checks; no title matching or implicit merging. Records,
+links and assertions are isolated by account. Global publication, provider jobs,
+live classification and room pilot follow the provenance/quality gate. No empty
+job infrastructure is added before an enabled adapter exists. This is useful
+preparation for 030.11c/d, not an activated recommendation engine.
+
+Risk: data integrity and privacy require test-first SQL and deterministic tests.
+Test wrong-account references, stale revisions, retry identity, revoked/disputed
+links, expired evidence, contradictory assertions, alternate performance/edit,
+and strict filtering before result limits. Synthetic references are test fixtures
+only and must never be imported into the live catalogue.
 
 ## Outcome and boundaries
 

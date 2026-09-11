@@ -1,7 +1,8 @@
 # Discover, queue feedback and eligible listening rollout
 
 Date: 2026-09-11. Status: released; local QA and production service checks passed.
-Owner natural-use QA remains the next acceptance step.
+Owner accepted natural-use QA in the subsequent conversation: functionality and
+appearance approved. Stage 2 implementation is now authorized.
 
 ## Approved scope
 
