@@ -2,6 +2,18 @@
 
 ## Active: TASK-030 Personal music catalogue — 2026-09-11
 
+Latest owner follow-up 030.9: repeated deliberate queue adds with duplicate
+indicators, coordinated expandable cards and compact numeric play-count badges.
+Fixed completion classification using the running server clock; IVORY TOWER had
+been misclassified from its stored start-position anchor. Query/admission failures
+now offer same-room retry rather than treating transient failure as removal.
+Exact owner reload trigger remains unconfirmed; actual removal checks remain.
+Source `8556ce1` is published; Spacetime runtime and frontend are live. Production
+alias was read back as `dpl_DbDbZX416GQLHM7YdQ5uERk2VjGL` after promotion. See
+[030.9 evidence and release](tasks/TASK-030-personal-music-catalogue/queue-and-card-follow-up.md).
+465 automated checks, 34 combined browser checks plus the new late-rejection
+case, typecheck/lint/build passed. Prior rollout below is historical context.
+
 Approved delivery, catalogue admission, account Like consistency and compact
 Discover follow-ups are complete and live. Source `4d6d515` is published on main
 and deployed as `dpl_7MoZvQqUPzXKBcQ48RdVYSoUFthi`; the custom alias and protected

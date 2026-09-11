@@ -1,6 +1,6 @@
 # 030.9 Intentional repeats and coordinated card transitions
 
-Status: approved by owner on 2026-09-11; implementation in progress.
+Status: approved by owner on 2026-09-11; implemented, verified and deployed.
 Extends the existing packet. Previous duplicate-blocking acceptance is superseded.
 
 ## Scope and approach
@@ -98,3 +98,23 @@ Baseline: `d37a6ef`, clean worktree.
 Ready for publication under the ongoing owner-approved rollout. No schema or
 reducer argument changes; publish playback runtime correction before frontend.
 Retain actual live deployment receipts below after verification.
+
+## Release receipts
+
+Source `8556ce15a3046ff439903e6f9517f97a4007fd7d` published to main and task branch.
+Spacetime production `mistake-watch-rooms` updated successfully, with empty
+breaking-change plan and no `--break-clients`. Tables and reducer arguments are
+unchanged. Bindings regenerated with no semantic diff; module/root TypeScript
+passed after publication.
+
+Clean Git archive built as `dpl_DbDbZX416GQLHM7YdQ5uERk2VjGL`:
+`https://mistake-watch-66ojgwifc-cardinal117s-projects.vercel.app`.
+Protected health returned HTTP200 and `{ok:true,service:"mistake-watch"}` before
+promotion. Custom alias checked against the prior `dpl_7MoZvQqUPzXKBcQ48RdVYSoUFthi`
+before issuing promotion. Promotion succeeded; final custom alias read-back
+confirms `dpl_DbDbZX416GQLHM7YdQ5uERk2VjGL` is serving production.
+
+No Supabase migration or account/event rewrite in this follow-up. Next natural-use
+check is owner reload plus a full new qualifying playback; historical misclassified
+events are preserved. Exact prior reload trigger was not reproduced, so keep
+that uncertainty separate from the tested recovery paths.
