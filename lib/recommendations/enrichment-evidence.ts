@@ -113,22 +113,35 @@ export function normalizeAudio(
     submission: 0,
   };
 }
-export function normalizeTrackTags(
+export type TagFailureReason =
+  | "malformed-track"
+  | "title-mismatch"
+  | "artist-mismatch"
+  | "mbid-mismatch"
+  | "malformed-duration"
+  | "duration-mismatch"
+  | "malformed-tags"
+  | "http-error"
+  | "malformed-response";
+export type TrackTagEvidence =
+  | { status: "ready"; data: string[] }
+  | { status: "invalid"; reason: TagFailureReason }
+  | { status: "missing"; reason: "no-tags" | "track-not-found" };
+export function inspectTrackTags(
   body: unknown,
   core: RecordingCore,
-): string[] | null {
+): TrackTagEvidence {
   const track = object(object(body)?.track),
     artist = object(track?.artist);
-  if (
-    typeof track?.name !== "string" ||
-    typeof artist?.name !== "string" ||
-    identityText(track.name) !== identityText(core.title) ||
-    identityText(artist.name) !== identityText(core.artistCredit)
-  )
-    return null;
+  if (typeof track?.name !== "string" || typeof artist?.name !== "string")
+    return { status: "invalid", reason: "malformed-track" };
+  if (identityText(track.name) !== identityText(core.title))
+    return { status: "invalid", reason: "title-mismatch" };
+  if (identityText(artist.name) !== identityText(core.artistCredit))
+    return { status: "invalid", reason: "artist-mismatch" };
   const tags = object(track.toptags)?.tag;
   if (track.mbid != null && track.mbid !== "" && track.mbid !== core.mbid)
-    return null;
+    return { status: "invalid", reason: "mbid-mismatch" };
   if (
     track.duration != null &&
     track.duration !== "" &&
@@ -137,20 +150,36 @@ export function normalizeTrackTags(
   ) {
     const duration = Number(track.duration);
     if (
+      !["string", "number"].includes(typeof track.duration) ||
       !Number.isFinite(duration) ||
-      duration <= 0 ||
-      core.lengthMs === null ||
-      Math.abs(duration - core.lengthMs) > 3000
+      duration <= 0
     )
-      return null;
+      return { status: "invalid", reason: "malformed-duration" };
+    if (core.lengthMs === null || Math.abs(duration - core.lengthMs) > 3000)
+      return { status: "invalid", reason: "duration-mismatch" };
   }
-  if (!Array.isArray(tags) || tags.length > 100) return null;
+  if (!Array.isArray(tags) || tags.length > 100)
+    return { status: "invalid", reason: "malformed-tags" };
   const names: string[] = [];
   for (const tag of tags) {
     const name = object(tag)?.name;
     if (typeof name !== "string" || !name.trim() || name.length > 100)
-      return null;
+      return { status: "invalid", reason: "malformed-tags" };
     names.push(name.trim());
   }
-  return [...new Set(names)].slice(0, 20);
+  const data = [...new Set(names)].slice(0, 20);
+  return data.length
+    ? { status: "ready", data }
+    : { status: "missing", reason: "no-tags" };
+}
+export function normalizeTrackTags(
+  body: unknown,
+  core: RecordingCore,
+): string[] | null {
+  const result = inspectTrackTags(body, core);
+  return result.status === "ready"
+    ? result.data
+    : result.status === "missing"
+      ? []
+      : null;
 }

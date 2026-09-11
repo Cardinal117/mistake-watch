@@ -2,19 +2,23 @@
 
 ## Active: TASK-030 Personal music catalogue — 2026-09-11
 
-Current release: [controlled shadow pilot](tasks/TASK-030-personal-music-catalogue/shadow-pilot-rollout.md).
-The three Stage 2 migrations are now hosted (versions 20260911163824,
-20260911163857, 20260911163915). A clean production candidate is Ready; scope
-excludes the superseded manual-confirmation UI/API. Pilot settings are configured
-for the verified owner only, with manual worker disabled. See rollout receipts
-for promotion/smoke status; older local-only statements below are historical.
-Owner explicitly approved live promotion; the one-account shadow pilot is now live.
-Final deployment `dpl_6SgqNaZkD56W1rz56mzXNm2MWH4p` adds privacy-safe diagnostics.
-Live QA found and fixed repeated eligibility scans: migration `20260911170825`
-reduced five-source admission from 11734.582ms to 302.615ms. Normal Discover requests
-now complete provider identity work; accepted links and other-account jobs remain
-zero. Clean artifact 240 tests, 55 SQL assertions, concurrency and hosted checks
-pass. Audio/music QA remains owner work; strict-theme ranking stays disabled.
+Current live baseline is the single-owner [controlled shadow pilot](tasks/TASK-030-personal-music-catalogue/shadow-pilot-rollout.md), deployment `dpl_6SgqNaZkD56W1rz56mzXNm2MWH4p`.
+Migrations 20260911163824, 20260911163857, 20260911163915 and
+20260911170825 are hosted. The last fixed admission performance from 11.7s to 303ms.
+Manual confirmation UI/API stays excluded, and the manual worker stays disabled.
+
+Approved current follow-up: [favourites-first scheduling and Last.fm diagnostics](tasks/TASK-030-personal-music-catalogue/shadow-pilot-first-review.md).
+The first accumulated review found the 256-job cap occupied mostly by background
+candidates; 12 provisional identities yielded seven audio profiles but zero usable
+Last.fm tag sets. New local changes prioritize favourites safely at capacity and
+persist fixed diagnostic reasons. Both new SQL migrations are hosted:
+20260911184812 and 20260911184825. Candidate `dpl_BpV2kLTP7yHdrtuQFPfsKQPPPzpb`
+is Ready with build/health/auth checks passed; live-domain promotion was rejected
+by automatic approval review pending explicit promotion approval. The five
+invalid Last.fm jobs were requeued once; diagnostic completion remains pending.
+No accepted identities or strict-theme ranking is enabled. Audio/music QA is the owner's role.
+
+The notes below describe earlier stages; current status above takes precedence.
 
 Latest: [identity acceptance validation](tasks/TASK-030-personal-music-catalogue/identity-acceptance-validation.md)
 now separates synthetic tests from independent accuracy evidence. Saved selected

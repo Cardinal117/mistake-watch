@@ -134,6 +134,12 @@ do not describe the entire cross-provider contract as activated.
 
 ## 030.11 Stage 2 — local reference foundation implemented
 
+Current operational follow-up: [first shadow review](shadow-pilot-first-review.md).
+The owner approved favourites-first admission/processing and bounded Last.fm
+diagnostics after the live single-account shadow pilot. This supersedes older
+local-only/reference-review status below; automatic identities remain provisional,
+manual confirmation UI is excluded from releases, and ranking remains gated.
+
 Current approved next action is the [automatic provider evaluation](automatic-provider-evaluation.md)
 using the owner's favourites. This supersedes the manual-reference-first next
 delivery below. No listening-time confirmation UI is wanted; no Stage 2 release

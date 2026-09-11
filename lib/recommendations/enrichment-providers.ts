@@ -1,7 +1,7 @@
 import { readBoundedJson } from "./bounded-json";
 import { MBID, type RecordingCore } from "./musicbrainz-core";
 import { sourceIdentity } from "./automatic-identity";
-import { normalizeAudio, normalizeTrackTags } from "./enrichment-evidence";
+import { normalizeAudio, inspectTrackTags } from "./enrichment-evidence";
 import type { EnrichmentProviders } from "./automatic-enrichment";
 
 const object = (v: unknown): Record<string, unknown> | null =>
@@ -25,7 +25,11 @@ export function createEnrichmentProviders(
     bound: number,
   ): Promise<
     | { status: "ready"; data: unknown }
-    | { status: "missing" | "retry" | "invalid"; retrySeconds?: number }
+    | {
+        status: "missing" | "retry" | "invalid";
+        retrySeconds?: number;
+        failure?: "http-error" | "malformed-response";
+      }
   > {
     if (paused.has(url.hostname)) return { status: "retry" };
     try {
@@ -56,11 +60,11 @@ export function createEnrichmentProviders(
             : 60,
         };
       }
-      if (!response.ok) return { status: "invalid" };
+      if (!response.ok) return { status: "invalid", failure: "http-error" };
       const parsed = await readBoundedJson(response, bound);
       return parsed.ok
         ? { status: "ready", data: parsed.value }
-        : { status: "invalid" };
+        : { status: "invalid", failure: "malformed-response" };
     } catch {
       paused.add(url.hostname);
       return { status: "retry" };
@@ -159,19 +163,19 @@ export function createEnrichmentProviders(
         format: "json",
       }).toString();
       const result = await get(url, 262144);
+      if (result.status === "invalid")
+        return {
+          status: "invalid",
+          reason: result.failure ?? "malformed-response",
+        };
       if (result.status !== "ready") return result;
       const error = object(result.data)?.error;
-      if (error === 6) return { status: "missing" };
+      if (error === 6) return { status: "missing", reason: "track-not-found" };
       if (error !== undefined) {
         paused.add(url.hostname);
         return { status: "retry" };
       }
-      const data = normalizeTrackTags(result.data, core);
-      return data === null
-        ? { status: "invalid" }
-        : data.length
-          ? { status: "ready", data }
-          : { status: "missing" };
+      return inspectTrackTags(result.data, core);
     },
     async audio(core) {
       if (!MBID.test(core.mbid) || core.lengthMs === null)
@@ -180,7 +184,10 @@ export function createEnrichmentProviders(
         new URL(`https://acousticbrainz.org/api/v1/${core.mbid}/low-level?n=0`),
         2097152,
       );
-      if (low.status !== "ready") return low;
+      if (low.status !== "ready")
+        return low.status === "retry"
+          ? { status: "retry", retrySeconds: low.retrySeconds }
+          : { status: low.status };
       await (
         options.pause ??
         ((ms: number) =>
@@ -192,7 +199,10 @@ export function createEnrichmentProviders(
         ),
         2097152,
       );
-      if (high.status !== "ready") return high;
+      if (high.status !== "ready")
+        return high.status === "retry"
+          ? { status: "retry", retrySeconds: high.retrySeconds }
+          : { status: high.status };
       const data = normalizeAudio(low.data, high.data, core.lengthMs / 1000);
       return data ? { status: "ready", data } : { status: "invalid" };
     },

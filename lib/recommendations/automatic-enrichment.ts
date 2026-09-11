@@ -5,12 +5,13 @@ import {
   type IdentityOutcome,
 } from "./automatic-identity";
 import type { RecordingCore } from "./musicbrainz-core";
-import type { AudioEvidence } from "./enrichment-evidence";
+import type { AudioEvidence, TagFailureReason } from "./enrichment-evidence";
 export type ProviderResult<T> =
   | { status: "ready"; data: T }
   | {
       status: "missing" | "retry" | "invalid" | "disabled";
       retrySeconds?: number;
+      reason?: TagFailureReason | "no-tags" | "track-not-found";
     };
 export type SearchResult =
   | { status: "ready"; candidates: RecordingCore[]; complete: boolean }

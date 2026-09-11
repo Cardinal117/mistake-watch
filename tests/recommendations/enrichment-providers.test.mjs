@@ -18,12 +18,72 @@ const row = {
   length: 100000,
   "artist-credit": [{ name: "Artist" }],
 };
+const core = {
+  mbid: id,
+  title: "Song",
+  artistCredit: "Artist",
+  lengthMs: 100000,
+  disambiguation: "",
+};
+test("Last.fm gives precise bounded reasons without accepting contradictory identity", async () => {
+  const valid = {
+    name: "Song",
+    artist: { name: "Artist" },
+    toptags: { tag: [{ name: "rock" }] },
+  };
+  for (const [patch, reason] of [
+    [{ name: "Another song" }, "title-mismatch"],
+    [{ artist: { name: "Another artist" } }, "artist-mismatch"],
+    [{ mbid: id.replace(/11$/, "12") }, "mbid-mismatch"],
+    [{ duration: "999000" }, "duration-mismatch"],
+    [{ duration: "nonsense" }, "malformed-duration"],
+    [{ toptags: { tag: [{ name: "" }] } }, "malformed-tags"],
+    [{ name: null }, "malformed-track"],
+  ]) {
+    const p = createEnrichmentProviders({
+      lastfmKey: "fixture",
+      fetcher: async () => Response.json({ track: { ...valid, ...patch } }),
+    });
+    assert.deepEqual(await p.tags(core), { status: "invalid", reason });
+  }
+  const p = createEnrichmentProviders({
+    lastfmKey: "fixture",
+    fetcher: async () =>
+      Response.json({ track: { ...valid, toptags: { tag: [] } } }),
+  });
+  assert.deepEqual(await p.tags(core), {
+    status: "missing",
+    reason: "no-tags",
+  });
+});
 test("provider Retry-After survives parsing for durable shared cooldown", async () => {
   const p = createEnrichmentProviders({
     fetcher: async () =>
       new Response("", { status: 503, headers: { "Retry-After": "600" } }),
   });
   assert.equal((await p.search(source)).retrySeconds, 600);
+});
+test("Last.fm transport diagnostics stay separate from audio outcome schema", async () => {
+  for (const [response, reason] of [
+    [() => new Response("denied", { status: 403 }), "http-error"],
+    [() => new Response("not-json"), "malformed-response"],
+  ]) {
+    const p = createEnrichmentProviders({
+      lastfmKey: "fixture",
+      fetcher: async () => response(),
+    });
+    assert.deepEqual(await p.tags(core), { status: "invalid", reason });
+    assert.deepEqual(await p.audio(core), { status: "invalid" });
+  }
+  const p = createEnrichmentProviders({
+    lastfmKey: "fixture",
+    fetcher: async () =>
+      Response.json({ error: 6, message: "Track not found" }),
+  });
+  assert.deepEqual(await p.tags(core), {
+    status: "missing",
+    reason: "track-not-found",
+  });
 });
 test("search requests only bounded metadata and parses compact recording evidence", async () => {
   const p = createEnrichmentProviders({
