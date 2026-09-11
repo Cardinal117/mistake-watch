@@ -8,11 +8,13 @@ The three Stage 2 migrations are now hosted (versions 20260911163824,
 excludes the superseded manual-confirmation UI/API. Pilot settings are configured
 for the verified owner only, with manual worker disabled. See rollout receipts
 for promotion/smoke status; older local-only statements below are historical.
-Promotion is currently blocked by automatic approval review pending explicit live
-domain authorization. The candidate passes authenticated health/readiness/access
-checks; the custom domain still uses the previous deployment. Hosted admission/
-claim smoke passed in a rolled-back transaction; deployed provider completion
-remains unverified. Do not describe the pilot as active on the live site.
+Owner explicitly approved live promotion; the one-account shadow pilot is now live.
+Final deployment `dpl_6SgqNaZkD56W1rz56mzXNm2MWH4p` adds privacy-safe diagnostics.
+Live QA found and fixed repeated eligibility scans: migration `20260911170825`
+reduced five-source admission from 11734.582ms to 302.615ms. Normal Discover requests
+now complete provider identity work; accepted links and other-account jobs remain
+zero. Clean artifact 240 tests, 55 SQL assertions, concurrency and hosted checks
+pass. Audio/music QA remains owner work; strict-theme ranking stays disabled.
 
 Latest: [identity acceptance validation](tasks/TASK-030-personal-music-catalogue/identity-acceptance-validation.md)
 now separates synthetic tests from independent accuracy evidence. Saved selected

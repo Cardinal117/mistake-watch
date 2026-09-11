@@ -1,5 +1,49 @@
 # Controlled shadow rollout — 2026-09-11
 
+**Current status: live single-account shadow pilot operational.** Final deployment
+is `dpl_6SgqNaZkD56W1rz56mzXNm2MWH4p`; promotion was explicitly authorized.
+The earlier approval block below is resolved historical context.
+
+## Live promotion and admission performance follow-up
+
+Owner explicitly approved live promotion and delegated non-audio QA. Candidate
+Ekppa5YTnV9k5tyGAZejnbgFcWbo was promoted; custom-domain readback, health/readiness,
+401 drain rejection and 404 excluded routes passed. Browser reload retained the
+Personal room, paused position and 211 upcoming items; no queue/Like/play controls
+were changed. Audio and musical relevance remain owner QA.
+
+Live background QA caught admission failure before any jobs persisted. Bounded
+diagnostics deployed as `dpl_6SgqNaZkD56W1rz56mzXNm2MWH4p` identify admission;
+they expose only stage and bounded SQL/PostgREST code. 245 app tests, lint and
+typecheck passed; hosted build passed. Diagnostic test chronology is post-hoc.
+
+Root cause: repeated full account eligibility scans within each batch context.
+Rolled-back hosted admission of five sources took 11734.582ms, exceeding the
+worker's 5000ms timeout. API schema reload did not resolve it. The approved fix
+materializes eligibility and source contexts once per batch, keeps eligibility
+rechecks in enqueue/claim/completion/read, and adds a private snapshot helper with
+no external execute grants. The timeout and provider quotas are unchanged.
+
+Isolated verification: seven 120-source/privilege/withdrawal/starvation assertions,
+48 existing shadow SQL assertions and real concurrency proof pass. Production
+timeout is the behavioural failure evidence; synthetic SQL tests were added after
+the optimization, and their initial withdrawal fixture needed neutral expiry.
+Hosted optimized timing and provider completion are the final follow-up gates.
+
+Both follow-up gates passed: migration `20260911170825` applied, the same rolled-back
+five-source admission measured 302.615ms (about 39x faster), and normal live Discover
+requests admitted jobs and persisted identity outcomes. At readback, two completed
+lookups abstained for insufficient agreement and three MusicBrainz attempts had
+been reserved; zero accepted links and zero other-account jobs. This proves deployed
+provider processing/abstention, not identity accuracy or optional-feature coverage.
+Further enrichment proceeds through normal use within existing daily budgets.
+
+Final clean artifact: 240 tests pass; original checkout: 245 (includes five excluded
+manual API tests). SQL: 7 new + 48 existing assertions and concurrency pass. Advisors
+show no new warning/error; existing Auth warning and intentional/private or older
+performance INFO findings remain unchanged. Audio and recommendation-quality QA
+remain with the owner. No strict-theme ranking has been enabled.
+
 Owner approved proceeding after acceptance validation. Scope: additive recording
 foundation, MusicBrainz quota/reference prerequisites and private shadow jobs;
 one-account automatic provider enrichment, with no accepted links or live ranking.

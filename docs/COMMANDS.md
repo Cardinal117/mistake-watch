@@ -2,6 +2,12 @@
 
 ## TASK-030 automatic enrichment (local shadow engine)
 
+The one-account shadow pilot is now live. Include migration `20260911170825`
+after the three prerequisites; it removes repeated eligibility scans while
+preserving all context fences. See the rollout record for deployed evidence.
+Additional local regression: `supabase/tests/database/shadow-admission-performance.test.sql`
+in the isolated replay database. Do not run synthetic fixtures against hosted data.
+
 ```powershell
 node --test tests/recommendations/automatic-enrichment.test.mjs tests/recommendations/enrichment-providers.test.mjs
 node scripts/evaluate-recording-matches.mjs .tmp/musicbrainz-evaluation/automatic-replay.json

@@ -2,6 +2,11 @@
 
 ## Current: 030.12 Automatic enrichment — durable shadow jobs verified locally
 
+Live update: one-account shadow pilot promoted and operational, with admission
+optimization `20260911170825` and verified deployed identity outcomes. See rollout
+receipts. Next: assess accumulated provisional identity/tag/audio evidence before
+any accepted-link or Fantasy/orchestral ranking activation. Owner handles audio QA.
+
 Subsequent approved step: [controlled shadow rollout](shadow-pilot-rollout.md).
 Additive migrations are hosted and the clean candidate build passes. Promotion and
 one-account smoke receipts are tracked there; local-only notes below are history.

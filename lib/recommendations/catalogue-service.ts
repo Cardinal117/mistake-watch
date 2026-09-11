@@ -1,4 +1,5 @@
 import "server-only";
+import { failShadow } from "./shadow-failure";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/database.types";
 import { parseYouTubeDuration } from "@/lib/youtube/metadata";
@@ -46,7 +47,7 @@ export async function pruneMusicCatalogue() {
   const shadow = await createSupabaseAdminClient()
     .rpc("prune_shadow_enrichment", {})
     .abortSignal(AbortSignal.timeout(5000));
-  if (shadow.error) throw new Error("Shadow evidence cleanup failed");
+  if (shadow.error) failShadow("cleanup", shadow.error);
   return data;
 }
 

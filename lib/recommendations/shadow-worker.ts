@@ -4,6 +4,7 @@ import type { Json } from "@/lib/supabase/database.types";
 import { MBID } from "./musicbrainz-core";
 import { createEnrichmentProviders } from "./enrichment-providers";
 import { runShadowJob } from "./shadow-worker-core";
+import { failShadow } from "./shadow-failure";
 
 export async function runDurableShadowEnrichment(deadline: number) {
   const account = process.env.SHADOW_ENRICHMENT_ACCOUNT ?? "";
@@ -26,7 +27,7 @@ export async function runDurableShadowEnrichment(deadline: number) {
             max_sources,
           })
           .abortSignal(AbortSignal.timeout(5000));
-        if (r.error) throw Error("Shadow admission unavailable");
+        if (r.error) failShadow("admission", r.error);
       },
       async claim() {
         const r = await client
@@ -35,7 +36,7 @@ export async function runDurableShadowEnrichment(deadline: number) {
             target_stage: "any",
           })
           .abortSignal(AbortSignal.timeout(5000));
-        if (r.error) throw Error("Shadow claim unavailable");
+        if (r.error) failShadow("claim", r.error);
         return r.data;
       },
       async complete(job_id, claim_token, outcome) {
@@ -46,7 +47,7 @@ export async function runDurableShadowEnrichment(deadline: number) {
             outcome: outcome as Json,
           })
           .abortSignal(AbortSignal.timeout(5000));
-        if (r.error) throw Error("Shadow completion unavailable");
+        if (r.error) failShadow("completion", r.error);
         return r.data === true;
       },
     },
