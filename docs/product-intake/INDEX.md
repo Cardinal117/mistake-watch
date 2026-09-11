@@ -34,11 +34,12 @@ scheduling. Open [[INBOX]] for quick capture and [[README]] for operating rules.
 ## Current Focus
 
 2026-09-11: owner-approved [TASK-030 Personal music catalogue](../tasks/TASK-030-personal-music-catalogue/proposal.md)
-is implemented and QA passed locally; release remains pending. It replaces Personal seed-triggered
+is deployed with local QA and live rollout checks recorded. It replaces Personal seed-triggered
 YouTube searches with reusable metadata and owner-evidence candidates. Provider
 classification and community similarity remain later stages. This direct owner
 request does not close or reclassify unrelated reports below; Quick Capture is
-preserved unchanged. See the packet for QA and release status.
+preserved unchanged. See [release evidence](../tasks/TASK-030-personal-music-catalogue/live-rollout-2026-09-11.md)
+for the 6-of-24 initial candidate coverage and remaining natural-use evaluation.
 
 Owner-approved next work (2026-09-07):
 [TASK-027](../tasks/TASK-027-room-flow-and-queue-response/proposal.md), documentation

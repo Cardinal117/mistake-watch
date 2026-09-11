@@ -1,6 +1,9 @@
 # Mistake Watch Commands
 
-## TASK-030 catalogue candidate (local implementation; not deployed)
+## TASK-030 catalogue (Stage 1 deployed 2026-09-11)
+
+Production uses migration `20260911055006` and application merge `d4b2b89`.
+See [live rollout receipts](tasks/TASK-030-personal-music-catalogue/live-rollout-2026-09-11.md).
 
 See [catalogue release plan](tasks/TASK-030-personal-music-catalogue/release-plan.md)
 and [QA evidence](tasks/TASK-030-personal-music-catalogue/review-notes.md).

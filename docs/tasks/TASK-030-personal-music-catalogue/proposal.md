@@ -1,6 +1,6 @@
 # TASK-030: Personal music catalogue foundation
 
-Updated: 2026-09-11. Status: Stage 1 implemented and QA passed locally; not deployed.
+Updated: 2026-09-11. Status: Stage 1 deployed; natural-use evaluation remains.
 Documentation: full packet because this changes durable data, provider spending,
 privacy, background work and candidate selection.
 
@@ -12,6 +12,12 @@ you to proceed." Up to three assistant agents are permitted. This authorizes
 the Stage 1 local implementation proposed in the preceding discussion, including
 isolated synthetic database tests. It does not authorize production migrations,
 production backfill, new provider accounts, Git publication or deployment.
+Subsequent explicit approvals authorized the scoped feature commit/push and full
+production rollout, including the migration, bounded Personal reconciliation,
+PR/merge/deployment and release-documentation commit/push. These supersede the
+earlier release gates above. See [live rollout](live-rollout-2026-09-11.md).
+New provider accounts, enrichment, community learning and Autoplay remain outside
+this release.
 
 Replace Personal Discover's automatic artist/title YouTube searches with a
 reusable catalogue and server-selected, owner-specific familiar candidates.

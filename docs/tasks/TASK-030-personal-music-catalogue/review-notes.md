@@ -2,7 +2,10 @@
 
 Final disposition: **Stage 1 local candidate passes QA, 2026-09-11**. Planning,
 implementation and independent review are complete. Release and natural-use
-validation remain separate steps; no production or Git publication occurred.
+validation remain separate steps; no production or Git publication occurred
+during that local QA checkpoint. Subsequent owner-approved release is complete:
+[production receipts](live-rollout-2026-09-11.md). The evidence and scope limits
+below remain the historical local verification record.
 
 ## Planning baseline — 2026-09-11
 

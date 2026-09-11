@@ -2,23 +2,32 @@
 
 ## Active: TASK-030 Personal music catalogue — 2026-09-11
 
-Owner approved thorough planning followed by local Stage 1 implementation.
-Stage 1 is now implemented and QA passed locally: 133 Node tests, 316 SQL
-assertions and 18 browser tests; typecheck/lint/build and file-length gate passed.
-Independent reviews are resolved. Real provider/listening and production checks
-remain future release evidence.
-The [commit review](tasks/TASK-030-personal-music-catalogue/commit-review.md) records
-owner approval for one atomic commit and push on
-`codex/task-030-personal-music-catalogue`. Production release remains separate;
-use the branch Git history for the resulting commit and publication state.
+Stage 1 is deployed under the owner's full rollout approval. Feature `76a0b10`
+merged through PR #18 as `d4b2b89`; production alias points to
+`dpl_GXKN6uiWS7Cgvsb1Xhmasnk6j57d` with that exact source SHA. Migration history
+matches `20260911055006`. Existing 131 rooms and 2 accounts are preserved.
+See [live rollout](tasks/TASK-030-personal-music-catalogue/live-rollout-2026-09-11.md)
+for migration, deployment, private-access and maintenance receipts.
+
+Bounded owner reconciliation registered 24 references. One metadata batch admitted
+6 tracks; 18 were held back by conservative eligibility checks. Live Personal
+Discover shows cached suggestions with "You liked this" reasons. The observed
+request sample contains no automatic YouTube search/recommendation calls.
+Maintenance returned 200 with no additional batch; cached rows expire in 28 days.
+Natural-use usefulness and rejected-track coverage remain evaluation work.
+
+Local QA passed: 133 Node tests, 316 SQL assertions and 18 browser tests;
+typecheck/lint/build and file-length gate passed. Independent reviews are resolved.
+Hosted CI checks were absent; production build, HTTP and desktop checks passed.
 The [full packet](tasks/TASK-030-personal-music-catalogue/proposal.md) covers
 reusable public-source metadata, bounded background refresh/expiry and replacing
 Personal's seed-triggered YouTube search with owner-evidence catalogue selection.
 See [ordered work](tasks/TASK-030-personal-music-catalogue/tasks.md) and
 [review evidence](tasks/TASK-030-personal-music-catalogue/review-notes.md).
 Classification/provider enrichment and consented community similarity are later
-stages. No new production rollout or hosted backfill occurred.
-The deployed TASK-029 evidence below remains historical truth until release.
+stages. No SpacetimeDB publication or queue/playback/feedback test mutation was
+performed. TASK-029 entries below preserve earlier release history; its former
+Personal search supply is superseded by this catalogue release.
 
 ## Personal Discover — deployed 2026-09-09
 
@@ -27,7 +36,7 @@ as `23da9d2` / `dpl_EfDVumjycp5QqTfBhvEcj29A1FQp`. Ten Personal browser checks,
 typecheck, source lint and build pass; live health/readiness pass. See
 [scroll correction](tasks/TASK-029-recommendation-quality-baseline/scroll-boundary-fix.md).
 
-Recommendation limitation confirmed by source review: Personal candidates still
+Historical pre-TASK-030 limitation confirmed by source review: Personal candidates
 come from a YouTube search using the current track or first regular's artist/title,
 then first-party reranking. This is not the requested catalogue-driven taste
 engine. Completion counts power regulars/Rediscover, but current new-kind ranking

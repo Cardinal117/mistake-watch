@@ -1,7 +1,10 @@
 # Stage 1 release and natural-use trial
 
-Status: release preparation only. No new Git publication, hosted schema write,
-production backfill, scheduler activation or deployment performed by this task.
+Status: **Stage 1 deployed, 2026-09-11**, under the owner's full rollout approval.
+PR #18 merged as `d4b2b89`; the reviewed migration and bounded Personal
+reconciliation are applied. See [live rollout](live-rollout-2026-09-11.md) for
+deployment, maintenance, access checks and the 6-of-24 candidate coverage limit.
+The [preflight](production-preflight-2026-09-11.md) preserves the earlier baseline.
 
 ## Candidate and prerequisites
 
@@ -14,7 +17,7 @@ production backfill, scheduler activation or deployment performed by this task.
   day; 0 disables refresh while retaining cleanup. The DB also caps at 100.
   This is separate from manual search and existing provider-call budgets.
 
-## Reviewed production sequence (future explicit release step)
+## Reviewed production sequence (executed; receipts linked above)
 
 1. Inspect hosted migration parity, new names/constraints and current room/account
    counts before applying the migration. Do not assume the local clone is live.

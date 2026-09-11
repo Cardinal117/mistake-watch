@@ -1,5 +1,10 @@
 # Ordered implementation
 
+Stage 1 was released under subsequent explicit owner approval on 2026-09-11.
+The local slice boundaries below record implementation chronology. See
+[live rollout](live-rollout-2026-09-11.md) for production evidence and remaining
+natural-use evaluation; the local-only gates no longer describe release status.
+
 ## 030.0 Planning and review — complete
 
 Owner approved planning followed by Stage 1 implementation on 2026-09-11.
