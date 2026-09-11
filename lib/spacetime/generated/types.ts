@@ -85,7 +85,6 @@ export type ListenerReceiptOutbox = __Infer<typeof ListenerReceiptOutbox>;
 
 export const LiveQueueItem = __t.object("LiveQueueItem", {
   addedByMemberId: __t.string(),
-  clientActionId: __t.option(__t.string()),
   artist: __t.option(__t.string()),
   durationSeconds: __t.option(__t.u32()),
   position: __t.u32(),
@@ -107,6 +106,7 @@ export const LiveQueueItem = __t.object("LiveQueueItem", {
   failureReason: __t.option(__t.string()),
   failureCreatedMs: __t.option(__t.i64()),
   failureCount: __t.u32(),
+  clientActionId: __t.option(__t.string()),
 });
 export type LiveQueueItem = __Infer<typeof LiveQueueItem>;
 

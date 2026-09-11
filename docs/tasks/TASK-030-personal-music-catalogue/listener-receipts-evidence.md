@@ -127,3 +127,24 @@ idempotency and migrations require focused test-first coverage plus protocol QA.
 
 No hosted data, provider scopes, production playback, Git or deployment was
 changed by the receipt implementation assistant.
+
+## Data-preserving runtime upgrade proof
+
+The release guard rejected the initial placement of `client_action_id` inside
+the existing queue table. The corrected schema appends the optional column at
+the end. `scripts/verify-listener-schema-upgrade.mjs` then passed an actual local
+upgrade from deployed source `2f3c399` to the corrected module. Both publishes
+used `--delete-data=never`; the script rejects non-loopback servers.
+
+- Two real queue rows retained their IDs, order, status and metadata unchanged.
+- Two existing recommendation outbox rows survived; the new receipt table began
+  empty, and existing queue rows received the optional `None` default.
+- The regenerated client added a third row with its new action correlation ID.
+- The migration plan added one optional column and four private listener tables.
+  It warned that existing clients would disconnect; `--break-clients` was used.
+- Evidence: `.tmp/listener-schema-upgrade-uubV3I/current-upgrade.txt` and
+  `proof.json`. The repeatable proof script also passed scoped ESLint.
+
+This proves the local schema upgrade, not hosted deployment. A frontend rollback
+should retain this additive runtime schema rather than remove populated tables
+or columns.

@@ -100,6 +100,18 @@ concern older unrelated tables; new receipt foreign keys are indexed.
 Frontend/runtime receipt and Git hash will be appended after publication. Preserve
 all live data and verify production health, alias and fixture exclusion.
 
+Initial candidate `b5afcc8` built as `dpl_GTLEgeJTsKpfLBFaNw6pygPGRfn5` and passed
+health, but was not promoted to the custom domain. Production runtime publication
+with `--delete-data=never` correctly rejected insertion of `client_action_id` in
+the middle of the existing queue schema. No runtime migration or deletion occurred.
+The field was moved to the end and bindings regenerated; typecheck passes.
+A populated baseline-to-candidate upgrade proof is required before continuing.
+
+Rollback must retain the additive queue schema and regenerated bindings: do not
+restore a pre-column module or use data deletion to bypass a migration warning.
+If necessary disable new listener collection through a forward-compatible runtime
+or frontend patch while preserving existing room and queue data.
+
 ## Next
 
 Owner natural-use QA of queue feedback, repeat additions, mobile/desktop lists and
@@ -107,3 +119,8 @@ listening settings. Stage 2 then separates recording/version identity from playa
 uploads and adds evidenced, source-attributed classification with confidence/unknown
 states. Trial favourites/rediscovery first, Fantasy/orchestral as the strict theme,
 and Classical/phonk as boundary cases. No invented genres, BPM or similar-listener claims.
+
+Populated upgrade proof passed: two queued rows and two pending events preserved,
+old rows received the optional default, and a new correlated addition succeeded.
+The additive migration requires client reconnection (`--break-clients`); data
+deletion remains prohibited. See listener-receipts-evidence.md.

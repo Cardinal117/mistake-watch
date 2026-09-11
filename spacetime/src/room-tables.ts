@@ -132,7 +132,6 @@ export const liveQueueItem = table(
   },
   {
     added_by_member_id: t.string(),
-    client_action_id: t.option(t.string()).default(undefined),
     artist: t.option(t.string()),
     duration_seconds: t.option(t.u32()),
     position: t.u32(),
@@ -154,6 +153,7 @@ export const liveQueueItem = table(
     failure_reason: t.option(t.string()).default(undefined),
     failure_created_ms: t.option(t.i64()).default(undefined),
     failure_count: t.u32().default(0),
+    client_action_id: t.option(t.string()).default(undefined),
   },
 );
 
