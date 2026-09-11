@@ -52,7 +52,7 @@ See [Like evidence](like-consistency-evidence.md) and
 [Discover controls evidence](discover-controls-evidence.md) for actual tests,
 runtime isolation, browser dimensions and limitations.
 
-## Release order and remaining checks
+## Release order and production checks
 
 SpacetimeDB additive reducer published successfully to `mistake-watch-rooms`
 before frontend, without `--break-clients`; CLI found no breaking changes.
@@ -91,5 +91,24 @@ All 131 rooms and 2 accounts remain. Advisor categories and counts are unchanged
 Preparation warnings now include a fixed whitelisted failure stage, never raw
 SQL/provider errors. The integration regression failed before the logging fix
 and passed afterwards; the whitelist secrecy test is additional coverage.
-164 Node tests, targeted lint, typecheck and production build passed. Final
-observability frontend deployment receipt follows after promotion.
+164 Node tests, targeted lint, typecheck and production build passed.
+
+## Final release receipt
+
+Source `4d6d515a8aad712d1f86185b8b85254bcff33b90` is published on main and the task
+branch. Clean Git archive deployment `dpl_7MoZvQqUPzXKBcQ48RdVYSoUFthi` built
+successfully and passed protected health HTTP200 before promotion. Production
+custom alias was checked against the previous release before promotion and
+read back afterwards pointing to this deployment. No environment export or
+diagnostic payload was included in the source archive.
+Sanitized final request sample: 17 entries, three Discover HTTP200 responses,
+eight preference HTTP200 responses, zero5xx, zero preparation warnings and zero
+YouTube search/recommendation endpoint requests. This is a bounded observed
+sample, not a guarantee about all future traffic.
+
+Normal activity finished all pending hydration: final ZA projection 308 ready,
+zero pending. Both supplied songs are liked; their recorded Personal completion
+counts are 1 and 0 respectively. Live browser read-back shows DAMIDAMI with one
+recorded play and visible Add next actions. This is current evidence, not
+reconstruction of the original remembered Likes or unrecorded historical plays.
+Physical-device interaction was not claimed; mobile coverage uses browser fixtures.

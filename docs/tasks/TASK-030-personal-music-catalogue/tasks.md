@@ -69,7 +69,7 @@ zero; supplied Likes and completion are durable. Broader original-Like history,
 stale room precedence, large-library reads and catalogue admission remain distinct
 investigations. Git publication is complete: `55b4837` on main and the task branch.
 
-The owner subsequently approved 030.6 catalogue admission, 030.7 account Like consistency and 030.8 compact Discover controls. See [scope and acceptance](approved-follow-ups.md); implementation is in progress.
+The owner subsequently approved 030.6 catalogue admission, 030.7 account Like consistency and 030.8 compact Discover controls. Implementation, QA and deployment are complete, including the additional claim timeout and persistent Undo notice fixes. See [scope and acceptance](approved-follow-ups.md) and [live release receipt](follow-up-release-2026-09-11.md). The live catalogue reached 308 ready references and zero pending. Final source `4d6d515` is published on main and promoted as `dpl_7MoZvQqUPzXKBcQ48RdVYSoUFthi`.
 
 Stage 2 identity/enrichment/theme verification and Stage 3 community consent/
 similarity need new approved slices. Autoplay remains separate. Do not create

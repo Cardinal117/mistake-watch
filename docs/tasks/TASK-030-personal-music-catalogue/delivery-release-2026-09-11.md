@@ -1,6 +1,6 @@
 # Delivery reliability repair — 2026-09-11
 
-Status: **deployed, live backlog cleared; Git publication pending**. Owner
+Status: **deployed, live backlog cleared; published as 55b4837**. Owner
 approved fixing/resolving the confirmed slowdown when safe. No Like/queue/playback
 test mutation or synthetic production event was used. Existing trusted events
 were persisted by the deployed worker and then acknowledged through the existing

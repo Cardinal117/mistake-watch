@@ -2,16 +2,30 @@
 
 ## Active: TASK-030 Personal music catalogue — 2026-09-11
 
-Delivery reliability repair is now live as `dpl_2wHwwMjnrAsXRiC9uFrPwRQhfB7e`.
-Migration `20260911085543` adds the service-only shared lease. Normal authenticated
-activity cleared the observed 4,503-event backlog to zero; both owner-supplied
-Likes are durable and one supplied track's completion is stored. Catalogue
-admission still excludes both example uploads, independently of saved preference.
-See [repair release](tasks/TASK-030-personal-music-catalogue/delivery-release-2026-09-11.md).
-This repair was deployed from a clean `53065af` archive plus a hashed runtime
-manifest. Its source/tests/docs are published as `55b4837` on main and the task
-branch. Approved next: [catalogue admission, Like consistency and Discover controls](tasks/TASK-030-personal-music-catalogue/approved-follow-ups.md). Earlier release below is
-the base Stage 1 deployment, not the currently serving runtime.
+Approved delivery, catalogue admission, account Like consistency and compact
+Discover follow-ups are complete and live. Source `4d6d515` is published on main
+and deployed as `dpl_7MoZvQqUPzXKBcQ48RdVYSoUFthi`; the custom alias and protected
+health200 were verified. See the
+[follow-up release receipt](tasks/TASK-030-personal-music-catalogue/follow-up-release-2026-09-11.md)
+for the final deployment pointer and evidence.
+
+Normal activity cleared the 4,503-event backlog. Country-aware admission fixed
+both supplied uploads; batching canonical evidence once per account fixed the
+subsequent claim timeout. Latest ZA catalogue projection: 308 ready, zero pending.
+Both supplied tracks are liked; recorded Personal completions are one and zero,
+respectively. No historical plays or remembered Likes were fabricated.
+
+Like reads now respect durable timestamps, complete pagination and account scope;
+the additive trusted Spacetime intent reducer repairs same-state reassertion.
+Personal regulars use compact expandable cards, visible Add to queue/Add next,
+and preserved song accents. The feedback Undo notice dismisses after ten seconds
+of unpaused visible time, without changing seven-day exclusion.
+164 Node, 127 catalogue SQL and 25 browser assertions passed, plus concurrency,
+real isolated reducer checks, typecheck, lint and build. Original remembered-Like
+history remains unproven. Evaluate natural listening next; classification,
+time-of-day habits and community similarity require separate approved slices.
+
+## Historical Stage 1 rollout
 
 Stage 1 is deployed under the owner's full rollout approval. Feature `76a0b10`
 merged through PR #18 as `d4b2b89`; production alias points to
