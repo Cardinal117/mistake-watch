@@ -27,6 +27,7 @@ export function PersonalTrackView({
   onAdd,
   onFeedback,
   onShown,
+  observationKey,
 }: {
   item: PersonalTrack;
   surface: DiscoverSurface;
@@ -43,6 +44,7 @@ export function PersonalTrackView({
   onAdd(next?: boolean): void;
   onFeedback(state: DiscoverFeedbackState): void;
   onShown(): void;
+  observationKey?: string;
 }) {
   const article = useRef<HTMLElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -71,7 +73,7 @@ export function PersonalTrackView({
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, []);
+  }, [observationKey]);
   useLayoutEffect(() => {
     if (!open) return;
     const anchor = trigger.current!.getBoundingClientRect();

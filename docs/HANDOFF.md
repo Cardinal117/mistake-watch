@@ -1,5 +1,25 @@
 # Mistake Watch Handoff
 
+## Active: TASK-030 Personal music catalogue — 2026-09-11
+
+Owner approved thorough planning followed by local Stage 1 implementation.
+Stage 1 is now implemented and QA passed locally: 133 Node tests, 316 SQL
+assertions and 18 browser tests; typecheck/lint/build and file-length gate passed.
+Independent reviews are resolved. Real provider/listening and production checks
+remain future release evidence.
+The [commit review](tasks/TASK-030-personal-music-catalogue/commit-review.md) records
+owner approval for one atomic commit and push on
+`codex/task-030-personal-music-catalogue`. Production release remains separate;
+use the branch Git history for the resulting commit and publication state.
+The [full packet](tasks/TASK-030-personal-music-catalogue/proposal.md) covers
+reusable public-source metadata, bounded background refresh/expiry and replacing
+Personal's seed-triggered YouTube search with owner-evidence catalogue selection.
+See [ordered work](tasks/TASK-030-personal-music-catalogue/tasks.md) and
+[review evidence](tasks/TASK-030-personal-music-catalogue/review-notes.md).
+Classification/provider enrichment and consented community similarity are later
+stages. No new production rollout or hosted backfill occurred.
+The deployed TASK-029 evidence below remains historical truth until release.
+
 ## Personal Discover — deployed 2026-09-09
 
 Follow-up: the owner's empty-player bottom-clipping report is fixed and deployed

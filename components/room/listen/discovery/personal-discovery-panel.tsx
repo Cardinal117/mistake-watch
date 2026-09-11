@@ -1,13 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ArrowLeft, RefreshCw } from "lucide-react";
-import { fetchYouTubeRecommendations } from "@/lib/youtube/recommendations-client";
 import {
-  buildRoomRecommendationRequest,
-  fetchRoomRecommendations,
-} from "@/lib/recommendations/room-client";
-import {
+  discoverItemToTrack,
   personalShelves,
   queuedPersonalTrack,
   type PersonalTrack,
@@ -18,10 +14,6 @@ import {
 } from "@/lib/recommendations/discover-contracts";
 import { queueItemToDiscoverySourceCommand } from "@/lib/recommendations/listen-discovery-interactions";
 import type { DiscoveryPanelProps } from "./discovery-panel";
-import {
-  buildProviderRecommendationQuery,
-  youtubeMetadataToQueueItem,
-} from "./media-cards";
 import { PersonalTrackView } from "./personal-track";
 import { usePersonalDiscovery } from "./use-personal-discovery";
 import "./personal-discovery.css";
@@ -46,124 +38,29 @@ export function PersonalDiscoveryPanel(props: DiscoveryPanelProps) {
   const { data, observe } = discovery;
   const [browse, setBrowse] = useState<DiscoverSurface | null>(null);
   const browseTrigger = useRef<DiscoverSurface | null>(null);
-  const [recommendations, setRecommendations] = useState<{
-    key: string;
-    items: PersonalTrack[];
-    reasons: Map<string, string>;
-    loading: boolean;
-    message?: string;
-  }>({ key: "", items: [], reasons: new Map(), loading: false });
   const shelves = useMemo(
     () => personalShelves(data?.items ?? [], data?.feedback ?? []),
     [data],
   );
-  const seed = currentItem ?? shelves.regulars[0] ?? null;
-  const query = buildProviderRecommendationQuery(seed);
-  const key = `${room.id}:${query ?? ""}`;
-  const recommendationsRef = useRef(recommendations);
-  useEffect(() => {
-    recommendationsRef.current = recommendations;
-  }, [recommendations]);
-  useEffect(() => {
-    if (!data || !query) return;
-    let disposed = false;
-    const previous = recommendationsRef.current;
-    if (previous.key !== key)
-      setRecommendations({ key, items: [], reasons: new Map(), loading: true });
-    void (async () => {
-      const provider = await fetchYouTubeRecommendations({
-        kind: "recommended",
-        query,
-        roomId: room.id,
-      });
-      const candidates = provider.items.map((item) =>
-        youtubeMetadataToQueueItem(item, "Personal discovery"),
-      );
-      if (candidates.length === 0) {
-        if (!disposed)
-          setRecommendations({
-            key,
-            items: [],
-            reasons: new Map(),
-            loading: false,
-            message:
-              provider.reason ??
-              "No new suggestions for this track yet. Your regulars are still available.",
-          });
-        return;
-      }
-      const result = await fetchRoomRecommendations(
-        buildRoomRecommendationRequest({
-          candidates,
-          currentItem: seed,
-          items,
-          roomId: room.id,
-          preferenceRevision: mediaPreferences.revision,
-        }),
-      );
-      if (result.status !== "available") {
-        if (!disposed)
-          setRecommendations({
-            key,
-            items: [],
-            reasons: new Map(),
-            loading: false,
-            message:
-              "Suggestions are temporarily unavailable. Your regulars and manual search are still available.",
-          });
-        return;
-      }
-      const byId = new Map(candidates.map((item) => [item.id, item]));
-      const ranked = result.items.flatMap((item) =>
-        byId.has(item.candidateId) ? [byId.get(item.candidateId)!] : [],
-      );
-      // Keep confirmed queue selections visible on this query instead of immediately refilling their slots.
-      const held =
-        previous.key === key
-          ? previous.items.filter((item) => queuedPersonalTrack(item, items))
-          : [];
-      const combined = [
-        ...new Map(
-          [...held, ...ranked].map((item) => [item.videoId, item]),
-        ).values(),
-      ];
-      if (!disposed)
-        setRecommendations({
-          key,
-          items: combined,
-          loading: false,
-          reasons: new Map(
-            result.items.map((item) => [
-              item.candidateId,
-              item.reasons[0]?.label ?? "Selected for this room",
-            ]),
-          ),
-        });
-    })().catch(() => {
-      if (!disposed)
-        setRecommendations({
-          key,
-          items: [],
-          reasons: new Map(),
-          loading: false,
-          message:
-            "Suggestions are unavailable. You can still choose your music.",
-        });
-    });
-    return () => {
-      disposed = true;
-    };
-    // Queue and Like changes rerank the existing provider query; provider cache coalesces retrieval.
-  }, [query, key, room.id, data, seed, items, mediaPreferences.revision]);
-
-  const recommended =
-    recommendations.key === key
-      ? recommendations.items.filter(
-          (item) =>
-            !shelves.blocked.has(item.videoId ?? "") &&
-            item.sourceType === "youtube",
-        )
-      : [];
+  const recommendations = data?.recommendations ?? [];
+  const recommended = recommendations
+    .filter(
+      (item) =>
+        !shelves.blocked.has(item.mediaId) &&
+        item.mediaId !== currentItem?.videoId &&
+        `https://www.youtube.com/watch?v=${item.mediaId}` !==
+          currentItem?.sourceUrl,
+    )
+    .map(discoverItemToTrack);
+  const reasons = new Map(
+    recommendations.map((item) => [item.mediaId, item.reason.label]),
+  );
+  const catalogueMessage =
+    data?.catalogue?.status === "warming"
+      ? "Preparing your saved music. Suggestions will appear as it becomes available."
+      : data?.catalogue?.status === "limited"
+        ? "Some saved music is unavailable right now. You can still use manual search."
+        : undefined;
   const activeFeedback =
     data?.feedback.filter((f) => isDiscoverSuppressed(f)) ?? [];
   function play(item: PersonalTrack, surface: DiscoverSurface) {
@@ -186,12 +83,7 @@ export function PersonalDiscoveryPanel(props: DiscoveryPanelProps) {
         item={item}
         surface={surface}
         regular={regular}
-        reason={
-          surface === "recommended"
-            ? (recommendations.reasons.get(item.id) ??
-              "YouTube search suggestion")
-            : undefined
-        }
+        reason={surface === "recommended" ? reasons.get(id) : undefined}
         queued={!!queued}
         added={discovery.added.has(id)}
         pending={discovery.pending.has(id)}
@@ -199,6 +91,9 @@ export function PersonalDiscoveryPanel(props: DiscoveryPanelProps) {
         canAdd={canAddQueue}
         busy={discovery.busyFeedback}
         preferences={mediaPreferences}
+        observationKey={
+          surface === "recommended" ? data?.decisionId : undefined
+        }
         onPlay={() => play(item, surface)}
         onAdd={(next) => discovery.addTrack(item, surface, next)}
         onFeedback={(state) => void discovery.feedback(id, surface, state)}
@@ -307,8 +202,9 @@ export function PersonalDiscoveryPanel(props: DiscoveryPanelProps) {
                 </div>
               ) : (
                 <p className="personal-empty">
-                  Like songs and listen in your Personal room to build your
-                  regulars. No listening history is invented.
+                  {data.catalogue?.status === "warming"
+                    ? "Preparing your saved music. Your likes and recorded plays stay saved."
+                    : "Like songs and listen in your Personal room to build your regulars."}
                 </p>
               )}
               <div className="personal-lower">
@@ -323,27 +219,30 @@ export function PersonalDiscoveryPanel(props: DiscoveryPanelProps) {
                       </h2>
                       <p>Choose what plays next</p>
                     </div>
+                    {recommended.length > 12 && (
+                      <button
+                        id="personal-view-recommended"
+                        onClick={() => viewAll("recommended")}
+                      >
+                        View all{" "}
+                        <span className="sr-only">recommendations</span>
+                      </button>
+                    )}
                   </header>
-                  {recommendations.message && (
-                    <p className="personal-source-note">
-                      {recommendations.message}
-                    </p>
+                  {catalogueMessage && (
+                    <p className="personal-source-note">{catalogueMessage}</p>
                   )}
-                  {recommendations.loading ? (
-                    <p role="status" className="personal-empty">
-                      Finding suggestions…
-                    </p>
-                  ) : recommended.length ? (
+                  {recommended.length ? (
                     <div className="personal-track-list">
-                      {recommended.map((item) =>
-                        renderTrack(item, "recommended"),
-                      )}
+                      {recommended
+                        .slice(0, 12)
+                        .map((item) => renderTrack(item, "recommended"))}
                     </div>
                   ) : (
                     <p className="personal-empty">
                       {shelves.blocked.size
                         ? "No eligible suggestions right now. Your feedback stays in place."
-                        : "Choose a song to find suggestions. Nothing is added automatically."}
+                        : "Like music or choose tracks to build suggestions from your listening. Nothing is added automatically."}
                     </p>
                   )}
                 </section>
@@ -391,7 +290,7 @@ export function PersonalDiscoveryPanel(props: DiscoveryPanelProps) {
                 <div key={f.mediaId}>
                   <span>
                     {data.items.find((i) => i.mediaId === f.mediaId)?.title ??
-                      recommendations.items.find((i) => i.videoId === f.mediaId)
+                      recommendations.find((i) => i.mediaId === f.mediaId)
                         ?.title ??
                       `YouTube video ${f.mediaId}`}
                     <small>

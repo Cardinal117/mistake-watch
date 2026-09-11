@@ -3,6 +3,16 @@
 Date: 2026-09-08
 Status: owner-requested direction record; research-informed, not an implementation or release approval.
 
+2026-09-11 update: [TASK-030](tasks/TASK-030-personal-music-catalogue/proposal.md)
+now owns the approved Stage 1 catalogue foundation: compact link metadata,
+30-day maximum YouTube cache retention (28-day operational expiry margin),
+owner-evidence Personal recommendations and bounded background refresh.
+The owner approved planning followed by local implementation after review.
+Stage 2 recording/classification enrichment and Stage 3 separately consented
+community overlap are planned, not implemented. Existing TASK-028 learning
+boundaries remain; no automatic provider search on Personal song changes and no
+automatic queue additions in Stage 1. See the packet for superseding details.
+
 ## Purpose and how to use this document
 
 Preserve the combined owner discussion and two research passes so future work
