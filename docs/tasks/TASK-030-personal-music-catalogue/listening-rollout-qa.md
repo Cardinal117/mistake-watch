@@ -1,7 +1,7 @@
 # Discover, queue feedback and eligible listening rollout
 
-Date: 2026-09-11. Status: local release gate passed; database migrations applied;
-frontend/runtime publication in progress.
+Date: 2026-09-11. Status: released; local QA and production service checks passed.
+Owner natural-use QA remains the next acceptance step.
 
 ## Approved scope
 
@@ -97,8 +97,16 @@ This release does not alter Auth configuration. Private RLS/no-browser-policy an
 fresh-unused-index INFO entries are intentional. Six INFO missing-FK-index findings
 concern older unrelated tables; new receipt foreign keys are indexed.
 
-Frontend/runtime receipt and Git hash will be appended after publication. Preserve
-all live data and verify production health, alias and fixture exclusion.
+Source `8ea2d08` was pushed atomically to main and the task branch. The corrected
+runtime was published with `--delete-data=never --break-clients --yes=remote`.
+Production retained 6,028 queue rows and 59 room sessions. Active clients reconnect
+for the additive schema. No live data was deleted.
+
+Vercel deployment `dpl_BcbNSbdQJLf64zKDV8NRAP6swETG` built successfully and was
+promoted to [the live site](https://watch.mistakestudios.com). Inspecting that custom
+domain resolved to the same Ready deployment. Custom-domain health returned
+`{"ok":true,"service":"mistake-watch"}`. Candidate readiness reported Supabase
+and Spacetime ready; the production development fixture returned 404.
 
 Initial candidate `b5afcc8` built as `dpl_GTLEgeJTsKpfLBFaNw6pygPGRfn5` and passed
 health, but was not promoted to the custom domain. Production runtime publication

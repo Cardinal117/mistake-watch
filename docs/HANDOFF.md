@@ -2,7 +2,7 @@
 
 ## Active: TASK-030 Personal music catalogue — 2026-09-11
 
-Current release candidate: compact Discover/desktop queue, immediate queue feedback,
+Current live release: compact Discover/desktop queue, immediate queue feedback,
 Shared listening permission/history clearing, and eligible-source listener records.
 See [current QA and deployment evidence](tasks/TASK-030-personal-music-catalogue/listening-rollout-qa.md).
 The owner authorized Git and deployment after QA. Pending UI does not manufacture
@@ -13,13 +13,15 @@ implements responsive recommendation/Regulars lists, search/count controls,
 compact queue icons, display-only Topic cleanup and artwork card styling. First
 bounded listening-contract step also has local SQL QA:
 [owned-Themed explicit choices](tasks/TASK-030-personal-music-catalogue/owned-themed-choice-qa.md).
-These changes are in final local release QA; use the current release note for
-publication status. Preserve unrelated owner notes and worktrees.
+Source `8ea2d08` is published on main and the task branch. Supabase migrations and
+the data-preserving Spacetime upgrade are live; Vercel deployment
+`dpl_BcbNSbdQJLf64zKDV8NRAP6swETG` is promoted and the custom domain was read back.
+See the release note for QA and provider limits. Preserve unrelated worktrees.
 
 Next approved direction: [030.10 account-wide listening contract](tasks/TASK-030-personal-music-catalogue/account-wide-listening-contract.md),
 then [Stage 2 identity/classification](tasks/TASK-030-personal-music-catalogue/stage-2-identity-and-classification.md).
-Planning and implementation are complete for eligible sources; final review and
-deployment are underway. Personal and owned Themed learning are primary; Shared passive learning
+Planning, implementation, QA and deployment are complete for eligible sources;
+owner natural-use QA is next. Personal and owned Themed learning are primary; Shared passive learning
 needs a new individual permission. Likes remain account-wide. Existing room
 events identify actors, not every listener, so validated listener receipts must
 precede account-wide counts. Old Shared action consent has not been broadened.
