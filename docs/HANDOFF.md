@@ -2,7 +2,7 @@
 
 ## Active: TASK-030 Personal music catalogue — 2026-09-11
 
-Current live baseline is the single-owner [controlled shadow pilot](tasks/TASK-030-personal-music-catalogue/shadow-pilot-rollout.md), deployment `dpl_6SgqNaZkD56W1rz56mzXNm2MWH4p`.
+Current live baseline is the single-owner [controlled shadow pilot](tasks/TASK-030-personal-music-catalogue/shadow-pilot-rollout.md), deployment `dpl_BpV2kLTP7yHdrtuQFPfsKQPPPzpb`.
 Migrations 20260911163824, 20260911163857, 20260911163915 and
 20260911170825 are hosted. The last fixed admission performance from 11.7s to 303ms.
 Manual confirmation UI/API stays excluded, and the manual worker stays disabled.
@@ -10,12 +10,13 @@ Manual confirmation UI/API stays excluded, and the manual worker stays disabled.
 Approved current follow-up: [favourites-first scheduling and Last.fm diagnostics](tasks/TASK-030-personal-music-catalogue/shadow-pilot-first-review.md).
 The first accumulated review found the 256-job cap occupied mostly by background
 candidates; 12 provisional identities yielded seven audio profiles but zero usable
-Last.fm tag sets. New local changes prioritize favourites safely at capacity and
+Last.fm tag sets. The live changes prioritize favourites safely at capacity and
 persist fixed diagnostic reasons. Both new SQL migrations are hosted:
 20260911184812 and 20260911184825. Candidate `dpl_BpV2kLTP7yHdrtuQFPfsKQPPPzpb`
-is Ready with build/health/auth checks passed; live-domain promotion was rejected
-by automatic approval review pending explicit promotion approval. The five
-invalid Last.fm jobs were requeued once; diagnostic completion remains pending.
+was explicitly approved and promoted to watch.mistakestudios.com. Live health and
+readiness return200; drain401 and excluded review route404. Personal Discover
+loads with playback still paused; deployed diagnostic processing has resumed.
+See the first-review receipt for the original five Last.fm recheck outcomes.
 No accepted identities or strict-theme ranking is enabled. Audio/music QA is the owner's role.
 
 The notes below describe earlier stages; current status above takes precedence.

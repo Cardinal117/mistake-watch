@@ -98,8 +98,8 @@ to `dpl_6SgqNaZkD56W1rz56mzXNm2MWH4p`; no alternate promotion was attempted.
 
 The five original invalid tag jobs received one guarded requeue, preserving their
 attempt count, provider budgets and fresh-context requirement. Targeted local
-execution could not reliably complete inside the30-second claim across tool
-approval latency; workstation clock was also about90seconds ahead of database UTC.
+execution could not reliably complete inside the 30-second claim across tool
+approval latency; workstation clock was also about 90 seconds ahead of database UTC.
 The runner stopped before network on expired timing checks. One intervening
 ordinary pending tag job returned retry through the adapter. No failed identity
 checks were relaxed and no diagnostic reason has been inferred for those five.
@@ -107,3 +107,26 @@ Stop local probes here; finish their recheck through the deployed worker after
 promotion approval, respecting existing cooldowns and the three-attempt cap. No music
 or UI changes are part of this release. Superseded local confirmation UI/API and
 owner intake notes remain unstaged and excluded from the clean artifact.
+
+
+## Approved live promotion
+
+Owner explicitly approved promotion after the review gate. Candidate
+`dpl_BpV2kLTP7yHdrtuQFPfsKQPPPzpb` is now live at watch.mistakestudios.com;
+Vercel domain readback confirms that exact deployment. Live health and readiness
+return 200, unauthenticated drain returns 401, and excluded recording-review route
+returns 404. Personal Discover loads after a single reload and remains paused.
+Normal Discover processing now persists diagnostic reasons through the deployed
+worker, avoiding local clock/approval latency. No additional provider budget or
+polling was introduced. Prior rejection and local-probe notes above are history.
+
+
+Live recheck snapshot around 20:17 UTC: End of an Era, Autobots Reunite and Forest
+Battle completed with `mbid-mismatch`. AXIS and King Arthur remained queued with
+fresh contexts; current favourites continue to take priority. Do not describe a
+returned conflicting ID as proof which provider is correct or as a different
+performance without examining both identities. No tag disagreement was bypassed.
+Abyssal Rhapsody returned `no-tags`; The Last of Her Kind also returned an MBID
+mismatch. Accepted links and other-account jobs remain zero. Next is to complete
+normal queued checks and compare conflicting recording identities before any
+proposal to use tags or enable Fantasy/orchestral ranking.
