@@ -128,6 +128,7 @@ export function WatchMediaDetails({
         liveRoom.setQueueItemPriority(item.id, { isPlayNext: true });
       } else {
         liveRoom.addQueueItem({
+          allowDuplicate: true,
           sourceTitle: item.title,
           sourceType: item.sourceType!,
           sourceUrl: item.sourceUrl!,

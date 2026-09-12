@@ -215,12 +215,16 @@ export function ListenSearchShell({
   }
 
   function addSearchResult(item: YouTubeSearchItem) {
-    onAddQueueItem(youtubeSearchItemToQueueInput(item));
+    onAddQueueItem({
+      ...youtubeSearchItemToQueueInput(item),
+      allowDuplicate: true,
+    });
   }
 
   function playSearchResultNext(item: YouTubeSearchItem) {
     onAddQueueItem({
       ...youtubeSearchItemToQueueInput(item),
+      allowDuplicate: true,
       isPlayNext: true,
     });
   }

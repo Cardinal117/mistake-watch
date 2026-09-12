@@ -136,6 +136,7 @@ export function mediaHubItemToQueueInput(
   }
 
   return {
+    allowDuplicate: true,
     artist: item.artist,
     channelName: item.channelName,
     durationSeconds:

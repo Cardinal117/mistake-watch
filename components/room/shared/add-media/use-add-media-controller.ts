@@ -171,7 +171,9 @@ export function useAddMediaController({
   }
 
   function addQueueItemWithFeedback(input: QueueAddInput) {
-    onAddQueueItem?.(input);
+    // Admission/warnings were checked above; a concurrent addition must not
+    // silently turn this intentional addition into a server-side no-op.
+    onAddQueueItem?.({ ...input, allowDuplicate: true });
     const action = input.isPlayNext ? "Set to play next" : "Added to queue";
     notify(
       input.allowDuplicate
@@ -236,7 +238,7 @@ export function useAddMediaController({
       if (duplicate && !options.allowDuplicates) continue;
       added += 1;
       duplicatesAdded += duplicate ? 1 : 0;
-      onAddQueueItem?.({ ...queueInput, allowDuplicate: duplicate });
+      onAddQueueItem?.({ ...queueInput, allowDuplicate: options.allowDuplicates || duplicate });
     }
     const summary =
       duplicatesAdded > 0

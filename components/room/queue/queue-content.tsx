@@ -218,6 +218,7 @@ function QueueHistory({
   queuedItemsLength: number;
 }) {
   const toQueueInput = (queueItem: RoomQueueItem): QueueAddInput => ({
+    allowDuplicate: true,
     artist: queueItem.artist,
     channelName: queueItem.channelName,
     playlistId: queueItem.playlistId,

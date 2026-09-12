@@ -268,7 +268,7 @@ export function ListenAddMediaPopover({
 
     onAddQueueItem({
       ...input,
-      allowDuplicate: isDuplicateSingle(input),
+      allowDuplicate: true,
     });
     notify(`Added to queue: ${input.sourceTitle}`, "success");
   }
@@ -290,7 +290,7 @@ export function ListenAddMediaPopover({
 
     onAddQueueItem({
       ...input,
-      allowDuplicate: isDuplicateSingle(input),
+      allowDuplicate: true,
     });
     notify(`Added next: ${input.sourceTitle}`, "success");
   }
@@ -331,7 +331,7 @@ export function ListenAddMediaPopover({
 
     onAddQueueItem({
       ...queueInput,
-      allowDuplicate: duplicate,
+      allowDuplicate: true,
     });
     notify(
       `${isPlayNext ? "Set to play next" : "Added to queue"}: ${queueInput.sourceTitle}`,
@@ -421,7 +421,7 @@ export function ListenAddMediaPopover({
           playlistId: playlistPreview.playlistId,
           playlistTitle: playlistPreview.playlistTitle,
         }),
-        allowDuplicate: isDuplicatePlaylistItem(item),
+        allowDuplicate: options.allowDuplicates === true || isDuplicatePlaylistItem(item),
         isUnavailable: item.isUnavailable,
       });
       added += 1;

@@ -66,6 +66,7 @@ export function WatchMediaHubCard({
   item: WatchMediaHubItem;
   layout?: UploadedLibraryViewMode;
   onAddQueueItem?(input: {
+    allowDuplicate?: boolean;
     artist?: string;
     channelName?: string;
     durationSeconds?: number;
@@ -142,6 +143,7 @@ export function WatchMediaHubCard({
     }
 
     onAddQueueItem?.({
+      allowDuplicate: true,
       artist: item.artist,
       channelName: item.channelName,
       durationSeconds:

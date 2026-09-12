@@ -179,6 +179,7 @@ export function ListenQueueRow({
             label={isBlocked ? `${title} is unavailable` : `Requeue ${title}`}
             onClick={() =>
               onAddQueueItem({
+                allowDuplicate: true,
                 artist: item.artist,
                 channelName: item.channelName,
                 isUnavailable: item.isUnavailable,
