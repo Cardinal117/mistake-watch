@@ -4,9 +4,12 @@
 
 Owner-approved fixes are in [the playback/Regulars packet](tasks/playback-readiness-regulars-2026-09-12/task.md).
 Manual YouTube readiness, clock/correction stability and compact Regulars browsing
-passed local QA and independent review ([evidence](tasks/playback-readiness-regulars-2026-09-12/qa.md)). This slice is not committed or
-deployed; the live catalogue baseline below remains unchanged. Preserve the
-pre-existing manual recording-review UI/API changes when preparing a release.
+passed local QA and independent review ([evidence](tasks/playback-readiness-regulars-2026-09-12/qa.md)). Commit `484ed51` is on main;
+the compatible server fix is live. Frontend candidate `dpl_GZ8EAxwgi53zv7WeW2kDijEVLH5z`
+built successfully and passed health/readiness. Automatic approval review blocked
+live-domain promotion pending explicit owner approval. See [release receipt](tasks/playback-readiness-regulars-2026-09-12/release.md).
+The main domain retains the previous frontend. Unrelated recording-review UI/API
+work remains uncommitted and excluded from the candidate.
 
 ## Active: TASK-030 Personal music catalogue — 2026-09-11
 

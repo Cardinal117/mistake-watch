@@ -10,4 +10,6 @@
 - [x] Independent GPT-5.6 medium review and resolve material findings.
 - [x] Final verification report and handoff: [qa.md](qa.md).
 
-No commit, push, module publish or frontend deployment has occurred for this slice.
+Release: commit/push and server publish complete; clean frontend QA candidate ready.
+Live-domain promotion awaits explicit approval after automatic review rejection.
+See [release receipt](release.md).
