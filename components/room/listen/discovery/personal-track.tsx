@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useContext,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -29,6 +30,7 @@ import { useRegularExpansion } from "./use-regular-expansion";
 import { artistLabel } from "@/lib/ui/artist-label";
 import { getListenTheme, useArtworkTheme } from "../theme/listen-theme";
 import { readableWatchAccent } from "@/components/room/watch/watch-accent";
+import { PersonalFeedbackCopyContext } from "./personal-feedback-copy-context";
 
 export function PersonalTrackView({
   item,
@@ -66,6 +68,7 @@ export function PersonalTrackView({
   observationKey?: string;
 }) {
   const article = useRef<HTMLElement>(null);
+  const feedbackCopy = useContext(PersonalFeedbackCopyContext);
   const artworkTheme = useArtworkTheme(
     regular ? item.thumbnailUrl : null,
     getListenTheme(item.videoId),
@@ -412,14 +415,14 @@ export function PersonalTrackView({
               onClick={() => action(() => onFeedback("not_now"))}
             >
               <X size={16} aria-hidden />
-              Not now · 7 days
+              {feedbackCopy.snooze}
             </button>
             <button
               role="menuitem"
               disabled={busy}
               onClick={() => action(() => onFeedback("do_not_suggest"))}
             >
-              Don&apos;t suggest this track
+              {feedbackCopy.exclude}
             </button>
             <button
               role="menuitem"

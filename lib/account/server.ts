@@ -1,6 +1,7 @@
 import "server-only";
 import { isPersonalRoomOwner } from "@/lib/rooms/personal-access";
 import { canUseCompactPlayback } from "./compact-playback";
+import { personalFeedbackStyle } from "./personal-feedback-style";
 
 import { cookies } from "next/headers";
 
@@ -39,6 +40,7 @@ export async function getAccountSummary(): Promise<AccountSummary> {
 
   return {
     accountStatus: normalizeAccountStatus(profile.account_status),
+    personalFeedbackStyle: personalFeedbackStyle(data.user.id),
     canUseCompactPlayback: canUseCompactPlayback(
       data.user,
       profile.account_status,

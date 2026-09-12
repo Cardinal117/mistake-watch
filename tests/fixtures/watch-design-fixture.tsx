@@ -109,7 +109,11 @@ declare global {
       setConnected: (connected: boolean) => void;
       setPosition: (positionSeconds: number) => void;
       setPlaybackPermission: (allowed: boolean) => void;
-      setSource: (sourceUrl: string, sourceType: "direct" | "youtube") => void;
+      setSource: (
+        sourceUrl: string,
+        sourceType: "direct" | "youtube",
+        title?: string,
+      ) => void;
     };
   }
 }
@@ -191,7 +195,9 @@ export function WatchDesignFixture({
   };
   const queueRejections = useRef<Array<(reason: Error) => void>>([]);
   const liveRoom = {
-    listenerConnection: listenerPreview ? { roomId: id, admissionId: "a".repeat(24), identityHex: "a".repeat(64) } : undefined,
+    listenerConnection: listenerPreview
+      ? { roomId: id, admissionId: "a".repeat(24), identityHex: "a".repeat(64) }
+      : undefined,
     observeListenerPlayback: (sample: unknown) => record("listener", sample),
     youtubeAutoplayPreparation,
     snapshot: {
@@ -237,7 +243,9 @@ export function WatchDesignFixture({
     addQueueItem: (input: unknown) => {
       record("add", input);
       if (window.watchQA?.deferQueueAdds)
-        return new Promise<void>((_resolve, reject) => queueRejections.current.push(reject));
+        return new Promise<void>((_resolve, reject) =>
+          queueRejections.current.push(reject),
+        );
     },
     playQueueItemNow: (input: unknown) => record("playQueue", input),
     playQueueItem: (input: unknown) => record("playQueue", input),
@@ -393,14 +401,23 @@ export function WatchDesignFixture({
     });
     window.watchQA = {
       calls: calls.current,
-      rejectQueueAdd: (index) => queueRejections.current[index]?.(new Error("Delayed queue rejection")),
+      rejectQueueAdd: (index) =>
+        queueRejections.current[index]?.(new Error("Delayed queue rejection")),
       confirmPersonalAdd: (videoId, title) =>
         setQueueState((current) => [
           ...current,
           {
             ...queue[0],
             queueItemId: `qa:${videoId}:${crypto.randomUUID()}`,
-            clientActionId: (calls.current.findLast(c => c.action === "add" && (c.input as { sourceUrl?: string }).sourceUrl?.includes(videoId))?.input as { clientActionId?: string } | undefined)?.clientActionId,
+            clientActionId: (
+              calls.current.findLast(
+                (c) =>
+                  c.action === "add" &&
+                  (c.input as { sourceUrl?: string }).sourceUrl?.includes(
+                    videoId,
+                  ),
+              )?.input as { clientActionId?: string } | undefined
+            )?.clientActionId,
             position: current.length,
             title,
             sourceType: "youtube",
@@ -420,7 +437,11 @@ export function WatchDesignFixture({
           current.map((i) => (i.queueItemId === id ? { ...i, status } : i)),
         ),
       setQueueNextFlag: (id, value) =>
-        setQueueState(current => current.map(item => item.queueItemId === id ? { ...item, isPlayNext: value } : item)),
+        setQueueState((current) =>
+          current.map((item) =>
+            item.queueItemId === id ? { ...item, isPlayNext: value } : item,
+          ),
+        ),
       setQueueCount: (count) =>
         setQueueState(
           Array.from({ length: count }, (_, index) => ({
@@ -473,8 +494,13 @@ export function WatchDesignFixture({
           serverUpdatedMs: Date.now(),
         }));
       },
-      setSource: (sourceUrl, sourceType) =>
-        setSession((current) => ({ ...current, sourceUrl, sourceType })),
+      setSource: (sourceUrl, sourceType, title) =>
+        setSession((current) => ({
+          ...current,
+          sourceUrl,
+          sourceType,
+          ...(title ? { sourceTitle: title } : {}),
+        })),
     };
     return () => {
       cancelAnimationFrame(frame);

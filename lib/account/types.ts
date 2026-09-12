@@ -19,5 +19,6 @@ export type AccountSummary =
       role: AccountRole;
       accountStatus: AccountStatus;
       canUseCompactPlayback?: boolean;
+      personalFeedbackStyle?: "af-casual";
       isAnonymous?: boolean;
     };

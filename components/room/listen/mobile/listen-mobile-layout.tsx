@@ -11,7 +11,7 @@ import {
   ChevronDown,
   ChevronUp,
   Home,
-  ListMusic,
+  ListVideo,
   Minimize2,
   Maximize2,
   MoreHorizontal,
@@ -29,6 +29,7 @@ import {
   ListenMobilePresentation,
   ListenMobileStage,
   ListenMobileQueueNavigation,
+  ListenMobileVisualizerNavigation,
 } from "./listen-mobile-context";
 import { ListenHomeToolbar } from "./listen-home-toolbar";
 import { WatchLeaveButton } from "../../watch/watch-leave-button";
@@ -41,12 +42,15 @@ const ListenMobileWorkspaces = dynamic(
   { loading: () => <p role="status">Loading room tools...</p> },
 );
 import { useListenExpansion } from "./use-listen-expansion";
+import { PlayerPopover } from "./player-popover";
+import { dispatchPlayerFullscreenRequest } from "@/lib/player/local-controls";
 import "./listen-mobile.css";
 import "./listen-desktop-bridge.css";
 import "./listen-mobile-discovery.css";
+import "./listen-player-polish.css";
 const destinations = [
   ["home", "Home", Home],
-  ["queue", "Queue", ListMusic],
+  ["queue", "Queue", ListVideo],
   ["add", "Add", Plus],
   ["social", "Social", Users],
   ["more", "More", MoreHorizontal],
@@ -66,6 +70,7 @@ export function ListenMobileLayout({
   style,
   title,
   artist,
+  artworkUrl,
   onPlaybackChange,
   onNext,
   onEnterTv,
@@ -80,6 +85,7 @@ export function ListenMobileLayout({
   style: CSSProperties;
   title: string;
   artist: string;
+  artworkUrl?: string | null;
   onPlaybackChange(status: "paused" | "playing"): void;
   onNext(): void;
   onEnterTv(): void;
@@ -265,6 +271,19 @@ export function ListenMobileLayout({
           }
           aria-label="Now playing"
         >
+          {!desktopShell && isExpanded && artworkUrl && (
+            <div className="listen-mobile-player-backdrop" aria-hidden>
+              {/* eslint-disable-next-line @next/next/no-img-element -- Decorative external provider artwork. */}
+              <img
+                key={artworkUrl}
+                src={artworkUrl}
+                alt=""
+                onError={(event) => {
+                  event.currentTarget.style.visibility = "hidden";
+                }}
+              />
+            </div>
+          )}
           <div className="listen-mobile-player-top" hidden={desktopShell}>
             <button
               ref={handleRef}
@@ -280,13 +299,7 @@ export function ListenMobileLayout({
               )}
               <span>
                 <strong>{isExpanded ? "Now playing" : title}</strong>
-                <small>
-                  {isExpanded
-                    ? "Swipe down to browse"
-                    : playing
-                      ? artist
-                      : "Paused"}
-                </small>
+                {!isExpanded && <small>{playing ? artist : "Paused"}</small>}
               </span>
             </button>
             {!isExpanded && (
@@ -334,22 +347,41 @@ export function ListenMobileLayout({
               </>
             )}
             {isExpanded && (
-              <button
-                className="listen-discover-button"
-                onClick={() => {
-                  setScreen("home");
-                  settle(false);
-                }}
+              <PlayerPopover
+                label="Player options"
+                icon={<MoreHorizontal aria-hidden />}
               >
-                Discover
-              </button>
+                <button
+                  onClick={() => {
+                    setStageView("discover");
+                    navigate("home");
+                  }}
+                >
+                  Discover
+                </button>
+                <button onClick={dispatchPlayerFullscreenRequest}>
+                  Fullscreen
+                </button>
+                <button onClick={() => navigate("more")}>Room settings</button>
+              </PlayerPopover>
             )}
           </div>
           <div className="listen-mobile-player-body">
             <ListenMobileQueueNavigation.Provider
               value={desktopShell ? null : () => navigate("queue")}
             >
-              {player}
+              <ListenMobileVisualizerNavigation.Provider
+                value={
+                  desktopShell
+                    ? null
+                    : () => {
+                        setStageView("visualizer");
+                        navigate("home");
+                      }
+                }
+              >
+                {player}
+              </ListenMobileVisualizerNavigation.Provider>
             </ListenMobileQueueNavigation.Provider>
           </div>
         </section>

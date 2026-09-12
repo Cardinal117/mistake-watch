@@ -1,6 +1,9 @@
 "use client";
 import { createContext } from "react";
 export const ListenMobilePresentation = createContext(false);
+export const ListenMobileVisualizerNavigation = createContext<
+  (() => void) | null
+>(null);
 export const ListenMobileQueueNavigation = createContext<(() => void) | null>(
   null,
 );

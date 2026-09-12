@@ -293,3 +293,24 @@ frame-batched visual state using measured travel, without pointer-frequency room
 rerenders. Safe-area padding protects top controls.
 
 Watch mini-player positioning is free within the usable viewport (2026-09-07). The existing grip follows pointer/touch movement and retains the released position without corner snapping. Arrow keys move 20px; Shift+arrows move 4px. Re-clamp on resize, rotation and size changes; Cinema/fullscreen retain their existing geometry. Short landscape keeps a movable bounded player above the bottom navigation. No new colors or decorative motion.
+
+## Listen player polish — owner-approved 2026-09-12
+
+Expanded mobile Listen uses a quiet centered Now playing header, smaller square
+provider stage (minimum 200px), ambient blurred artwork and dark readability
+scrim, 24px title, song-accent heart and a filled accent transport button using
+the existing desktop Play/Pause glyphs. Keep one provider mounted through
+browsing, expansion and rotation. Use the existing readable accent lift for
+controls when source artwork colors are too dark.
+
+YouTube, views and likes remain visible as padded inline icons/text without
+individual boxes, on both mobile and desktop. Volume opens from a compact
+speaker control with outside/Escape dismissal. Mobile exposes Visualizer beside
+it and one compact Up next row; its bottom navigation follows Watch spacing and
+icons. Desktop retains its existing rail/transport composition, with only the
+approved metadata, heart and volume presentation changes.
+
+Fit ordinary portrait phones by scaling media and tightening short-height gaps;
+allow scrolling for landscape, enlarged text and exceptional titles rather than
+clipping controls. See docs/tasks/listen-mobile-player-polish/task.md and its
+approved reference for the visual contract.

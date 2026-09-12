@@ -2,7 +2,7 @@
 
 import { artistLabel } from "@/lib/ui/artist-label";
 
-import { ListMusic } from "lucide-react";
+import { ChevronRight, ListMusic } from "lucide-react";
 import type { RoomQueueItem } from "@/lib/rooms";
 import { cx } from "@/lib/ui";
 import { QueueArtwork } from "@/components/room/listen/discovery/media-cards";
@@ -13,12 +13,44 @@ export function ListenUpNextPreview({
   items,
   onOpenQueue,
   remainingSeconds,
+  compact = false,
 }: {
   items: RoomQueueItem[];
   onOpenQueue(): void;
   remainingSeconds: number | null;
+  compact?: boolean;
 }) {
   const previewItems = deriveListenUpNextPreview(items);
+
+  if (compact) {
+    const item = previewItems[0];
+    return (
+      <button
+        className="listen-mobile-up-next"
+        onClick={onOpenQueue}
+        aria-label={item ? `Open queue. Up next: ${item.title}` : "Open queue"}
+      >
+        {item && (
+          <QueueArtwork
+            className="h-11 w-11 rounded-md"
+            thumbnailUrl={item.thumbnailUrl}
+            title={item.title}
+          />
+        )}
+        <span className="listen-up-next-copy">
+          <span>Up next</span>
+          <strong>{item?.title ?? "Choose what plays next"}</strong>
+          {item && (
+            <span>
+              {artistLabel(item.artist ?? item.channelName ?? "Room source")}
+            </span>
+          )}
+        </span>
+        {item && <span>{item.duration !== "-" ? item.duration : ""}</span>}
+        <ChevronRight aria-hidden />
+      </button>
+    );
+  }
 
   return (
     <section className="mt-auto grid gap-2 border-t border-white/8 pt-3">

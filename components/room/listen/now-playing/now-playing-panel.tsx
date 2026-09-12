@@ -14,6 +14,7 @@ import {
   SkipForward,
   Volume2,
   VolumeX,
+  AudioLines,
 } from "lucide-react";
 import { IconButton, Slider } from "@/components/ui";
 import { dispatchPlayerFullscreenRequest } from "@/lib/player/local-controls";
@@ -27,7 +28,11 @@ import { YoutubeMediaPlayer } from "@/components/room/youtube-media-player";
 import { YouTubeMetadataLine } from "@/components/room/youtube-metadata-line";
 import { PreferenceHeartButton } from "@/components/room/listen/preference-heart-button";
 import type { MediaPreferenceController } from "@/lib/recommendations/use-media-preferences";
-import { ListenMobileQueueNavigation } from "../mobile/listen-mobile-context";
+import {
+  ListenMobileQueueNavigation,
+  ListenMobileVisualizerNavigation,
+} from "../mobile/listen-mobile-context";
+import { PlayerPopover } from "../mobile/player-popover";
 import { formatSeconds } from "@/components/room/listen/helpers";
 import { ListenUpNextPreview } from "@/components/room/listen/now-playing/up-next-preview";
 
@@ -76,6 +81,7 @@ export function ListenNowPlayingPanel({
   volume: number;
 }) {
   const openMobileQueue = useContext(ListenMobileQueueNavigation);
+  const openVisualizer = useContext(ListenMobileVisualizerNavigation);
   const session = liveRoom.snapshot.session;
   const liveSource = session?.sourceUrl ?? null;
   const liveSourceType = session?.sourceType ?? null;
@@ -212,9 +218,9 @@ export function ListenNowPlayingPanel({
             />
           </div>
 
-          <div className="grid gap-[clamp(0.5rem,1vh,0.75rem)]">
+          <div className="listen-now-details grid gap-[clamp(0.5rem,1vh,0.75rem)]">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-              <h1 className="text-headline-md font-semibold leading-tight text-on-surface [overflow-wrap:anywhere]">
+              <h1 className="listen-now-title text-headline-md font-semibold leading-tight text-on-surface [overflow-wrap:anywhere]">
                 {title}
               </h1>
               {currentItem ? (
@@ -233,6 +239,7 @@ export function ListenNowPlayingPanel({
             </p>
             {youtubeSource ? (
               <YouTubeMetadataLine
+                className="listen-now-metadata"
                 showChannel={false}
                 sourceUrl={liveSource}
                 tone="dynamic"
@@ -240,8 +247,8 @@ export function ListenNowPlayingPanel({
             ) : null}
           </div>
 
-          <div className="grid gap-[clamp(0.625rem,1.35vh,1rem)]">
-            <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 text-label-sm text-on-surface-variant">
+          <div className="listen-now-controls grid gap-[clamp(0.625rem,1.35vh,1rem)]">
+            <div className="listen-now-progress grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 text-label-sm text-on-surface-variant">
               <span>{formatSeconds(currentPosition)}</span>
               <Slider
                 label="Listen progress"
@@ -263,7 +270,7 @@ export function ListenNowPlayingPanel({
               </span>
             </div>
 
-            <div className="flex items-center justify-center gap-2">
+            <div className="listen-now-transport flex items-center justify-center gap-2">
               <IconButton
                 className="hover:bg-[rgb(var(--listen-primary)/0.08)] hover:text-[rgb(var(--listen-primary))]"
                 disabled={!canControl}
@@ -325,46 +332,54 @@ export function ListenNowPlayingPanel({
               </IconButton>
             </div>
 
-            <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2">
-              {volume <= 0 ? (
-                <VolumeX
-                  className="h-5 w-5 text-on-surface-variant"
-                  aria-hidden
-                />
-              ) : (
-                <Volume2
-                  className="h-5 w-5 text-on-surface-variant"
-                  aria-hidden
-                />
+            <div className="listen-player-secondary">
+              {!desktopShell && (
+                <button
+                  aria-label="Open visualizer"
+                  onClick={() => openVisualizer?.()}
+                >
+                  <AudioLines aria-hidden />
+                  Visualizer
+                </button>
               )}
-              <Slider
-                label="Volume"
-                max={100}
-                min={0}
-                onChange={(event) =>
-                  onVolumeChange(Number(event.currentTarget.value))
+              <PlayerPopover
+                label="Volume controls"
+                icon={
+                  volume <= 0 ? (
+                    <VolumeX aria-hidden />
+                  ) : (
+                    <Volume2 aria-hidden />
+                  )
                 }
-                tone="dynamic"
-                value={volume}
-              />
-              <span
-                aria-label={`Volume ${Math.round(volume)} percent`}
-                className="min-w-9 text-right text-label-sm tabular-nums text-on-surface-variant"
               >
-                {Math.round(volume)}%
-              </span>
-              <IconButton
-                className="hover:bg-[rgb(var(--listen-primary)/0.08)] hover:text-[rgb(var(--listen-primary))]"
-                label="Fullscreen"
-                onClick={dispatchPlayerFullscreenRequest}
-                variant="ghost"
-              >
-                <Maximize2 className="h-5 w-5" aria-hidden />
-              </IconButton>
+                <label className="listen-volume-label">
+                  Volume <span>{Math.round(volume)}%</span>
+                </label>
+                <Slider
+                  label="Volume"
+                  min={0}
+                  max={100}
+                  tone="dynamic"
+                  value={volume}
+                  onChange={(event) =>
+                    onVolumeChange(Number(event.currentTarget.value))
+                  }
+                />
+              </PlayerPopover>
+              {desktopShell && (
+                <IconButton
+                  label="Fullscreen"
+                  onClick={dispatchPlayerFullscreenRequest}
+                  variant="ghost"
+                >
+                  <Maximize2 className="h-5 w-5" aria-hidden />
+                </IconButton>
+              )}
             </div>
           </div>
 
           <ListenUpNextPreview
+            compact={!desktopShell}
             items={queuedItems}
             onOpenQueue={openMobileQueue ?? onOpenQueue}
             remainingSeconds={remainingQueueSeconds}

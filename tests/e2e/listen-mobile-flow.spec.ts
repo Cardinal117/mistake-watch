@@ -50,6 +50,9 @@ for (const size of [
     await page
       .getByRole("slider", { name: "Listen progress" })
       .scrollIntoViewIfNeeded();
+    await page
+      .getByRole("button", { name: "Volume controls", exact: true })
+      .click();
     await expect(
       page.getByRole("slider", { name: "Volume", exact: true }),
     ).toBeVisible();
@@ -95,6 +98,9 @@ qa(
     await page.goto("/dev/listen-design");
     await page
       .getByRole("button", { name: "Expand player", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Player options", exact: true })
       .click();
     await page.getByRole("button", { name: "Discover", exact: true }).click();
     const workspace = page.locator(".listen-mobile-discovery");
@@ -208,8 +214,14 @@ qa(
         .locator(".listen-mobile-player")
         .evaluate((el) => parseFloat(getComputedStyle(el).transitionDuration)),
     ).toBeLessThan(0.001);
-    await page.getByRole("navigation", { name: "Listen room" }).getByRole("button", { name: "More", exact: true }).click();
-    await page.locator(".room-settings-leave").getByRole("button", { name: "Leave room", exact: true }).click();
+    await page
+      .getByRole("navigation", { name: "Listen room" })
+      .getByRole("button", { name: "More", exact: true })
+      .click();
+    await page
+      .locator(".room-settings-leave")
+      .getByRole("button", { name: "Leave room", exact: true })
+      .click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toBeHidden();
@@ -276,6 +288,9 @@ qa(
     await page.goto("/dev/listen-design");
     await page
       .getByRole("button", { name: "Expand player", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Player options", exact: true })
       .click();
     await page.getByRole("button", { name: "Discover", exact: true }).click();
     const card = page.locator(".listen-discovery-card").first();

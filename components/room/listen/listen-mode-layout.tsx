@@ -1,6 +1,9 @@
 "use client";
 
 import { artistLabel } from "@/lib/ui/artist-label";
+import { readableWatchAccent } from "@/components/room/watch/watch-accent";
+import { personalFeedbackCopy } from "@/lib/recommendations/personal-feedback-copy";
+import { PersonalFeedbackCopyContext } from "./discovery/personal-feedback-copy-context";
 import {
   OptimisticQueueContext,
   useOptimisticAdds,
@@ -142,6 +145,7 @@ export function ListenModeLayout({
     "--listen-background-primary": listenTheme.backgroundPrimary,
     "--listen-background-secondary": listenTheme.backgroundSecondary,
     "--listen-primary": listenTheme.primary,
+    "--listen-control-accent": readableWatchAccent(listenTheme.primary),
     "--listen-secondary": listenTheme.secondary,
     "--listen-shadow": listenTheme.shadow,
     "--listen-wave": listenTheme.wave,
@@ -445,64 +449,69 @@ export function ListenModeLayout({
 
   return (
     <OptimisticQueueContext.Provider value={optimisticAdds.actions}>
-      <ListenMobileLayout
-        account={account}
-        accountNotice={accountNotice}
-        room={room}
-        liveRoom={liveRoom}
-        items={liveQueueItems}
-        header={header}
-        player={nowPlaying}
-        discovery={discovery}
-        style={listenThemeStyle}
-        title={activeTitle}
-        artist={activeArtist}
-        onPlaybackChange={setPlayback}
-        onNext={playNext}
-        onEnterTv={() => setTvMode(true)}
-        desktopShell={desktopShell}
-        desktopQueue={
-          <ListenQueueDrawer
-            canAddQueue={liveRoom.canAddQueue}
-            canManageQueue={canManageQueue}
-            isConnected={isConnected}
-            nextPreparation={nextPreparation}
-            onOpenChange={setQueueDrawerOpen}
-            onAddQueueItem={optimisticAdds.add}
-            onClearQueue={liveRoom.clearQueue}
-            onMoveQueueItem={liveRoom.moveQueueItem}
-            onPinnedFirst={() => applyQueueShuffle("pinned")}
-            onPlayQueueItem={liveRoom.playQueueItemNow}
-            onQueueItemPriorityChange={liveRoom.setQueueItemPriority}
-            onRemoveQueueItem={liveRoom.removeQueueItem}
-            onShuffle={() => applyQueueShuffle("shuffle")}
-            onSmartShuffle={() => applyQueueShuffle("smart")}
-            queueState={queueState}
-            queueMode={session?.queueMode ?? "normal"}
-            open={queueDrawerOpen}
-            remainingLoading={remainingQueueMetadataLoading}
-            remainingSeconds={remainingQueueSeconds}
-            desktopShell={desktopShell}
-          />
-        }
-        backdrop={
-          <>
-            {desktopShell && effectiveVisualizationMode !== "off" ? (
-              <ListenAmbientBackdrop mode={effectiveVisualizationMode} />
-            ) : null}
-            {effectiveVisualizationMode !== "off" ? (
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 transition-opacity duration-1000"
-                style={{
-                  background:
-                    "radial-gradient(circle at 0% 18%, rgb(var(--listen-primary) / 0.3), transparent 44%), radial-gradient(circle at 18% 62%, rgb(var(--listen-secondary) / 0.18), transparent 40%), radial-gradient(circle at 38% 100%, rgb(var(--listen-wave) / 0.1), transparent 46%), linear-gradient(90deg, rgb(var(--listen-primary) / 0.05), rgb(14 14 15 / var(--listen-room-dim-middle,0.64)) 34%, rgb(19 19 20 / var(--listen-room-dim-end,0.97)) 100%)",
-                }}
-              />
-            ) : null}
-          </>
-        }
-      />
+      <PersonalFeedbackCopyContext.Provider
+        value={personalFeedbackCopy(account, room)}
+      >
+        <ListenMobileLayout
+          account={account}
+          accountNotice={accountNotice}
+          room={room}
+          liveRoom={liveRoom}
+          items={liveQueueItems}
+          header={header}
+          player={nowPlaying}
+          discovery={discovery}
+          style={listenThemeStyle}
+          title={activeTitle}
+          artist={activeArtist}
+          artworkUrl={activeArtworkUrl}
+          onPlaybackChange={setPlayback}
+          onNext={playNext}
+          onEnterTv={() => setTvMode(true)}
+          desktopShell={desktopShell}
+          desktopQueue={
+            <ListenQueueDrawer
+              canAddQueue={liveRoom.canAddQueue}
+              canManageQueue={canManageQueue}
+              isConnected={isConnected}
+              nextPreparation={nextPreparation}
+              onOpenChange={setQueueDrawerOpen}
+              onAddQueueItem={optimisticAdds.add}
+              onClearQueue={liveRoom.clearQueue}
+              onMoveQueueItem={liveRoom.moveQueueItem}
+              onPinnedFirst={() => applyQueueShuffle("pinned")}
+              onPlayQueueItem={liveRoom.playQueueItemNow}
+              onQueueItemPriorityChange={liveRoom.setQueueItemPriority}
+              onRemoveQueueItem={liveRoom.removeQueueItem}
+              onShuffle={() => applyQueueShuffle("shuffle")}
+              onSmartShuffle={() => applyQueueShuffle("smart")}
+              queueState={queueState}
+              queueMode={session?.queueMode ?? "normal"}
+              open={queueDrawerOpen}
+              remainingLoading={remainingQueueMetadataLoading}
+              remainingSeconds={remainingQueueSeconds}
+              desktopShell={desktopShell}
+            />
+          }
+          backdrop={
+            <>
+              {desktopShell && effectiveVisualizationMode !== "off" ? (
+                <ListenAmbientBackdrop mode={effectiveVisualizationMode} />
+              ) : null}
+              {effectiveVisualizationMode !== "off" ? (
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 transition-opacity duration-1000"
+                  style={{
+                    background:
+                      "radial-gradient(circle at 0% 18%, rgb(var(--listen-primary) / 0.3), transparent 44%), radial-gradient(circle at 18% 62%, rgb(var(--listen-secondary) / 0.18), transparent 40%), radial-gradient(circle at 38% 100%, rgb(var(--listen-wave) / 0.1), transparent 46%), linear-gradient(90deg, rgb(var(--listen-primary) / 0.05), rgb(14 14 15 / var(--listen-room-dim-middle,0.64)) 34%, rgb(19 19 20 / var(--listen-room-dim-end,0.97)) 100%)",
+                  }}
+                />
+              ) : null}
+            </>
+          }
+        />
+      </PersonalFeedbackCopyContext.Provider>
     </OptimisticQueueContext.Provider>
   );
 }
