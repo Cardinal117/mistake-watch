@@ -45,3 +45,19 @@ change is planned.
   changes or suppressions are included in this bug fix.
 - No real playback or queue mutation was performed in the owner's room during QA.
   Refresh the released app, dismiss the old local placeholder, and add again.
+
+## Release receipt
+
+Implementation commit `46f3461` pushed as fast-forwards to main and
+codex/task-030-personal-music-catalogue. Local build passed. Clean Git archive
+`.tmp/queue-repeat-release` excluded uncommitted review work and local environment
+files. Vercel production build and TypeScript passed; authenticated candidate
+health/readiness returned ok (ordinary candidate URLs are deployment-protected).
+
+Promoted deployment `dpl_DXQpN4F1QwwYjAx2nwq5y6e1YpaR`:
+https://mistake-watch-caztcamau-cardinal117s-projects.vercel.app
+
+Live-domain inspection resolves watch.mistakestudios.com to this Ready release.
+Live health 200, readiness 200, excluded recording-review route 404. No server,
+database, permission or provider configuration change. Prior release for rollback:
+`dpl_9JR2e4cbJPt9KxjJ1HEDHaFZU7U1`.

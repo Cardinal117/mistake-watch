@@ -1,5 +1,17 @@
 # Mistake Watch Handoff
 
+## Live queue repeat correction — 2026-09-12
+
+Commit `46f3461` fixes Listen header search Add/Next duplicate rejection and the
+same omission in history and Watch library/browse additions. Manual Add Media
+admission tolerates concurrent repeats; explicit playlist skip policy remains.
+78 queue tests, 8 browser tests, typecheck, lint and local/clean production builds
+pass. Deployment `dpl_DXQpN4F1QwwYjAx2nwq5y6e1YpaR` is promoted and verified on
+watch.mistakestudios.com (health200, ready200, excluded review404). No backend
+change. See [fix and release evidence](tasks/queue-search-repeat-fix/task.md).
+Unrelated recording-review work remains uncommitted and excluded. Old local
+unconfirmed placeholders should be dismissed and added again after refreshing.
+
 ## Live follow-up: playback readiness and Regulars — 2026-09-12
 
 Latest frontend: responsive Regulars width correction `8fa6c42`, deployed as
