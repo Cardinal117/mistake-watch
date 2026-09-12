@@ -32,7 +32,7 @@ export function useWatchTheme(
   const theme = useArtworkTheme(artwork, fallback);
   const { visualIntensity, backgroundDimming, backgroundVibrancy } =
     useListenAmbientPreference();
-  return {
+  const style = {
     ...getListenPresentationVariables(
       visualIntensity,
       backgroundDimming,
@@ -45,4 +45,5 @@ export function useWatchTheme(
     "--listen-shadow": theme.shadow,
     "--listen-wave": theme.wave,
   } as CSSProperties;
+  return { style, artwork };
 }

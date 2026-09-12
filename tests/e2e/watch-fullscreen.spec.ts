@@ -73,7 +73,7 @@ qa(
     await page.goto("/dev/watch-design");
     await expect(page.locator("video")).toHaveJSProperty("readyState", 4);
     await page
-      .getByRole("button", { name: "Open full queue", exact: true })
+      .getByRole("button", { name: "Open queue", exact: true })
       .click();
     await page
       .getByRole("button", { name: "Fullscreen video", exact: true })
@@ -126,7 +126,7 @@ qa(
       .click();
     await expect(page.locator(".watch-redesign")).toHaveAttribute(
       "data-screen",
-      "queue",
+      "home",
     );
     await expect(
       page.getByRole("button", { name: "Fullscreen video", exact: true }),

@@ -35,9 +35,7 @@ qa("drop updates locally before 600ms confirmation", async ({ page }) => {
 });
 qa("Watch queue mounts a bounded window for 1000 songs", async ({ page }) => {
   await page.goto("/dev/watch-design");
-  await page
-    .getByRole("button", { name: "Open full queue", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Open queue", exact: true }).click();
   await expect(page.locator('[data-queue-id="queue-1"]')).toBeVisible();
   await page.evaluate(() => window.watchQA!.setQueueCount(1000));
   await page.waitForTimeout(250);

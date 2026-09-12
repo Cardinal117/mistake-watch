@@ -14,14 +14,17 @@ async function open(page: Page) {
   await expect(page.getByText("Ready to watch", { exact: true })).toBeVisible();
 }
 
+function readyCard(page: Page, title: string) {
+  return page
+    .locator(".watch-card-grid--ready .watch-media-card")
+    .filter({ has: page.getByText(title, { exact: true }) });
+}
+
 qa(
   "Ready cards issue permission-aware Add and Play next actions",
   async ({ page }) => {
     await open(page);
-    await page
-      .locator(".watch-card-grid--ready .watch-media-card")
-      .nth(0)
-      .hover({ position: { x: 5, y: 5 } });
+    await readyCard(page, "Afterlight").hover({ position: { x: 5, y: 5 } });
     await page
       .getByRole("button", { name: "Add to queue: Afterlight" })
       .click();
@@ -31,10 +34,9 @@ qa(
     await page
       .getByRole("button", { name: "Add to queue: Afterlight" })
       .click();
-    await page
-      .locator(".watch-card-grid--ready .watch-media-card")
-      .nth(1)
-      .hover({ position: { x: 5, y: 5 } });
+    await readyCard(page, "The Long Way Home").hover({
+      position: { x: 5, y: 5 },
+    });
     await page
       .getByRole("button", { name: "Play next: The Long Way Home" })
       .click();
@@ -70,10 +72,7 @@ qa(
       });
     });
     await open(page);
-    await page
-      .locator(".watch-card-grid--ready .watch-media-card")
-      .nth(0)
-      .hover({ position: { x: 5, y: 5 } });
+    await readyCard(page, "Afterlight").hover({ position: { x: 5, y: 5 } });
     await page.getByRole("button", { name: "Play now: Afterlight" }).click();
 
     await expect
@@ -124,10 +123,11 @@ qa(
       if (isA) finishedA = true;
     });
     await open(page);
-    const cards = page.locator(".watch-card-grid--ready .watch-media-card");
-    await cards.nth(0).hover({ position: { x: 5, y: 5 } });
+    await readyCard(page, "Afterlight").hover({ position: { x: 5, y: 5 } });
     await page.getByRole("button", { name: "Play now: Afterlight" }).click();
-    await cards.nth(1).hover({ position: { x: 5, y: 5 } });
+    await readyCard(page, "The Long Way Home").hover({
+      position: { x: 5, y: 5 },
+    });
     await page
       .getByRole("button", { name: "Play now: The Long Way Home" })
       .click();
@@ -173,10 +173,7 @@ qa(
       });
     });
     await open(page);
-    await page
-      .locator(".watch-card-grid--ready .watch-media-card")
-      .nth(0)
-      .hover({ position: { x: 5, y: 5 } });
+    await readyCard(page, "Afterlight").hover({ position: { x: 5, y: 5 } });
     await page.getByRole("button", { name: "Play now: Afterlight" }).click();
     await expect.poll(() => started).toBe(true);
 

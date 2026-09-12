@@ -5,7 +5,7 @@ qa(
   async ({ page }) => {
     await page.goto("/dev/watch-design");
     await page
-      .getByRole("button", { name: "Open full queue", exact: true })
+      .getByRole("button", { name: "Open queue", exact: true })
       .click();
     const first = page.getByLabel("More actions for The Long Way Home", {
       exact: true,

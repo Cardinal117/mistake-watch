@@ -663,3 +663,69 @@
     height: auto;
   }
 }
+
+.watch-ambient-artwork {
+  position: absolute;
+  inset: -40px;
+  width: calc(100% + 80px);
+  height: calc(100% + 80px);
+  max-width: none;
+  object-fit: cover;
+  filter: blur(32px) saturate(var(--listen-background-saturation, 1.2));
+  opacity: 0.38;
+}
+.watch-ambient:has(.watch-ambient-artwork) .watch-ambient-wash {
+  background: linear-gradient(
+    100deg,
+    rgb(10 12 14 / 0.42),
+    rgb(10 12 14 / 0.76)
+  );
+}
+
+@media (min-width: 1024px) {
+  .watch-redesign[data-floating="false"]
+    .watch-player:not(:fullscreen)
+    .watch-transport {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .watch-redesign[data-floating="false"]
+    .watch-player:not(:fullscreen)
+    .watch-transport
+    > * {
+    min-width: 0;
+  }
+  .watch-redesign[data-floating="false"]:not([data-cinema="true"])
+    .watch-player:not(:fullscreen) {
+    padding: 0 12px 12px;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+  .watch-redesign[data-floating="false"]:not([data-cinema="true"])
+    .watch-player:not(:fullscreen)
+    .watch-dock-frame {
+    justify-content: flex-end;
+    padding: 0;
+  }
+  .watch-redesign[data-floating="false"]:not([data-cinema="true"])
+    .watch-player:not(:fullscreen)
+    :is(.watch-transport, .watch-playing-details) {
+    padding-inline: 0;
+  }
+  .watch-redesign[data-floating="false"]:not([data-cinema="true"])
+    .watch-player:not(:fullscreen)
+    .watch-playing-metadata {
+    flex-wrap: wrap;
+  }
+}
+
+@media (min-width: 1024px) {
+  .watch-redesign[data-floating="false"]
+    .watch-player:not(:fullscreen)
+    .watch-transport-secondary
+    > button {
+    min-width: 32px;
+  }
+}

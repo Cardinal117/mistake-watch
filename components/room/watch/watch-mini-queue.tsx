@@ -1,6 +1,5 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
 import type { RoomQueueItem } from "@/lib/rooms";
 import type { LiveRoomState } from "@/lib/spacetime";
 import { QueuePanel } from "../queue-panel";
@@ -10,12 +9,10 @@ import "./watch-mini-queue.css";
 export function WatchMiniQueue({
   items,
   liveRoom,
-  onOpenQueue,
   roomId,
 }: {
   items: WatchMediaHubItem[];
   liveRoom: LiveRoomState;
-  onOpenQueue(): void;
   roomId: string;
 }) {
   const queueItems = items.filter(
@@ -56,10 +53,6 @@ export function WatchMiniQueue({
           roomId={roomId}
         />
       </div>
-      <button className="watch-mini-queue-open" onClick={onOpenQueue}>
-        Open full queue
-        <ArrowRight aria-hidden />
-      </button>
     </section>
   );
 }

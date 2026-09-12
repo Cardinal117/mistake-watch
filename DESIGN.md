@@ -347,3 +347,11 @@ Expanded Watch refinement: when the right mini queue is visible, omit the redund
 below-player Up next row. Give the transport adaptive vertical padding and the
 volume slider a 128px usable track with a 44px interaction height. Browse keeps
 its separate three-item preview.
+
+
+Watch consolidation (owner approved 2026-09-12): expanded desktop sidebar is the
+primary Queue/History surface, with no duplicate full-queue footer/destination.
+Browse opens it; mobile keeps its queue screen. Current thumbnail supplies a
+blurred, darkened background beneath readable surfaces with palette fallback.
+Recently watched uses compact horizontal artwork/text. Catalogue History defaults
+to list with a cards option; library/collection sorting defaults to numeric episodes.

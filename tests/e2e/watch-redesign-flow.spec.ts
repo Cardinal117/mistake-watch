@@ -25,16 +25,25 @@ qa(
       .locator("video")
       .evaluate((v) => (v as HTMLVideoElement).currentTime);
     for (const name of [
-      "Open cinema",
+      "Open queue",
       "Back to catalogue",
-      "Open full queue",
       "Add media",
     ]) {
       await page.getByRole("button", { name, exact: true }).first().click();
-      if (["Open full queue", "Add media"].includes(name))
+      if (name === "Open queue")
         await expect(page.locator(".watch-redesign")).toHaveAttribute(
           "data-screen",
-          name === "Add media" ? "add" : "queue",
+          "home",
+        );
+      if (name === "Open queue")
+        await expect(page.locator(".watch-redesign")).toHaveAttribute(
+          "data-cinema",
+          "true",
+        );
+      if (name === "Add media")
+        await expect(page.locator(".watch-redesign")).toHaveAttribute(
+          "data-screen",
+          "add",
         );
       expect(await video?.evaluate((v) => v.isConnected)).toBe(true);
       await expect(page.locator("video")).toHaveJSProperty("paused", false);
@@ -342,7 +351,7 @@ qa(
   },
 );
 qa(
-  "Collections filter the library, and cinema restores the queue workspace",
+  "Collections filter the library, and cinema restores the filtered catalogue",
   async ({ page }) => {
     await open(page);
     await openBrowsing(page);
@@ -358,23 +367,17 @@ qa(
       page.getByRole("button", { name: "Details: Afterlight", exact: true }),
     ).toHaveCount(0);
     await page
-      .getByRole("button", { name: "Open full queue", exact: true })
+      .getByRole("button", { name: "Open queue", exact: true })
       .click();
     await expect(page.locator(".watch-redesign")).toHaveAttribute(
       "data-screen",
-      "queue",
+      "home",
     );
-    await page
-      .getByRole("button", { name: "Open cinema", exact: true })
-      .click();
+    await expect(page.locator(".watch-redesign")).toHaveAttribute(
+      "data-cinema",
+      "true",
+    );
     await page.keyboard.press("Escape");
-    await expect(
-      page.getByRole("heading", { name: "Queue", exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Open cinema", exact: true }),
-    ).toBeFocused();
-    await openBrowsing(page);
     await expect(
       page.getByLabel("Collection: Out there", { exact: true }),
     ).toBeVisible();

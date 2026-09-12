@@ -51,7 +51,7 @@ qa(
     await page.waitForFunction(() => window.watchQA);
     await page.evaluate(() => window.watchQA!.setQueueCount(500));
     await expect(
-      rail.getByRole("button", { name: "Open full queue" }),
+      rail.getByRole("button", { name: "Open queue", exact: true }),
     ).toContainText("Queue 499");
     await expect(rail.getByRole("button", { name: /Shuffle/ })).toHaveCount(0);
     await expect(rail.getByRole("searchbox")).toHaveCount(0);
@@ -73,9 +73,9 @@ qa(
         ),
       )
       .toBe(true);
-    await rail.getByRole("button", { name: "Open full queue" }).click();
+    await rail.getByRole("button", { name: "Open queue", exact: true }).click();
     await expect(
-      page.locator(".watch-content .watch-queue-controls"),
+      page.locator(".watch-side-rail .watch-queue-controls"),
     ).toBeVisible();
   },
 );
@@ -138,9 +138,13 @@ for (const [width, height] of [
         const rail = (await page.locator(".watch-side-rail").boundingBox())!;
         expect(rail.x + rail.width).toBeLessThanOrEqual(width);
         await expect(
-          page
-            .locator(".watch-side-rail")
-            .getByRole("button", { name: "Open full queue" }),
+          cinema
+            ? page
+                .locator(".watch-mini-queue-tabs")
+                .getByRole("button", { name: "Queue", exact: true })
+            : page
+                .locator(".watch-side-rail")
+                .getByRole("button", { name: "Open queue", exact: true }),
         ).toBeInViewport();
         await expect(iframe).toHaveAttribute("data-original", "yes");
         if (cinema) {
@@ -152,6 +156,20 @@ for (const [width, height] of [
           await volume.fill("65");
           await expect(volume).toHaveValue("65");
         }
+        const playerWidth = (await page.locator(".watch-player").boundingBox())!
+          .width;
+        const controlsWidth = (await page
+          .locator(".watch-transport")
+          .boundingBox())!.width;
+        expect(playerWidth - controlsWidth).toBeLessThanOrEqual(
+          cinema ? 2 : 26,
+        );
+        expect(
+          await page
+            .locator(".watch-player")
+            .evaluate((el) => el.scrollWidth - el.clientWidth),
+        ).toBeLessThanOrEqual(1);
+        await expect(page.locator(".watch-rail-heading")).toHaveCount(0);
         const clock = (await page.locator(".watch-time").boundingBox())!;
         const transport = (await page
           .locator(".watch-transport-primary")

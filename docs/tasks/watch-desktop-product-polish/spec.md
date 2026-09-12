@@ -1,5 +1,8 @@
 # Approved Watch desktop contract
 
+Current approved follow-up: see consolidation.md (supersedes duplicate full-queue
+navigation and adds artwork, sorting and history views).
+
 Use the approved Browse and Watch reference images with the final owner
 clarifications below. Reuse the current artwork-driven ambient theme, typography,
 Listen mode-tab component, original transport icons and 8/12px shapes. Desktop

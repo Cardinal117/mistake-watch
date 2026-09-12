@@ -159,9 +159,54 @@ export function QueueContent({
       </div>
     );
 
+  const historyList =
+    previousItems.length > 0 || mediaEvents.length > 0 ? (
+      <QueueHistory
+        compact={compact}
+        desktopRows={desktopRows}
+        manageDisabled={manageDisabled}
+        measureQueueAction={measureQueueAction}
+        mediaEvents={mediaEvents}
+        mode={mode}
+        onAddQueueItem={onAddQueueItem}
+        onPlayQueueItem={onPlayQueueItem}
+        onRemoveQueueItem={onRemoveQueueItem}
+        previousItems={
+          watchRail && query.trim()
+            ? previousItems.filter((item) =>
+                [item.title, item.artist, item.channelName].some((value) =>
+                  value
+                    ?.toLocaleLowerCase()
+                    .includes(query.trim().toLocaleLowerCase()),
+                ),
+              )
+            : previousItems
+        }
+        queuedItemsLength={queuedItemsLength}
+      />
+    ) : (
+      <p className="text-label-sm text-on-surface-variant">
+        No previous items yet. Played songs will appear here.
+      </p>
+    );
+
   if (watchRail)
     return (
       <div className="watch-mini-queue-content">
+        <div className="watch-mini-queue-tabs" aria-label="Queue views">
+          {(["up-next", "history"] as const).map((tab) => (
+            <button
+              key={tab}
+              aria-pressed={activeQueueTab === tab}
+              onClick={() => {
+                setActiveQueueTab(tab);
+                setQuery("");
+              }}
+            >
+              {tab === "up-next" ? "Queue" : "History"}
+            </button>
+          ))}
+        </div>
         {optimistic.notice && (
           <p role="status" className="text-label-sm text-error">
             {optimistic.notice}
@@ -170,14 +215,24 @@ export function QueueContent({
         <label className="watch-mini-queue-search">
           <Search aria-hidden />
           <input
-            aria-label="Search queue"
+            aria-label={
+              activeQueueTab === "history"
+                ? "Search queue history"
+                : "Search queue"
+            }
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search queue"
+            placeholder={
+              activeQueueTab === "history"
+                ? "Search queue history"
+                : "Search queue"
+            }
             type="search"
             value={query}
           />
         </label>
-        <div className="watch-mini-queue-scroll">{upcomingList}</div>
+        <div className="watch-mini-queue-scroll">
+          {activeQueueTab === "up-next" ? upcomingList : historyList}
+        </div>
       </div>
     );
 
@@ -212,32 +267,14 @@ export function QueueContent({
         ))}
       </div>
 
-      {activeQueueTab === "up-next" ? (
-        upcomingList
-      ) : previousItems.length > 0 || mediaEvents.length > 0 ? (
-        <QueueHistory
-          compact={compact}
-          manageDisabled={manageDisabled}
-          measureQueueAction={measureQueueAction}
-          mediaEvents={mediaEvents}
-          mode={mode}
-          onAddQueueItem={onAddQueueItem}
-          onPlayQueueItem={onPlayQueueItem}
-          onRemoveQueueItem={onRemoveQueueItem}
-          previousItems={previousItems}
-          queuedItemsLength={queuedItemsLength}
-        />
-      ) : (
-        <div className="rounded-md border border-dashed border-white/10 bg-surface-container-low p-4 text-body-md text-on-surface-variant">
-          No previous items yet. Played songs will appear here.
-        </div>
-      )}
+      {activeQueueTab === "up-next" ? upcomingList : historyList}
     </>
   );
 }
 
 function QueueHistory({
   compact,
+  desktopRows,
   manageDisabled,
   measureQueueAction,
   mediaEvents,
@@ -249,6 +286,7 @@ function QueueHistory({
   queuedItemsLength,
 }: {
   compact?: boolean;
+  desktopRows?: boolean;
   manageDisabled: boolean;
   measureQueueAction: MeasureQueueAction;
   mediaEvents: LiveRoomError[];
@@ -318,6 +356,7 @@ function QueueHistory({
         enabled={compact}
         items={previousItems}
         indices={new Map()}
+        desktopRows={desktopRows}
         label="Queue history"
       >
         {(item) => (

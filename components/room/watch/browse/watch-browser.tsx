@@ -6,6 +6,8 @@ import {
   ChevronRight,
   Film,
   Folder,
+  Grid2X2,
+  List,
   Search,
 } from "lucide-react";
 import type { LiveRoomState } from "@/lib/spacetime";
@@ -18,6 +20,11 @@ import { LazyMediaPoster } from "../library/lazy-media-poster";
 import { WatchCollectionFilter } from "./watch-collection-filter";
 import { WatchCatalogueCard } from "./watch-catalogue-card";
 import { WatchMediaDetails } from "./watch-media-details";
+import {
+  compareCatalogueTitles,
+  sortWatchCatalogueItems,
+  type WatchCatalogueSort,
+} from "./watch-catalogue-sort";
 import { useWatchPlayCoordinator } from "./use-watch-media-actions";
 import "./watch-catalogue-polish.css";
 
@@ -52,12 +59,13 @@ export function WatchBrowser({
   const [localQuery, setLocalQuery] = useState("");
   const [folderId, setFolderId] = useState<string | null>(null);
   const [limit, setLimit] = useState(GRID_CATALOGUE_BATCH_SIZE);
+  const [sort, setSort] = useState<WatchCatalogueSort>("natural");
+  const [historyView, setHistoryView] = useState<"list" | "cards">("list");
   const [selected, setSelected] = useState<WatchMediaHubItem | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const collectionRowRef = useRef<HTMLDivElement>(null);
   const readyRowRef = useRef<HTMLDivElement>(null);
-  const recentRowRef = useRef<HTMLDivElement>(null);
   const hasExternalSearch =
     searchQuery !== undefined && onSearchQueryChange !== undefined;
   const query = hasExternalSearch ? searchQuery : localQuery;
@@ -90,21 +98,30 @@ export function WatchBrowser({
         ? library.folders
             .map((folder) => ({
               folder,
-              items: assets.filter((item) => item.folderId === folder.id),
+              items: assets
+                .filter((item) => item.folderId === folder.id)
+                .sort(compareCatalogueTitles),
             }))
             .filter((group) => group.items.length)
+            .sort((first, second) =>
+              compareCatalogueTitles(
+                { title: first.folder.name },
+                { title: second.folder.name },
+              ),
+            )
         : [],
     [allowed, library.folders, assets],
   );
   const filtered = useMemo(() => {
     const source = tab === "history" ? history : assets;
     const needle = query.trim().toLocaleLowerCase();
-    return source.filter(
+    const matches = source.filter(
       (item) =>
         (!folderId || item.folderId === folderId) &&
         (!needle || item.title.toLocaleLowerCase().includes(needle)),
     );
-  }, [assets, folderId, history, query, tab]);
+    return tab === "library" ? sortWatchCatalogueItems(matches, sort) : matches;
+  }, [assets, folderId, history, query, sort, tab]);
   const folderName = library.folders.find((f) => f.id === folderId)?.name;
   function changeTab(next: typeof tab) {
     setTab(next);
@@ -149,7 +166,7 @@ export function WatchBrowser({
   function cards(
     list: WatchMediaHubItem[],
     eager = false,
-    variant: "grid" | "ready" | "recent" = "grid",
+    variant: "grid" | "history-list" | "ready" | "recent" = "grid",
     rowRef?: RefObject<HTMLDivElement | null>,
   ) {
     return (
@@ -226,18 +243,38 @@ export function WatchBrowser({
           />
         </label>
         {tab === "library" && allowed && (
-          <WatchCollectionFilter
-            value={folderId}
-            collections={collections.map(({ folder, items: group }) => ({
-              id: folder.id,
-              name: folder.name,
-              count: group.length,
-            }))}
-            onChange={(value) => {
-              setFolderId(value);
-              setLimit(GRID_CATALOGUE_BATCH_SIZE);
-            }}
-          />
+          <div className="watch-library-tools">
+            <WatchCollectionFilter
+              value={folderId}
+              collections={collections.map(({ folder, items: group }) => ({
+                id: folder.id,
+                name: folder.name,
+                count: group.length,
+              }))}
+              onChange={(value) => {
+                setFolderId(value);
+                setLimit(GRID_CATALOGUE_BATCH_SIZE);
+              }}
+            />
+            <label className="watch-catalogue-sort">
+              <span>Sort</span>
+              <select
+                aria-label="Sort library"
+                value={sort}
+                onChange={(event) => {
+                  setSort(event.target.value as WatchCatalogueSort);
+                  setLimit(GRID_CATALOGUE_BATCH_SIZE);
+                }}
+              >
+                <option value="natural">Natural episode order</option>
+                <option value="title-desc">Title Z-A</option>
+                <option value="recent">Recently added</option>
+                <option value="oldest">Oldest added</option>
+                <option value="shortest">Shortest duration</option>
+                <option value="longest">Longest duration</option>
+              </select>
+            </label>
+          </div>
         )}
         {folderId && (
           <button
@@ -316,8 +353,36 @@ export function WatchBrowser({
                       ? "Room history"
                       : "Ready to watch"}
               </h3>
+              {tab === "history" && (
+                <div
+                  className="watch-history-view-toggle"
+                  aria-label="History view"
+                  role="group"
+                >
+                  <button
+                    aria-pressed={historyView === "list"}
+                    aria-label="List view"
+                    onClick={() => setHistoryView("list")}
+                  >
+                    <List aria-hidden /> List
+                  </button>
+                  <button
+                    aria-pressed={historyView === "cards"}
+                    aria-label="Card view"
+                    onClick={() => setHistoryView("cards")}
+                  >
+                    <Grid2X2 aria-hidden /> Cards
+                  </button>
+                </div>
+              )}
             </div>
-            {cards(filtered.slice(0, limit), true)}
+            {cards(
+              filtered.slice(0, limit),
+              true,
+              tab === "history" && historyView === "list"
+                ? "history-list"
+                : "grid",
+            )}
             {!filtered.length && !library.assetLoading && (
               <div className="watch-empty">
                 <Film />
@@ -457,23 +522,9 @@ export function WatchBrowser({
                     <button onClick={() => changeTab("history")}>
                       View history
                     </button>
-                    <button
-                      className="watch-shelf-arrow"
-                      aria-label="Previous recently watched items"
-                      onClick={() => scrollRow(recentRowRef, -1)}
-                    >
-                      <ChevronLeft aria-hidden />
-                    </button>
-                    <button
-                      className="watch-shelf-arrow"
-                      aria-label="Next recently watched items"
-                      onClick={() => scrollRow(recentRowRef, 1)}
-                    >
-                      <ChevronRight aria-hidden />
-                    </button>
                   </div>
                 </div>
-                {cards(history.slice(0, 4), false, "recent", recentRowRef)}
+                {cards(history.slice(0, 4), false, "recent")}
               </section>
             )}
             {upcoming.length > 0 && (

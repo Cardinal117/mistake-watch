@@ -24,3 +24,10 @@ Unrelated dirty files remain excluded. Standalone demo approval is inspection on
 - Clean release a593c72 promoted and live-verified; see release.md.
 - Standalone navbar/loading/theme inspection completed after release; see
   aperture-inspection.md for recommendations. No branding integration performed.
+
+
+## Approved consolidation follow-up
+
+Implemented and locally QA-passed: unified desktop Queue/History, natural catalogue
+sorting, default history list, compact recent rows, blurred current artwork and
+full-width/inset player controls. See consolidation.md. Release pending.

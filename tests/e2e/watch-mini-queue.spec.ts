@@ -102,3 +102,80 @@ qa(
     ).toBeDisabled();
   },
 );
+
+qa(
+  "Browse opens the primary queue and its history retains requeue actions",
+  async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/dev/watch-design");
+    await page.waitForFunction(() => Boolean(window.watchQA));
+    await page.evaluate(() =>
+      window.watchQA!.changeQueuedItem("queue-2", "played"),
+    );
+    await page.getByRole("button", { name: "Open queue", exact: true }).click();
+    await expect(page.locator(".watch-redesign")).toHaveAttribute(
+      "data-cinema",
+      "true",
+    );
+    await expect(
+      page.getByRole("button", { name: "Open full queue", exact: true }),
+    ).toHaveCount(0);
+    const rail = page.locator(".watch-mini-queue");
+    await rail.getByRole("button", { name: "History", exact: true }).click();
+    await rail
+      .getByRole("searchbox", { name: "Search queue history" })
+      .fill("Into the Canopy");
+    await expect(
+      rail.getByText("Into the Canopy", { exact: true }),
+    ).toBeVisible();
+    await page.screenshot({
+      path: ".tmp/watch-consolidated-history.png",
+      animations: "disabled",
+    });
+    await rail
+      .getByRole("button", { name: "Play Into the Canopy next", exact: true })
+      .click();
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          window.watchQA!.calls.some((c) => c.action === "add"),
+        ),
+      )
+      .toBe(true);
+    await rail.getByRole("button", { name: "Queue", exact: true }).click();
+    await expect(
+      rail.getByRole("searchbox", { name: "Search queue", exact: true }),
+    ).toHaveValue("");
+  },
+);
+
+qa(
+  "mobile queue grows into the desktop sidebar without duplicate queue or player",
+  async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/dev/watch-design");
+    await page
+      .getByRole("navigation", { name: "Room navigation" })
+      .getByRole("button", { name: "Queue", exact: true })
+      .click();
+    await expect(page.locator(".watch-redesign")).toHaveAttribute(
+      "data-screen",
+      "queue",
+    );
+    await expect(page.locator(".watch-mini-queue")).toHaveCount(0);
+    await page
+      .locator("video")
+      .evaluate((el) => el.setAttribute("data-original", "yes"));
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await expect(page.locator(".watch-mini-queue")).toBeVisible();
+    await expect(
+      page.locator(".watch-content .watch-queue-controls"),
+    ).toHaveCount(0);
+    await expect(page.locator("video")).toHaveAttribute("data-original", "yes");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.locator(".watch-mini-queue")).toHaveCount(0);
+    await expect(
+      page.locator(".watch-content .watch-queue-controls"),
+    ).toBeVisible();
+  },
+);

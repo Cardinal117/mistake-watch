@@ -9,7 +9,7 @@ qa(
     await expect(page.locator("video")).toHaveJSProperty("readyState", 4);
     await page.evaluate(() => window.watchQA?.setPlaybackPermission(false));
     await page
-      .getByRole("button", { name: "Open full queue", exact: true })
+      .getByRole("button", { name: "Open queue", exact: true })
       .click();
     await expect(
       page.getByRole("button", {
@@ -54,23 +54,21 @@ qa(
   async ({ page }) => {
     await open(page);
     const video = await page.locator("video").elementHandle();
-    const ambient = page.locator(".watch-ambient-wash");
+    const ambientArtwork = page.locator(".watch-ambient-artwork");
     const original = await primary(page);
-    const originalBackground = await ambient.evaluate(
-      (element) => getComputedStyle(element).backgroundImage,
-    );
+    await expect(ambientArtwork).toHaveCount(1);
+    const originalArtwork = await ambientArtwork.getAttribute("src");
     await page.evaluate(
       (artwork) => window.watchQA?.setArtwork(artwork),
       previewArtwork(2),
     );
     await expect.poll(() => primary(page)).not.toBe(original);
-    await expect
-      .poll(() =>
-        ambient.evaluate(
-          (element) => getComputedStyle(element).backgroundImage,
-        ),
-      )
-      .not.toBe(originalBackground);
+    await expect(ambientArtwork).toHaveAttribute(
+      "src",
+      previewArtwork(2),
+    );
+    await expect(ambientArtwork).toHaveCSS("filter", /blur\(32px\)/);
+    expect(await ambientArtwork.getAttribute("src")).not.toBe(originalArtwork);
     const next = await primary(page);
     await openBrowsing(page);
     await page
@@ -87,10 +85,12 @@ qa(
     await page.evaluate(() => window.watchQA?.setArtwork(null));
     await expect.poll(() => primary(page)).not.toBe(next);
     const fallback = await primary(page);
+    await expect(ambientArtwork).toHaveCount(0);
     await page.evaluate(() =>
       window.watchQA?.setArtwork("data:image/png;base64,broken"),
     );
     await expect.poll(() => primary(page)).toBe(fallback);
+    await expect(ambientArtwork).toHaveCount(0);
   },
 );
 
@@ -173,9 +173,7 @@ qa(
       page.getByLabel("Collection: Cinema nights", { exact: true }),
     ).toBeFocused();
     await expect(page.locator(".watch-media-card")).toHaveCount(12);
-    await page
-      .getByLabel("Collection: Cinema nights", { exact: true })
-      .press("Enter");
+    await page.keyboard.press("Enter");
     await page.keyboard.press("Escape");
     await expect(page.locator(".watch-collection-filter")).not.toHaveAttribute(
       "open",
@@ -296,10 +294,13 @@ for (const width of [390, 1440])
       await open(page);
       if (width >= 1024)
         await page
-          .getByRole("button", { name: "Open full queue", exact: true })
+          .getByRole("button", { name: "Open queue", exact: true })
           .click();
       else await page.getByRole("button", { name: "Queue", exact: true }).click();
-      const content = page.locator(".watch-content");
+      const content =
+        width >= 1024
+          ? page.getByRole("region", { name: "Queue", exact: true })
+          : page.locator(".watch-content");
       await expect(
         content.getByRole("heading", { name: "Queue", exact: true }),
       ).toBeVisible();
@@ -314,7 +315,7 @@ for (const width of [390, 1440])
       ).toHaveCount(0);
       const toolbar = page.locator(".watch-queue-controls");
       const bounds = (await toolbar.boundingBox())!;
-      expect(bounds.height).toBeLessThan(width < 768 ? 130 : 80);
+      expect(bounds.height).toBeLessThan(130);
       expect(
         await content.evaluate(
           (element) => element.scrollWidth - element.clientWidth,
@@ -350,7 +351,7 @@ for (const width of [390, 1440])
         })
         .click();
       await expect(
-        content.getByRole("heading", { name: "Add media", exact: true }),
+        page.getByRole("heading", { name: "Add media", exact: true }),
       ).toBeVisible();
     },
   );

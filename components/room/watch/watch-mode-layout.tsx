@@ -29,6 +29,7 @@ import { getQueueItems } from "./presentation";
 import { useMediaLibrary } from "./media-hub/use-media-library";
 import { WatchBrowser } from "./browse/watch-browser";
 import { WatchQueueRail } from "./watch-queue-rail";
+import { WatchArtworkBackdrop } from "./watch-artwork-backdrop";
 import { WatchMiniQueue } from "./watch-mini-queue";
 import { WatchRoomHeader } from "./watch-room-header";
 import { LazyMediaPoster } from "./library/lazy-media-poster";
@@ -80,7 +81,7 @@ export function WatchModeLayout({
 }: WatchModeLayoutProps) {
   const [screen, setScreen] = useState<WatchWorkspace>("home");
   const [homeView, setHomeView] = useState<WatchHomeView>("browse");
-  const [cinema, setCinema] = useState(false);
+  const [cinemaRequested, setCinema] = useState(false);
   const [floating, setFloating] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [cinemaReturn, setCinemaReturn] = useState<WatchWorkspace>("home");
@@ -109,7 +110,7 @@ export function WatchModeLayout({
     allowUploaded: library.libraryAccess?.canAccessUploadedCatalogue === true,
   });
   const items = useMemo(() => getQueueItems(liveRoom, room), [liveRoom, room]);
-  const themeStyle = useWatchTheme(liveRoom, items);
+  const { style: themeStyle, artwork } = useWatchTheme(liveRoom, items);
   const upcoming = items.filter((i) => i.status === "queued");
   const connected = liveRoom.connectionStatus === "connected";
   const isOwner =
@@ -117,6 +118,8 @@ export function WatchModeLayout({
     account.role === "owner" &&
     account.accountStatus === "active";
   const hasSource = Boolean(liveRoom.snapshot.session?.sourceUrl);
+  const cinema =
+    cinemaRequested || (viewport.desktop && hasSource && screen === "queue");
   // Only a resolved denial changes the default source surface. Loading and errors
   // remain in the catalogue so its status and retry action stay available.
   const catalogueDenied =
@@ -146,6 +149,15 @@ export function WatchModeLayout({
   }, [screen]);
 
   function navigate(next: WatchWorkspace) {
+    if (next === "queue" && viewport.desktop && hasSource) {
+      openCinema();
+      requestAnimationFrame(() =>
+        document
+          .querySelector<HTMLElement>(".watch-mini-queue-search input")
+          ?.focus(),
+      );
+      return;
+    }
     setScreen(next);
     setCinema(false);
     setFloating(false);
@@ -167,14 +179,18 @@ export function WatchModeLayout({
     setMinimizedSource(null);
   }
   function openCinema() {
-    setCinemaReturn(screen);
+    setCinemaReturn(viewport.desktop && screen === "queue" ? "home" : screen);
     restoreFocus.current = document.activeElement as HTMLElement;
     setCinema(true);
     setFloating(false);
     setScreen("home");
   }
   function backToBrowse() {
-    if (cinemaReturn === "home") browse();
+    if (
+      cinemaReturn === "home" ||
+      (viewport.desktop && cinemaReturn === "queue")
+    )
+      browse();
     else {
       setScreen(cinemaReturn);
       setCinema(false);
@@ -220,6 +236,7 @@ export function WatchModeLayout({
       >
         <div className="watch-ambient" aria-hidden="true">
           <ListenAmbientBackdrop mode="static-artwork" />
+          <WatchArtworkBackdrop src={artwork} />
           <div className="watch-ambient-wash" />
         </div>
         <WatchRoomHeader
@@ -371,7 +388,6 @@ export function WatchModeLayout({
               </button>
             </div>
             <div className="watch-dock-frame">
-              <strong className="watch-rail-heading">Now playing</strong>
               <button
                 className="watch-drag-handle"
                 aria-label="Move player"
@@ -536,19 +552,21 @@ export function WatchModeLayout({
                 onSearchQueryChange={setSearchQuery}
               />
             </div>
-            {workspace !== "home" && workspace !== "manage" && (
-              <WatchWorkspaces
-                screen={workspace}
-                catalogueAvailable={!catalogueDenied}
-                room={room}
-                liveRoom={liveRoom}
-                account={account}
-                accountNotice={accountNotice}
-                items={items}
-                onClose={browse}
-                onManage={() => navigate("manage")}
-              />
-            )}
+            {workspace !== "home" &&
+              workspace !== "manage" &&
+              !(viewport.desktop && hasSource && workspace === "queue") && (
+                <WatchWorkspaces
+                  screen={workspace}
+                  catalogueAvailable={!catalogueDenied}
+                  room={room}
+                  liveRoom={liveRoom}
+                  account={account}
+                  accountNotice={accountNotice}
+                  items={items}
+                  onClose={browse}
+                  onManage={() => navigate("manage")}
+                />
+              )}
             {screen === "manage" && isOwner && (
               <div className="watch-workspace-content">
                 <button
@@ -588,7 +606,6 @@ export function WatchModeLayout({
                   items={items}
                   liveRoom={liveRoom}
                   roomId={room.id}
-                  onOpenQueue={() => navigate("queue")}
                 />
               ) : (
                 <WatchQueueRail

@@ -6,7 +6,7 @@ import { artistLabel } from "@/lib/ui/artist-label";
 import { QueueArtwork } from "../listen/discovery/media-cards";
 import { deriveListenUpNextPreview } from "../listen/now-playing/up-next-presentation";
 
-/** A bounded navigation preview; all queue management stays in the full queue. */
+/** A bounded navigation preview; opens the desktop queue or mobile queue screen. */
 export function WatchQueueRail({
   items,
   liveRoom,
@@ -23,7 +23,7 @@ export function WatchQueueRail({
       <button
         className="watch-next-heading"
         onClick={onOpenQueue}
-        aria-label="Open full queue"
+        aria-label="Open queue"
       >
         <strong>Up next</strong>
         <span>
