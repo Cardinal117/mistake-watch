@@ -43,16 +43,11 @@ export function nextQueuePosition(items: QueueModelItem[]) {
 }
 
 export function playNextQueuePosition(items: SmartShuffleItem[]) {
-  const lockedPositions = items
-    .filter(
-      (item) =>
-        item.status === "queued" &&
-        !item.isUnavailable &&
-        (item.isPinned || item.isPlayNext),
-    )
+  const upcomingPositions = items
+    .filter((item) => item.status === "queued")
     .map((item) => item.position);
 
-  return lockedPositions.length > 0 ? Math.max(...lockedPositions) + 1 : 0;
+  return Math.min(0, ...upcomingPositions);
 }
 
 export function reorderQueuedItems(

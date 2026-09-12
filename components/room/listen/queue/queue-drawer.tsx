@@ -648,7 +648,7 @@ export function ListenQueueDrawer({
                       }
                       onPlayNext={(row) =>
                         onQueueItemPriorityChange(row.id, {
-                          isPlayNext: !row.isPlayNext,
+                          isPlayNext: true,
                         })
                       }
                     />

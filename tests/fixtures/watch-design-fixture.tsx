@@ -88,6 +88,7 @@ declare global {
     watchQA?: {
       setAccount(account: AccountSummary): void;
       setQueueCount(count: number): void;
+      setQueueNextFlag(id: string, value: boolean): void;
       confirmPersonalAdd(videoId: string, title: string): void;
       deferQueueAdds?: boolean;
       rejectQueueAdd(index: number): void;
@@ -418,6 +419,8 @@ export function WatchDesignFixture({
         setQueueState((current) =>
           current.map((i) => (i.queueItemId === id ? { ...i, status } : i)),
         ),
+      setQueueNextFlag: (id, value) =>
+        setQueueState(current => current.map(item => item.queueItemId === id ? { ...item, isPlayNext: value } : item)),
       setQueueCount: (count) =>
         setQueueState(
           Array.from({ length: count }, (_, index) => ({

@@ -397,6 +397,8 @@ function shiftQueuedItemsAtOrAfter(
     .forEach((item) => {
       replaceQueueItem(ctx, item, {
         position: item.position + 1,
+        // This helper is only used for explicit Next insertion/promotion.
+        is_play_next: false,
       });
     });
 }

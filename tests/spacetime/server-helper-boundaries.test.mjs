@@ -210,14 +210,14 @@ test("queue calculations preserve ordering, filtering, and sequence rules", () =
   assert.equal(queue.calculateNextPlayedSequence([]), 1);
   assert.equal(
     queue.calculatePlayNextQueuePosition(queue.selectQueuedQueueItems(items)),
-    2,
+    0,
   );
   assert.equal(
     queue.calculatePlayNextQueuePosition(
       queue.selectQueuedQueueItems(items),
       "next",
     ),
-    1,
+    0,
   );
 });
 

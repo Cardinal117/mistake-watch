@@ -145,7 +145,7 @@ export function WatchMediaDetails({
           action === "play"
             ? "Playback requested for the room."
             : action === "next"
-              ? "Play next requested. Pinned-first ordering still applies."
+              ? "Play next requested. This item will be first in the upcoming queue."
               : "Add to queue requested.",
         );
     } catch (error) {

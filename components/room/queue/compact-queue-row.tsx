@@ -241,7 +241,6 @@ export function CompactQueueRow({
           <button
             className="watch-queue-next"
             disabled={disabled}
-            aria-pressed={Boolean(item.isPlayNext)}
             aria-label={`Play ${title} next`}
             title="Play next"
             onClick={() => onNext?.(item)}

@@ -58,14 +58,15 @@ export function calculatePlayNextQueuePosition(
   items: readonly QueueCalculationItem[],
   excludeQueueItemId?: string,
 ) {
-  const lockedPositions = items
+  const upcomingPositions = items
     .filter(
       (item) =>
         item.queue_item_id !== excludeQueueItemId &&
-        (item.is_pinned || item.is_play_next),
+        item.status === "queued",
     )
     .map((item) => item.position);
-  return lockedPositions.length > 0 ? Math.max(...lockedPositions) + 1 : 0;
+  // Explicit Next takes precedence over pins and older Next requests.
+  return Math.min(0, ...upcomingPositions);
 }
 
 export function calculateQueueAdvancePatches<T extends QueueCalculationItem>(

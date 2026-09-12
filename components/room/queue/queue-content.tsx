@@ -135,7 +135,7 @@ export function QueueContent({
                   onPlayNext={(queueItem) => {
                     measureQueueAction("play-next", () =>
                       onQueueItemPriorityChange?.(queueItem.id, {
-                        isPlayNext: !queueItem.isPlayNext,
+                        isPlayNext: true,
                       }),
                     );
                   }}

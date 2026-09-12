@@ -53,7 +53,7 @@ test("nextQueuePosition appends after active queue positions", () => {
   );
 });
 
-test("playNextQueuePosition inserts after pinned and existing play-next items", () => {
+test("playNextQueuePosition precedes pinned and existing play-next items", () => {
   assert.equal(
     playNextQueuePosition([
       { position: 0, queueItemId: "pinned", status: "queued", isPinned: true },
@@ -65,7 +65,7 @@ test("playNextQueuePosition inserts after pinned and existing play-next items", 
       },
       { position: 2, queueItemId: "normal", status: "queued" },
     ]),
-    2,
+    0,
   );
 });
 

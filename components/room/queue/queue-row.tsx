@@ -199,7 +199,7 @@ export function QueueRow({
               <IconQueueButton
                 disabled={manageDisabled}
                 icon={<ChevronsUp className="h-4 w-4" aria-hidden />}
-                label={`${item.isPlayNext ? "Unset" : "Set"} ${title} as play next`}
+                label={`Play ${title} next`}
                 onClick={() => onPlayNext?.(item)}
               />
               <IconQueueButton
