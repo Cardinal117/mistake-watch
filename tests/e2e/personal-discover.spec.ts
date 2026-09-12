@@ -308,7 +308,9 @@ qa(
     ).toHaveCount(0);
     const mountedRegulars = await page.locator(".personal-regular").count();
     expect(mountedRegulars).toBeGreaterThan(0);
-    expect(mountedRegulars).toBeLessThanOrEqual(8);
+    expect(await page.locator(".personal-regular-viewport").evaluate(
+      element => element.scrollWidth <= element.clientWidth,
+    )).toBe(true);
   },
 );
 

@@ -1,5 +1,16 @@
 # Local verification — 12 September 2026
 
+## Post-release width correction (local, not yet deployed)
+
+Owner reported wasted wide-screen space and requested dynamic screen sizing.
+Removed the fixed eight-card page cap; the existing ResizeObserver now computes
+capacity solely from the available rail width and existing card/gap dimensions.
+Only the current page mounts. The 1920px regression failed with eight cards before
+the change and passes with eleven afterward. Resizing to 390px renders three;
+resizing back restores eleven. Mobile paging/drag and reduced-motion checks pass,
+as do scoped ESLint and typecheck. Wide screenshot visually reviewed at
+`.tmp/regulars-ui-qa/regulars-wide-fill.png`. No playback code changed.
+
 ## Result
 
 Implementation and independent review pass locally. Subsequent commit, server

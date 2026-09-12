@@ -38,5 +38,10 @@ assistant. Record local proof separately from real multi-device/audio QA.
 
 ## Release
 
+Post-release owner feedback: wide screens leave unused space because page size
+was capped at eight. Approved correction: derive capacity from available width
+without that fixed cap, retaining current-page-only rendering and existing tile
+dimensions. Verify a wide viewport fills the row and mobile paging is unchanged.
+
 Preserve unrelated dirty recording-review files. No release claim until required
 checks pass; record exact changed files, limitations and deployment state.

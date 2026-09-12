@@ -2,6 +2,29 @@ import { expect, test } from "@playwright/test";
 import { setupPersonalDiscover as setup } from "../fixtures/personal-discover-fixture";
 const qa = process.env.WATCH_DESIGN_QA === "1" ? test : test.skip;
 
+qa("Wide Regulars rows use the available width beyond eight cards", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 900 });
+  await setup(page);
+  const rail = page.locator(".personal-regular-viewport");
+  const cards = rail.locator(".personal-regular");
+  await expect.poll(() => cards.count()).toBeGreaterThan(8);
+  const layout = await rail.evaluate((element) => {
+    const tiles = [...element.querySelectorAll(".personal-regular")];
+    const bounds = element.getBoundingClientRect();
+    const last = tiles.at(-1)!.getBoundingClientRect();
+    return { count: tiles.length, spare: bounds.right - last.right,
+      sameRow: tiles.every(tile => tile.getBoundingClientRect().top === last.top) };
+  });
+  expect(layout.sameRow).toBe(true);
+  expect(layout.spare).toBeGreaterThanOrEqual(0);
+  if (layout.count < 12) expect(layout.spare).toBeLessThan(124);
+  await page.screenshot({ path: ".tmp/regulars-ui-qa/regulars-wide-fill.png", animations: "disabled" });
+  await page.setViewportSize({ width: 390, height: 900 });
+  await expect(cards).toHaveCount(3);
+  await page.setViewportSize({ width: 1920, height: 900 });
+  await expect(cards).toHaveCount(layout.count);
+});
+
 qa(
   "Regular tile accent follows its own artwork and count badge",
   async ({ page }) => {

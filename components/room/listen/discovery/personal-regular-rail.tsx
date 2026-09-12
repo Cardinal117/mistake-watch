@@ -12,15 +12,11 @@ import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 import type { PersonalTrack } from "@/lib/recommendations/personal-discovery-model";
 
 const PAGE_GAP_PX = 12;
-const MAX_PAGE_SIZE = 8;
 const SWIPE_THRESHOLD_PX = 36;
 
 function pageSizeFor(width: number) {
   const tile = width <= 650 ? 96 : 112;
-  return Math.max(
-    1,
-    Math.min(MAX_PAGE_SIZE, Math.floor((width + PAGE_GAP_PX) / (tile + PAGE_GAP_PX))),
-  );
+  return Math.max(1, Math.floor((width + PAGE_GAP_PX) / (tile + PAGE_GAP_PX)));
 }
 
 export function PersonalRegularRail({
@@ -45,7 +41,7 @@ export function PersonalRegularRail({
     offsetX: number;
   } | null>(null);
   const suppressClick = useRef(false);
-  const [pageSize, setPageSize] = useState(MAX_PAGE_SIZE);
+  const [pageSize, setPageSize] = useState(1);
   const [page, setPage] = useState(0);
   const [direction, setDirection] = useState<"next" | "previous">("next");
   const [dragOffset, setDragOffset] = useState(0);
