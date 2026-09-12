@@ -58,3 +58,17 @@ may be released. Git/deployment authorized after QA.
 
 Owner listening/audio and exact-device aesthetic QA remain useful after release;
 synthetic browser proof does not claim real YouTube playback/audio validation.
+
+## Production receipt — 2026-09-12
+
+Implementation `2da2d7d` pushed to main and the task branch. Clean export
+`.tmp/listen-player-release` excludes local environment files and unrelated
+recording-review code. Vercel clean build and clean-export personalization tests
+passed. Candidate readiness passed before promotion.
+
+Promoted deployment: `dpl_AaGqRvFpavG6p3NZdgKpV9qSQKYJ`
+(`https://mistake-watch-doawv3am6-cardinal117s-projects.vercel.app`).
+Custom-domain inspection confirms watch.mistakestudios.com resolves to this Ready
+deployment. Live checks: health 200, ready 200 (Supabase and Spacetime ready),
+excluded recording-review route 404. No database migration or Spacetime publish.
+Refresh existing clients before owner visual/audio QA.
