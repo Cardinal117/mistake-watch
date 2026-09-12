@@ -3,6 +3,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 
 export function useWatchViewport() {
   const [height, setHeight] = useState<number | null>(null);
+  const [desktop, setDesktop] = useState(false);
   useEffect(() => {
     let frame = 0;
     const viewport = window.visualViewport;
@@ -11,6 +12,7 @@ export function useWatchViewport() {
     );
     document.documentElement.classList.add("watch-room-active");
     function update() {
+      setDesktop(window.innerWidth >= 1024);
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() =>
         setHeight(
@@ -29,6 +31,7 @@ export function useWatchViewport() {
     };
   }, []);
   return {
+    desktop,
     style: (height ? { height: height + "px" } : {}) as CSSProperties,
     short: height !== null && height <= 600,
   };

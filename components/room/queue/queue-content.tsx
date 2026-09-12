@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Search } from "lucide-react";
 
 import type { RoomQueueItem } from "@/lib/rooms";
 import type { LiveRoomError } from "@/lib/spacetime";
@@ -18,6 +19,7 @@ type MeasureQueueAction = (label: string, action: () => void) => void;
 
 export function QueueContent({
   compact = false,
+  desktopRows = false,
   manageDisabled,
   measureQueueAction,
   mode,
@@ -30,8 +32,10 @@ export function QueueContent({
   queuedItemsLength,
   roomErrors,
   upcomingItems: canonicalItems,
+  watchRail = false,
 }: {
   compact?: boolean;
+  desktopRows?: boolean;
   manageDisabled: boolean;
   measureQueueAction: MeasureQueueAction;
   mode: "listen" | "watch";
@@ -48,16 +52,27 @@ export function QueueContent({
   queuedItemsLength: number;
   roomErrors: LiveRoomError[];
   upcomingItems: RoomQueueItem[];
+  watchRail?: boolean;
 }) {
   const [activeQueueTab, setActiveQueueTab] = useState<"history" | "up-next">(
     "up-next",
   );
+  const [query, setQuery] = useState("");
   const optimistic = useOptimisticQueue(
     canonicalItems,
     manageDisabled,
     onMoveQueueItem,
   );
   const upcomingItems = optimistic.items;
+  const visibleUpcomingItems = useMemo(() => {
+    const needle = query.trim().toLocaleLowerCase();
+    if (!needle) return upcomingItems;
+    return upcomingItems.filter((item) =>
+      [item.title, item.artist, item.channelName]
+        .filter(Boolean)
+        .some((value) => value!.toLocaleLowerCase().includes(needle)),
+    );
+  }, [query, upcomingItems]);
   const duplicateCounts = useMemo(
     () => activeQueueSourceCounts(canonicalItems),
     [canonicalItems],
@@ -75,6 +90,96 @@ export function QueueContent({
         .slice(0, 10),
     [roomErrors],
   );
+
+  const upcomingList =
+    visibleUpcomingItems.length > 0 ? (
+      <VirtualQueueList
+        desktopRows={desktopRows}
+        enabled={compact}
+        items={visibleUpcomingItems}
+        indices={projectedIndices}
+      >
+        {(item) => {
+          const queuedIndex = projectedIndices.get(item.id) ?? -1;
+          return (
+            <QueueRow
+              duplicateCount={
+                duplicateCounts.get(queueSourceKey(item) ?? "") ?? 0
+              }
+              compact={compact}
+              item={item}
+              key={item.id}
+              manageDisabled={manageDisabled}
+              mode={mode}
+              onMoveQueueItem={(queueItemId, position) =>
+                measureQueueAction("move", () =>
+                  optimistic.move(queueItemId, position),
+                )
+              }
+              onPlayNext={(queueItem) => {
+                measureQueueAction("play-next", () =>
+                  onQueueItemPriorityChange?.(queueItem.id, {
+                    isPlayNext: true,
+                  }),
+                );
+              }}
+              onPin={(queueItem) => {
+                measureQueueAction("pin", () =>
+                  onQueueItemPriorityChange?.(queueItem.id, {
+                    isPinned: !queueItem.isPinned,
+                  }),
+                );
+              }}
+              onPlayQueueItem={
+                onPlayQueueItem
+                  ? (queueItemId) =>
+                      measureQueueAction("play", () =>
+                        onPlayQueueItem(queueItemId),
+                      )
+                  : undefined
+              }
+              onRemoveQueueItem={(queueItemId) =>
+                measureQueueAction("remove", () =>
+                  onRemoveQueueItem?.(queueItemId),
+                )
+              }
+              queuedIndex={queuedIndex}
+              queuedItemsLength={queuedItemsLength}
+            />
+          );
+        }}
+      </VirtualQueueList>
+    ) : (
+      <div className="rounded-md border border-dashed border-white/10 bg-surface-container-low p-4 text-body-md text-on-surface-variant">
+        {query
+          ? "No queue items match this search."
+          : mode === "listen"
+            ? "No queue items yet. Add YouTube, YouTube Music, direct audio, HLS, or playlist links."
+            : "No queue items yet. Add a YouTube, playlist, direct media, or HLS URL."}
+      </div>
+    );
+
+  if (watchRail)
+    return (
+      <div className="watch-mini-queue-content">
+        {optimistic.notice && (
+          <p role="status" className="text-label-sm text-error">
+            {optimistic.notice}
+          </p>
+        )}
+        <label className="watch-mini-queue-search">
+          <Search aria-hidden />
+          <input
+            aria-label="Search queue"
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search queue"
+            type="search"
+            value={query}
+          />
+        </label>
+        <div className="watch-mini-queue-scroll">{upcomingList}</div>
+      </div>
+    );
 
   return (
     <>
@@ -108,70 +213,7 @@ export function QueueContent({
       </div>
 
       {activeQueueTab === "up-next" ? (
-        upcomingItems.length > 0 ? (
-          <VirtualQueueList
-            enabled={compact}
-            items={upcomingItems}
-            indices={projectedIndices}
-          >
-            {(item) => {
-              const queuedIndex = projectedIndices.get(item.id) ?? -1;
-
-              return (
-                <QueueRow
-                  duplicateCount={
-                    duplicateCounts.get(queueSourceKey(item) ?? "") ?? 0
-                  }
-                  compact={compact}
-                  item={item}
-                  key={item.id}
-                  manageDisabled={manageDisabled}
-                  mode={mode}
-                  onMoveQueueItem={(queueItemId, position) =>
-                    measureQueueAction("move", () =>
-                      optimistic.move(queueItemId, position),
-                    )
-                  }
-                  onPlayNext={(queueItem) => {
-                    measureQueueAction("play-next", () =>
-                      onQueueItemPriorityChange?.(queueItem.id, {
-                        isPlayNext: true,
-                      }),
-                    );
-                  }}
-                  onPin={(queueItem) => {
-                    measureQueueAction("pin", () =>
-                      onQueueItemPriorityChange?.(queueItem.id, {
-                        isPinned: !queueItem.isPinned,
-                      }),
-                    );
-                  }}
-                  onPlayQueueItem={
-                    onPlayQueueItem
-                      ? (queueItemId) =>
-                          measureQueueAction("play", () =>
-                            onPlayQueueItem(queueItemId),
-                          )
-                      : undefined
-                  }
-                  onRemoveQueueItem={(queueItemId) =>
-                    measureQueueAction("remove", () =>
-                      onRemoveQueueItem?.(queueItemId),
-                    )
-                  }
-                  queuedIndex={queuedIndex}
-                  queuedItemsLength={queuedItemsLength}
-                />
-              );
-            }}
-          </VirtualQueueList>
-        ) : (
-          <div className="rounded-md border border-dashed border-white/10 bg-surface-container-low p-4 text-body-md text-on-surface-variant">
-            {mode === "listen"
-              ? "No queue items yet. Add YouTube, YouTube Music, direct audio, HLS, or playlist links."
-              : "No queue items yet. Add a YouTube, playlist, direct media, or HLS URL."}
-          </div>
-        )
+        upcomingList
       ) : previousItems.length > 0 || mediaEvents.length > 0 ? (
         <QueueHistory
           compact={compact}

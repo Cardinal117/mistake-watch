@@ -302,7 +302,10 @@ export type LiveRoomState = {
     placement?: QueuePlacement,
   ): Promise<void>;
   participants: RoomParticipant[];
-  playQueueItemNow(queueItemId: string): void;
+  playQueueItemNow(
+    queueItemId: string,
+    options?: { isCurrent?(): boolean },
+  ): void | Promise<void>;
   playQueueItem(queueItemId: string): void;
   publishRoomRhythmProfile(input: {
     algorithmVersion: string;

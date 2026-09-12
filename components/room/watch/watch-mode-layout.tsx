@@ -12,7 +12,14 @@ import {
   MoreHorizontal,
   Plus,
   Users,
+  PanelRight,
+  ExternalLink,
+  Search,
 } from "lucide-react";
+import { ListenModeTabs } from "../listen/header/header-tools";
+import { YouTubeMetadataLine } from "../youtube-metadata-line";
+import { PreferenceHeartButton } from "../listen/preference-heart-button";
+import { artistLabel } from "@/lib/ui/artist-label";
 import { useMediaPreferences } from "@/lib/recommendations/use-media-preferences";
 import { RoomHomeToolbar } from "../shared/room-home-toolbar";
 import { MediaStage } from "../media-stage";
@@ -21,6 +28,8 @@ import type { WatchModeLayoutProps } from "./contracts";
 import { getQueueItems } from "./presentation";
 import { useMediaLibrary } from "./media-hub/use-media-library";
 import { WatchBrowser } from "./browse/watch-browser";
+import { WatchQueueRail } from "./watch-queue-rail";
+import { WatchMiniQueue } from "./watch-mini-queue";
 import { WatchRoomHeader } from "./watch-room-header";
 import { LazyMediaPoster } from "./library/lazy-media-poster";
 import { useWatchViewport } from "./use-watch-viewport";
@@ -36,6 +45,7 @@ import {
 import "./watch-room.css";
 import "./watch-browse-layout.css";
 import "./watch-fullscreen.css";
+import "./watch-product-polish.css";
 
 function WatchPanelLoading() {
   return (
@@ -71,6 +81,8 @@ export function WatchModeLayout({
   const [screen, setScreen] = useState<WatchWorkspace>("home");
   const [homeView, setHomeView] = useState<WatchHomeView>("browse");
   const [cinema, setCinema] = useState(false);
+  const [floating, setFloating] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [cinemaReturn, setCinemaReturn] = useState<WatchWorkspace>("home");
   const [minimizedSource, setMinimizedSource] = useState<string | null>(null);
   const restoreTouch = useRef<{ x: number; y: number } | null>(null);
@@ -136,6 +148,7 @@ export function WatchModeLayout({
   function navigate(next: WatchWorkspace) {
     setScreen(next);
     setCinema(false);
+    setFloating(false);
     setMinimizedSource(null);
     if (next === "home") setHomeView(hasSource ? "watch" : "browse");
     requestAnimationFrame(() =>
@@ -150,12 +163,14 @@ export function WatchModeLayout({
     setScreen("home");
     setHomeView("browse");
     setCinema(false);
+    setFloating(false);
     setMinimizedSource(null);
   }
   function openCinema() {
     setCinemaReturn(screen);
     restoreFocus.current = document.activeElement as HTMLElement;
     setCinema(true);
+    setFloating(false);
     setScreen("home");
   }
   function backToBrowse() {
@@ -193,6 +208,7 @@ export function WatchModeLayout({
         style={{ ...themeStyle, ...viewport.style }}
         data-short={viewport.short}
         data-cinema={cinema && hasSource}
+        data-floating={floating}
         data-screen={screen}
         data-home={visibleHome}
         data-has-source={hasSource}
@@ -212,10 +228,68 @@ export function WatchModeLayout({
           liveRoom={liveRoom}
           navigate={navigate}
           themeStyle={themeStyle}
+          onCinema={hasSource ? openCinema : undefined}
         />
         <div className="watch-viewbar">
+          <div className="watch-desktop-toolbar">
+            <ListenModeTabs
+              mode="watch"
+              canSwitch={liveRoom.canManageAuthority && connected}
+              onSwitchMode={liveRoom.switchMode}
+            />
+            {cinema ? (
+              <button className="watch-desktop-back" onClick={backToBrowse}>
+                <ArrowLeft aria-hidden />
+                Back to catalogue
+              </button>
+            ) : (
+              <>
+                <label className="watch-global-search">
+                  <Search aria-hidden />
+                  <input
+                    type="search"
+                    aria-label="Search media"
+                    placeholder="Search your library"
+                    value={searchQuery}
+                    onChange={(event) => {
+                      setSearchQuery(event.target.value);
+                      if (screen !== "home") browse();
+                    }}
+                  />
+                </label>
+                <div
+                  className="watch-source-tabs"
+                  role="tablist"
+                  aria-label="Media source"
+                >
+                  {!catalogueDenied && (
+                    <button
+                      role="tab"
+                      aria-selected={workspace === "home"}
+                      onClick={browse}
+                    >
+                      Catalogue
+                    </button>
+                  )}
+                  <button
+                    role="tab"
+                    aria-selected={workspace === "add"}
+                    onClick={() => navigate("add")}
+                  >
+                    YouTube &amp; links
+                  </button>
+                </div>
+              </>
+            )}
+            {cinema && (
+              <button className="watch-dock-return" onClick={browse}>
+                <PanelRight aria-hidden />
+                Dock player
+              </button>
+            )}
+          </div>
           {cinema ? (
-            <button onClick={backToBrowse}>
+            <button className="watch-mobile-cinema-back" onClick={backToBrowse}>
               <ArrowLeft />
               {cinemaReturn === "home"
                 ? "Back to browsing"
@@ -297,6 +371,7 @@ export function WatchModeLayout({
               </button>
             </div>
             <div className="watch-dock-frame">
+              <strong className="watch-rail-heading">Now playing</strong>
               <button
                 className="watch-drag-handle"
                 aria-label="Move player"
@@ -322,7 +397,17 @@ export function WatchModeLayout({
                 <Minus />
               </button>
               <button aria-label="Open cinema" onClick={openCinema}>
-                <Home />
+                <PanelRight />
+              </button>
+              <button
+                className="watch-float-toggle"
+                aria-label={floating ? "Dock player" : "Float player"}
+                onClick={() => {
+                  setFloating(!floating);
+                  setMinimizedSource(null);
+                }}
+              >
+                <ExternalLink aria-hidden />
               </button>
             </div>
             <div
@@ -342,6 +427,40 @@ export function WatchModeLayout({
               room={room}
               presentation="watch"
             />
+            <div className="watch-playing-details">
+              <div>
+                <h2>
+                  {liveRoom.snapshot.session?.sourceTitle ??
+                    activeItem?.title ??
+                    "Now playing"}
+                </h2>
+                {activeItem && (
+                  <PreferenceHeartButton
+                    item={activeItem}
+                    preference={preferences.getPreference(activeItem)}
+                    onToggle={() =>
+                      void preferences.togglePreference(activeItem)
+                    }
+                    variant="inline"
+                  />
+                )}
+              </div>
+              <p>
+                {artistLabel(
+                  activeItem?.artist ??
+                    activeItem?.channelName ??
+                    "Room source",
+                )}
+              </p>
+              {liveRoom.snapshot.session?.sourceType === "youtube" && (
+                <YouTubeMetadataLine
+                  className="watch-playing-metadata"
+                  showChannel={false}
+                  sourceUrl={sourceUrl}
+                  tone="dynamic"
+                />
+              )}
+            </div>
             {fullscreenError && (
               <p className="watch-fullscreen-error" role="alert">
                 {fullscreenError}
@@ -413,6 +532,8 @@ export function WatchModeLayout({
                 onAdd={() => navigate("add")}
                 onManage={() => navigate("manage")}
                 isOwner={isOwner}
+                searchQuery={searchQuery}
+                onSearchQueryChange={setSearchQuery}
               />
             </div>
             {workspace !== "home" && workspace !== "manage" && (
@@ -456,6 +577,28 @@ export function WatchModeLayout({
               </div>
             )}
           </div>
+          {viewport.desktop && hasSource && (screen === "home" || cinema) && (
+            <aside
+              className="watch-side-rail"
+              aria-label="Room sidebar"
+              hidden={!hasSource || (screen !== "home" && !cinema)}
+            >
+              {cinema ? (
+                <WatchMiniQueue
+                  items={items}
+                  liveRoom={liveRoom}
+                  roomId={room.id}
+                  onOpenQueue={() => navigate("queue")}
+                />
+              ) : (
+                <WatchQueueRail
+                  items={items}
+                  liveRoom={liveRoom}
+                  onOpenQueue={() => navigate("queue")}
+                />
+              )}
+            </aside>
+          )}
         </main>
         {liveRoom.errorMessage && (
           <div className="watch-room-error" role="alert">

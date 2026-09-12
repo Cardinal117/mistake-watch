@@ -41,7 +41,7 @@ export type QueuePanelProps = {
   ): void;
   onQueueModeChange?(mode: QueueMode): void;
   onRemoveQueueItem?(queueItemId: string): void;
-  presentation?: "default" | "hub" | "watch-workspace";
+  presentation?: "default" | "hub" | "watch-rail" | "watch-workspace";
   queueMode?: QueueMode;
   roomErrors?: LiveRoomError[];
   roomId: string;

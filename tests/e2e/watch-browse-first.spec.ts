@@ -1,21 +1,26 @@
 import { expect, test } from "@playwright/test";
 const watchTest = process.env.WATCH_DESIGN_QA === "1" ? test : test.skip;
 watchTest(
-  "fresh Watch entry browses full width with a movable loaded player",
+  "fresh desktop Watch entry anchors the loaded player and offers explicit floating",
   async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/dev/watch-design");
     await expect(page.locator(".watch-redesign")).toHaveAttribute(
       "data-home",
       "browse",
     );
     await expect(
-      page.getByRole("heading", { name: "Tonight, together" }),
-    ).toBeVisible();
+      page.getByRole("button", { name: "Discover", exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
     const content = await page.locator(".watch-content").boundingBox();
-    expect(content!.x).toBeLessThan(30);
+    const player = await page.locator(".watch-player").boundingBox();
+    expect(content!.x + content!.width).toBeLessThanOrEqual(player!.x);
     await expect(
-      page.getByRole("button", { name: "Move player" }),
+      page.getByRole("button", { name: "Float player", exact: true }),
     ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Move player", exact: true }),
+    ).toBeHidden();
   },
 );
 watchTest(
@@ -28,8 +33,8 @@ watchTest(
       await page.setViewportSize({ width, height: 844 });
       await expect(page.locator(".watch-player")).toBeHidden();
       await expect(
-        page.getByRole("heading", { name: "Tonight, together" }),
-      ).toBeVisible();
+        page.getByRole("button", { name: "Discover", exact: true }),
+      ).toHaveAttribute("aria-pressed", "true");
       expect(
         (await page.locator(".watch-content").boundingBox())!.x,
       ).toBeLessThan(30);
@@ -165,6 +170,9 @@ watchTest(
     await page.goto("/dev/watch-design");
     await expect(page.locator("video")).toHaveCount(1);
     const original = await page.locator("video").elementHandle();
+    await page
+      .getByRole("button", { name: "Float player", exact: true })
+      .click();
     for (const key of ["ArrowLeft", "ArrowUp", "ArrowRight", "ArrowDown"]) {
       await page
         .getByRole("button", { name: "Move player" })
@@ -189,7 +197,7 @@ watchTest(
       "true",
     );
     await page
-      .getByRole("button", { name: "Back to browsing", exact: true })
+      .getByRole("button", { name: "Back to catalogue", exact: true })
       .click();
     expect(
       await original!.evaluate((el) => el === document.querySelector("video")),
@@ -281,6 +289,9 @@ watchTest(
   async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/dev/watch-design");
+    await page
+      .getByRole("button", { name: "Float player", exact: true })
+      .click();
     const handle = page.getByRole("button", {
       name: "Move player",
     });
@@ -321,11 +332,11 @@ watchTest(
       ".watch-room-name",
       ".watch-header-audience",
       ".watch-account-button",
-      ".listen-home-modes",
+      ".watch-desktop-toolbar",
     ]) {
       const el = page.locator(selector);
-      if (await el.count()) {
-        const r = (await el.boundingBox())!;
+      if (await el.first().isVisible()) {
+        const r = (await el.first().boundingBox())!;
         expect(r.x).toBeGreaterThanOrEqual(0);
         expect(r.x + r.width).toBeLessThanOrEqual(1280);
       }
@@ -333,10 +344,10 @@ watchTest(
     const identity = (await page
       .locator(".watch-room-identity")
       .boundingBox())!;
-    const mode = (await page.locator(".listen-home-modes").boundingBox())!;
+    const toolbar = (await page.locator(".watch-desktop-toolbar").boundingBox())!;
     expect(
-      identity.x + identity.width <= mode.x ||
-        identity.y + identity.height <= mode.y,
+      identity.x + identity.width <= toolbar.x ||
+        identity.y + identity.height <= toolbar.y,
     ).toBe(true);
     await page.screenshot({ path: "test-results/watch-0273-text-zoom.png" });
   },

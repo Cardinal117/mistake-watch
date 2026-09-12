@@ -4,7 +4,9 @@ qa(
   "queue menu dismisses on outside click and opening another menu",
   async ({ page }) => {
     await page.goto("/dev/watch-design");
-    await page.getByRole("button", { name: "Queue", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Open full queue", exact: true })
+      .click();
     const first = page.getByLabel("More actions for The Long Way Home", {
       exact: true,
     });
@@ -46,6 +48,10 @@ for (const width of [1440, 390]) {
         name: "Details: Afterlight",
         exact: true,
       });
+      if (width >= 1024)
+        await page
+          .getByRole("button", { name: "Float player", exact: true })
+          .click();
       await page
         .getByRole("button", { name: "Minimize player", exact: true })
         .click();
@@ -55,7 +61,7 @@ for (const width of [1440, 390]) {
       ).toBeHidden();
       await expect(
         page.getByRole("tablist", { name: "Media source" }),
-      ).toBeHidden();
+      ).toHaveCount(width >= 1024 ? 1 : 0);
       const art = (await page.locator(".watch-detail-art").boundingBox())!;
       expect(Math.abs(art.x + art.width / 2 - width / 2)).toBeLessThan(20);
       const back = page.getByRole("button", {

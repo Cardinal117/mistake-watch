@@ -1,0 +1,365 @@
+.watch-redesign .watch-card-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+  text-align: left;
+}
+
+.watch-redesign .watch-card-actions {
+  display: none;
+}
+
+/* Desktop catalogue composition. Mobile keeps the established Watch flow. */
+@media (min-width: 1024px) {
+  .watch-redesign .watch-browser {
+    --watch-catalogue-gap: 14px;
+  }
+
+  .watch-redesign .watch-browser-tabs {
+    height: 60px;
+    gap: 30px;
+    padding: 0 28px;
+  }
+
+  .watch-redesign .watch-browser-tabs button {
+    height: 60px;
+    font-size: var(--text-label-md);
+  }
+
+  .watch-redesign .watch-manage-link {
+    color: var(--color-on-surface-variant);
+  }
+
+  .watch-redesign .watch-manage-link:hover,
+  .watch-redesign .watch-manage-link:focus-visible {
+    color: var(--color-primary);
+  }
+
+  .watch-redesign
+    .watch-browser[data-external-search="true"]
+    .watch-browser-search {
+    display: none;
+  }
+
+  .watch-redesign .watch-browse-scroll {
+    padding: 20px 28px 44px;
+    scrollbar-gutter: stable;
+  }
+
+  .watch-redesign .watch-browser[data-tab="discover"] .watch-browse-heading {
+    display: none;
+  }
+
+  .watch-redesign .watch-browse-heading {
+    margin: 4px 0 20px;
+  }
+
+  .watch-redesign .watch-browse-heading h2 {
+    font-size: 24px;
+    letter-spacing: -0.02em;
+  }
+
+  .watch-redesign .watch-shelf {
+    margin-top: 30px;
+  }
+
+  .watch-redesign .watch-shelf:first-of-type {
+    margin-top: 4px;
+  }
+
+  .watch-redesign .watch-shelf-heading {
+    min-height: 44px;
+    margin-bottom: 10px;
+  }
+
+  .watch-redesign .watch-shelf-heading h3 {
+    font-size: 18px;
+    font-weight: 650;
+    letter-spacing: -0.015em;
+  }
+
+  .watch-redesign .watch-shelf-heading-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .watch-redesign .watch-shelf-heading-actions > button:first-child {
+    margin-right: 4px;
+  }
+
+  .watch-redesign .watch-shelf-arrow {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid
+      color-mix(in srgb, var(--color-on-surface) 12%, transparent);
+    border-radius: 8px;
+    color: var(--color-on-surface-variant);
+    background: color-mix(
+      in srgb,
+      var(--color-surface-container-low) 82%,
+      transparent
+    );
+  }
+
+  .watch-redesign .watch-shelf-arrow:hover,
+  .watch-redesign .watch-shelf-arrow:focus-visible {
+    color: var(--color-primary);
+    border-color: rgb(var(--listen-primary) / 0.55);
+  }
+
+  .watch-redesign .watch-shelf-arrow svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .watch-redesign
+    .watch-shelf[data-watch-shelf="collections"]
+    .watch-collection-grid {
+    grid-auto-flow: column;
+    grid-auto-columns: calc((100% - (2 * var(--watch-catalogue-gap))) / 3);
+    grid-template-columns: none;
+    gap: var(--watch-catalogue-gap);
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-behavior: smooth;
+    scroll-snap-type: inline mandatory;
+    scrollbar-width: none;
+  }
+
+  .watch-redesign
+    .watch-shelf[data-watch-shelf="collections"]
+    .watch-collection-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .watch-redesign
+    .watch-shelf[data-watch-shelf="collections"]
+    .watch-collection {
+    position: relative;
+    min-height: 0;
+    aspect-ratio: 2.2 / 1;
+    border-color: color-mix(in srgb, var(--color-on-surface) 10%, transparent);
+    background: var(--color-surface-container-low);
+    scroll-snap-align: start;
+  }
+
+  .watch-redesign
+    .watch-shelf[data-watch-shelf="collections"]
+    .watch-collection-art {
+    height: 100%;
+  }
+
+  .watch-redesign
+    .watch-shelf[data-watch-shelf="collections"]
+    .watch-collection-art::after {
+    content: "";
+    position: absolute;
+    inset: 38% 0 0;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in srgb, var(--color-surface-container-lowest) 94%, transparent)
+    );
+    pointer-events: none;
+  }
+
+  .watch-redesign
+    .watch-shelf[data-watch-shelf="collections"]
+    .watch-collection
+    > span:last-child {
+    position: absolute;
+    inset: auto 0 0;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 3px 8px;
+    padding: 12px 14px;
+    color: var(--color-on-surface);
+    background: transparent;
+  }
+
+  .watch-redesign
+    .watch-shelf[data-watch-shelf="collections"]
+    .watch-collection
+    > span:last-child
+    > svg {
+    grid-row: 1 / span 2;
+    width: 16px;
+    height: 16px;
+    color: var(--color-primary);
+  }
+
+  .watch-redesign
+    .watch-shelf[data-watch-shelf="collections"]
+    .watch-collection
+    small {
+    margin: 0;
+    color: color-mix(in srgb, var(--color-on-surface) 75%, transparent);
+  }
+
+  .watch-redesign .watch-card-grid--ready,
+  .watch-redesign .watch-card-grid--recent {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-behavior: smooth;
+    scroll-snap-type: inline mandatory;
+    scrollbar-width: none;
+  }
+
+  .watch-redesign .watch-card-grid--ready::-webkit-scrollbar,
+  .watch-redesign .watch-card-grid--recent::-webkit-scrollbar {
+    display: none;
+  }
+
+  .watch-redesign .watch-card-grid--ready {
+    grid-auto-columns: calc((100% - (3 * var(--watch-catalogue-gap))) / 4);
+    gap: var(--watch-catalogue-gap);
+  }
+
+  .watch-redesign .watch-card-grid--ready .watch-media-card {
+    position: relative;
+    scroll-snap-align: start;
+  }
+
+  .watch-redesign .watch-card-grid--ready .watch-card-art {
+    border: 1px solid
+      color-mix(in srgb, var(--color-on-surface) 9%, transparent);
+  }
+
+  .watch-redesign .watch-card-grid--ready .watch-card-title {
+    margin-top: 8px;
+    font-size: var(--text-label-md);
+  }
+
+  .watch-redesign .watch-card-grid--ready .watch-card-actions {
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    z-index: 2;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 160ms ease-out;
+  }
+
+  .watch-redesign
+    .watch-card-grid--ready
+    .watch-media-card:is(:hover, :focus-within)
+    .watch-card-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .watch-redesign .watch-card-actions button {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border: 1px solid
+      color-mix(in srgb, var(--color-on-surface) 18%, transparent);
+    border-radius: 8px;
+    color: var(--color-on-surface);
+    background: color-mix(
+      in srgb,
+      var(--color-surface-container-lowest) 92%,
+      transparent
+    );
+  }
+
+  .watch-redesign .watch-card-actions button:hover,
+  .watch-redesign .watch-card-actions button:focus-visible {
+    color: var(--color-primary);
+    border-color: rgb(var(--listen-primary) / 0.68);
+  }
+
+  .watch-redesign .watch-card-actions svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .watch-redesign .watch-card-actions button:disabled {
+    cursor: not-allowed;
+    opacity: 0.42;
+  }
+
+  .watch-redesign .watch-card-action-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .watch-redesign .watch-card-grid--recent {
+    grid-auto-columns: minmax(250px, 1fr);
+    gap: 22px;
+  }
+
+  .watch-redesign .watch-card-grid--recent .watch-media-card {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    column-gap: 12px;
+    align-content: center;
+    scroll-snap-align: start;
+  }
+
+  .watch-redesign .watch-card-grid--recent .watch-card-art {
+    grid-row: 1 / span 2;
+    aspect-ratio: 16 / 10;
+  }
+
+  .watch-redesign .watch-card-grid--recent .watch-card-title {
+    align-self: end;
+    margin: 0;
+    font-size: var(--text-label-md);
+    -webkit-line-clamp: 2;
+  }
+
+  .watch-redesign .watch-card-grid--recent .watch-card-meta {
+    align-self: start;
+    justify-content: flex-start;
+    margin-top: 4px;
+    font-size: var(--text-label-sm);
+  }
+
+  .watch-redesign .watch-card-grid--recent .watch-card-meta > span::before {
+    content: "·";
+    margin-right: 6px;
+  }
+
+  .watch-redesign .watch-card-details:focus-visible .watch-card-art {
+    outline: 2px solid var(--color-primary-fixed-dim);
+    outline-offset: 2px;
+  }
+
+  .watch-redesign[data-has-source="true"]:not([data-floating="true"])
+    .watch-shelf[data-watch-shelf="upcoming"] {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watch-redesign .watch-card-grid--ready,
+  .watch-redesign .watch-card-grid--recent,
+  .watch-redesign
+    .watch-shelf[data-watch-shelf="collections"]
+    .watch-collection-grid {
+    scroll-behavior: auto;
+  }
+
+  .watch-redesign .watch-card-actions {
+    transition: none;
+  }
+}

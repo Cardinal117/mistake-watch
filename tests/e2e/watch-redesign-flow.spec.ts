@@ -26,16 +26,15 @@ qa(
       .evaluate((v) => (v as HTMLVideoElement).currentTime);
     for (const name of [
       "Open cinema",
-      "Back to browsing",
-      "Queue",
-      "Social",
+      "Back to catalogue",
+      "Open full queue",
       "Add media",
     ]) {
       await page.getByRole("button", { name, exact: true }).first().click();
-      if (["Queue", "Social", "Add media"].includes(name))
+      if (["Open full queue", "Add media"].includes(name))
         await expect(page.locator(".watch-redesign")).toHaveAttribute(
           "data-screen",
-          name === "Add media" ? "add" : name.toLowerCase(),
+          name === "Add media" ? "add" : "queue",
         );
       expect(await video?.evaluate((v) => v.isConnected)).toBe(true);
       await expect(page.locator("video")).toHaveJSProperty("paused", false);
@@ -167,7 +166,9 @@ qa(
       }),
     );
     await page.reload();
-    await openBrowsing(page);
+    await expect(
+      page.getByRole("tab", { name: "Catalogue", exact: true }),
+    ).toHaveCount(0);
     await expect(
       page.getByRole("heading", { name: "Add media", exact: true }),
     ).toBeVisible();
@@ -356,7 +357,9 @@ qa(
     await expect(
       page.getByRole("button", { name: "Details: Afterlight", exact: true }),
     ).toHaveCount(0);
-    await page.getByRole("button", { name: "Queue", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Open full queue", exact: true })
+      .click();
     await expect(page.locator(".watch-redesign")).toHaveAttribute(
       "data-screen",
       "queue",

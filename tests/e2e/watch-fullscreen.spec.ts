@@ -72,7 +72,9 @@ qa(
   async ({ page }) => {
     await page.goto("/dev/watch-design");
     await expect(page.locator("video")).toHaveJSProperty("readyState", 4);
-    await page.getByRole("button", { name: "Queue", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Open full queue", exact: true })
+      .click();
     await page
       .getByRole("button", { name: "Fullscreen video", exact: true })
       .click();

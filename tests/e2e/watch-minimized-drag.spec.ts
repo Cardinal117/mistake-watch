@@ -67,6 +67,10 @@ for (const viewport of [
     async ({ page }) => {
       await page.setViewportSize(viewport);
       await page.goto("/dev/watch-design");
+      if (viewport.width >= 1024)
+        await page
+          .getByRole("button", { name: "Float player", exact: true })
+          .click();
       const dock = page.getByRole("region", { name: "Watch stage" });
       const video = await page.locator("video").elementHandle();
       await page

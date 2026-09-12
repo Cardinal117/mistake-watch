@@ -314,3 +314,36 @@ Fit ordinary portrait phones by scaling media and tightening short-height gaps;
 allow scrolling for landscape, enlarged text and exceptional titles rather than
 clipping controls. See docs/tasks/listen-mobile-player-polish/task.md and its
 approved reference for the visual contract.
+
+### Approved Watch desktop reference update — 2026-09-12
+
+The owner-approved Browse/Watch references and subsequent three-item preview
+correction supersede TASK-027's full-width floating-player default on desktop
+(1024px and wider). Retain the existing artwork-driven room colours and Listen
+mode-tab component. Browse places bounded collections, Ready to watch and recent
+history beside an anchored player. Cinema expands the same mounted provider on
+the left; explicit Float player remains available. Empty media reserves no rail.
+
+Below the anchored player, show only three Up next items using Listen's compact
+artwork/title/artist/duration treatment. The heading and rows open the dedicated
+queue; keep Play next as an independent action. No preview search, Social tab,
+shuffle or separate footer button. Social remains a header destination; search,
+shuffle and full management remain in the full queue. Keep player metadata
+unboxed, hearts accented, and the original transport icons. Small viewports and
+large text must retain reachable controls through contained scrolling.
+
+Catalogue actions use one shared, permission-aware playback request coordinator.
+Intentional repeated Add remains allowed. Do not infer mockup metadata, replace
+media instances, or change mobile gestures. Detailed acceptance and release
+proof: `docs/tasks/watch-desktop-product-polish/`.
+
+Expanded Watch/Cinema is an explicit exception to the three-item Browse preview:
+its right column is a full-height, searchable mini queue with ordinary queue
+controls, flat Listen-style rows and bounded virtualization. The structural
+column divider supplies separation; do not add a card box inside it. Browse's
+three-item preview uses an adaptive 16-28px gap below the player controls.
+
+Expanded Watch refinement: when the right mini queue is visible, omit the redundant
+below-player Up next row. Give the transport adaptive vertical padding and the
+volume slider a 128px usable track with a 44px interaction height. Browse keeps
+its separate three-item preview.

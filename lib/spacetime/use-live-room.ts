@@ -16,7 +16,9 @@ import {
 import { predictNextQueueItem } from "@/lib/player/next-item-preparation";
 import type { LiveRoomState } from "./live-room/client-types";
 import { hasLiveRoomAdmission } from "./live-room/admission";
+import { commitLatestPlayAdmission } from "./live-room/latest-play-request";
 import { mapLiveParticipants } from "./live-room/snapshot";
+import { useLatestPlayRequest } from "./live-room/use-latest-play-request";
 import { useRoomConnection } from "./live-room/use-room-connection";
 
 export type { LiveRoomState } from "./live-room/client-types";
@@ -93,6 +95,12 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
         (currentLivePermission?.canAddQueue ||
           currentLivePermission?.canManageQueue)),
     );
+  const latestPlayRequest = useLatestPlayRequest({
+    actorMemberId: currentMember?.id,
+    authorized: connectionStatus === "connected" && canControlPlayback,
+    reducers,
+    roomId: room.id,
+  });
 
   const currentMemberKick = currentMember
     ? snapshot.kicks.find((kick) => kick.memberId === currentMember.id)
@@ -226,6 +234,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     sourceUrl: string;
     thumbnailUrl?: string;
   }) {
+    latestPlayRequest.invalidate();
     if (!currentMember || !canManageAuthority || !reducers) {
       return;
     }
@@ -356,8 +365,14 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     });
   }
 
-  async function playQueueItemNow(queueItemId: string) {
-    if (!currentMember || !canControlPlayback || !reducers) {
+  async function playQueueItemNow(
+    queueItemId: string,
+    options?: { isCurrent?(): boolean },
+  ) {
+    const expectedActorMemberId = currentMember?.id;
+    const expectedRoomId = room.id;
+    const request = latestPlayRequest.begin(options?.isCurrent);
+    if (!expectedActorMemberId || !request.isCurrent()) {
       return;
     }
 
@@ -371,29 +386,38 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
 
     if (uploadedQueueItem && uploadedAssetId) {
       try {
-        const resolvedSourceUrl = await createUploadedPlaybackSessionReference({
-          assetId: uploadedAssetId,
-          roomId: room.id,
-        });
-
-        await reducers.playUploadedQueueItem({
-          actorMemberId: currentMember.id,
-          clientActionId,
-          queueItemId: uploadedQueueItem.queueItemId,
-          resolvedSourceUrl,
-          roomId: room.id,
-        });
-      } catch (error) {
-        setErrorMessage(
-          error instanceof Error && error.message.trim()
-            ? error.message
-            : "Uploaded media session could not start.",
+        await commitLatestPlayAdmission(
+          request,
+          createUploadedPlaybackSessionReference({
+            assetId: uploadedAssetId,
+            roomId: expectedRoomId,
+          }),
+          async (resolvedSourceUrl) => {
+            const current = latestPlayRequest.getCurrent();
+            if (!request.isCurrent() || !current.reducers) return;
+            await current.reducers.playUploadedQueueItem({
+              actorMemberId: expectedActorMemberId,
+              clientActionId,
+              queueItemId: uploadedQueueItem.queueItemId,
+              resolvedSourceUrl,
+              roomId: expectedRoomId,
+            });
+          },
         );
+      } catch (error) {
+        if (request.isCurrent())
+          setErrorMessage(
+            error instanceof Error && error.message.trim()
+              ? error.message
+              : "Uploaded media session could not start.",
+          );
       }
 
       return;
     }
 
+    const currentReducers = latestPlayRequest.getCurrent().reducers;
+    if (!currentReducers || !request.isCurrent()) return;
     const prepareYouTube = uploadedQueueItem?.sourceType === "youtube";
     if (prepareYouTube && uploadedQueueItem.sourceUrl) {
       youtubeAutoplayPreparation.arm(
@@ -401,25 +425,29 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       );
     } else youtubeAutoplayPreparation.cancel();
     try {
-      await reducers.playQueueItem({
-        actorMemberId: currentMember.id,
+      await currentReducers.playQueueItem({
+        actorMemberId: expectedActorMemberId,
         clientActionId,
         queueItemId,
-        roomId: room.id,
+        roomId: expectedRoomId,
       });
 
-      if (prepareYouTube) return;
+      if (prepareYouTube || !request.isCurrent()) return;
 
-      await reducers.setPlaybackState({
-        actorMemberId: currentMember.id,
+      const followOnReducers = latestPlayRequest.getCurrent().reducers;
+      if (!followOnReducers) return;
+      await followOnReducers.setPlaybackState({
+        actorMemberId: expectedActorMemberId,
         playbackRate: 1,
         positionSeconds: 0,
-        roomId: room.id,
+        roomId: expectedRoomId,
         status: "playing",
       });
     } catch {
-      youtubeAutoplayPreparation.cancel();
-      setErrorMessage("This track could not start. Please try again.");
+      if (request.isCurrent()) {
+        youtubeAutoplayPreparation.cancel();
+        setErrorMessage("This track could not start. Please try again.");
+      }
     }
   }
 

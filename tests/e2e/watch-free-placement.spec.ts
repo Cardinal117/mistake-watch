@@ -4,6 +4,10 @@ for (const width of [390, 1440])
   qa(`Watch free positioning at ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/dev/watch-design", { waitUntil: "domcontentloaded" });
+    if (width >= 1024)
+      await page
+        .getByRole("button", { name: "Float player", exact: true })
+        .click();
     const player = page.locator(".watch-player");
     const grip = page.locator(".watch-drag-handle");
     await page

@@ -6,6 +6,8 @@ import {
   MoreHorizontal,
   Plus,
   Users,
+  Monitor,
+  Settings,
 } from "lucide-react";
 import { Avatar } from "@/components/ui";
 import { WatchLeaveButton } from "./watch-leave-button";
@@ -25,9 +27,11 @@ export function WatchRoomHeader({
   liveRoom,
   navigate,
   themeStyle,
+  onCinema,
 }: Pick<WatchModeLayoutProps, "account" | "room" | "liveRoom"> & {
   navigate(screen: WatchWorkspace): void;
   themeStyle: CSSProperties;
+  onCinema?(): void;
 }) {
   const photo =
     account.status === "signed-in"
@@ -93,11 +97,20 @@ export function WatchRoomHeader({
           <Plus />
           Add media
         </button>
+        {onCinema && (
+          <button className="watch-tv-action" onClick={onCinema}>
+            <Monitor aria-hidden />
+            TV Mode
+          </button>
+        )}
         <button onClick={() => navigate("queue")}>
           <ListVideo />
           Queue
         </button>
-        <button onClick={() => navigate("social")}>
+        <button
+          className="watch-social-action"
+          onClick={() => navigate("social")}
+        >
           <Users />
           Social
         </button>
@@ -163,6 +176,13 @@ export function WatchRoomHeader({
           )}
         </button>
       </div>
+      <button
+        className="watch-desktop-settings"
+        aria-label="Room settings"
+        onClick={() => navigate("more")}
+      >
+        <Settings aria-hidden />
+      </button>
     </header>
   );
 }

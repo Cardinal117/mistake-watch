@@ -1,6 +1,13 @@
 "use client";
-import { useMemo, useRef, useState } from "react";
-import { ArrowLeft, Film, Folder, Search } from "lucide-react";
+import { useMemo, useRef, useState, type RefObject } from "react";
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Film,
+  Folder,
+  Search,
+} from "lucide-react";
 import type { LiveRoomState } from "@/lib/spacetime";
 import type { MediaPreferenceController } from "@/lib/recommendations/use-media-preferences";
 import { GRID_CATALOGUE_BATCH_SIZE } from "@/lib/media/catalogue-window";
@@ -9,9 +16,13 @@ import type { useMediaLibrary } from "../media-hub/use-media-library";
 import { mediaAssetToHubItem } from "../library/media-asset-item";
 import { LazyMediaPoster } from "../library/lazy-media-poster";
 import { WatchCollectionFilter } from "./watch-collection-filter";
+import { WatchCatalogueCard } from "./watch-catalogue-card";
 import { WatchMediaDetails } from "./watch-media-details";
+import { useWatchPlayCoordinator } from "./use-watch-media-actions";
+import "./watch-catalogue-polish.css";
 
 type Library = ReturnType<typeof useMediaLibrary>;
+
 export function WatchBrowser({
   library,
   items,
@@ -21,6 +32,8 @@ export function WatchBrowser({
   onAdd,
   onManage,
   isOwner,
+  searchQuery,
+  onSearchQueryChange,
 }: {
   library: Library;
   items: WatchMediaHubItem[];
@@ -30,16 +43,25 @@ export function WatchBrowser({
   onAdd(): void;
   onManage(): void;
   isOwner: boolean;
+  searchQuery?: string;
+  onSearchQueryChange?(query: string): void;
 }) {
   const [tab, setTab] = useState<"discover" | "library" | "history">(
     "discover",
   );
-  const [query, setQuery] = useState("");
+  const [localQuery, setLocalQuery] = useState("");
   const [folderId, setFolderId] = useState<string | null>(null);
   const [limit, setLimit] = useState(GRID_CATALOGUE_BATCH_SIZE);
   const [selected, setSelected] = useState<WatchMediaHubItem | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const collectionRowRef = useRef<HTMLDivElement>(null);
+  const readyRowRef = useRef<HTMLDivElement>(null);
+  const recentRowRef = useRef<HTMLDivElement>(null);
+  const hasExternalSearch =
+    searchQuery !== undefined && onSearchQueryChange !== undefined;
+  const query = hasExternalSearch ? searchQuery : localQuery;
+  const playCoordinator = useWatchPlayCoordinator(liveRoom);
   const allowed = library.libraryAccess?.canAccessUploadedCatalogue === true;
   const assets = useMemo(
     () =>
@@ -89,6 +111,22 @@ export function WatchBrowser({
     setFolderId(null);
     setLimit(GRID_CATALOGUE_BATCH_SIZE);
   }
+  function changeQuery(next: string) {
+    if (hasExternalSearch) {
+      onSearchQueryChange(next);
+    } else {
+      setLocalQuery(next);
+    }
+    setLimit(GRID_CATALOGUE_BATCH_SIZE);
+  }
+  function scrollRow(row: RefObject<HTMLDivElement | null>, direction: -1 | 1) {
+    row.current?.scrollBy({
+      left: direction * Math.max(260, row.current.clientWidth * 0.78),
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
+  }
   function openDetails(item: WatchMediaHubItem) {
     triggerRef.current = document.activeElement as HTMLElement;
     setSelected(item);
@@ -105,47 +143,43 @@ export function WatchBrowser({
   const selectedVisible = Boolean(
     currentSelected && (currentSelected.status !== "library" || allowed),
   );
+  const showGenericShelf = tab !== "discover" || Boolean(query || folderId);
+  const canShowResults = tab === "history" || (allowed && !library.assetError);
 
-  function cards(list: WatchMediaHubItem[], eager = false) {
+  function cards(
+    list: WatchMediaHubItem[],
+    eager = false,
+    variant: "grid" | "ready" | "recent" = "grid",
+    rowRef?: RefObject<HTMLDivElement | null>,
+  ) {
     return (
-      <div className="watch-card-grid">
+      <div
+        className={`watch-card-grid watch-card-grid--${variant}`}
+        ref={rowRef}
+      >
         {list.map((item, index) => (
-          <button
-            className="watch-media-card"
+          <WatchCatalogueCard
+            eager={eager && index < 4}
+            item={item}
             key={item.id}
-            onClick={() => openDetails(item)}
-            aria-label={`Details: ${item.title}`}
-          >
-            <span className="watch-card-art">
-              {item.thumbnailUrl ? (
-                <LazyMediaPoster
-                  src={item.thumbnailUrl}
-                  eager={eager && index < 4}
-                  scrollRootRef={scrollRef}
-                />
-              ) : (
-                <Film aria-hidden />
-              )}
-              {item.isUnavailable && (
-                <span className="watch-unavailable">Unavailable</span>
-              )}
-            </span>
-            <span className="watch-card-title">{item.title}</span>
-            <span className="watch-card-meta">
-              {item.sourceType === "youtube"
-                ? "YouTube"
-                : item.status === "library"
-                  ? "Library"
-                  : "Room media"}
-              <span>{item.duration}</span>
-            </span>
-          </button>
+            liveRoom={liveRoom}
+            onDetails={() => openDetails(item)}
+            playCoordinator={playCoordinator}
+            roomId={roomId}
+            scrollRootRef={scrollRef}
+            showActions={variant === "ready"}
+          />
         ))}
       </div>
     );
   }
   return (
-    <div className="watch-browser" data-details={selectedVisible}>
+    <div
+      className="watch-browser"
+      data-details={selectedVisible}
+      data-external-search={hasExternalSearch}
+      data-tab={tab}
+    >
       {selectedVisible ? (
         <div className="watch-details-nav">
           <button className="watch-back" onClick={closeDetails}>
@@ -179,7 +213,7 @@ export function WatchBrowser({
         ref={scrollRef}
         hidden={Boolean(selectedVisible)}
       >
-        <label className="watch-search">
+        <label className="watch-search watch-browser-search">
           <Search aria-hidden />
           <input
             aria-label="Search media"
@@ -187,10 +221,7 @@ export function WatchBrowser({
               tab === "history" ? "Search room history" : "Search your library"
             }
             value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setLimit(GRID_CATALOGUE_BATCH_SIZE);
-            }}
+            onChange={(e) => changeQuery(e.target.value)}
             type="search"
           />
         </label>
@@ -224,7 +255,7 @@ export function WatchBrowser({
           <h2>
             {folderName ||
               (tab === "discover"
-                ? "Tonight, together"
+                ? "Discover"
                 : tab === "library"
                   ? "Your library"
                   : "Recently watched together")}
@@ -273,8 +304,8 @@ export function WatchBrowser({
               <button onClick={onAdd}>Find a video or add a link</button>
             </div>
           )}
-        {(allowed || tab === "history") && (
-          <section className="watch-shelf">
+        {showGenericShelf && canShowResults && (
+          <section className="watch-shelf" data-watch-shelf={tab}>
             <div className="watch-shelf-heading">
               <h3>
                 {folderName
@@ -285,19 +316,8 @@ export function WatchBrowser({
                       ? "Room history"
                       : "Ready to watch"}
               </h3>
-              {tab === "discover" && !query && (
-                <button onClick={() => changeTab("library")}>
-                  View library
-                </button>
-              )}
             </div>
-            {cards(
-              filtered.slice(
-                0,
-                tab === "discover" && !query && !folderId ? 8 : limit,
-              ),
-              true,
-            )}
+            {cards(filtered.slice(0, limit), true)}
             {!filtered.length && !library.assetLoading && (
               <div className="watch-empty">
                 <Film />
@@ -316,28 +336,46 @@ export function WatchBrowser({
                 {!query && <button onClick={onAdd}>Add media</button>}
               </div>
             )}
-            {(tab !== "discover" || query || folderId) &&
-              filtered.length > limit && (
-                <button
-                  className="watch-show-more"
-                  onClick={() =>
-                    setLimit((count) => count + GRID_CATALOGUE_BATCH_SIZE)
-                  }
-                >
-                  Show more · {Math.min(limit, filtered.length)} of{" "}
-                  {filtered.length}
-                </button>
-              )}
+            {filtered.length > limit && (
+              <button
+                className="watch-show-more"
+                onClick={() =>
+                  setLimit((count) => count + GRID_CATALOGUE_BATCH_SIZE)
+                }
+              >
+                Show more · {Math.min(limit, filtered.length)} of{" "}
+                {filtered.length}
+              </button>
+            )}
           </section>
         )}
         {tab === "discover" && !query && !folderId && (
           <>
             {collections.length > 0 && (
-              <section className="watch-shelf">
+              <section className="watch-shelf" data-watch-shelf="collections">
                 <div className="watch-shelf-heading">
                   <h3>Your collections</h3>
+                  <div className="watch-shelf-heading-actions">
+                    <button onClick={() => changeTab("library")}>
+                      View all
+                    </button>
+                    <button
+                      className="watch-shelf-arrow"
+                      aria-label="Previous collections"
+                      onClick={() => scrollRow(collectionRowRef, -1)}
+                    >
+                      <ChevronLeft aria-hidden />
+                    </button>
+                    <button
+                      className="watch-shelf-arrow"
+                      aria-label="Next collections"
+                      onClick={() => scrollRow(collectionRowRef, 1)}
+                    >
+                      <ChevronRight aria-hidden />
+                    </button>
+                  </div>
                 </div>
-                <div className="watch-collection-grid">
+                <div className="watch-collection-grid" ref={collectionRowRef}>
                   {collections.slice(0, 12).map(({ folder, items: group }) => (
                     <button
                       key={folder.id}
@@ -376,23 +414,74 @@ export function WatchBrowser({
                 </div>
               </section>
             )}
+            {allowed && !library.assetError && (
+              <section className="watch-shelf" data-watch-shelf="ready">
+                <div className="watch-shelf-heading">
+                  <h3>Ready to watch</h3>
+                  <div className="watch-shelf-heading-actions">
+                    <button onClick={() => changeTab("library")}>
+                      View library
+                    </button>
+                    <button
+                      className="watch-shelf-arrow"
+                      aria-label="Previous ready to watch items"
+                      onClick={() => scrollRow(readyRowRef, -1)}
+                    >
+                      <ChevronLeft aria-hidden />
+                    </button>
+                    <button
+                      className="watch-shelf-arrow"
+                      aria-label="Next ready to watch items"
+                      onClick={() => scrollRow(readyRowRef, 1)}
+                    >
+                      <ChevronRight aria-hidden />
+                    </button>
+                  </div>
+                </div>
+                {cards(assets.slice(0, 8), true, "ready", readyRowRef)}
+                {!assets.length && !library.assetLoading && (
+                  <div className="watch-empty">
+                    <Film aria-hidden />
+                    <h3>Nothing ready here yet</h3>
+                    <p>Ready media will appear here as your library grows.</p>
+                    <button onClick={onAdd}>Add media</button>
+                  </div>
+                )}
+              </section>
+            )}
+            {history.length > 0 && (
+              <section className="watch-shelf" data-watch-shelf="recent">
+                <div className="watch-shelf-heading">
+                  <h3>Recently watched</h3>
+                  <div className="watch-shelf-heading-actions">
+                    <button onClick={() => changeTab("history")}>
+                      View history
+                    </button>
+                    <button
+                      className="watch-shelf-arrow"
+                      aria-label="Previous recently watched items"
+                      onClick={() => scrollRow(recentRowRef, -1)}
+                    >
+                      <ChevronLeft aria-hidden />
+                    </button>
+                    <button
+                      className="watch-shelf-arrow"
+                      aria-label="Next recently watched items"
+                      onClick={() => scrollRow(recentRowRef, 1)}
+                    >
+                      <ChevronRight aria-hidden />
+                    </button>
+                  </div>
+                </div>
+                {cards(history.slice(0, 4), false, "recent", recentRowRef)}
+              </section>
+            )}
             {upcoming.length > 0 && (
-              <section className="watch-shelf">
+              <section className="watch-shelf" data-watch-shelf="upcoming">
                 <div className="watch-shelf-heading">
                   <h3>Coming up in this room</h3>
                 </div>
                 {cards(upcoming.slice(0, 4))}
-              </section>
-            )}
-            {history.length > 0 && (
-              <section className="watch-shelf">
-                <div className="watch-shelf-heading">
-                  <h3>Recently watched together</h3>
-                  <button onClick={() => changeTab("history")}>
-                    View history
-                  </button>
-                </div>
-                {cards(history.slice(0, 4))}
               </section>
             )}
           </>
@@ -404,6 +493,7 @@ export function WatchBrowser({
             key={currentSelected.id}
             item={currentSelected}
             liveRoom={liveRoom}
+            playCoordinator={playCoordinator}
             roomId={roomId}
             preferences={preferences}
             onClose={closeDetails}

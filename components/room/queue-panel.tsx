@@ -60,6 +60,7 @@ export function QueuePanel({
   const loadDisabled = !canLoadSource || !isConnected;
   const manageDisabled = !canManageQueue || !isConnected;
   const hub = presentation === "hub";
+  const rail = presentation === "watch-rail";
   const workspace = presentation === "watch-workspace";
 
   function applyQueueShuffle(strategy: "shuffle" | "smart") {
@@ -98,8 +99,14 @@ export function QueuePanel({
   }
 
   return (
-    <div className={cx("grid min-w-0", hub ? "gap-3" : "gap-4")} id={id}>
-      {!workspace && (
+    <div
+      className={cx(
+        "grid min-w-0",
+        rail ? "watch-mini-queue-panel min-h-0" : hub ? "gap-3" : "gap-4",
+      )}
+      id={id}
+    >
+      {!workspace && !rail && (
         <div
           className={cx(
             hub
@@ -134,7 +141,7 @@ export function QueuePanel({
         </div>
       )}
 
-      {hub || workspace ? null : (
+      {hub || workspace || rail ? null : (
         <Button
           className="w-full"
           disabled={!isConnected || (!canAddQueue && !canLoadSource)}
@@ -147,7 +154,7 @@ export function QueuePanel({
         </Button>
       )}
 
-      {!workspace && (
+      {!workspace && !rail && (
         <AddMediaDialog
           addDisabled={addDisabled}
           canAddQueue={canAddQueue}
@@ -169,21 +176,24 @@ export function QueuePanel({
 
       <QueueNotifications notifications={notifications} />
 
-      <QueueControls
-        compact={workspace}
-        canManageQueue={canManageQueue}
-        hub={hub}
-        manageDisabled={manageDisabled}
-        mode={mode}
-        onClearQueue={onClearQueue}
-        onQueueModeChange={handleQueueModeChange}
-        onShuffle={applyQueueShuffle}
-        queuedItemsLength={queuedItems.length}
-        queueMode={queueMode}
-      />
+      {
+        <QueueControls
+          compact={workspace || rail}
+          canManageQueue={canManageQueue}
+          hub={hub}
+          manageDisabled={manageDisabled}
+          mode={mode}
+          onClearQueue={onClearQueue}
+          onQueueModeChange={handleQueueModeChange}
+          onShuffle={applyQueueShuffle}
+          queuedItemsLength={queuedItems.length}
+          queueMode={queueMode}
+        />
+      }
 
       <QueueContent
-        compact={workspace}
+        compact={workspace || rail}
+        desktopRows={rail}
         manageDisabled={manageDisabled}
         measureQueueAction={measureQueueAction}
         mode={mode}
@@ -196,6 +206,7 @@ export function QueuePanel({
         queuedIndexById={queuedIndexById}
         queuedItemsLength={queuedItems.length}
         roomErrors={roomErrors}
+        watchRail={rail}
         upcomingItems={upcomingItems}
       />
     </div>

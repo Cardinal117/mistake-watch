@@ -8,7 +8,9 @@ qa(
     await page.goto("/dev/watch-design");
     await expect(page.locator("video")).toHaveJSProperty("readyState", 4);
     await page.evaluate(() => window.watchQA?.setPlaybackPermission(false));
-    await page.getByRole("button", { name: "Queue", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Open full queue", exact: true })
+      .click();
     await expect(
       page.getByRole("button", {
         name: "Drag The Long Way Home to reorder",
@@ -113,7 +115,7 @@ qa(
       await volume.evaluate((element) => getComputedStyle(element).appearance),
     ).toBe("none");
     await volume.fill("37");
-    await expect(page.locator(".watch-volume-value")).toHaveText("37%");
+    await expect(volume).toHaveValue("37");
     await expect(volume).toHaveCSS("--slider-progress", "37%");
     const seek = page.getByRole("slider", {
       name: "Playback position",
@@ -292,7 +294,11 @@ for (const width of [390, 1440])
     async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await open(page);
-      await page.getByRole("button", { name: "Queue", exact: true }).click();
+      if (width >= 1024)
+        await page
+          .getByRole("button", { name: "Open full queue", exact: true })
+          .click();
+      else await page.getByRole("button", { name: "Queue", exact: true }).click();
       const content = page.locator(".watch-content");
       await expect(
         content.getByRole("heading", { name: "Queue", exact: true }),
