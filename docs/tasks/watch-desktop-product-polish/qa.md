@@ -55,7 +55,8 @@ expanded Up next, 128px volume track/44px hit area with a real value change,
 adjacent right-aligned back/dock buttons, four desktop sizes including 1024x600,
 and preserved provider identity. Final typecheck and lint passed again.
 
-Production clean-export build and deployment receipt remain the release gate.
+Production clean-export build passed and deployment was promoted/live-verified.
+See release.md.
 
 ## Scope isolation
 

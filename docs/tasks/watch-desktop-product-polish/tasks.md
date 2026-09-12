@@ -21,4 +21,6 @@ Unrelated dirty files remain excluded. Standalone demo approval is inspection on
   issues; corrected with focused regression coverage.
 - Final visual/navigation and independent review checks passed, including owner
   refinements to Cinema spacing, volume and right-aligned view controls.
-- Clean scoped release/deployment pending; no production claim yet.
+- Clean release a593c72 promoted and live-verified; see release.md.
+- Standalone navbar/loading/theme inspection completed after release; see
+  aperture-inspection.md for recommendations. No branding integration performed.

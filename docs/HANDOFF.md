@@ -1,5 +1,25 @@
 # Mistake Watch Handoff
 
+## Live Watch desktop polish — 2026-09-12
+
+Implementation `a593c72` is live. Browse has anchored media, bounded catalogue
+shelves/direct actions and a three-item queue preview. Expanded Watch has an
+attached searchable full mini queue, wider volume control, no redundant Up next,
+and right-aligned Back to catalogue / Dock controls. Shared Listen mode tabs,
+dynamic accents and a single mounted provider are preserved.
+
+Final responsive, action, permission and queue QA passed, alongside typecheck,
+lint and clean production build. Deployment `dpl_DAkk7ZnHk2N39H3vu8aPkQ4xg7fK`
+is promoted and custom-domain verified: health/ready200, excluded review/QA404.
+No database or Spacetime deployment. Recording-review work remains local.
+See [QA and release](tasks/watch-desktop-product-polish/release.md).
+
+After release, standalone aperture/navbar/loading demos were inspected. Proposed
+next slice is shared optimized branding/navbar, then unified room loading; no
+branding integration is approved by this inspection alone. See
+[inspection](tasks/watch-desktop-product-polish/aperture-inspection.md).
+Refresh open clients for owner device/audio QA.
+
 ## Live Listen player polish â€” 2026-09-12
 
 Implementation `2da2d7d` is live: smaller mobile player, ambient artwork,
