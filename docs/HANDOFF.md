@@ -1,5 +1,20 @@
 # Mistake Watch Handoff
 
+## Live Watch consolidation - 2026-09-12
+
+Implementation `55d8b2c` is live: unified desktop Queue/History, full-width player
+controls, docked spacing without the redundant heading or horizontal overflow,
+blurred current artwork, natural numeric library/collection ordering, default
+history list with Cards toggle, and compact Recently watched rows.
+
+69 browser checks across final/targeted runs, 3 sorting unit tests, independent
+reviews, typecheck, lint and builds passed. Production deployment
+`dpl_8RtyaXWvU5gGPbMgksNN1a9vc2oK` is promoted and verified on the custom domain:
+health/ready 200, excluded review/QA routes 404. No database or Spacetime publish.
+Unrelated recording-review work remains local. Refresh clients for owner audio QA.
+See [scope, QA and receipt](tasks/watch-desktop-product-polish/consolidation.md).
+Branding integration remains pending.
+
 ## Live Watch desktop polish — 2026-09-12
 
 Implementation `a593c72` is live. Browse has anchored media, bounded catalogue

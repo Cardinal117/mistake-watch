@@ -30,4 +30,4 @@ Unrelated dirty files remain excluded. Standalone demo approval is inspection on
 
 Implemented and locally QA-passed: unified desktop Queue/History, natural catalogue
 sorting, default history list, compact recent rows, blurred current artwork and
-full-width/inset player controls. See consolidation.md. Release pending.
+full-width/inset player controls. See consolidation.md. Implementation `55d8b2c` is deployed and live-verified; receipt recorded there.

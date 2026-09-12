@@ -49,6 +49,18 @@ reachable scrolling only for genuinely constrained heights/large text.
 - Browser verification uses local deterministic media/service fixtures. Production
   audio and member-device behavior remain owner QA. No real room was mutated.
 
-Production clean-export deployment and receipt pending. Unrelated recording-review
+Production clean-export deployment is complete. Unrelated recording-review
 files remain excluded. The code keeps a no-source queue workspace and the mobile
 queue destination; desktop with active media uses the attached Queue/History only.
+
+## Production receipt - 2026-09-12
+
+- Implementation `55d8b2c` pushed to the task branch and `main` after explicit approval.
+- Clean Git archive deployed; unrelated recording-review files and local secrets excluded.
+- Vercel production build passed. Deployment `dpl_8RtyaXWvU5gGPbMgksNN1a9vc2oK`
+  promoted after candidate readiness passed.
+- Candidate: https://mistake-watch-16wsssvxm-cardinal117s-projects.vercel.app
+- Live domain https://watch.mistakestudios.com resolves to this deployment.
+- Live `/api/health` and `/api/ready`: 200; Supabase and Spacetime ready.
+- Excluded `/api/recommendations/recording` and `/dev/watch-design`: 404.
+- No database migration or Spacetime publish. Refresh clients before owner audio/device QA.
