@@ -1,5 +1,16 @@
 # Mistake Watch Handoff
 
+## Live explicit Play next ordering — 2026-09-12
+
+Commit `9c559a7`: latest explicit Next request puts the chosen occurrence first
+among upcoming items, ahead of older Next markers and pins, preserving current
+playback and other relative order. Queue buttons are commands, not toggles.
+Old Next markers clear on a new Next request; no automatic queue migration.
+Server published compatibly; frontend `dpl_E7VLWV5NebBZwGJeKgQ5nC2NPc2X` promoted
+and live-verified (health200, ready200, review404). 213 queue/server and 6 browser
+tests, typechecks, lint and builds pass. Refresh open clients before owner QA.
+See [ordering fix and receipt](tasks/queue-play-next-order/task.md).
+
 ## Live queue repeat correction — 2026-09-12
 
 Commit `46f3461` fixes Listen header search Add/Next duplicate rejection and the

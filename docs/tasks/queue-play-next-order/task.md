@@ -45,3 +45,17 @@ Keep unrelated recording-review work excluded. Record deployment separately.
   styles. This correction changes commands/accessibility labels only; typography
   and suppressions are deliberately untouched.
 - Live music/multi-device listening was not simulated in the owner's room.
+
+## Released
+
+Commit `9c559a7` pushed to main and the task branch. Local application build passed.
+Compatible Spacetime module published with --delete-data=never, no breaking/schema
+change; generated bindings unchanged and post-generation typecheck passed.
+Clean archive `.tmp/play-next-release` excludes unrelated recording-review work
+and local environment files. Vercel build/TypeScript and candidate readiness pass.
+
+Deployment `dpl_E7VLWV5NebBZwGJeKgQ5nC2NPc2X` promoted to watch.mistakestudios.com;
+live inspection confirms Ready, health200, ready200 and excluded review404.
+Refresh open clients to obtain non-toggle queue controls. Prior frontend is
+`dpl_DXQpN4F1QwwYjAx2nwq5y6e1YpaR`; restoring old ordering also requires republishing
+the server from prior commit 385df01 without data deletion.
