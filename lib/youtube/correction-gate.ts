@@ -19,7 +19,9 @@ export class YouTubeCorrectionGate {
       previous.activeQueueItemId !== state.activeQueueItemId ||
       previous.status !== state.status ||
       previous.positionSeconds !== state.positionSeconds ||
-      Math.abs(previous.serverUpdatedAtMs - state.serverUpdatedAtMs) > 500;
+      previous.playbackRate !== state.playbackRate ||
+      previous.playbackOccurrenceId !== state.playbackOccurrenceId ||
+      previous.serverRevisionMs !== state.serverRevisionMs;
     if (changed) this.state = state;
     return changed;
   }

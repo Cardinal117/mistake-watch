@@ -1,4 +1,5 @@
 "use client";
+import { applyYouTubeCorrection } from "@/lib/youtube/apply-correction";
 
 import {
   useCallback,
@@ -316,26 +317,17 @@ export function YoutubeMediaPlayer({
         playerVideoIdRef.current === currentVideoId;
 
       if (alreadyLoaded) {
-        correctionGate.current.applied(state, Date.now());
-        const expectedPositionSeconds = expectedYouTubePositionAt(
-          state,
-          Date.now(),
-        );
-        const localPositionSeconds = safeNumber(player.getCurrentTime()) ?? 0;
-        const driftSeconds = Math.abs(
-          localPositionSeconds - expectedPositionSeconds,
-        );
-
         applyingRemoteState.current = true;
-
-        if (driftSeconds > 0.75) {
-          player.seekTo(expectedPositionSeconds, true);
-        }
-
-        if (state.status === "playing") {
-          player.playVideo();
-        } else if (state.status === "paused" || state.status === "ended") {
-          player.pauseVideo();
+        if (
+          !applyYouTubeCorrection(
+            player,
+            state,
+            correctionGate.current,
+            Date.now(),
+          )
+        ) {
+          applyingRemoteState.current = false;
+          return;
         }
 
         window.setTimeout(() => {
@@ -387,27 +379,18 @@ export function YoutubeMediaPlayer({
         return;
       }
 
-      const expectedPositionSeconds = expectedYouTubePositionAt(
-        state,
-        Date.now(),
-      );
-      const localPositionSeconds = safeNumber(player.getCurrentTime()) ?? 0;
-      const driftSeconds = Math.abs(
-        localPositionSeconds - expectedPositionSeconds,
-      );
-
       applyingRemoteState.current = true;
-
-      if (driftSeconds > 0.75) {
-        player.seekTo(expectedPositionSeconds, true);
-      }
-
-      if (state.status === "playing") {
-        if (forcePlayAttempt || !isYouTubePlaying(player.getPlayerState())) {
-          player.playVideo();
-        }
-      } else if (state.status === "paused" || state.status === "ended") {
-        player.pauseVideo();
+      if (
+        !applyYouTubeCorrection(
+          player,
+          state,
+          correctionGate.current,
+          Date.now(),
+          forcePlayAttempt,
+        )
+      ) {
+        applyingRemoteState.current = false;
+        return;
       }
 
       window.setTimeout(() => {
@@ -757,7 +740,12 @@ export function YoutubeMediaPlayer({
 
       if (
         preparedSession.current &&
-        preparation.current?.apply(player, preparedSession.current)
+        preparation.current?.apply(
+          player,
+          preparedSession.current,
+          Date.now(),
+          parseYouTubeVideoId(source.url) ?? "",
+        )
       )
         return;
       const localState = player.getPlayerState();
@@ -828,7 +816,7 @@ export function YoutubeMediaPlayer({
         case "hard-seek":
         case "seek":
           player.seekTo(correction.targetPositionSeconds, true);
-          if (correction.shouldPlay) {
+          if (correction.shouldPlay && !isYouTubePlaying(localState)) {
             player.playVideo();
           }
           break;

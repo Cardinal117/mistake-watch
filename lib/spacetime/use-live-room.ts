@@ -9,7 +9,10 @@ import type { QueueMode } from "@/lib/queue/model";
 import type { RoomParticipant, RoomSnapshot } from "@/lib/rooms";
 import { parseUploadedAssetReference } from "@/lib/media/uploaded-playback-reference";
 import { createUploadedPlaybackSessionReference } from "@/lib/media/uploaded-room-session-client";
-import { PreparedYouTubeAutoplay } from "@/lib/youtube/prepared-autoplay";
+import {
+  PreparedYouTubeAutoplay,
+  type PreparedSession,
+} from "@/lib/youtube/prepared-autoplay";
 import { predictNextQueueItem } from "@/lib/player/next-item-preparation";
 import type { LiveRoomState } from "./live-room/client-types";
 import { hasLiveRoomAdmission } from "./live-room/admission";
@@ -244,6 +247,23 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     }
 
     const session = snapshot.session;
+    if (
+      session?.sourceType === "youtube" &&
+      session.sourceUrl &&
+      session.status === "paused" &&
+      input.status === "playing" &&
+      Math.abs(input.positionSeconds - session.positionSeconds) < 0.01
+    ) {
+      youtubeAutoplayPreparation.armCurrent(
+        preparedYouTubeIntent(
+          session.activeQueueItemId ?? "",
+          session.sourceUrl,
+          false,
+        ),
+      );
+      return;
+    }
+    youtubeAutoplayPreparation.cancel();
     const replayCompletedMedia =
       (session?.sourceType === "direct" || session?.sourceType === "hls") &&
       session.status === "ended" &&
@@ -290,8 +310,12 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     thumbnailUrl?: string;
   }) {
     if (!currentMember || !canAddQueue || !reducers) {
-      const request = Promise.reject(new Error("Queue permission or connection is unavailable."));
-      void request.catch(() => setErrorMessage("Queue permission or connection is unavailable."));
+      const request = Promise.reject(
+        new Error("Queue permission or connection is unavailable."),
+      );
+      void request.catch(() =>
+        setErrorMessage("Queue permission or connection is unavailable."),
+      );
       return request;
     }
 
@@ -313,7 +337,9 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       sourceUrl: input.sourceUrl,
       thumbnailUrl: input.thumbnailUrl,
     });
-    void request.catch(() => setErrorMessage("Could not add this track. Please try again."));
+    void request.catch(() =>
+      setErrorMessage("Could not add this track. Please try again."),
+    );
     return request;
   }
 
@@ -368,20 +394,67 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
       return;
     }
 
-    await reducers.playQueueItem({
-      actorMemberId: currentMember.id,
-      clientActionId,
-      queueItemId,
-      roomId: room.id,
-    });
+    const prepareYouTube = uploadedQueueItem?.sourceType === "youtube";
+    if (prepareYouTube && uploadedQueueItem.sourceUrl) {
+      youtubeAutoplayPreparation.arm(
+        preparedYouTubeIntent(queueItemId, uploadedQueueItem.sourceUrl, false),
+      );
+    } else youtubeAutoplayPreparation.cancel();
+    try {
+      await reducers.playQueueItem({
+        actorMemberId: currentMember.id,
+        clientActionId,
+        queueItemId,
+        roomId: room.id,
+      });
 
-    await reducers.setPlaybackState({
-      actorMemberId: currentMember.id,
-      playbackRate: 1,
-      positionSeconds: 0,
-      roomId: room.id,
-      status: "playing",
-    });
+      if (prepareYouTube) return;
+
+      await reducers.setPlaybackState({
+        actorMemberId: currentMember.id,
+        playbackRate: 1,
+        positionSeconds: 0,
+        roomId: room.id,
+        status: "playing",
+      });
+    } catch {
+      youtubeAutoplayPreparation.cancel();
+      setErrorMessage("This track could not start. Please try again.");
+    }
+  }
+
+  function preparedYouTubeIntent(
+    queueItemId: string,
+    sourceUrl: string,
+    requireAutoplay: boolean,
+  ) {
+    return {
+      queueItemId,
+      sourceUrl,
+      requireAutoplay,
+      commit: (positionSeconds: number, expected: PreparedSession) => {
+        if (!reducers || !currentMember) return;
+        void reducers
+          .startPreparedYoutube({
+            actorMemberId: currentMember.id,
+            positionSeconds,
+            roomId: room.id,
+            expectedSourceUrl: expected.sourceUrl ?? "",
+            expectedActiveQueueItemId: expected.activeQueueItemId ?? "",
+            expectedPlaybackOccurrenceId:
+              expected.playbackOccurrenceId ?? undefined,
+            expectedServerUpdatedMs:
+              expected.serverRevisionMs ?? expected.serverUpdatedMs,
+          })
+          .catch(() => {
+            youtubeAutoplayPreparation.cancel();
+            setErrorMessage(
+              "YouTube could not start. Press play to try again.",
+            );
+          });
+      },
+      fail: setErrorMessage,
+    };
   }
 
   async function advanceToNextQueueItem(input?: { autoplay?: boolean }) {
@@ -433,31 +506,13 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     const prepareYouTube =
       input?.autoplay === true && nextQueueItem?.sourceType === "youtube";
     if (prepareYouTube && nextQueueItem?.sourceUrl) {
-      youtubeAutoplayPreparation.arm({
-        queueItemId: nextQueueItem.queueItemId,
-        sourceUrl: nextQueueItem.sourceUrl,
-        commit: (positionSeconds, expected) => {
-          void reducers
-            .startPreparedYoutube({
-              actorMemberId: currentMember.id,
-              positionSeconds,
-              roomId: room.id,
-              expectedSourceUrl: expected.sourceUrl ?? "",
-              expectedActiveQueueItemId: expected.activeQueueItemId ?? "",
-              expectedPlaybackOccurrenceId:
-                expected.playbackOccurrenceId ?? undefined,
-              expectedServerUpdatedMs:
-                expected.serverRevisionMs ?? expected.serverUpdatedMs,
-            })
-            .catch(() => {
-              youtubeAutoplayPreparation.cancel();
-              setErrorMessage(
-                "YouTube could not start. Press play to try again.",
-              );
-            });
-        },
-        fail: setErrorMessage,
-      });
+      youtubeAutoplayPreparation.arm(
+        preparedYouTubeIntent(
+          nextQueueItem.queueItemId,
+          nextQueueItem.sourceUrl,
+          true,
+        ),
+      );
     }
     try {
       if (prepareYouTube && nextQueueItem) {
@@ -751,10 +806,21 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
   }
 
   return {
-    listenerConnection: hasCurrentLiveAuthority && admissionId && listenerIdentity ? { admissionId, identityHex: listenerIdentity, roomId: room.id } : undefined,
+    listenerConnection:
+      hasCurrentLiveAuthority && admissionId && listenerIdentity
+        ? { admissionId, identityHex: listenerIdentity, roomId: room.id }
+        : undefined,
     observeListenerPlayback(sample) {
       if (!hasCurrentLiveAuthority || !reducers || !currentMember) return;
-      void reducers.observeListenerPlayback({ ...sample, roomId: room.id, memberId: currentMember.id }).catch(() => { /* Telemetry never interrupts playback. */ });
+      void reducers
+        .observeListenerPlayback({
+          ...sample,
+          roomId: room.id,
+          memberId: currentMember.id,
+        })
+        .catch(() => {
+          /* Telemetry never interrupts playback. */
+        });
     },
     youtubeAutoplayPreparation,
     addQueueItem,

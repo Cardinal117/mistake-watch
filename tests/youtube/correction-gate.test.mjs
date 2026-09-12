@@ -15,6 +15,34 @@ const seek = {
   targetPositionSeconds: 20,
   shouldPlay: true,
 };
+test("clock estimation changes cannot bypass settling or the drift deadband", () => {
+  const gate = new YouTubeCorrectionGate();
+  gate.applied(state, 0);
+  for (const now of [750, 1500, 4000, 8000]) {
+    assert.equal(
+      gate.allow({
+        state: { ...state, serverUpdatedAtMs: now },
+        correction: { ...seek, driftSeconds: -0.85 },
+        buffering: false,
+        now,
+      }),
+      false,
+    );
+  }
+});
+test("a real command revision still preempts the correction cooldown", () => {
+  const gate = new YouTubeCorrectionGate();
+  gate.applied({ ...state, serverRevisionMs: 10 }, 0);
+  assert.equal(
+    gate.allow({
+      state: { ...state, serverRevisionMs: 11 },
+      correction: seek,
+      buffering: false,
+      now: 100,
+    }),
+    true,
+  );
+});
 test("buffering and delayed iframe acknowledgements do not restart an in-flight seek", () => {
   const gate = new YouTubeCorrectionGate();
   assert.equal(

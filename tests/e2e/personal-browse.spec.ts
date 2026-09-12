@@ -26,6 +26,71 @@ qa(
         ),
     );
     expect(colors[0]).not.toBe(colors[1]);
+    await page.screenshot({
+      path: ".tmp/regulars-ui-qa/regulars-desktop.png",
+      animations: "disabled",
+    });
+  },
+);
+
+qa(
+  "Regulars pages the available set and drag does not open a tile",
+  async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 900 });
+    await setup(page);
+
+    const rail = page.getByRole("region", { name: "Your regulars" });
+    const cards = rail.locator(".personal-regular");
+    await expect(cards).toHaveCount(3);
+    await expect(rail.getByText("Page 1 of 4")).toBeVisible();
+    await expect(
+      page.getByText("Favourites and music you return to"),
+    ).toHaveCount(0);
+
+    const info = page.getByRole("button", { name: "About regular counts" });
+    await info.click();
+    const countHelp = page.getByText(/Seeking can qualify/);
+    await expect(countHelp).toBeVisible();
+    const helpBox = await countHelp.boundingBox();
+    expect(helpBox).not.toBeNull();
+    expect(helpBox!.x).toBeGreaterThanOrEqual(0);
+    expect(helpBox!.x + helpBox!.width).toBeLessThanOrEqual(390);
+    await page.screenshot({
+      path: ".tmp/regulars-ui-qa/regulars-mobile-info.png",
+      animations: "disabled",
+    });
+    await info.click();
+
+    const next = page.getByRole("button", { name: "Next regulars page" });
+    await next.click();
+    await expect(cards.first()).toHaveAttribute("data-media-id", "dQw4w9Wg003");
+    await expect(rail.getByText("Page 2 of 4")).toBeVisible();
+
+    await page
+      .getByRole("button", { name: "Previous regulars page" })
+      .click();
+    const box = await rail.locator(".personal-regular-viewport").boundingBox();
+    expect(box).not.toBeNull();
+    await page.mouse.move(box!.x + box!.width - 24, box!.y + 70);
+    await page.mouse.down();
+    await page.mouse.move(box!.x + 24, box!.y + 70, { steps: 6 });
+    await page.mouse.up();
+
+    await expect(cards.first()).toHaveAttribute("data-media-id", "dQw4w9Wg003");
+    await expect(rail.locator('.personal-regular[data-expanded="true"]')).toHaveCount(0);
+    expect(
+      await page.evaluate(() =>
+        window.watchQA!.calls.filter((call) => call.action === "play"),
+      ),
+    ).toHaveLength(0);
+
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await next.click();
+    expect(
+      await rail.locator(".personal-regular-page").evaluate((element) =>
+        Number.parseFloat(getComputedStyle(element).animationDuration),
+      ),
+    ).toBeLessThanOrEqual(0.001);
   },
 );
 

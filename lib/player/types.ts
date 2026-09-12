@@ -25,6 +25,9 @@ export type CanonicalPlaybackState = {
   positionSeconds: number;
   roomId: string;
   serverUpdatedAtMs: number;
+  /** Stable server command identity, unaffected by local clock estimation. */
+  serverRevisionMs?: number;
+  playbackOccurrenceId?: string | null;
   source: PlaybackSource | null;
   status: PlaybackStatus;
 };

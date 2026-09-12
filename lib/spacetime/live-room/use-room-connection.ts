@@ -15,7 +15,11 @@ import {
   requestLiveRoomAdmission,
 } from "./admission";
 import type { LiveDb, LiveReducers } from "./client-types";
-import { readReducerClockOffset } from "./clock";
+import {
+  readReducerClockOffset,
+  readJoinClockOffset,
+  StableClockOffset,
+} from "./clock";
 import {
   beginRoomConnectionAttempt,
   getFailedRoomConnectionReadiness,
@@ -131,16 +135,26 @@ export function useRoomConnection(room: RoomSnapshot) {
     let shouldLeaveOnCleanup = true;
     const config = getSpacetimeConfig();
     const storedToken = window.localStorage.getItem(tokenStorageKey);
+    const clock = new StableClockOffset();
+    let pendingClockJoin: { admissionId: string; sentAt: number } | null = null;
 
     const refreshSnapshot = (context?: unknown) => {
       if (!liveDb) {
         return;
       }
 
-      const clockOffset = readReducerClockOffset(context, Date.now());
+      const receivedAt = Date.now();
+      const joinOffset = readJoinClockOffset(
+        context,
+        pendingClockJoin,
+        receivedAt,
+      );
+      if (joinOffset !== null) pendingClockJoin = null;
+      const clockOffset =
+        joinOffset ?? readReducerClockOffset(context, receivedAt);
 
       if (clockOffset !== null) {
-        serverClockOffsetMs.current = clockOffset;
+        serverClockOffsetMs.current = clock.sample(clockOffset, Date.now());
       }
 
       // The initial subscription may contain an old playback update. Wait for
@@ -345,6 +359,10 @@ export function useRoomConnection(room: RoomSnapshot) {
           }
 
           setAdmissionId(admission.admissionId);
+          pendingClockJoin = {
+            admissionId: admission.admissionId,
+            sentAt: Date.now(),
+          };
           await connected.reducers.joinRoom({
             admissionId: admission.admissionId,
             admissionToken: admission.admissionToken,

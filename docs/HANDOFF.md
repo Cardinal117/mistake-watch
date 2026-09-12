@@ -1,5 +1,13 @@
 # Mistake Watch Handoff
 
+## Local follow-up: playback readiness and Regulars — 2026-09-12
+
+Owner-approved fixes are in [the playback/Regulars packet](tasks/playback-readiness-regulars-2026-09-12/task.md).
+Manual YouTube readiness, clock/correction stability and compact Regulars browsing
+passed local QA and independent review ([evidence](tasks/playback-readiness-regulars-2026-09-12/qa.md)). This slice is not committed or
+deployed; the live catalogue baseline below remains unchanged. Preserve the
+pre-existing manual recording-review UI/API changes when preparing a release.
+
 ## Active: TASK-030 Personal music catalogue — 2026-09-11
 
 Current live baseline is the single-owner [controlled shadow pilot](tasks/TASK-030-personal-music-catalogue/shadow-pilot-rollout.md), deployment `dpl_BpV2kLTP7yHdrtuQFPfsKQPPPzpb`.

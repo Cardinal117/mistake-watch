@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { Check, ChevronDown } from "lucide-react";
 import type { PersonalTrack } from "@/lib/recommendations/personal-discovery-model";
 
 export function PersonalBrowse({
@@ -46,16 +47,19 @@ export function PersonalBrowse({
         </label>
         {regulars && (
           <>
-            <label>
+            <label className="personal-browse-field">
               Sort regulars
-              <select value={sort} onChange={(e) => setSort(e.target.value)}>
-                <option value="default">Favourites first</option>
-                <option value="plays-desc">Most played</option>
-                <option value="plays-asc">Least played</option>
-                <option value="title">Title A–Z</option>
-              </select>
+              <span className="personal-browse-select">
+                <select value={sort} onChange={(e) => setSort(e.target.value)}>
+                  <option value="default">Favourites first</option>
+                  <option value="plays-desc">Most played</option>
+                  <option value="plays-asc">Least played</option>
+                  <option value="title">Title A–Z</option>
+                </select>
+                <ChevronDown size={16} aria-hidden />
+              </span>
             </label>
-            <label>
+            <label className="personal-browse-field personal-browse-minimum">
               Minimum recorded plays
               <input
                 type="number"
@@ -72,6 +76,9 @@ export function PersonalBrowse({
                 checked={likedOnly}
                 onChange={(e) => setLikedOnly(e.target.checked)}
               />
+              <span className="personal-browse-checkmark" aria-hidden>
+                <Check size={14} />
+              </span>
               Liked only
             </label>
           </>

@@ -16,6 +16,7 @@ import { queueItemToDiscoverySourceCommand } from "@/lib/recommendations/listen-
 import type { DiscoveryPanelProps } from "./discovery-panel";
 import { PersonalTrackView } from "./personal-track";
 import { PersonalBrowse } from "./personal-browse";
+import { PersonalRegularRail } from "./personal-regular-rail";
 import { PersonalFeedbackNotice } from "./personal-feedback-notice";
 import { usePersonalDiscovery } from "./use-personal-discovery";
 import "./personal-discovery.css";
@@ -70,7 +71,10 @@ export function PersonalDiscoveryPanel(props: DiscoveryPanelProps) {
   const activeFeedback =
     data?.feedback.filter((f) => isDiscoverSuppressed(f)) ?? [];
   function play(item: PersonalTrack, surface: DiscoverSurface) {
-    const queued = queuedPersonalTrack(item, items.filter(entry => !entry.pendingAdd));
+    const queued = queuedPersonalTrack(
+      item,
+      items.filter((entry) => !entry.pendingAdd),
+    );
     if (queued ? !canPlay : !canLoadSource) return;
     observe(item.videoId!, surface, "play_requested");
     if (queued) props.onPlayQueueItem(queued.id);
@@ -175,43 +179,24 @@ export function PersonalDiscoveryPanel(props: DiscoveryPanelProps) {
             </>
           ) : (
             <>
-              <header className="personal-section-header">
-                <div>
-                  <h2>Your regulars</h2>
-                  <p>Favourites and music you return to</p>
-                </div>
-                {shelves.regulars.length > 0 && (
-                  <button
-                    id="personal-view-regulars"
-                    onClick={() => viewAll("regulars")}
-                  >
-                    View all <span className="sr-only">regulars</span>
-                  </button>
-                )}
-              </header>
-              <details className="personal-count-help">
-                <summary>
-                  Recorded plays · last {data.countWindowDays} days · About
-                  counts
-                </summary>
-                <p>
-                  Counts recorded completed playback in this room, including
-                  repeats. Seeking can qualify. These are not lifetime totals or
-                  proof of uninterrupted listening.
-                </p>
-              </details>
               {shelves.regulars.length ? (
-                <div className="personal-regular-grid">
-                  {shelves.regulars
-                    .slice(0, 8)
-                    .map((item) => renderTrack(item, "regulars", true))}
-                </div>
+                <PersonalRegularRail
+                  countWindowDays={data.countWindowDays}
+                  items={shelves.regulars}
+                  onViewAll={() => viewAll("regulars")}
+                  renderTrack={(item) => renderTrack(item, "regulars", true)}
+                />
               ) : (
-                <p className="personal-empty">
-                  {data.catalogue?.status === "warming"
-                    ? "Preparing your saved music. Your likes and recorded plays stay saved."
-                    : "Like songs and listen in your Personal room to build your regulars."}
-                </p>
+                <>
+                  <header className="personal-section-header">
+                    <h2>Your regulars</h2>
+                  </header>
+                  <p className="personal-empty">
+                    {data.catalogue?.status === "warming"
+                      ? "Preparing your saved music. Your likes and recorded plays stay saved."
+                      : "Like songs and listen in your Personal room to build your regulars."}
+                  </p>
+                </>
               )}
               <div className="personal-lower">
                 <section

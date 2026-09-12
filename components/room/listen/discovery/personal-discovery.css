@@ -5,8 +5,23 @@
   height: 100%;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-color: rgb(var(--listen-primary) / 0.42) transparent;
+  scrollbar-width: thin;
   padding: 20px 24px 24px;
   color: var(--color-on-surface);
+}
+.personal-discovery::-webkit-scrollbar {
+  width: 8px;
+}
+.personal-discovery::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: var(--radius-full);
+  background: rgb(var(--listen-primary) / 0.38);
+  background-clip: padding-box;
+}
+.personal-discovery::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--listen-primary) / 0.58);
+  background-clip: padding-box;
 }
 .personal-discovery button,
 .personal-track-menu button {
@@ -35,8 +50,7 @@
   line-height: 28px;
   font-weight: 600;
 }
-.personal-section-header p,
-.personal-count-help {
+.personal-section-header p {
   color: var(--color-on-surface-variant);
   font-size: var(--text-label-md);
   line-height: 20px;
@@ -46,10 +60,6 @@
   font-size: var(--text-label-md);
   padding: 0 8px;
   flex-shrink: 0;
-}
-.personal-count-help {
-  margin: -4px 0 12px;
-  font-size: var(--text-label-sm);
 }
 .personal-regular-grid {
   display: grid;

@@ -12,6 +12,7 @@ export type PreparedSession = {
   queueAutoplayEnabled?: boolean;
 };
 type Intent = {
+  requireAutoplay?: boolean;
   queueItemId: string;
   sourceUrl: string;
   commit(position: number, expected: PreparedSession): void;
@@ -50,7 +51,11 @@ export class PreparedYouTubeAutoplay {
     this.allowed = allowed && connected;
     const p = this.pending;
     if (!p) return;
-    if (!session || !this.allowed || session.queueAutoplayEnabled === false) {
+    if (
+      !session ||
+      !this.allowed ||
+      (p.requireAutoplay !== false && session.queueAutoplayEnabled === false)
+    ) {
       this.cancel();
       return;
     }
@@ -72,7 +77,17 @@ export class PreparedYouTubeAutoplay {
       )
         p.baseline = { ...session };
       else this.cancel();
-    } else if (!sameCommand(p.previous, session)) this.cancel();
+    } else if (!sameCommand(p.previous, session)) {
+      // A prior start may already be on the wire when the user selects Next.
+      // Its acknowledgment must not discard the newer manual selection intent.
+      const previousMedia =
+        p.requireAutoplay === false &&
+        session.roomId === p.previous.roomId &&
+        session.activeQueueItemId === p.previous.activeQueueItemId &&
+        session.sourceUrl === p.previous.sourceUrl &&
+        session.playbackOccurrenceId === p.previous.playbackOccurrenceId;
+      if (!previousMedia) this.cancel();
+    }
   }
   arm(intent: Intent) {
     this.cancel();
@@ -84,6 +99,17 @@ export class PreparedYouTubeAutoplay {
       phase: "waiting",
       started: Date.now(),
     };
+  }
+  armCurrent(intent: Intent) {
+    this.arm(intent);
+    if (
+      this.pending &&
+      this.current?.status === "paused" &&
+      this.current.sourceType === "youtube" &&
+      this.current.sourceUrl === intent.sourceUrl
+    ) {
+      this.pending.baseline = { ...this.current };
+    } else this.cancel();
   }
   cancel(stop = true) {
     const pending = this.pending;
@@ -116,7 +142,7 @@ export class PreparedYouTubeAutoplay {
       p.stop = () => player.pauseVideo?.();
       p.phase = "loading";
       p.started = now;
-      player.loadVideoById(videoId, 0);
+      player.loadVideoById(videoId, p.baseline.positionSeconds);
       player.playVideo();
     }
     if (now - p.started > 15000) {
@@ -138,7 +164,12 @@ export class PreparedYouTubeAutoplay {
     )
       return;
     const position = player.getCurrentTime();
-    if (!Number.isFinite(position) || position < 0 || position > 2) return;
+    if (
+      !Number.isFinite(position) ||
+      position < p.baseline.positionSeconds ||
+      position > p.baseline.positionSeconds + 2
+    )
+      return;
     p.phase = "publishing";
     p.commit(position, p.baseline);
   }

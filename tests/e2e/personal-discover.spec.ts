@@ -178,13 +178,9 @@ qa(
     await expect(
       page.getByRole("button", { name: "View all regulars" }),
     ).toBeFocused();
-    await page
-      .getByText(/Recorded plays · last 180 days · About counts/)
-      .click();
+    await page.getByRole("button", { name: "About regular counts" }).click();
     await expect(page.getByText(/Seeking can qualify/)).toBeVisible();
-    await page
-      .getByText(/Recorded plays · last 180 days · About counts/)
-      .click();
+    await page.getByRole("button", { name: "About regular counts" }).click();
     const first = page.locator(".personal-regular").first();
     await first.getByRole("button", { name: /Show actions/ }).click();
     await first.getByRole("button", { name: /More options/ }).click();
@@ -310,7 +306,9 @@ qa(
     await expect(
       page.locator(".personal-recommendations .personal-track-row"),
     ).toHaveCount(0);
-    await expect(page.locator(".personal-regular")).toHaveCount(8);
+    const mountedRegulars = await page.locator(".personal-regular").count();
+    expect(mountedRegulars).toBeGreaterThan(0);
+    expect(mountedRegulars).toBeLessThanOrEqual(8);
   },
 );
 
@@ -532,7 +530,9 @@ for (const width of [390, 1680]) {
       await setup(page, {
         metadataExpiresAt: new Date(Date.now() + 10_000).toISOString(),
       });
-      await expect(page.locator(".personal-regular")).toHaveCount(8);
+      await expect(page.locator(".personal-regular")).toHaveCount(
+        width === 390 ? 3 : 8,
+      );
       await expect(
         page.locator(".personal-recommendations .personal-track-row"),
       ).toHaveCount(4);

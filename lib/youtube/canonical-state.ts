@@ -20,6 +20,8 @@ export function buildYouTubeCanonicalPlaybackState(
     positionSeconds: session.positionSeconds,
     roomId: session.roomId,
     serverUpdatedAtMs: session.serverUpdatedMs,
+    serverRevisionMs: session.serverRevisionMs,
+    playbackOccurrenceId: session.playbackOccurrenceId,
     source: {
       kind:
         session.sourceType === "hls" || session.sourceType === "youtube"

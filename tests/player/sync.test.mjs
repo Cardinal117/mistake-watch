@@ -145,7 +145,7 @@ test("chooseSyncCorrection does not use rate correction for YouTube playback", (
   assert.equal(correction.targetPositionSeconds, 12);
 });
 
-test("chooseSyncCorrection does not use rate correction in listen mode", () => {
+test("chooseSyncCorrection uses gentle rate correction in native listen mode", () => {
   const correction = chooseSyncCorrection({
     clientNowMs: 3_000,
     local: {
@@ -163,11 +163,11 @@ test("chooseSyncCorrection does not use rate correction in listen mode", () => {
     }),
   });
 
-  assert.equal(correction.kind, "none");
+  assert.equal(correction.kind, "set-playback-rate");
   assert.equal(correction.targetPositionSeconds, 12);
 });
 
-test("chooseSyncCorrection seeks listen mode only after meaningful drift", () => {
+test("chooseSyncCorrection smooths meaningful native listen drift", () => {
   const correction = chooseSyncCorrection({
     clientNowMs: 3_000,
     local: {
@@ -185,11 +185,11 @@ test("chooseSyncCorrection seeks listen mode only after meaningful drift", () =>
     }),
   });
 
-  assert.equal(correction.kind, "seek");
+  assert.equal(correction.kind, "set-playback-rate");
   assert.equal(correction.targetPositionSeconds, 12);
 });
 
-test("chooseSyncCorrection seeks for medium drift and hard-seeks for large drift", () => {
+test("chooseSyncCorrection smooths medium drift and hard-seeks for large drift", () => {
   assert.equal(
     chooseSyncCorrection({
       clientNowMs: 3_000,
@@ -200,7 +200,7 @@ test("chooseSyncCorrection seeks for medium drift and hard-seeks for large drift
       },
       state: playbackState(),
     }).kind,
-    "seek",
+    "set-playback-rate",
   );
 
   assert.equal(

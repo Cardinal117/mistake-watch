@@ -87,6 +87,7 @@ function DirectMediaPlayerCore({
     liveRoom.snapshot.session?.queueAutoplayEnabled ?? true,
   );
   const setPlaybackStateRef = useRef(liveRoom.setPlaybackState);
+  const lastSyncSeek = useRef({ command: "", at: -Infinity });
   const updateMediaTitleRef = useRef(liveRoom.updateMediaTitle);
   const activeSourceUrlRef = useRef(liveRoom.snapshot.session?.sourceUrl);
   const mediaSourceUrlRef = useRef<string | null>(null);
@@ -368,6 +369,30 @@ function DirectMediaPlayerCore({
     }
 
     const syncTimer = window.setInterval(() => {
+      const now = Date.now();
+      const command = JSON.stringify([
+        canonicalState.source?.url,
+        canonicalState.activeQueueItemId,
+        canonicalState.playbackOccurrenceId,
+        canonicalState.serverRevisionMs,
+        canonicalState.status,
+        canonicalState.positionSeconds,
+      ]);
+      const newCommand = lastSyncSeek.current.command !== command;
+      // Do not restart an asynchronous seek on each sync tick. A genuinely new
+      // command may supersede it; stalled operations get a bounded retry.
+      if (
+        !newCommand &&
+        (now - lastSyncSeek.current.at < 2500 ||
+          (media.seeking && now - lastSyncSeek.current.at < 8000))
+      )
+        return;
+      if (
+        media.readyState < 2 &&
+        canonicalState.status === "playing" &&
+        !media.ended
+      )
+        return;
       const correction = chooseSyncCorrection({
         clientNowMs: Date.now(),
         local: {
@@ -391,12 +416,14 @@ function DirectMediaPlayerCore({
       switch (correction.kind) {
         case "hard-seek":
         case "seek":
+          lastSyncSeek.current = { command, at: now };
           media.currentTime = correction.targetPositionSeconds;
-          if (correction.shouldPlay) {
+          if (correction.shouldPlay && media.paused) {
             void playMedia(media, setAutoplayBlocked);
           }
           break;
         case "pause-and-seek":
+          lastSyncSeek.current = { command, at: now };
           media.pause();
           media.currentTime = correction.targetPositionSeconds;
           break;
@@ -405,6 +432,7 @@ function DirectMediaPlayerCore({
           void playMedia(media, setAutoplayBlocked);
           break;
         case "set-playback-rate":
+          media.preservesPitch = true;
           media.playbackRate = correction.playbackRate;
           break;
         case "user-interaction-required":
@@ -575,6 +603,8 @@ function buildCanonicalPlaybackState(
     positionSeconds: session.positionSeconds,
     roomId: session.roomId,
     serverUpdatedAtMs: session.serverUpdatedMs,
+    serverRevisionMs: session.serverRevisionMs,
+    playbackOccurrenceId: session.playbackOccurrenceId,
     source: {
       kind:
         session.sourceType === "hls" || session.sourceType === "youtube"

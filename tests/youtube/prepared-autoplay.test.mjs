@@ -34,6 +34,121 @@ function setup() {
   };
   return { prep, commands, loads, player };
 }
+test("manual resume waits for readiness at its paused position with autoplay disabled", () => {
+  const prep = new PreparedYouTubeAutoplay();
+  const current = session({ queueAutoplayEnabled: false, positionSeconds: 42 });
+  const loads = [],
+    commits = [];
+  prep.observe(current, true, true);
+  prep.armCurrent({
+    queueItemId: "next",
+    sourceUrl: current.sourceUrl,
+    requireAutoplay: false,
+    commit: (p) => commits.push(p),
+    fail() {},
+  });
+  const player = {
+    loadVideoById: (_, p) => loads.push(p),
+    playVideo() {},
+    getCurrentTime: () => 42.1,
+  };
+  assert.equal(prep.apply(player, current, 1000, "video"), true);
+  prep.observe(current, true, true);
+  prep.apply(player, current, 5000, "video");
+  assert.deepEqual(loads, [42]);
+  assert.deepEqual(commits, []);
+  prep.ready(player);
+  assert.deepEqual(commits, [42.1]);
+});
+test("manual queued start does not depend on the automatic-next setting", () => {
+  const prep = new PreparedYouTubeAutoplay();
+  prep.observe(
+    session({ activeQueueItemId: "old", queueAutoplayEnabled: false }),
+    true,
+    true,
+  );
+  prep.arm({
+    queueItemId: "next",
+    sourceUrl: session().sourceUrl,
+    requireAutoplay: false,
+    commit() {},
+    fail() {},
+  });
+  const next = session({ queueAutoplayEnabled: false });
+  prep.observe(next, true, true);
+  assert.equal(
+    prep.apply({ loadVideoById() {}, playVideo() {} }, next, 1000, "video"),
+    true,
+  );
+});
+test("a prior start acknowledgment cannot cancel the next manual queue selection", () => {
+  const prep = new PreparedYouTubeAutoplay();
+  const previous = session({
+    activeQueueItemId: "B",
+    playbackOccurrenceId: "B",
+  });
+  prep.observe(previous, true, true);
+  const commits = [];
+  prep.arm({
+    queueItemId: "C",
+    sourceUrl: session().sourceUrl,
+    requireAutoplay: false,
+    commit: (p) => commits.push(p),
+    fail() {},
+  });
+  prep.observe(
+    {
+      ...previous,
+      status: "playing",
+      positionSeconds: 0.1,
+      serverUpdatedMs: 101,
+    },
+    true,
+    true,
+  );
+  const next = session({
+    activeQueueItemId: "C",
+    playbackOccurrenceId: "C",
+    serverUpdatedMs: 102,
+  });
+  prep.observe(next, true, true);
+  const player = {
+    loadVideoById() {},
+    playVideo() {},
+    getCurrentTime: () => 0.1,
+  };
+  assert.equal(prep.apply(player, next, 1000, "video"), true);
+  prep.ready(player);
+  assert.deepEqual(commits, [0.1]);
+});
+test("manual preparation times out once and a late provider callback cannot start it", () => {
+  const prep = new PreparedYouTubeAutoplay();
+  const current = session({ queueAutoplayEnabled: false });
+  let commits = 0,
+    failures = 0,
+    pauses = 0;
+  prep.observe(current, true, true);
+  prep.armCurrent({
+    queueItemId: "next",
+    sourceUrl: current.sourceUrl,
+    requireAutoplay: false,
+    commit: () => commits++,
+    fail: () => failures++,
+  });
+  const player = {
+    loadVideoById() {},
+    playVideo() {},
+    pauseVideo: () => pauses++,
+    getCurrentTime: () => 0.1,
+  };
+  prep.apply(player, current, 1000, "video");
+  assert.equal(prep.apply(player, current, 17000, "video"), false);
+  prep.ready(player);
+  prep.apply(player, current, 18000, "video");
+  assert.equal(commits, 0);
+  assert.equal(failures, 1);
+  assert.equal(pauses, 1);
+});
 test("autoplay keeps the opening while the provider takes several seconds to start", () => {
   const { prep, commands, loads, player } = setup();
   prep.observe(session(), true, true);

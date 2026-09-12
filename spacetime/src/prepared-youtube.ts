@@ -120,17 +120,15 @@ export function registerPreparedYouTubeReducers(helpers: Helpers) {
       if (!authority) return;
       const s = authority.session;
       if (
-        !s.queue_autoplay_enabled ||
         s.source_type !== "youtube" ||
         s.source_url !== args.expected_source_url ||
-        s.active_queue_item_id !== args.expected_active_queue_item_id ||
+        (s.active_queue_item_id ?? "") !== args.expected_active_queue_item_id ||
         s.playback_occurrence_id !== args.expected_playback_occurrence_id ||
         Number(s.server_updated_ms) !== args.expected_server_updated_ms ||
         s.status !== "paused" ||
-        s.position_seconds !== 0 ||
         !Number.isFinite(args.position_seconds) ||
-        args.position_seconds < 0 ||
-        args.position_seconds > 2
+        args.position_seconds < s.position_seconds ||
+        args.position_seconds > s.position_seconds + 2
       )
         return;
       helpers.applyPlaybackUpdate(

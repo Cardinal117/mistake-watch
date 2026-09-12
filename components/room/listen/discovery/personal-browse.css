@@ -92,13 +92,34 @@
   width: 100%;
   min-height: 44px;
   padding: 8px 12px;
-  border: 1px solid var(--color-outline-variant);
+  border: 1px solid color-mix(in srgb, var(--color-outline) 46%, transparent);
   border-radius: var(--radius-sm);
-  background: var(--color-surface-container);
+  background: color-mix(in srgb, var(--color-surface-container) 86%, transparent);
   color: var(--color-on-surface);
+}
+.personal-browse-tools input:not([type="checkbox"]):hover,
+.personal-browse-tools select:hover {
+  border-color: rgb(var(--listen-primary) / 0.42);
+}
+.personal-browse-select {
+  position: relative;
+  display: block;
+}
+.personal-browse-select select {
+  appearance: none;
+  padding-right: 36px;
+}
+.personal-browse-select > svg {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  color: rgb(var(--listen-primary));
+  pointer-events: none;
+  transform: translateY(-50%);
 }
 .personal-browse-tools input[type="number"] {
   max-width: 160px;
+  font-variant-numeric: tabular-nums;
 }
 .personal-browse-tools input::placeholder {
   color: var(--color-on-surface-variant);
@@ -108,13 +129,36 @@
   outline-offset: 2px;
 }
 .personal-browse-tools .personal-browse-check {
+  position: relative;
   display: flex;
   align-items: center;
   min-height: 44px;
   gap: 8px;
 }
 .personal-browse-tools input[type="checkbox"] {
-  accent-color: rgb(var(--listen-primary));
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.personal-browse-checkmark {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid color-mix(in srgb, var(--color-outline) 58%, transparent);
+  border-radius: var(--radius-sm);
+  color: transparent;
+  background: color-mix(in srgb, var(--color-surface-container) 86%, transparent);
+}
+.personal-browse-check input:checked + .personal-browse-checkmark {
+  border-color: rgb(var(--listen-primary) / 0.65);
+  background: rgb(var(--listen-primary) / 0.16);
+  color: rgb(var(--listen-primary));
+}
+.personal-browse-check input:focus-visible + .personal-browse-checkmark {
+  outline: 2px solid rgb(var(--listen-primary));
+  outline-offset: 2px;
 }
 .personal-browse-tools button {
   min-height: 44px;

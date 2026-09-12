@@ -122,9 +122,31 @@ test("ready starts only the still-current paused source", () =>
   assert.deepEqual(run("start_prepared_youtube"), [
     { kind: "start", position: 0.1, status: "playing" },
   ]));
+test("manual readiness works with autoplay disabled and a nonzero pause position", () => {
+  assert.deepEqual(
+    run(
+      "start_prepared_youtube",
+      {
+        queue_autoplay_enabled: false,
+        position_seconds: 42,
+      },
+      { position_seconds: 42.1 },
+    ),
+    [{ kind: "start", position: 42.1, status: "playing" }],
+  );
+});
+test("manual readiness permits a loaded source without an active queue item", () => {
+  assert.equal(
+    run(
+      "start_prepared_youtube",
+      { active_queue_item_id: undefined },
+      { expected_active_queue_item_id: "" },
+    ).length,
+    1,
+  );
+});
 for (const patch of [
   { denied: true },
-  { queue_autoplay_enabled: false },
   { server_updated_ms: 101 },
   { status: "playing" },
   { position_seconds: 25 },

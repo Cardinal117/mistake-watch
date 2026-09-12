@@ -7,8 +7,8 @@ import type {
 
 export const DEFAULT_SYNC_THRESHOLDS = {
   hardSeekDriftSeconds: 1.5,
-  maxRateCorrection: 0.06,
-  rateCorrectionDriftSeconds: 0.35,
+  maxRateCorrection: 0.02,
+  rateCorrectionDriftSeconds: 1.5,
   settledDriftSeconds: 0.075,
 } satisfies SyncThresholds;
 
@@ -117,8 +117,7 @@ export function chooseSyncCorrection({
   }
 
   if (absoluteDrift <= settledDriftSeconds) {
-    return Math.abs(local.playbackRate - canonicalRate) >
-      thresholds.maxRateCorrection / 2
+    return Math.abs(local.playbackRate - canonicalRate) > 0.001
       ? {
           driftSeconds,
           kind: "set-playback-rate",
@@ -186,7 +185,7 @@ export function calculateCorrectivePlaybackRate({
 }
 
 function shouldUseRateCorrection(state: CanonicalPlaybackState) {
-  return state.mode === "watch" && state.source?.kind !== "youtube";
+  return state.source?.kind === "direct" || state.source?.kind === "hls";
 }
 
 function noRateSettledDriftSeconds(state: CanonicalPlaybackState) {

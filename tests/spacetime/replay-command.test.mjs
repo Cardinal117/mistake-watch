@@ -17,6 +17,7 @@ function roomState({
   const sent = [];
   const snapshot = {
     session: {
+      sourceUrl: "https://www.youtube.com/watch?v=M7lc1UVf-VE",
       sourceType,
       status,
       positionSeconds: 120,
@@ -60,7 +61,11 @@ function roomState({
                 snapshot,
                 memberMissingNotice,
                 admissionId: "fixture",
-                reducers: { setPlaybackState: (value) => sent.push(value) },
+                connectionStatus: "connected",
+                reducers: {
+                  setPlaybackState: (value) => sent.push(value),
+                  startPreparedYoutube: async (value) => sent.push(value),
+                },
               }),
             };
           if (spec === "./live-room/admission")
@@ -88,7 +93,7 @@ function roomState({
     currentMember: { id: "member", role },
   });
   live.setPlaybackState({ positionSeconds: position, status: "playing" });
-  return { sent, live };
+  return { sent, live, snapshot };
 }
 
 function command(options) {
@@ -142,6 +147,29 @@ test("ordinary pause/resume preserves its requested position", () => {
 });
 test("YouTube commands retain existing behavior", () => {
   assert.equal(command({ sourceType: "youtube" })[0].positionSeconds, 120);
+});
+test("YouTube resume publishes only after the provider is ready", () => {
+  const { sent, live, snapshot } = roomState({
+    sourceType: "youtube",
+    status: "paused",
+  });
+  assert.equal(sent.length, 0);
+  let loaded = -1;
+  live.youtubeAutoplayPreparation.apply(
+    {
+      loadVideoById: (_, p) => {
+        loaded = p;
+      },
+      playVideo() {},
+    },
+    snapshot.session,
+    Date.now(),
+    "M7lc1UVf-VE",
+  );
+  assert.equal(loaded, 120);
+  live.youtubeAutoplayPreparation.ready({ getCurrentTime: () => 120.1 });
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].positionSeconds, 120.1);
 });
 test("replay cannot bypass guest permissions or missing live admission", () => {
   assert.equal(command({ role: "guest" }).length, 0);
