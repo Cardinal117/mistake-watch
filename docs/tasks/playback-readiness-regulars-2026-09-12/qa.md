@@ -4,7 +4,8 @@
 
 Implementation and independent review pass locally. Subsequent commit, server
 publish and clean frontend candidate verification are recorded in [release.md](release.md).
-Live-domain frontend promotion is still pending approval.
+Live-domain frontend promotion subsequently received explicit approval and passed
+live inspection and health/readiness/protected-route checks.
 
 ## Playback changes
 

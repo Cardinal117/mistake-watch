@@ -12,7 +12,7 @@ The CLI reported no breaking migration and updated the existing database.
 Bindings were regenerated with no source diff; frontend typecheck passed.
 The change is compatible with the previous frontend. No room data was deleted.
 
-## Frontend: QA candidate ready; main domain promotion blocked
+## Frontend: live after explicit promotion approval
 
 - Deployment: `dpl_GZ8EAxwgi53zv7WeW2kDijEVLH5z`.
 - URL: https://mistake-watch-2ckz9b07r-cardinal117s-projects.vercel.app
@@ -29,10 +29,21 @@ Automatic approval review initially rejected candidate deployment over scope/ord
 concerns. Explicit clean-export checks and publishing the compatible server first
 resolved those concerns. Vercel required an explicit team scope for authorization.
 
-The later `vercel promote` request was separately rejected: automatic review
+The initial `vercel promote` request was separately rejected: automatic review
 interpreted the owner's approval as QA deployment authorization, not permission
 to change live production routing. No alternate promotion was attempted.
-`watch.mistakestudios.com` therefore remains on the previous frontend deployment
-`dpl_BpV2kLTP7yHdrtuQFPfsKQPPPzpb`; explicit owner approval to promote this exact
-candidate is the remaining release gate. After approval, promote, read back live
-health/readiness and verify the excluded route stays unavailable.
+The owner subsequently explicitly approved promotion of this exact candidate.
+Promotion succeeded. Live-domain inspection confirms `watch.mistakestudios.com`
+now resolves to `dpl_GZ8EAxwgi53zv7WeW2kDijEVLH5z`, status Ready.
+
+Post-promotion public HTTP checks passed:
+
+- `/api/health`: 200, `ok:true`.
+- `/api/ready`: 200, SpacetimeDB and Supabase ready.
+- `/api/recommendations/recording`: 404 (excluded feature).
+- `/api/recommendations/drain`: 401 (worker remains protected).
+
+Both server and frontend fixes are now live. Real host/guest and same-account
+multi-device audio QA remains owner verification; HTTP checks are not audible
+sync proof. Previous frontend `dpl_BpV2kLTP7yHdrtuQFPfsKQPPPzpb` remains the
+known prior deployment for rollback if needed.

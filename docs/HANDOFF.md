@@ -1,15 +1,16 @@
 # Mistake Watch Handoff
 
-## Local follow-up: playback readiness and Regulars — 2026-09-12
+## Live follow-up: playback readiness and Regulars — 2026-09-12
 
 Owner-approved fixes are in [the playback/Regulars packet](tasks/playback-readiness-regulars-2026-09-12/task.md).
 Manual YouTube readiness, clock/correction stability and compact Regulars browsing
 passed local QA and independent review ([evidence](tasks/playback-readiness-regulars-2026-09-12/qa.md)). Commit `484ed51` is on main;
-the compatible server fix is live. Frontend candidate `dpl_GZ8EAxwgi53zv7WeW2kDijEVLH5z`
-built successfully and passed health/readiness. Automatic approval review blocked
-live-domain promotion pending explicit owner approval. See [release receipt](tasks/playback-readiness-regulars-2026-09-12/release.md).
-The main domain retains the previous frontend. Unrelated recording-review UI/API
-work remains uncommitted and excluded from the candidate.
+the compatible server fix is live. Frontend `dpl_GZ8EAxwgi53zv7WeW2kDijEVLH5z`
+was explicitly approved and promoted to watch.mistakestudios.com. Live inspection,
+health200/readiness200, excluded review404 and protected drain401 all pass.
+See [release receipt](tasks/playback-readiness-regulars-2026-09-12/release.md).
+Unrelated recording-review UI/API work remains uncommitted and excluded.
+Next: owner audio and multi-device synchronization QA on the released changes.
 
 ## Active: TASK-030 Personal music catalogue — 2026-09-11
 
