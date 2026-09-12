@@ -1,6 +1,6 @@
 # Local verification — 12 September 2026
 
-## Post-release width correction (local, not yet deployed)
+## Post-release width correction (deployed)
 
 Owner reported wasted wide-screen space and requested dynamic screen sizing.
 Removed the fixed eight-card page cap; the existing ResizeObserver now computes
@@ -10,6 +10,10 @@ the change and passes with eleven afterward. Resizing to 390px renders three;
 resizing back restores eleven. Mobile paging/drag and reduced-motion checks pass,
 as do scoped ESLint and typecheck. Wide screenshot visually reviewed at
 `.tmp/regulars-ui-qa/regulars-wide-fill.png`. No playback code changed.
+Source commit `8fa6c42` is pushed to main. Clean production deployment
+`dpl_9JR2e4cbJPt9KxjJ1HEDHaFZU7U1` is live on watch.mistakestudios.com;
+Vercel build/typecheck, domain inspection, health200/readiness200 and excluded
+recording-review404 checks passed. Unrelated local work remains excluded.
 
 ## Result
 

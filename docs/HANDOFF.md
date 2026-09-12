@@ -2,6 +2,12 @@
 
 ## Live follow-up: playback readiness and Regulars — 2026-09-12
 
+Latest frontend: responsive Regulars width correction `8fa6c42`, deployed as
+`dpl_9JR2e4cbJPt9KxjJ1HEDHaFZU7U1`. Removes the eight-card cap and adapts to
+the rail width (desktop/mobile resize QA passed). Production build, custom-domain
+inspection, health200/readiness200 and excluded review404 all pass. No backend
+change was needed for this follow-up. The initial combined release follows below.
+
 Owner-approved fixes are in [the playback/Regulars packet](tasks/playback-readiness-regulars-2026-09-12/task.md).
 Manual YouTube readiness, clock/correction stability and compact Regulars browsing
 passed local QA and independent review ([evidence](tasks/playback-readiness-regulars-2026-09-12/qa.md)). Commit `484ed51` is on main;

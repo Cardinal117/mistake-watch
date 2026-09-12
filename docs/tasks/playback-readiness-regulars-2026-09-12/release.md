@@ -1,5 +1,15 @@
 # Release receipt — 12 September 2026
 
+## Subsequent responsive-width fix: live
+
+Owner approved Git and deployment of `8fa6c42`, removing the fixed eight-card cap.
+The commit was pushed to main and the task branch. A clean Git archive, excluding
+unrelated recording-review work and local environment files, built successfully
+on Vercel as `dpl_9JR2e4cbJPt9KxjJ1HEDHaFZU7U1`.
+Live inspection confirms watch.mistakestudios.com points to that Ready deployment.
+Health200, readiness200 and excluded recording-review404 checks pass. No server
+or database deployment was required. Earlier combined release receipts follow.
+
 Source commit: `484ed51` (`fix(playback): stabilize startup sync and refine regulars browsing`).
 Pushed as fast-forwards to `origin/main` and
 `origin/codex/task-030-personal-music-catalogue`.
