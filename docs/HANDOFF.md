@@ -1,5 +1,21 @@
 # Mistake Watch Handoff
 
+## Live Listen player polish — 2026-09-12
+
+Implementation `2da2d7d` is live: smaller mobile player, ambient artwork,
+Watch-style navigation, compact Up next, unboxed YouTube/views/likes, accent
+heart and on-demand volume. Desktop shares the metadata/audio/heart treatment.
+Kaiy nest's own Personal room gets the requested feedback text through a
+server-only account mapping; other accounts and contexts retain default copy.
+
+19 browser tests, 3 personalization tests, typecheck, lint and production builds
+passed. Independent review checked account isolation and provider continuity.
+Deployment `dpl_AaGqRvFpavG6p3NZdgKpV9qSQKYJ` is promoted and verified on the
+custom domain (health200, ready200, excluded recording-review404). No migration
+or Spacetime publish. Unrelated recording-review work remains local.
+See [scope, QA and receipt](tasks/listen-mobile-player-polish/task.md).
+Refresh existing clients before owner device/audio QA.
+
 ## Live explicit Play next ordering — 2026-09-12
 
 Commit `9c559a7`: latest explicit Next request puts the chosen occurrence first
