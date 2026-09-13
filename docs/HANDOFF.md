@@ -1,5 +1,11 @@
 # Mistake Watch Handoff
 
+Mode-icon follow-up: `aa769e1` is live as deployment `dpl_6gsekp6sDWCZNYGHNftGXC8iAtEQ`.
+The aperture animation now starts when the mark becomes visible, preserving the
+outgoing symbol before the destination swap. Sixteen browser checks and twenty
+unit checks passed; build and live readiness verified. See
+[correction and release evidence](tasks/room-brand-loading/icon-transition-fix.md).
+
 ## Live Signal Aperture and room loading — 2026-09-13
 
 The approved SVG navbar and persistent full-screen room-loading milestone is

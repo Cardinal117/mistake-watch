@@ -9,3 +9,5 @@ Test-first browser regression failed before the fix: first visible blade angle w
 Verification: 16 loading browser checks passed, including desktop/mobile sizing, hidden/reduced motion, timeout/recovery and nonblocking completion. Twenty brand/transition unit checks, TypeScript and scoped ESLint passed. Source and destination screenshots were visually inspected. Evidence: `.tmp/room-mode-icon/`, `.tmp/room-mode-icon-green-2`, `.tmp/room-mode-icon-regression`. This is local fixture evidence; no live room was mutated.
 
 Only the screen, regression test and this note belong to the fix. Unrelated recording-review work remains excluded. Existing owner approval covers scoped Git and deployment after QA.
+
+Production: implementation `aa769e1` pushed to main and the task branch. Clean-export Vercel build and candidate readiness passed; deployment `dpl_6gsekp6sDWCZNYGHNftGXC8iAtEQ` promoted. Custom-domain inspection confirms this Ready deployment. Live health/ready return 200; development loading and excluded recording-review routes return 404. No database or Spacetime publish. Refresh existing clients for the correction.
