@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { BrandLockup } from "@/components/brand";
 import Link from "next/link";
 import { Bell, Search } from "lucide-react";
 import { AccountCommandPanel } from "@/components/account";
@@ -20,22 +20,12 @@ export function DashboardNav({ account }: DashboardNavProps) {
         <div className="flex min-w-0 items-center gap-7">
           <Link
             aria-label="Mistake Watch dashboard"
-            className="relative flex h-14 w-[11.5rem] shrink-0 items-center overflow-hidden rounded-md outline-none transition focus-visible:ring-2 focus-visible:ring-primary-fixed-dim/55 sm:w-[13.75rem]"
+            className="room-brand-link relative flex h-14 shrink-0 items-center rounded-md outline-none transition focus-visible:ring-2 focus-visible:ring-primary-fixed-dim/55"
             href="/"
           >
-            <Image
-              alt="Mistake Watch"
-              className="object-contain object-left"
-              fill
-              priority
-              sizes="(min-width: 640px) 220px, 184px"
-              src="/brand/navbar-logo-mistake-watch-signal-aperture-transparent.png"
-            />
+            <BrandLockup compact />
           </Link>
-          <nav
-            className="hidden items-center gap-6 md:flex"
-            aria-label="Modes"
-          >
+          <nav className="hidden items-center gap-6 md:flex" aria-label="Modes">
             {navItems.map((item) => (
               <a
                 className="text-label-md font-semibold text-on-surface-variant transition hover:text-primary-fixed-dim"

@@ -261,7 +261,9 @@ test("room mode switching preserves canonical playback continuity", () => {
     "export const set_queue_autoplay",
   );
 
-  assert.match(clientSwitch, /\.\.\.currentSnapshot\.session/);
+  assert.doesNotMatch(clientSwitch, /setSnapshot/);
+  assert.match(clientSwitch, /await setRoomModeAction/);
+  assert.match(clientSwitch, /await reducers\.updateRoomMode/);
   assert.match(clientSwitch, /mode:\s*result\.mode/);
   assert.doesNotMatch(clientSwitch, /positionSeconds:\s*0/);
   assert.doesNotMatch(clientSwitch, /sourceDurationSeconds:\s*(?:0|null)/);

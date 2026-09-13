@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Headphones, LoaderCircle } from "lucide-react";
 
 import { Button } from "@/components/ui";
+import { RoomTransitionOverlay } from "@/components/ui";
 
 import { AccountCommandPanel } from "@/components/account";
 
@@ -30,6 +31,11 @@ export function PersonalRoomEntry({ account }: { account: AccountSummary }) {
       aria-label="Personal room"
       className="mb-4 flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-md border border-white/10 bg-surface-container-low/50 p-4"
     >
+      <RoomTransitionOverlay
+        active={pending}
+        label="Opening your Personal room"
+        detail="Preparing your room."
+      />
       <div className="min-w-0">
         <h2 className="text-body-md font-semibold text-on-surface">
           Your Personal room
@@ -47,10 +53,13 @@ export function PersonalRoomEntry({ account }: { account: AccountSummary }) {
             setError("");
 
             startTransition(async () => {
-              const result = await openPersonalRoomAction();
-
-              if (result.error) setError(result.error);
-              else router.push(`/rooms/${result.roomId}`);
+              try {
+                const result = await openPersonalRoomAction();
+                if (result.error) setError(result.error);
+                else router.push(`/rooms/${result.roomId}`);
+              } catch {
+                setError("Could not open your room. Please retry.");
+              }
             });
           }}
         >

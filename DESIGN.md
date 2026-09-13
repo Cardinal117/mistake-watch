@@ -135,17 +135,19 @@ The aesthetic follows a **Modern-Technical** approach:
 - **Minimal Clutter:** A "media-first" philosophy where UI elements appear only when needed and vanish to allow for full-bleed content.
 
 ### Signal Aperture Identity
-The Mistake Watch product identity uses the **Signal Aperture** direction as the primary brand mark: cinematic gold aperture/chip blades around a blue play/sync core on a dark glass tile. The mark should feel like a private screening device, not a decorative badge.
+The Mistake Watch product identity uses the **Signal Aperture** direction. The approved September 2026 navbar uses the simplified flat six-leaf aperture and the traced original wordmark. The square application icon retains the original dark glass treatment.
 
 **Usage rules:**
-- Use the supplied transparent horizontal Signal Aperture PNG lockup for the dashboard navbar. Preserve the original concept file in `Logo Concepts/`; app-serving copies may live under `public/brand/` and should be scaled down with CSS rather than replaced by a lesser variant.
+- Use shared `BrandLockup` from `components/brand` for Dashboard, Watch and Listen navigation. Its external SVG wordmark preserves the original lettering contours, silver shading and tiny details; do not replace it with a font. At constrained widths retain the named mark and hide the lettering. Original PNG/concept assets remain preserved.
 - Use the supplied square Signal Aperture icon concept for favicon/app-icon usage. Preserve the original concept file in `Logo Concepts/`; app-serving copies may live under `public/brand/`.
-- Treat the navbar lockup and square icon as the authoritative brand color source. The app remains dark neutral first, but the logo's gold and blue are the primary accent pair across all pages.
-- Keep motion restrained: aperture rotation, blue core pulse, or trace-sweep effects are acceptable for joining, loading, connecting, and syncing states only.
+- Outside room context use the original gold/blue brand pair. In rooms, approved dynamic primary/secondary colors follow the active artwork through the existing theme adapter. Silver lettering stays neutral; primary colors the leaves and Watch lettering, secondary colors the upright mode symbol and tiny details. Lift dark accents for contrast; do not recolor the host crown or error semantics.
+- Keep the navbar still at rest. A mode change may close, swap its hidden Watch/Listen symbol, then reopen once. Unresolved loading may loop the aperture with one secondary arc. No additional sweep, pulse, mechanical ornament or nested loading card.
 - Respect reduced-motion preferences by making logo-derived motion static.
 - Do not overuse the logo inside active media surfaces, queue rows, member cards, or playback controls. Media, artwork, and room actions stay visually dominant.
 - Keep identity roles separate: Signal Aperture is product identity, hardware avatars are user identity, and the crown remains a host-role overlay only.
-- Do not introduce unrelated accent colors for brand work. Use deep charcoal, Signal Aperture gold, Signal Aperture blue, and soft light.
+- Use deep charcoal, the default brand pair or the active room's approved artwork palette, and neutral light text. New preset/custom theme settings remain separate scope.
+
+**Full-screen room loading (approved 13 September 2026):** one persistent root host covers route entry and Watch/Listen transitions, using the same lightweight aperture fallback for streamed entry and TV bundle loading. Cover the outgoing room immediately, reveal the mark after approximately 150ms, and release only on current-room/current-connection readiness plus the matching mounted layout. Animation does not control readiness or playback. The approximately 150ms completion fade is decorative and cannot block interactions. Slow/error states stop at a recoverable timeout; content skeletons and real upload/import progress stay local. Respect reduced motion, hidden tabs, safe areas and keyboard focus. See `docs/tasks/room-brand-loading/` for lifecycle and QA evidence.
 
 ## Colors
 The palette is built on a "Deep Charcoal" foundation to maximize display contrast. From this task forward, the Signal Aperture navbar logo defines the app accent language:

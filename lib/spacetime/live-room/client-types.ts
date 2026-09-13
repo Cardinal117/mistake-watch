@@ -52,7 +52,9 @@ export type LiveDb = {
 };
 
 export type LiveReducers = {
-  observeListenerPlayback(params: import("../generated/types/reducers").ObserveListenerPlaybackParams): Promise<void>;
+  observeListenerPlayback(
+    params: import("../generated/types/reducers").ObserveListenerPlaybackParams,
+  ): Promise<void>;
   prepareYoutubeAutoplay(params: PrepareYoutubeAutoplayParams): Promise<void>;
   startPreparedYoutube(params: StartPreparedYoutubeParams): Promise<void>;
   addQueueItem(params: {
@@ -256,8 +258,20 @@ export type LiveReducers = {
 };
 
 export type LiveRoomState = {
-  listenerConnection?: { admissionId: string; identityHex: string; roomId: string };
-  observeListenerPlayback?(sample: { occurrenceId: string; sequence: bigint; positionSeconds: number; playing: boolean; buffering: boolean; muted: boolean; volume: number }): void;
+  listenerConnection?: {
+    admissionId: string;
+    identityHex: string;
+    roomId: string;
+  };
+  observeListenerPlayback?(sample: {
+    occurrenceId: string;
+    sequence: bigint;
+    positionSeconds: number;
+    playing: boolean;
+    buffering: boolean;
+    muted: boolean;
+    volume: number;
+  }): void;
   youtubeAutoplayPreparation?: PreparedYouTubeAutoplay;
   addQueueItem(input: {
     clientActionId?: string;
@@ -287,6 +301,12 @@ export type LiveRoomState = {
   advanceToNextQueueItem(input?: { autoplay?: boolean }): void;
   connectionStatus: SpacetimeConnectionStatus;
   connectionReadiness: RoomConnectionReadiness;
+  presentationReadiness?: {
+    roomId: string;
+    epoch: number;
+    ready: boolean;
+    mode: "watch" | "listen";
+  };
   errorMessage: string | null;
   grantControl(memberId: string): void;
   kickMember(memberId: string): void;

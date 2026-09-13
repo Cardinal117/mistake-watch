@@ -3,6 +3,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui";
+import { RoomLoadingResolved } from "@/components/ui/room-loading/fallback";
 import { AccountCommandPanel } from "@/components/account";
 import type { AccountSummary } from "@/lib/account/types";
 import {
@@ -51,6 +52,7 @@ export function SharedJoinGate({
   }
   return (
     <main className="mx-auto grid w-full max-w-xl gap-4 p-6 text-on-surface">
+      <RoomLoadingResolved />
       <h1 className="text-headline-md">{data.name}</h1>
       <p>
         This Shared room requires the owner’s approval. Joining does not enable

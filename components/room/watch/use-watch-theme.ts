@@ -41,6 +41,8 @@ export function useWatchTheme(
     "--listen-background-primary": theme.backgroundPrimary,
     "--listen-background-secondary": theme.backgroundSecondary,
     "--listen-primary": readableWatchAccent(theme.primary),
+    "--brand-primary": readableWatchAccent(theme.primary),
+    "--brand-secondary": readableWatchAccent(theme.secondary),
     "--listen-secondary": theme.secondary,
     "--listen-shadow": theme.shadow,
     "--listen-wave": theme.wave,

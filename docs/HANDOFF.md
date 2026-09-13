@@ -1,5 +1,19 @@
 # Mistake Watch Handoff
 
+## Local Signal Aperture and room loading â€” 2026-09-13
+
+The approved SVG navbar and persistent full-screen room-loading milestone is
+implemented locally. Current-room/epoch readiness, authoritative mode changes,
+slow-join recovery, dynamic palette handoff, compact branding and accessible
+error/retry states are verified. 368 unit checks and 48 distinct browser checks
+across targeted runs passed, alongside typecheck, lint and production build.
+See [implementation, QA and limits](tasks/room-brand-loading/qa.md).
+
+Not committed or deployed. Next: owner acceptance and scoped Git/release steps;
+exclude unrelated recording-review files. Custom player buffering and new theme
+settings remain later work. No database or Spacetime publication is required.
+
+
 ## Live Watch consolidation - 2026-09-12
 
 Implementation `55d8b2c` is live: unified desktop Queue/History, full-width player
@@ -15,7 +29,7 @@ Unrelated recording-review work remains local. Refresh clients for owner audio Q
 See [scope, QA and receipt](tasks/watch-desktop-product-polish/consolidation.md).
 Branding integration remains pending.
 
-## Live Watch desktop polish — 2026-09-12
+## Live Watch desktop polish ï¿½ 2026-09-12
 
 Implementation `a593c72` is live. Browse has anchored media, bounded catalogue
 shelves/direct actions and a three-item queue preview. Expanded Watch has an

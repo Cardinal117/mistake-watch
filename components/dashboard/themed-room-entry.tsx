@@ -2,7 +2,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Compass } from "lucide-react";
-import { Button } from "@/components/ui";
+import { Button, RoomTransitionOverlay } from "@/components/ui";
 import { createThemedRoomAction } from "@/lib/rooms/themed-actions";
 export function ThemedRoomEntry() {
   const router = useRouter();
@@ -34,6 +34,11 @@ export function ThemedRoomEntry() {
       }}
     >
       <label className="grid gap-2 text-label-sm">
+        <RoomTransitionOverlay
+          active={pending}
+          label="Creating your Themed room"
+          detail="Preparing your room."
+        />
         Themed room name
         <input
           required

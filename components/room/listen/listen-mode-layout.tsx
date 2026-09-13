@@ -1,4 +1,8 @@
 "use client";
+import {
+  useRoomShellReady,
+  useRoomBrandTheme,
+} from "@/components/ui/room-loading/hooks";
 
 import { artistLabel } from "@/lib/ui/artist-label";
 import { readableWatchAccent } from "@/components/room/watch/watch-accent";
@@ -11,6 +15,7 @@ import {
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
+import { RoomLoadingFallback } from "@/components/ui/room-loading/fallback";
 import { dispatchPlayerVolume } from "@/lib/player/local-controls";
 import {
   getYouTubeThumbnailUrl,
@@ -70,6 +75,11 @@ export function ListenModeLayout({
   liveRoom,
   room,
 }: ListenModeLayoutProps) {
+  useRoomShellReady(
+    room.id,
+    "listen",
+    liveRoom.presentationReadiness?.epoch ?? 0,
+  );
   const [clockMs, setClockMs] = useState(() => Date.now());
   const [tvMode, setTvMode] = useState(false);
   const [tvSettingsOpen, setTvSettingsOpen] = useState(false);
@@ -145,6 +155,8 @@ export function ListenModeLayout({
     "--listen-background-primary": listenTheme.backgroundPrimary,
     "--listen-background-secondary": listenTheme.backgroundSecondary,
     "--listen-primary": listenTheme.primary,
+    "--brand-primary": readableWatchAccent(listenTheme.primary),
+    "--brand-secondary": readableWatchAccent(listenTheme.secondary),
     "--listen-control-accent": readableWatchAccent(listenTheme.primary),
     "--listen-secondary": listenTheme.secondary,
     "--listen-shadow": listenTheme.shadow,
@@ -159,6 +171,7 @@ export function ListenModeLayout({
     "--listen-collapsed-queue-height":
       queuedItems.length > 0 ? "4.5rem" : "3rem",
   } as CSSProperties;
+  useRoomBrandTheme(room.id, listenThemeStyle);
   const desktopShell = useDesktopListenShell();
   const currentPosition = useMemo(() => {
     const canonicalState = buildCanonicalState(liveRoom);
@@ -518,10 +531,9 @@ export function ListenModeLayout({
 
 function ListenTvModeLoadingBoundary() {
   return (
-    <main
-      aria-busy="true"
-      aria-label="Loading TV mode"
-      className="grid h-dvh min-h-0 animate-pulse bg-black"
+    <RoomLoadingFallback
+      label="Opening TV mode"
+      detail="Preparing the room display."
     />
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { Headphones, Monitor } from "lucide-react";
+import { BrandLockup } from "@/components/brand";
 import { AccountCommandPanel } from "@/components/account";
 import { Button, SignalInlineStatus } from "@/components/ui";
 import type { AccountSummary } from "@/lib/account/types";
@@ -157,6 +158,11 @@ export function ListenTechnicalRoomHeader({
           <div className="min-w-0">
             <div className="flex min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-2">
               <div className="flex min-w-0 flex-1 items-center gap-1">
+                <BrandLockup
+                  compact
+                  mode="listen"
+                  className="room-brand-link room-brand-room mr-3"
+                />
                 <input
                   aria-label="Room name"
                   className="min-w-0 max-w-[calc(100%-2.75rem)] flex-[0_1_auto] truncate bg-transparent text-headline-md font-semibold leading-tight text-on-surface outline-none transition placeholder:text-on-surface-variant/50 focus:border-b focus:border-[rgb(var(--listen-primary)/0.78)] disabled:cursor-default"
@@ -181,7 +187,9 @@ export function ListenTechnicalRoomHeader({
                   value={visibleRoomName}
                 />
                 <ListenRoomSaveButton
-                  canSave={room.kind !== "temporary" && liveRoom.canManageAuthority}
+                  canSave={
+                    room.kind !== "temporary" && liveRoom.canManageAuthority
+                  }
                   initialSaved={room.isSaved}
                   key={`${room.id}:${room.isSaved}`}
                   roomId={room.id}

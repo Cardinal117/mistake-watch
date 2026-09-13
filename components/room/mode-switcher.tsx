@@ -1,9 +1,9 @@
 "use client";
+import { useModeTransition } from "@/components/ui/room-loading/hooks";
 
 import { Headphones, Video } from "lucide-react";
 import { useState } from "react";
 
-import { RoomTransitionOverlay } from "@/components/ui";
 import type { RoomSnapshot } from "@/lib/rooms";
 import { cx } from "@/lib/ui";
 
@@ -27,6 +27,7 @@ export function ModeSwitcher({
   mode,
   onSwitchMode,
 }: ModeSwitcherProps) {
+  const switchWithTransition = useModeTransition(onSwitchMode);
   const [pendingMode, setPendingMode] = useState<"listen" | "watch" | null>(
     null,
   );
@@ -41,26 +42,16 @@ export function ModeSwitcher({
     setPendingMode(nextMode);
 
     try {
-      await onSwitchMode(nextMode);
+      await switchWithTransition(nextMode);
     } catch (error) {
       setErrorMessage(getModeSwitchErrorMessage(error));
     } finally {
-      window.setTimeout(() => setPendingMode(null), 300);
+      setPendingMode(null);
     }
   }
 
   return (
     <>
-      <RoomTransitionOverlay
-        active={Boolean(pendingMode)}
-        detail="Updating the room stage for everyone."
-        label={
-          pendingMode === "listen"
-            ? "Switching to listen mode"
-            : "Switching to watch mode"
-        }
-        tone={pendingMode === "listen" ? "amber" : "cyan"}
-      />
       <div
         aria-label="Room mode"
         className={cx(

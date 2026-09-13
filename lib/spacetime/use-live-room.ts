@@ -31,6 +31,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     admissionId,
     listenerIdentity,
     connectionReadiness,
+    presentationReadiness,
     connectionStatus,
     errorMessage,
     memberMissingNotice,
@@ -732,57 +733,18 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
 
   async function switchMode(mode: "listen" | "watch") {
     if (!currentMember || !canManageAuthority || !reducers) {
-      return;
+      throw new Error("Only the current room host can change mode.");
     }
 
-    const previousMode = snapshot.session?.mode ?? room.mode;
-
-    setSnapshot((currentSnapshot) => ({
-      ...currentSnapshot,
-      session: currentSnapshot.session
-        ? {
-            ...currentSnapshot.session,
-            mode,
-          }
-        : currentSnapshot.session,
-    }));
-
-    try {
-      const result = await setRoomModeAction({
-        mode,
-        roomId: room.id,
-      });
-
-      setSnapshot((currentSnapshot) => ({
-        ...currentSnapshot,
-        session: currentSnapshot.session
-          ? {
-              ...currentSnapshot.session,
-              mode: result.mode,
-            }
-          : currentSnapshot.session,
-      }));
-
-      await reducers.updateRoomMode({
-        actorMemberId: currentMember.id,
-        mode: result.mode,
-        roomId: room.id,
-      });
-    } catch (error) {
-      setSnapshot((currentSnapshot) => ({
-        ...currentSnapshot,
-        session: currentSnapshot.session
-          ? {
-              ...currentSnapshot.session,
-              mode: previousMode,
-            }
-          : currentSnapshot.session,
-      }));
-
-      throw error;
-    }
+    // Keep the rendered mode authoritative. The persistent presentation host
+    // supplies immediate feedback while durable and live updates converge.
+    const result = await setRoomModeAction({ mode, roomId: room.id });
+    await reducers.updateRoomMode({
+      actorMemberId: currentMember.id,
+      mode: result.mode,
+      roomId: room.id,
+    });
   }
-
   function setQueueAutoplay(enabled: boolean) {
     if (!currentMember || !canControlPlayback || !reducers) {
       return;
@@ -861,6 +823,7 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     clearRoomRhythmProfile,
     connectionStatus,
     connectionReadiness,
+    presentationReadiness,
     errorMessage,
     grantControl,
     kickMember,

@@ -10,6 +10,7 @@ import {
   Settings,
 } from "lucide-react";
 import { Avatar } from "@/components/ui";
+import { BrandLockup } from "@/components/brand";
 import { WatchLeaveButton } from "./watch-leave-button";
 import { WatchRoomName } from "./watch-room-name";
 import {
@@ -58,11 +59,10 @@ export function WatchRoomHeader({
       <WatchLeaveButton className="watch-icon-button">
         <ArrowLeft />
       </WatchLeaveButton>
-      {/* eslint-disable-next-line @next/next/no-img-element -- Established local brand lockup. */}
-      <img
-        className="watch-brand"
-        src="/brand/navbar-logo-mistake-watch-signal-aperture-transparent.png"
-        alt="Mistake Watch"
+      <BrandLockup
+        compact
+        mode="watch"
+        className="room-brand-link room-brand-room"
       />
       <div className="watch-room-identity">
         <div className="watch-room-title-row">

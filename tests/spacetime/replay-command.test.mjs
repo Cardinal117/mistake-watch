@@ -13,8 +13,11 @@ function roomState({
   admitted = true,
   kicked = false,
   memberMissingNotice = null,
+  setMode = async ({ mode }) => ({ mode }),
 } = {}) {
   const sent = [];
+  const modeActionCalls = [];
+  const modeReducerCalls = [];
   const snapshot = {
     session: {
       sourceUrl: "https://www.youtube.com/watch?v=M7lc1UVf-VE",
@@ -22,6 +25,7 @@ function roomState({
       status,
       positionSeconds: 120,
       sourceDurationSeconds: 120,
+      mode: "watch",
     },
     participants: [],
     permissions: [],
@@ -49,7 +53,11 @@ function roomState({
           if (spec === "react")
             return {
               useMemo: (fn) => fn(),
-              useState: (fn) => [fn()],
+              useRef: (initial) => ({ current: initial }),
+              useState: (initial) => [
+                typeof initial === "function" ? initial() : initial,
+                () => {},
+              ],
               useLayoutEffect: (fn) => fn(),
               useEffect() {},
             };
@@ -65,16 +73,30 @@ function roomState({
                 reducers: {
                   setPlaybackState: (value) => sent.push(value),
                   startPreparedYoutube: async (value) => sent.push(value),
+                  updateRoomMode: async (value) => modeReducerCalls.push(value),
                 },
               }),
             };
+          if (spec === "./live-room/latest-play-request")
+            return load("lib/spacetime/live-room/latest-play-request.ts");
+          if (spec === "./live-room/use-latest-play-request")
+            return load("lib/spacetime/live-room/use-latest-play-request.ts");
+          if (spec === "./latest-play-request")
+            return load("lib/spacetime/live-room/latest-play-request.ts");
           if (spec === "./live-room/admission")
             return load("lib/spacetime/live-room/admission.ts");
           if (spec === "./live-room/snapshot")
             return { mapLiveParticipants: () => [] };
+          if (spec === "@/lib/rooms/actions")
+            return {
+              renameRoomAction: async () => ({}),
+              setRoomModeAction: (input) => {
+                modeActionCalls.push(input);
+                return setMode(input);
+              },
+            };
           if (
             [
-              "@/lib/rooms/actions",
               "@/lib/rooms/shared-actions",
               "@/lib/media/uploaded-playback-reference",
               "@/lib/media/uploaded-room-session-client",
@@ -93,7 +115,7 @@ function roomState({
     currentMember: { id: "member", role },
   });
   live.setPlaybackState({ positionSeconds: position, status: "playing" });
-  return { sent, live, snapshot };
+  return { live, modeActionCalls, modeReducerCalls, sent, snapshot };
 }
 
 function command(options) {
@@ -174,4 +196,47 @@ test("YouTube resume publishes only after the provider is ready", () => {
 test("replay cannot bypass guest permissions or missing live admission", () => {
   assert.equal(command({ role: "guest" }).length, 0);
   assert.equal(command({ admitted: false }).length, 0);
+});
+
+test("mode remains canonical until the durable write and live reducer finish", async () => {
+  let resolveDurable;
+  const durable = new Promise((resolve) => {
+    resolveDurable = resolve;
+  });
+  const state = roomState({ setMode: () => durable });
+
+  const switching = state.live.switchMode("listen");
+  assert.equal(state.snapshot.session.mode, "watch");
+  assert.equal(state.modeActionCalls.length, 1);
+  assert.equal(state.modeReducerCalls.length, 0);
+
+  resolveDurable({ mode: "listen" });
+  await switching;
+  assert.equal(state.snapshot.session.mode, "watch");
+  assert.equal(state.modeReducerCalls.length, 1);
+  assert.equal(state.modeReducerCalls[0].mode, "listen");
+});
+
+test("a durable mode failure leaves the canonical snapshot unchanged", async () => {
+  const state = roomState({
+    setMode: async () => {
+      throw new Error("Durable write failed");
+    },
+  });
+
+  await assert.rejects(state.live.switchMode("listen"), /Durable write failed/);
+  assert.equal(state.snapshot.session.mode, "watch");
+  assert.equal(state.modeReducerCalls.length, 0);
+});
+
+test("mode permission rejection occurs before either write", async () => {
+  const state = roomState({ role: "guest" });
+
+  await assert.rejects(
+    state.live.switchMode("listen"),
+    /Only the current room host can change mode/,
+  );
+  assert.equal(state.snapshot.session.mode, "watch");
+  assert.equal(state.modeActionCalls.length, 0);
+  assert.equal(state.modeReducerCalls.length, 0);
 });

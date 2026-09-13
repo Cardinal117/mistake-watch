@@ -1,0 +1,97 @@
+.mark,
+.lockup {
+  --signal-primary: rgb(
+    var(--brand-primary, var(--listen-primary, 232 182 87))
+  );
+  --signal-secondary: rgb(
+    var(--brand-secondary, var(--listen-secondary, 83 201 237))
+  );
+}
+.mark {
+  display: block;
+  overflow: visible;
+  color: var(--signal-secondary);
+  filter: drop-shadow(
+    0 0 10px color-mix(in srgb, var(--signal-primary) 22%, transparent)
+  );
+}
+.mark[data-tone="amber"] {
+  color: var(--signal-primary);
+}
+.blade {
+  fill: var(--signal-primary);
+}
+.bladeEdge {
+  fill: none;
+  stroke: #101619;
+  stroke-width: 2.5;
+}
+.core {
+  fill: #101619;
+}
+.symbol {
+  fill: currentcolor;
+  transform: scale(1.5);
+  transform-origin: 120px 120px;
+}
+.orbit {
+  fill: none;
+  stroke: var(--signal-secondary);
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+.orbitTrack {
+  opacity: 0.15;
+}
+.orbitArc {
+  opacity: 0.85;
+  stroke-dasharray: 130 540;
+  transform-origin: 120px 120px;
+  animation: signal-aperture-orbit 2400ms linear infinite;
+}
+.mark[data-motion="static"] .orbitArc {
+  animation-play-state: paused;
+}
+.lockup {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+}
+.lockupMark {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: none;
+}
+.wordmark {
+  display: block;
+  width: 12.8125rem;
+  height: auto;
+  flex: none;
+  overflow: visible;
+  shape-rendering: crispEdges;
+  --brand-primary: var(--signal-primary);
+  --brand-secondary: var(--signal-secondary);
+}
+.compact .lockupMark {
+  width: 2rem;
+  height: 2rem;
+}
+.compact .wordmark {
+  width: 10.875rem;
+}
+@media (max-width: 380px) {
+  .compact .wordmark {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orbitArc {
+    animation: none;
+  }
+}
+@keyframes signal-aperture-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}

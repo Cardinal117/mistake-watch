@@ -1,4 +1,5 @@
 "use client";
+import { useModeTransition } from "@/components/ui/room-loading/hooks";
 
 import {
   useEffect,
@@ -21,7 +22,7 @@ import {
   UsersRound,
   Video,
 } from "lucide-react";
-import { PendingLink, RoomTransitionOverlay } from "@/components/ui";
+import { PendingLink } from "@/components/ui";
 import { setRoomSavedAction } from "@/lib/rooms/actions";
 import type { RoomQueueItem, RoomSnapshot } from "@/lib/rooms";
 import type { LiveRoomState } from "@/lib/spacetime";
@@ -47,6 +48,7 @@ export function ListenModeTabs({
   mode: RoomSnapshot["mode"];
   onSwitchMode?(mode: "listen" | "watch"): Promise<void>;
 }) {
+  const switchWithTransition = useModeTransition(onSwitchMode);
   const [pendingMode, setPendingMode] = useState<"listen" | "watch" | null>(
     null,
   );
@@ -65,7 +67,7 @@ export function ListenModeTabs({
     setPendingMode(nextMode);
 
     try {
-      await onSwitchMode(nextMode);
+      await switchWithTransition(nextMode);
     } catch (error) {
       setErrorMessage(
         error instanceof Error && error.message.trim()
@@ -73,22 +75,12 @@ export function ListenModeTabs({
           : "Room mode could not be changed.",
       );
     } finally {
-      window.setTimeout(() => setPendingMode(null), 300);
+      setPendingMode(null);
     }
   }
 
   return (
     <div>
-      <RoomTransitionOverlay
-        active={Boolean(pendingMode)}
-        detail="Updating the room stage for everyone."
-        label={
-          pendingMode === "listen"
-            ? "Switching to listen mode"
-            : "Switching to watch mode"
-        }
-        tone={pendingMode === "listen" ? "amber" : "cyan"}
-      />
       <div
         aria-label="Room mode"
         className="flex w-fit min-w-72 items-end gap-9 px-4"
@@ -271,7 +263,7 @@ export function ListenRoomSettingsMenu({
   showPermissionsAction = true,
   showSaveAction = true,
   themedRoomId,
-  temporary=false,
+  temporary = false,
 }: {
   canSave: boolean;
   controllerMemberId: string | null;
@@ -287,7 +279,7 @@ export function ListenRoomSettingsMenu({
   showPermissionsAction?: boolean;
   showSaveAction?: boolean;
   themedRoomId?: string;
-  temporary?:boolean;
+  temporary?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [permissionsOpen, setPermissionsOpen] = useState(false);

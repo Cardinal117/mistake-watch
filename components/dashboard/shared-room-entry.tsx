@@ -2,7 +2,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Users } from "lucide-react";
-import { Button } from "@/components/ui";
+import { Button, RoomTransitionOverlay } from "@/components/ui";
 import { createSharedRoomAction } from "@/lib/rooms/shared-actions";
 export function SharedRoomEntry() {
   const router = useRouter();
@@ -31,6 +31,11 @@ export function SharedRoomEntry() {
       }}
     >
       <label className="grid min-w-0 flex-1 gap-2 text-label-sm">
+        <RoomTransitionOverlay
+          active={pending}
+          label="Creating your Shared room"
+          detail="Preparing your room."
+        />
         Shared room name
         <input
           className="h-11 min-w-0 rounded-md border border-white/10 bg-surface-container px-3 text-on-surface"

@@ -1,4 +1,8 @@
 "use client";
+import {
+  useRoomShellReady,
+  useRoomBrandTheme,
+} from "@/components/ui/room-loading/hooks";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
@@ -102,6 +106,11 @@ export function WatchModeLayout({
   );
   const shellRef = useWatchDockBounds();
   const dock = useWatchDock(shellRef);
+  useRoomShellReady(
+    room.id,
+    "watch",
+    liveRoom.presentationReadiness?.epoch ?? 0,
+  );
   const viewport = useWatchViewport();
   const library = useMediaLibrary();
   const preferences = useMediaPreferences({
@@ -111,6 +120,7 @@ export function WatchModeLayout({
   });
   const items = useMemo(() => getQueueItems(liveRoom, room), [liveRoom, room]);
   const { style: themeStyle, artwork } = useWatchTheme(liveRoom, items);
+  useRoomBrandTheme(room.id, themeStyle);
   const upcoming = items.filter((i) => i.status === "queued");
   const connected = liveRoom.connectionStatus === "connected";
   const isOwner =

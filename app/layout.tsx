@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
+import { RoomTransitionProvider } from "@/components/ui/room-loading/provider";
 
 export const metadata: Metadata = {
   title: "Mistake Watch",
@@ -33,7 +34,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <link rel="dns-prefetch" href="https://www.youtube-nocookie.com" />
       </head>
       <body>
-        {children}
+        <RoomTransitionProvider>{children}</RoomTransitionProvider>
         <SpeedInsights />
       </body>
     </html>

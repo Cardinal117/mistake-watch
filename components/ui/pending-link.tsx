@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ComponentProps, type MouseEvent } from "react";
+import { type ComponentProps, type MouseEvent } from "react";
+import { useRoomTransitions } from "./room-loading/provider";
 
 import { markRoomTransition } from "@/lib/performance/room-transition";
-import { RoomTransitionOverlay } from "./room-transition-overlay";
 
 type PendingLinkProps = ComponentProps<typeof Link> & {
   loadingDetail?: string;
@@ -17,10 +17,10 @@ export function PendingLink({
   loadingLabel,
   onClick,
   target,
-  tone = "cyan",
+  tone: _tone = "cyan",
   ...props
 }: PendingLinkProps) {
-  const [pending, setPending] = useState(false);
+  const transitions = useRoomTransitions();
 
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
     onClick?.(event);
@@ -36,18 +36,27 @@ export function PendingLink({
       return;
     }
 
-    setPending(true);
+    const href =
+      typeof props.href === "string" ? props.href : props.href.pathname;
+    if (!href) return;
+    const destination = new URL(href, window.location.href);
+    if (
+      destination.origin !== window.location.origin ||
+      destination.pathname === window.location.pathname
+    )
+      return;
+    transitions?.begin({
+      kind: "navigation",
+      path: destination.pathname,
+      label: loadingLabel,
+      detail: loadingDetail,
+      pending: false,
+    });
     markRoomTransition(loadingLabel);
   }
 
   return (
     <>
-      <RoomTransitionOverlay
-        active={pending}
-        detail={loadingDetail}
-        label={loadingLabel}
-        tone={tone}
-      />
       <Link {...props} onClick={handleClick} target={target} />
     </>
   );

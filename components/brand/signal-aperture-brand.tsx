@@ -1,99 +1,236 @@
-import { cx } from "@/lib/ui";
+"use client";
 
-type SignalApertureMarkProps = {
+import { useEffect, useId, useRef, useState } from "react";
+import { cx } from "@/lib/ui";
+import styles from "./signal-aperture.module.css";
+import { getApertureFrame, getIrisBladeAngle } from "./signal-aperture-motion";
+
+export type SignalApertureMode = "listen" | "watch";
+export type SignalApertureMarkProps = {
   animated?: boolean;
   className?: string;
+  initialMode?: SignalApertureMode;
   label?: string;
-  tone?: "cyan" | "amber";
+  mode?: SignalApertureMode;
+  tone?: "amber" | "cyan";
+  transition?: boolean;
 };
-
-type SignalApertureLockupProps = {
+export type BrandLockupProps = {
+  animated?: boolean;
   className?: string;
   compact?: boolean;
+  label?: string;
+  mode?: SignalApertureMode;
 };
+
+const SHEET = "M-400-400H640V81H-400Z";
+const PIVOT = { x: 190.710678, y: 49.289322 };
+
+function ModeSymbol({ mode }: { mode: SignalApertureMode }) {
+  return mode === "listen" ? (
+    <>
+      <path
+        d="M107 125v-6a13 13 0 0 1 26 0v6"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="3.6"
+      />
+      <rect height="13" rx="3" width="7" x="105" y="121" />
+      <rect height="13" rx="3" width="7" x="128" y="121" />
+    </>
+  ) : (
+    <path d="M112 106q-2-1-2 2v25q0 2 3 1l21-12q3-2 0-4Z" />
+  );
+}
 
 export function SignalApertureMark({
   animated = false,
   className,
+  initialMode,
   label,
-  tone = "cyan",
+  mode = "watch",
+  tone,
+  transition = true,
 }: SignalApertureMarkProps) {
-  const title = label ?? "Mistake Watch";
+  const svgRef = useRef<SVGSVGElement>(null);
+  const previousModeRef = useRef(initialMode ?? mode);
+  const [displayedMode, setDisplayedMode] = useState(initialMode ?? mode);
+  const [motionActive, setMotionActive] = useState(false);
+  const id = useId().replaceAll(":", "");
 
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    let frameRequest = 0;
+    const previousMode = previousModeRef.current;
+    const modeChanged = previousMode !== mode;
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    const drawStatic = () => {
+      cancelAnimationFrame(frameRequest);
+      frameRequest = 0;
+      previousModeRef.current = mode;
+      setMotionActive(false);
+      setDisplayedMode(mode);
+      const angle = getIrisBladeAngle(1);
+      svg
+        .querySelectorAll<SVGGElement>("[data-blade-motion]")
+        .forEach((node) =>
+          node.setAttribute(
+            "transform",
+            `rotate(${angle} ${PIVOT.x} ${PIVOT.y})`,
+          ),
+        );
+      svg
+        .querySelector<SVGGElement>("[data-aperture-rotor]")
+        ?.setAttribute("transform", "rotate(0 120 120)");
+    };
+
+    const run = () => {
+      cancelAnimationFrame(frameRequest);
+      frameRequest = 0;
+      if (document.hidden || media.matches) return drawStatic();
+      const isTransition = transition && modeChanged;
+      if (!animated && !isTransition) return drawStatic();
+      setMotionActive(true);
+      const startedAt = performance.now();
+      let symbolSwapped = !isTransition;
+      if (isTransition) setDisplayedMode(previousMode);
+      const draw = (now: number) => {
+        const elapsed = now - startedAt;
+        if (isTransition && !animated && elapsed >= 650) {
+          drawStatic();
+          return;
+        }
+        const transitionElapsed = Math.min(elapsed, 650);
+        const transitioning = isTransition && elapsed < 650;
+        if (isTransition && !transitioning) previousModeRef.current = mode;
+        const frame = getApertureFrame(
+          transitioning ? transitionElapsed : elapsed - (isTransition ? 650 : 0),
+          transitioning,
+        );
+        const angle = getIrisBladeAngle(frame.travel);
+        svg
+          .querySelectorAll<SVGGElement>("[data-blade-motion]")
+          .forEach((node) =>
+            node.setAttribute(
+              "transform",
+              `rotate(${angle} ${PIVOT.x} ${PIVOT.y})`,
+            ),
+          );
+        svg
+          .querySelector<SVGGElement>("[data-aperture-rotor]")
+          ?.setAttribute("transform", `rotate(${frame.rotation} 120 120)`);
+        if (!symbolSwapped && (!transitioning || frame.icon === "current")) {
+          symbolSwapped = true;
+          setDisplayedMode(mode);
+        }
+        if (animated || (isTransition && elapsed < 650))
+          frameRequest = requestAnimationFrame(draw);
+      };
+      frameRequest = requestAnimationFrame(draw);
+    };
+
+    const visibility = () => (document.hidden ? drawStatic() : run());
+    run();
+    document.addEventListener("visibilitychange", visibility);
+    media.addEventListener("change", run);
+    return () => {
+      cancelAnimationFrame(frameRequest);
+      document.removeEventListener("visibilitychange", visibility);
+      media.removeEventListener("change", run);
+    };
+  }, [animated, mode, transition]);
+
+  const masks = Array.from({ length: 6 }, (_, index) => `${id}-leaf-${index}`);
   return (
     <svg
-      aria-label={label ? title : undefined}
       aria-hidden={label ? undefined : true}
-      className={cx(
-        "signal-aperture-mark",
-        animated && "signal-aperture-mark--animated",
-        tone === "amber" && "signal-aperture-mark--amber",
-        className,
-      )}
+      aria-label={label}
+      className={cx(styles.mark, className)}
+      data-motion={motionActive ? "active" : "static"}
+      data-tone={tone}
+      ref={svgRef}
       role={label ? "img" : undefined}
-      viewBox="0 0 64 64"
+      viewBox="0 0 240 240"
+      xmlns="http://www.w3.org/2000/svg"
     >
-      {label ? <title>{title}</title> : null}
-      <rect
-        className="signal-aperture-mark__tile"
-        height="54"
-        rx="12"
-        width="54"
-        x="5"
-        y="5"
-      />
-      <path
-        className="signal-aperture-mark__trace signal-aperture-mark__trace--cyan"
-        d="M18 13h-5v9M46 13h5v9M18 51h-5v-9M46 51h5v-9"
-      />
-      <path
-        className="signal-aperture-mark__trace signal-aperture-mark__trace--amber"
-        d="M28 9h8M28 55h8M9 28v8M55 28v8"
-      />
-      <g className="signal-aperture-mark__blades">
-        <path d="M31.5 10.5 43.5 18 34 30.5 23 30z" />
-        <path d="M45.2 19.2 51.8 31.8 36.5 35.4 31.8 23.2z" />
-        <path d="M51.2 34.8 43.7 46.8 31.5 37.2 35.8 26.4z" />
-        <path d="M40.4 49.8 26.2 51 29.8 35.7 42.2 31.4z" />
-        <path d="M23.5 49.8 12.4 40.8 25.8 32.2 36.5 37.5z" />
-        <path d="M11.5 36.8 13.8 22.8 28.2 27.8 31.8 40.2z" />
+      {label ? <title>{label}</title> : null}
+      <defs>
+        <clipPath id={`${id}-disc`}>
+          <circle cx="120" cy="120" r="91" />
+        </clipPath>
+        {masks.map((mask, index) => (
+          <mask
+            height="240"
+            id={mask}
+            key={mask}
+            maskUnits="userSpaceOnUse"
+            width="240"
+          >
+            <rect fill="white" height="240" width="240" />
+            <g transform={`rotate(${((index + 5) % 6) * 60} 120 120)`}>
+              <g data-blade-motion>
+                <path d={SHEET} fill="black" />
+              </g>
+            </g>
+          </mask>
+        ))}
+      </defs>
+      <circle className={styles.core} cx="120" cy="120" r="39" />
+      <g className={styles.symbol}>
+        <ModeSymbol mode={displayedMode} />
       </g>
-      <circle className="signal-aperture-mark__core-ring" cx="32" cy="32" r="13" />
-      <circle className="signal-aperture-mark__core" cx="32" cy="32" r="7" />
-      <path className="signal-aperture-mark__play" d="M30 27.5v9l8-4.5z" />
+      <g clipPath={`url(#${id}-disc)`} data-aperture-rotor>
+        {masks.map((mask, index) => (
+          <g key={mask} mask={`url(#${mask})`}>
+            <g transform={`rotate(${index * 60} 120 120)`}>
+              <g data-blade-motion>
+                <path className={styles.blade} d={SHEET} />
+                <path className={styles.bladeEdge} d="M-400 81H640" />
+              </g>
+            </g>
+          </g>
+        ))}
+      </g>
+      {animated ? (
+        <g className={styles.orbit}>
+          <circle className={styles.orbitTrack} cx="120" cy="120" r="108" />
+          <circle className={styles.orbitArc} cx="120" cy="120" r="108" />
+        </g>
+      ) : null}
     </svg>
   );
 }
 
-export function SignalApertureLockup({
+export function BrandLockup({
+  animated = false,
   className,
   compact = false,
-}: SignalApertureLockupProps) {
+  label = "Mistake Watch",
+  mode = "watch",
+}: BrandLockupProps) {
   return (
-    <div
-      className={cx(
-        "flex min-w-0 items-center gap-2 text-primary-fixed-dim",
-        className,
-      )}
+    <span
+      aria-label={label}
+      className={cx(styles.lockup, compact && styles.compact, className)}
+      role="img"
     >
       <SignalApertureMark
-        className={compact ? "h-8 w-8" : "h-9 w-9"}
+        animated={animated}
+        className={styles.lockupMark}
+        mode={mode}
       />
-      <div className="min-w-0">
-        <span
-          className={cx(
-            "block truncate font-bold leading-none text-on-surface",
-            compact ? "text-body-md" : "text-headline-md",
-          )}
-        >
-          Mistake Watch
-        </span>
-        {compact ? (
-          <span className="technical-label mt-0.5 block truncate text-secondary-fixed-dim">
-            Signal room
-          </span>
-        ) : null}
-      </div>
-    </div>
+      <svg
+        aria-hidden
+        className={styles.wordmark}
+        viewBox="0 0 1343 165"
+      >
+        <use href="/brand/signal-aperture-wordmark.svg#signal-aperture-wordmark" />
+      </svg>
+    </span>
   );
 }
+
+export const SignalApertureLockup = BrandLockup;

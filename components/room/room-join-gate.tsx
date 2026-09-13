@@ -6,6 +6,7 @@ import { useFormStatus } from "react-dom";
 import { ArrowLeft, Link2 } from "lucide-react";
 
 import { AppShell } from "@/components/layout";
+import { RoomLoadingResolved } from "@/components/ui/room-loading/fallback";
 import {
   Badge,
   Button,
@@ -31,6 +32,7 @@ export function RoomJoinGate({
 }: RoomJoinGateProps) {
   return (
     <AppShell className="overflow-x-hidden">
+      <RoomLoadingResolved />
       <main className="mx-auto grid min-h-screen w-full max-w-[920px] place-items-center px-margin-mobile py-20 md:px-margin-desktop">
         <Panel className="w-full space-y-6">
           <div className="flex flex-wrap items-center gap-3">

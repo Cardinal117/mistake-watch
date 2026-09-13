@@ -56,6 +56,13 @@ export function useRoomConnection(room: RoomSnapshot) {
   const reconnectAttemptRef = useRef(0);
   const reconnectTimerRef = useRef<number | null>(null);
   const recoveringConnectionRef = useRef(false);
+  const presentationEpoch = useRef(0);
+  const [presentationReadiness, setPresentationReadiness] = useState({
+    roomId: room.id,
+    epoch: 0,
+    ready: false,
+    mode: room.mode === "listen" ? ("listen" as const) : ("watch" as const),
+  });
   const [connectionRunId, setConnectionRunId] = useState(0);
   const currentMember = room.currentMember;
   const latestRoom = useRef(room);
@@ -105,6 +112,7 @@ export function useRoomConnection(room: RoomSnapshot) {
   }, [room.id, room.kind, memberMissingNotice, participantPresent]);
 
   function retryConnection() {
+    setPresentationReadiness((previous) => ({ ...previous, ready: false }));
     if (reconnectTimerRef.current !== null) {
       window.clearTimeout(reconnectTimerRef.current);
       reconnectTimerRef.current = null;
@@ -127,6 +135,16 @@ export function useRoomConnection(room: RoomSnapshot) {
       return;
     }
 
+    const epoch = ++presentationEpoch.current;
+    let subscriptionApplied = false;
+    let currentEpochClockReady = false;
+    let localAdmission: string | null = null;
+    setPresentationReadiness({
+      roomId: room.id,
+      epoch,
+      ready: false,
+      mode: room.mode === "listen" ? "listen" : "watch",
+    });
     const hostMemberId = room.hostMemberId;
     let disposed = false;
     let heartbeatTimer: number | undefined;
@@ -139,7 +157,7 @@ export function useRoomConnection(room: RoomSnapshot) {
     let pendingClockJoin: { admissionId: string; sentAt: number } | null = null;
 
     const refreshSnapshot = (context?: unknown) => {
-      if (!liveDb) {
+      if (!liveDb || disposed) {
         return;
       }
 
@@ -149,17 +167,20 @@ export function useRoomConnection(room: RoomSnapshot) {
         pendingClockJoin,
         receivedAt,
       );
-      if (joinOffset !== null) pendingClockJoin = null;
+      if (joinOffset !== null) {
+        pendingClockJoin = null;
+      }
       const clockOffset =
         joinOffset ?? readReducerClockOffset(context, receivedAt);
 
       if (clockOffset !== null) {
+        currentEpochClockReady = true;
         serverClockOffsetMs.current = clock.sample(clockOffset, Date.now());
       }
 
       // The initial subscription may contain an old playback update. Wait for
-      // our join result to establish the clock before exposing a new source.
-      if (serverClockOffsetMs.current === null) {
+      // a reducer result from this connection epoch before exposing it.
+      if (!currentEpochClockReady || serverClockOffsetMs.current === null) {
         return;
       }
 
@@ -173,6 +194,27 @@ export function useRoomConnection(room: RoomSnapshot) {
       if (adjustedSnapshot.session) {
         recoveringConnectionRef.current = false;
       }
+      const session = adjustedSnapshot.session;
+      const memberReady = adjustedSnapshot.participantPresences.some(
+        (presence) =>
+          presence.memberId === currentMember.id &&
+          presence.admissionId === localAdmission &&
+          presence.status === "online",
+      );
+      const ready = subscriptionApplied && memberReady && !!session;
+      setPresentationReadiness((previous) => {
+        const mode = session
+          ? session.mode === "listen"
+            ? "listen"
+            : "watch"
+          : previous.mode;
+        return previous.roomId === room.id &&
+          previous.epoch === epoch &&
+          previous.ready === ready &&
+          previous.mode === mode
+          ? previous
+          : { roomId: room.id, epoch, ready, mode };
+      });
 
       setSnapshot((currentSnapshot) =>
         shouldPreserveCurrentSnapshotDuringReconnect(
@@ -236,6 +278,7 @@ export function useRoomConnection(room: RoomSnapshot) {
         return;
       }
 
+      setPresentationReadiness((previous) => ({ ...previous, ready: false }));
       shouldLeaveOnCleanup = false;
       recoveringConnectionRef.current = true;
       clearLiveTimers();
@@ -327,7 +370,10 @@ export function useRoomConnection(room: RoomSnapshot) {
 
         connected
           .subscriptionBuilder()
-          .onApplied(() => refreshSnapshot())
+          .onApplied(() => {
+            subscriptionApplied = true;
+            refreshSnapshot();
+          })
           .onError(() => {
             setConnectionStatus("error");
             scheduleReconnect("Live room subscription failed. Reconnecting...");
@@ -358,6 +404,7 @@ export function useRoomConnection(room: RoomSnapshot) {
             return;
           }
 
+          localAdmission = admission.admissionId;
           setAdmissionId(admission.admissionId);
           pendingClockJoin = {
             admissionId: admission.admissionId,
@@ -433,6 +480,7 @@ export function useRoomConnection(room: RoomSnapshot) {
 
   return {
     admissionId,
+    presentationReadiness,
     listenerIdentity,
     connectionReadiness,
     connectionStatus,
