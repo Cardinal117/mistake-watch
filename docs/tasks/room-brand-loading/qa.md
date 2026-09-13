@@ -1,6 +1,6 @@
 # Implementation and QA — 13 September 2026
 
-Status: implemented and verified locally. Not committed, pushed or deployed. Baseline: `fe5e243`. Unrelated recording-review files remain untouched and excluded from this milestone.
+Status: implemented, verified and deployed after owner approval; see release.md. Baseline: `fe5e243`. Unrelated recording-review files remain untouched and excluded from this milestone.
 
 ## Delivered
 
@@ -36,4 +36,4 @@ The design hook's new loading text color/type findings were corrected to the DES
 
 ## Next release step
 
-Prepare the scoped Git/release change with this packet after owner acceptance. Exclude all unrelated recording-review work. No database migration or Spacetime module publication is needed. Then smoke-test real room entry, both mode directions and owner device/audio continuity. Custom per-player buffering and a new theme editor/persistence remain separate follow-ups.
+Scoped Git and production release completed after owner acceptance; see release.md. Exclude all unrelated recording-review work. No database migration or Spacetime module publication is needed. Then smoke-test real room entry, both mode directions and owner device/audio continuity. Custom per-player buffering and a new theme editor/persistence remain separate follow-ups.

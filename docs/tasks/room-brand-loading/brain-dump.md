@@ -1,6 +1,6 @@
 # Owner intent
 
-Planning and implementation approved 2026-09-13. Implemented locally; QA evidence is recorded in qa.md.
+Planning and implementation approved 2026-09-13. Implemented and deployed after owner approval; evidence is recorded in qa.md and release.md.
 
 Use the approved standalone Signal Aperture SVG and wordmark faithfully. Branding must follow dynamic room styling and remain present in compact navigation. Room loading means FULL-SCREEN loading with the animated aperture, especially Listen-to-Watch and Watch-to-Listen. Animation responds to actual loading state and makes transitions feel intentional. Plan and double-check edge cases before implementation; provide a brief of changes, risks, state handling, QA and theme integration.
 

@@ -1,6 +1,6 @@
 # Planned implementation order
 
-Status: Steps 1-7 implemented and locally verified, 2026-09-13. See qa.md. Not committed or deployed.
+Status: Steps 1-7 implemented, verified and deployed on 2026-09-13. See qa.md and release.md.
 
 1. Establish behavioral red/characterization baselines and save approved asset/reference comparisons. Inspect local Next loading/layout/error guides.
 2. Extract shared aperture/wordmark and palette adapter in components/brand; resolve competing exports. Validate geometry/fidelity, motion cleanup and size before navbar adoption.

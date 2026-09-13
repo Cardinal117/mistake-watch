@@ -1,6 +1,6 @@
 # Shared room branding and full-screen loading
 
-Status: Implementation approved and completed locally on 2026-09-13. Full packet because this is a cross-layout, asynchronous UI lifecycle change. See qa.md for verification and remaining owner device checks. Not committed or deployed.
+Status: Implementation approved and completed locally on 2026-09-13. Full packet because this is a cross-layout, asynchronous UI lifecycle change. See qa.md for verification and remaining owner device checks. Deployed after owner approval; see release.md.
 
 ## Outcome
 

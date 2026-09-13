@@ -1,16 +1,15 @@
 # Mistake Watch Handoff
 
-## Local Signal Aperture and room loading — 2026-09-13
+## Live Signal Aperture and room loading — 2026-09-13
 
 The approved SVG navbar and persistent full-screen room-loading milestone is
-implemented locally. Current-room/epoch readiness, authoritative mode changes,
+live as implementation `7fd051c`. Current-room/epoch readiness, authoritative mode changes,
 slow-join recovery, dynamic palette handoff, compact branding and accessible
 error/retry states are verified. 368 unit checks and 48 distinct browser checks
 across targeted runs passed, alongside typecheck, lint and production build.
 See [implementation, QA and limits](tasks/room-brand-loading/qa.md).
 
-Not committed or deployed. Next: owner acceptance and scoped Git/release steps;
-exclude unrelated recording-review files. Custom player buffering and new theme
+Production is Ready and verified on the custom domain; see [release receipt](tasks/room-brand-loading/release.md). Unrelated recording-review files remain local. Custom player buffering and new theme
 settings remain later work. No database or Spacetime publication is required.
 
 
