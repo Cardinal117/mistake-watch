@@ -87,6 +87,7 @@ export function RoomLoadingScreen({
   }, [state.startedAt, state.error]);
   const timedOut = elapsed >= 20000;
   const failed = !!state.error || timedOut;
+  const showMark = elapsed >= 150 || failed;
   const palette = state.palette;
   return (
     <div
@@ -133,14 +134,17 @@ export function RoomLoadingScreen({
       >
         <div
           className="room-loading-mark"
-          data-visible={elapsed >= 150 || failed}
+          data-visible={showMark}
         >
-          <SignalApertureMark
-            mode={state.target ?? "watch"}
-            initialMode={state.fromMode}
-            animated={!failed}
-            className="room-loading-aperture"
-          />
+          {/* Start motion at visibility, not underneath the anti-flash grace. */}
+          {showMark && (
+            <SignalApertureMark
+              mode={state.target ?? "watch"}
+              initialMode={state.fromMode}
+              animated={!failed}
+              className="room-loading-aperture"
+            />
+          )}
         </div>
         <div
           role={failed ? "alert" : "status"}

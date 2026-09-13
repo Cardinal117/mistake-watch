@@ -1,6 +1,27 @@
 import { expect, test } from "@playwright/test";
 import type {} from "../fixtures/room-loading-fixture";
 const qa = process.env.WATCH_DESIGN_QA === "1" ? test : test.skip;
+qa("visible mode animation starts open with the outgoing icon in both directions", async ({ page }) => {
+  await page.clock.install();
+  await page.goto("/dev/room-loading");
+  await page.waitForFunction(() => !!window.loadingQA);
+  await page.clock.pauseAt(new Date(Date.now() + 1000));
+  for (const target of ["Watch", "Listen"]) {
+    await page.getByRole("tab", { name: target, exact: true }).click();
+    await page.clock.runFor(160);
+    const mark = page.locator("[data-room-loading-host] .room-loading-mark");
+    await expect(mark).toBeVisible();
+    const angle = await mark.locator("[data-blade-motion]").first().getAttribute("transform");
+    expect(Math.abs(Number(angle?.match(/rotate\(([-\d.]+)/)?.[1] ?? 0))).toBeLessThan(1);
+    await expect(mark.locator('rect[width="7"]')).toHaveCount(target === "Watch" ? 2 : 0);
+    await page.screenshot({ path: `.tmp/room-mode-icon/${target}-source.png` });
+    await page.clock.runFor(750);
+    await expect(mark.locator('rect[width="7"]')).toHaveCount(target === "Listen" ? 2 : 0);
+    await page.screenshot({ path: `.tmp/room-mode-icon/${target}-destination.png` });
+    await page.clock.runFor(700);
+    await expect(page.locator(".room-loading-screen")).toHaveCount(0);
+  }
+});
 qa("mode loading survives outgoing layout unmount", async ({ page }) => {
   await page.goto("/dev/room-loading");
   await page.waitForFunction(() => !!window.loadingQA);
