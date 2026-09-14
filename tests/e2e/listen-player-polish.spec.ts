@@ -1,6 +1,89 @@
 import { expect, test } from "@playwright/test";
 import { mockYouTubePlayer } from "./youtube-player-fixture";
 const qa = process.env.WATCH_DESIGN_QA === "1" ? test : test.skip;
+
+qa(
+  "An empty Listen queue ends once without replaying the YouTube tail",
+  async ({ page }) => {
+    await mockYouTubePlayer(page);
+    await page.goto("/dev/listen-design?youtube=1");
+    await page.waitForFunction(
+      () => Boolean(window.watchQA) && Boolean(window.watchYouTubeFixture),
+    );
+    await page.evaluate(() => window.watchQA!.setPosition(59));
+    await page.getByRole("button", { name: "Play", exact: true }).click();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            window.watchQA!.calls.filter(
+              (call) =>
+                call.action === "playback" &&
+                (call.input as { status?: string })?.status === "playing",
+            ).length,
+        ),
+      )
+      .toBe(1);
+    await page.evaluate(() => {
+      window.watchQA!.setQueueCount(1);
+      window.watchYouTubeFixture!.position = 60;
+      window.watchQA!.calls.splice(0);
+      window.watchYouTubeFixture!.triggerState(0);
+    });
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            window.watchQA!.calls.filter(
+              (call) =>
+                call.action === "playback" &&
+                (call.input as { status?: string })?.status === "ended",
+            ).length,
+        ),
+      )
+      .toBe(1);
+    expect(
+      await page.evaluate(
+        () =>
+          window.watchQA!.calls.filter((call) => call.action === "advance")
+            .length,
+      ),
+    ).toBe(0);
+    await page.waitForTimeout(900);
+    expect(
+      await page.evaluate(
+        () =>
+          window.watchQA!.calls.filter(
+            (call) =>
+              call.action === "playback" &&
+              (call.input as { status?: string })?.status === "ended",
+          ).length,
+      ),
+    ).toBe(1);
+
+    // A delayed end after an authoritative rewind must not end the new command.
+    await page.evaluate(() => window.watchQA!.setPosition(0));
+    await page.getByRole("button", { name: "Play", exact: true }).click();
+    await expect(
+      page.getByRole("button", { name: "Pause", exact: true }),
+    ).toBeVisible();
+    await page.evaluate(() => {
+      window.watchQA!.calls.splice(0);
+      window.watchYouTubeFixture!.position = 60;
+      window.watchYouTubeFixture!.triggerState(0);
+    });
+    await page.waitForTimeout(900);
+    expect(
+      await page.evaluate(() =>
+        window.watchQA!.calls.filter(
+          (call) =>
+            call.action === "playback" &&
+            (call.input as { status?: string })?.status === "ended",
+        ),
+      ),
+    ).toHaveLength(0);
+  },
+);
 for (const [width, height] of [
   [390, 844],
   [375, 667],
@@ -20,26 +103,12 @@ for (const [width, height] of [
       await expect
         .poll(() => body.evaluate((el) => el.scrollHeight - el.clientHeight))
         .toBeLessThanOrEqual(2);
-      await expect(
-        page.getByRole("slider", { name: "Volume", exact: true }),
-      ).toBeHidden();
-      await page
-        .getByRole("button", { name: "Volume controls", exact: true })
-        .click();
-      await expect(
-        page.getByRole("slider", { name: "Volume", exact: true }),
-      ).toBeVisible();
-      await page.keyboard.press("Escape");
-      await expect(
-        page.getByRole("slider", { name: "Volume", exact: true }),
-      ).toBeHidden();
-      await page
-        .getByRole("button", { name: "Volume controls", exact: true })
-        .click();
-      await page.locator(".listen-now-title").click();
-      await expect(
-        page.getByRole("slider", { name: "Volume", exact: true }),
-      ).toBeHidden();
+      const volume = page.getByRole("slider", { name: "Volume", exact: true });
+      await expect(volume).toBeVisible();
+      await expect(page.getByText(/\d+%/, { exact: true })).toBeVisible();
+      await volume.focus();
+      await page.keyboard.press("ArrowRight");
+      await expect(volume).toBeVisible();
       await page.screenshot({
         path: `.tmp/listen-player-${width}.png`,
         animations: "disabled",
@@ -135,17 +204,8 @@ for (const [width, height] of [
         path: `.tmp/listen-youtube-${width}.png`,
         animations: "disabled",
       });
-      await page
-        .getByRole("button", { name: "Volume controls", exact: true })
-        .click();
       const slider = page.getByRole("slider", { name: "Volume", exact: true });
       await expect(slider).toBeVisible();
-      const popup = (await page
-        .locator(".listen-player-popover[open] .listen-player-popover-content")
-        .boundingBox())!;
-      expect(popup.x).toBeGreaterThanOrEqual(0);
-      expect(popup.y).toBeGreaterThanOrEqual(0);
-      expect(popup.x + popup.width).toBeLessThanOrEqual(width);
       expect(
         await slider.evaluate((el) => {
           const box = el.getBoundingClientRect();
@@ -159,7 +219,6 @@ for (const [width, height] of [
       ).toBe(true);
       await slider.focus();
       await page.keyboard.press("ArrowRight");
-      await page.keyboard.press("Escape");
-      await expect(slider).toBeHidden();
+      await expect(slider).toBeVisible();
     },
   );

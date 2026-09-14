@@ -177,6 +177,43 @@ test("youtube ended event advances before publishing ended when autoplay can con
   );
 });
 
+test("youtube ended events survive an active remote-correction window", () => {
+  const events = sectionBetween(
+    youtubePlayerSource,
+    "const handlePlayerStateChange = useCallback",
+    "useEffect(() => {",
+  );
+
+  assert.match(
+    events,
+    /applyingRemoteState\.current\s*&&\s*event\.data\s*!==\s*yt\.PlayerState\.ENDED/,
+  );
+  const publish = sectionBetween(
+    youtubePlayerSource,
+    "const publishPlaybackState = useCallback",
+    "const handlePlayerStateChange = useCallback",
+  );
+  assert.match(
+    publish,
+    /applyingRemoteState\.current\s*&&\s*status\s*!==\s*"ended"/,
+  );
+});
+
+test("youtube sync leaves a locally ended player stopped while authority catches up", () => {
+  const sync = sectionBetween(
+    youtubePlayerSource,
+    "const syncTimer = window.setInterval",
+    "return () => window.clearInterval(syncTimer)",
+  );
+
+  assert.match(sync, /localState\s*===\s*window\.YT\?\.PlayerState\.ENDED/);
+  assert.match(sync, /isCurrentYouTubeEnd/);
+  assert.ok(
+    sync.indexOf("PlayerState.ENDED") < sync.indexOf("chooseSyncCorrection"),
+    "terminal local state must be handled before correction can replay the tail",
+  );
+});
+
 test("youtube autoplay advance is guarded per active playback key", () => {
   assert.match(youtubePlayerSource, /autoplayAdvanceInFlightKeyRef/);
   assert.match(

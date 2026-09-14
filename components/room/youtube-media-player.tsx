@@ -28,6 +28,7 @@ import {
 import { reserveRuntimeErrorAutoSkip as reserveRuntimeErrorAutoSkipSlot } from "@/lib/player/media-failure-circuit";
 import { parseYouTubeVideoId } from "@/lib/player/source";
 import {
+  isCurrentYouTubeEnd,
   isNearYouTubeEnd,
   shouldFallbackAdvanceYouTubeQueue,
 } from "@/lib/player/youtube-autoplay-continuity";
@@ -419,7 +420,7 @@ export function YoutubeMediaPlayer({
         !playerSourceUrlRef.current ||
         activeSourceUrlRef.current !== playerSourceUrlRef.current ||
         !canControlPlaybackRef.current ||
-        applyingRemoteState.current ||
+        (applyingRemoteState.current && status !== "ended") ||
         !canonicalState ||
         !activePlaybackKey ||
         hydratedPlaybackKeyRef.current !== activePlaybackKey
@@ -469,7 +470,7 @@ export function YoutubeMediaPlayer({
     (yt: YoutubeNamespace, event: YoutubePlayerEvent) => {
       if (event.data === yt.PlayerState.PLAYING)
         preparation.current?.ready(event.target);
-      if (applyingRemoteState.current) {
+      if (applyingRemoteState.current && event.data !== yt.PlayerState.ENDED) {
         return;
       }
 
@@ -493,6 +494,22 @@ export function YoutubeMediaPlayer({
       }
 
       if (event.data === yt.PlayerState.ENDED) {
+        const state = canonicalStateRef.current;
+        if (
+          event.target !== playerRef.current ||
+          !state ||
+          !isCurrentYouTubeEnd({
+            status: state.status,
+            durationSeconds: safeNumber(event.target.getDuration()),
+            localPositionSeconds:
+              safeNumber(event.target.getCurrentTime()) ?? 0,
+            expectedPositionSeconds: expectedYouTubePositionAt(
+              state,
+              Date.now(),
+            ),
+          })
+        )
+          return;
         if (
           queueAutoplayEnabledRef.current &&
           hasNextQueueItemRef.current &&
@@ -757,6 +774,30 @@ export function YoutubeMediaPlayer({
       );
       const activeKey = getActivePlaybackKey(canonicalState);
 
+      // A provider end can arrive while a remote correction is settling. Keep
+      // the local player terminal while the host publishes the authoritative
+      // end or advances the queue; never seek/play the final frames again.
+      if (
+        localState === window.YT?.PlayerState.ENDED &&
+        isCurrentYouTubeEnd({
+          status: canonicalState.status,
+          durationSeconds,
+          localPositionSeconds,
+          expectedPositionSeconds,
+        })
+      ) {
+        if (
+          queueAutoplayEnabledRef.current &&
+          hasNextQueueItemRef.current &&
+          canControlPlaybackRef.current
+        ) {
+          requestAutoplayAdvance();
+        } else {
+          publishPlaybackState("ended");
+        }
+        return;
+      }
+
       if (activeKey && autoplayAdvanceInFlightKeyRef.current === activeKey) {
         return;
       }
@@ -845,7 +886,7 @@ export function YoutubeMediaPlayer({
     }, 750);
 
     return () => window.clearInterval(syncTimer);
-  }, [autoplayBlocked, requestAutoplayAdvance]);
+  }, [autoplayBlocked, publishPlaybackState, requestAutoplayAdvance]);
 
   const resumeBlockedPlayback = useCallback(() => {
     const player = playerRef.current;

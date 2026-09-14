@@ -148,7 +148,7 @@ test("restored per-device admission suppresses a stale missing-member notice", (
   assert.equal(live.removalNotice, null);
 });
 
-for (const sourceType of ["direct", "hls"]) {
+for (const sourceType of ["direct", "hls", "youtube"]) {
   test(`${sourceType}: Play after completion restarts through canonical room authority`, () => {
     const sent = command({ sourceType });
     assert.equal(sent.length, 1);
@@ -167,8 +167,8 @@ test("ordinary pause/resume preserves its requested position", () => {
     60,
   );
 });
-test("YouTube commands retain existing behavior", () => {
-  assert.equal(command({ sourceType: "youtube" })[0].positionSeconds, 120);
+test("YouTube explicit earlier seek after completion preserves its position", () => {
+  assert.equal(command({ sourceType: "youtube", position: 30 })[0].positionSeconds, 30);
 });
 test("YouTube resume publishes only after the provider is ready", () => {
   const { sent, live, snapshot } = roomState({

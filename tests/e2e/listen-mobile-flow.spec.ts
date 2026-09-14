@@ -50,12 +50,11 @@ for (const size of [
     await page
       .getByRole("slider", { name: "Listen progress" })
       .scrollIntoViewIfNeeded();
-    await page
-      .getByRole("button", { name: "Volume controls", exact: true })
-      .click();
-    await expect(
-      page.getByRole("slider", { name: "Volume", exact: true }),
-    ).toBeVisible();
+    const volume = page.getByRole("slider", { name: "Volume", exact: true });
+    await expect(volume).toBeVisible();
+    await volume.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(volume).toBeVisible();
     await page.screenshot({
       path: `test-results/listen-expanded-${size.width}.png`,
     });

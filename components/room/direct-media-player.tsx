@@ -606,6 +606,7 @@ function buildCanonicalPlaybackState(
     serverRevisionMs: session.serverRevisionMs,
     playbackOccurrenceId: session.playbackOccurrenceId,
     source: {
+      durationSeconds: session.sourceDurationSeconds ?? undefined,
       kind:
         session.sourceType === "hls" || session.sourceType === "youtube"
           ? session.sourceType
