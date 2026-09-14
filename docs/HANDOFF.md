@@ -1,6 +1,13 @@
 # Mistake Watch Handoff
 
-Mode-icon follow-up: `aa769e1` is live as deployment `dpl_6gsekp6sDWCZNYGHNftGXC8iAtEQ`.
+Player hotfix 2026-09-14: `e63667d` is live as deployment
+`dpl_BxXiBLHnD8WGm9QtfAqjwk1PE6xt`. Listen volume/percentage stay visible;
+YouTube terminal state rejects stale ends and explicit replay restarts at zero.
+380 focused tests, 19 browser tests, typecheck, lint, local/Vercel builds and live
+health/readiness passed. PR #19 is open; main is unchanged. See the latest
+[player receipt](tasks/listen-mobile-player-polish/task.md).
+
+Previous mode-icon follow-up: `aa769e1` was live as deployment `dpl_6gsekp6sDWCZNYGHNftGXC8iAtEQ`.
 The aperture animation now starts when the mark becomes visible, preserving the
 outgoing symbol before the destination swap. Sixteen browser checks and twenty
 unit checks passed; build and live readiness verified. See

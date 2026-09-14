@@ -115,3 +115,25 @@ their tested source and mocks are unchanged from HEAD. An earlier unbounded
 parallel run exhausted host memory; bounded concurrency completed normally.
 The independent Sol Medium reviewer found no remaining release blocker.
 No database or live-room module changes are required.
+
+## Production receipt — 2026-09-14
+
+Application commit `e63667d` is deployed as
+`dpl_BxXiBLHnD8WGm9QtfAqjwk1PE6xt`
+(`https://mistake-watch-7mg8ux1ik-cardinal117s-projects.vercel.app`).
+The clean Git export passed Vercel's production build and candidate readiness
+before promotion. Live custom-domain health and readiness returned 200; Supabase
+and Spacetime were ready. `/dev/listen-design` and the excluded recording-review
+API both returned 404. The local production build also passed.
+
+The task branch is pushed and PR #19 is open. Main is not updated: automatic
+approval review rejected direct main publication under the general Git approval.
+The explicitly authorized production promotion completed independently. The
+first Vercel upload failed with Not authorized; refreshing the existing local
+project link and explicitly selecting the verified team resolved it. No plan,
+credential, database or Spacetime changes were made.
+
+Refresh the site before owner audio/device QA. Automated provider fixtures are
+terminal-state and layout evidence, not a claim of real YouTube audio QA.
+Focused Watch memory was loaded (2 files, 4,556 characters, no truncation);
+a new memory checkpoint is deferred while Git integration remains open.
