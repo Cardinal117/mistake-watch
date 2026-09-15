@@ -55,6 +55,8 @@ function summary({
       require(name) {
         if (name.endsWith("compact-playback"))
           return load("lib/account/compact-playback.ts");
+        if (name.endsWith("personal-feedback-style"))
+          return { personalFeedbackStyle: () => undefined };
         if (name === "@/lib/supabase")
           return {
             createSupabaseServerClient: async () => ({

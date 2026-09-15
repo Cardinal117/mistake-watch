@@ -3,12 +3,26 @@ import {
   createSupabaseAdminClient,
   createSupabaseServerClient,
 } from "@/lib/supabase";
+import type { AccountSummary } from "@/lib/account/types";
 
 // For privileged server reads/writes that cannot rely on user-scoped RLS.
 // Call only for Personal; existing Legacy access rules remain authoritative.
-export async function isPersonalRoomOwner(room: {
-  owner_user_id: string | null;
-}) {
+// Optional account must be freshly resolved server-side in this same request.
+export async function isPersonalRoomOwner(
+  room: {
+    owner_user_id: string | null;
+  },
+  account?: AccountSummary,
+) {
+  if (account) {
+    return (
+      account.status === "signed-in" &&
+      account.isAnonymous === false &&
+      account.id === room.owner_user_id &&
+      account.accountStatus === "active"
+    );
+  }
+
   const client = await createSupabaseServerClient();
   const { data, error } = await client.auth.getUser();
   if (
@@ -28,12 +42,15 @@ export async function isPersonalRoomOwner(room: {
   return profile?.account_status === "active";
 }
 
-export async function canAccessAccountRoom(room: {
-  id: string;
-  room_kind?: string;
-  owner_user_id: string | null;
-}) {
-  if (room.room_kind === "personal") return isPersonalRoomOwner(room);
+export async function canAccessAccountRoom(
+  room: {
+    id: string;
+    room_kind?: string;
+    owner_user_id: string | null;
+  },
+  account?: AccountSummary,
+) {
+  if (room.room_kind === "personal") return isPersonalRoomOwner(room, account);
   if (room.room_kind === "temporary") {
     const client = await createSupabaseServerClient();
     const { data, error } = await client

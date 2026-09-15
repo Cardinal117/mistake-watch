@@ -22,9 +22,11 @@ import type {
   AvatarSource,
 } from "./types";
 
-type AuthUser = {
+export type VerifiedAuthUser = {
   email?: string | null;
   id: string;
+  identities?: Array<{ provider: string }>;
+  is_anonymous?: boolean;
   user_metadata?: Record<string, unknown>;
 };
 
@@ -36,24 +38,39 @@ export async function getAccountSummary(): Promise<AccountSummary> {
     return { status: "guest" };
   }
 
-  const profile = await ensureProfileForUser(data.user);
+  return (
+    (await getAccountSummaryForVerifiedUser(data.user)) ?? {
+      status: "guest",
+    }
+  );
+}
+
+// Server-only: user must come from auth.getUser() in this same request.
+export async function getAccountSummaryForVerifiedUser(
+  user: VerifiedAuthUser,
+  options: { requireExistingProfile?: boolean } = {},
+): Promise<AccountSummary | null> {
+  const profile = options.requireExistingProfile
+    ? await findProfileForUser(user.id)
+    : await ensureProfileForUser(user);
+
+  if (!profile) return null;
+  if (options.requireExistingProfile && profile.account_status !== "active")
+    return null;
 
   return {
     accountStatus: normalizeAccountStatus(profile.account_status),
-    personalFeedbackStyle: personalFeedbackStyle(data.user.id),
-    canUseCompactPlayback: canUseCompactPlayback(
-      data.user,
-      profile.account_status,
-    ),
+    personalFeedbackStyle: personalFeedbackStyle(user.id),
+    canUseCompactPlayback: canUseCompactPlayback(user, profile.account_status),
     avatarKey: profile.avatar_key,
     avatarSource: normalizeAvatarSource(profile.avatar_source),
     avatarUrl: profile.avatar_url,
     displayName: profile.display_name,
-    email: data.user.email ?? null,
+    email: user.email ?? null,
     googleAvatarUrl: profile.google_avatar_url,
     handle: profile.handle,
     id: profile.id,
-    isAnonymous: data.user.is_anonymous !== false,
+    isAnonymous: user.is_anonymous !== false,
     role: normalizeAccountRole(profile.role),
     status: "signed-in",
   };
@@ -304,24 +321,15 @@ async function isRoomAlreadyAttachedToUser(roomId: string, userId: string) {
 }
 
 async function ensureProfileForUser(
-  user: AuthUser,
+  user: VerifiedAuthUser,
 ): Promise<Tables<"profiles">> {
-  const admin = createSupabaseAdminClient();
-
-  const { data: existing, error: existingError } = await admin
-    .from("profiles")
-    .select()
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (existingError) {
-    throw existingError;
-  }
+  const existing = await findProfileForUser(user.id);
 
   if (existing) {
     return existing;
   }
 
+  const admin = createSupabaseAdminClient();
   const profileName = deriveDisplayName(user);
   const googleAvatarUrl = deriveGoogleAvatarUrl(user);
 
@@ -344,7 +352,18 @@ async function ensureProfileForUser(
   return created;
 }
 
-function deriveDisplayName(user: AuthUser) {
+async function findProfileForUser(userId: string) {
+  const { data, error } = await createSupabaseAdminClient()
+    .from("profiles")
+    .select()
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+function deriveDisplayName(user: VerifiedAuthUser) {
   const metadataName =
     readStringMetadata(user, "full_name") ?? readStringMetadata(user, "name");
   const emailName = user.email?.split("@")[0];
@@ -353,7 +372,7 @@ function deriveDisplayName(user: AuthUser) {
   return name.trim().replace(/\s+/g, " ").slice(0, 80) || "Mistake member";
 }
 
-function deriveGoogleAvatarUrl(user: AuthUser) {
+function deriveGoogleAvatarUrl(user: VerifiedAuthUser) {
   return (
     readStringMetadata(user, "picture") ??
     readStringMetadata(user, "avatar_url") ??
@@ -361,7 +380,7 @@ function deriveGoogleAvatarUrl(user: AuthUser) {
   );
 }
 
-function readStringMetadata(user: AuthUser, key: string) {
+function readStringMetadata(user: VerifiedAuthUser, key: string) {
   const value = user.user_metadata?.[key];
 
   return typeof value === "string" && value.trim() ? value.trim() : null;

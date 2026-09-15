@@ -62,6 +62,56 @@ for (const input of [
     );
   });
 }
+
+test("Personal boundary reuses an already validated account without another auth or profile read", async () => {
+  let authReads = 0;
+  let profileReads = 0;
+  const client = {
+    auth: {
+      getUser: async () => {
+        authReads++;
+        return {
+          data: { user: { id: "owner", is_anonymous: false } },
+          error: null,
+        };
+      },
+    },
+    from: () => ({
+      select() {
+        return this;
+      },
+      eq() {
+        profileReads++;
+        return this;
+      },
+      maybeSingle: async () => ({
+        data: { account_status: "active" },
+        error: null,
+      }),
+    }),
+  };
+  const { isPersonalRoomOwner } = load("lib/rooms/personal-access.ts", {
+    "@/lib/supabase": {
+      createSupabaseServerClient: async () => client,
+      createSupabaseAdminClient: () => client,
+    },
+  });
+
+  assert.equal(
+    await isPersonalRoomOwner(
+      { owner_user_id: "owner" },
+      {
+        accountStatus: "active",
+        id: "owner",
+        isAnonymous: false,
+        status: "signed-in",
+      },
+    ),
+    true,
+  );
+  assert.equal(authReads, 0);
+  assert.equal(profileReads, 0);
+});
 for (const enabled of [false, true]) {
   test(`Personal action is gated and derives identity from its authenticated RPC context (enabled=${enabled})`, async () => {
     let calls = 0;
