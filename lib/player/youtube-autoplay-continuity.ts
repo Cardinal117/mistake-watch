@@ -1,6 +1,25 @@
 export const YOUTUBE_NEAR_END_THRESHOLD_SECONDS = 1.5;
 export const YOUTUBE_ENDED_GRACE_SECONDS = 2;
 
+/** A delayed provider end must not overwrite a newer room rewind or replay. */
+export function isCurrentYouTubeEnd(input: {
+  status: string;
+  durationSeconds: number | undefined;
+  localPositionSeconds: number;
+  expectedPositionSeconds: number;
+}) {
+  return (
+    input.status === "playing" &&
+    Number.isFinite(input.localPositionSeconds) &&
+    Number.isFinite(input.expectedPositionSeconds) &&
+    isNearYouTubeEnd(input) &&
+    isNearYouTubeEnd({
+      durationSeconds: input.durationSeconds,
+      expectedPositionSeconds: input.localPositionSeconds,
+    })
+  );
+}
+
 export type YouTubeAutoplayFallbackInput = {
   activeKey: string | null;
   alreadyAdvancedKey: string | null;
@@ -37,8 +56,7 @@ export function shouldFallbackAdvanceYouTubeQueue({
   }
 
   return (
-    expectedPositionSeconds >=
-    durationSeconds + YOUTUBE_ENDED_GRACE_SECONDS
+    expectedPositionSeconds >= durationSeconds + YOUTUBE_ENDED_GRACE_SECONDS
   );
 }
 

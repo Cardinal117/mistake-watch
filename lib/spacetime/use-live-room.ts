@@ -275,7 +275,9 @@ export function useLiveRoom(room: RoomSnapshot): LiveRoomState {
     }
     youtubeAutoplayPreparation.cancel();
     const replayCompletedMedia =
-      (session?.sourceType === "direct" || session?.sourceType === "hls") &&
+      (session?.sourceType === "direct" ||
+        session?.sourceType === "hls" ||
+        session?.sourceType === "youtube") &&
       session.status === "ended" &&
       input.status === "playing" &&
       session.positionSeconds > 0 &&

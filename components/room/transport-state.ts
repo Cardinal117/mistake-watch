@@ -20,6 +20,7 @@ export function buildCanonicalState(
     roomId: session.roomId,
     serverUpdatedAtMs: session.serverUpdatedMs,
     source: {
+      durationSeconds: session.sourceDurationSeconds ?? undefined,
       kind:
         session.sourceType === "hls" || session.sourceType === "youtube"
           ? session.sourceType

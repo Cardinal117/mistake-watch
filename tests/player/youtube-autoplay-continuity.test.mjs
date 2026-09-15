@@ -32,11 +32,34 @@ await mkdir(path.dirname(outputPath), { recursive: true });
 await writeFile(outputPath, js);
 
 const {
+  isCurrentYouTubeEnd,
   isNearYouTubeEnd,
   shouldFallbackAdvanceYouTubeQueue,
   YOUTUBE_ENDED_GRACE_SECONDS,
   YOUTUBE_NEAR_END_THRESHOLD_SECONDS,
 } = await import(pathToFileURL(outputPath));
+
+test("terminal evidence accepts a real end but rejects stale rewind and replay ends", () => {
+  const end = {
+    durationSeconds: 60,
+    localPositionSeconds: 60,
+    expectedPositionSeconds: 60,
+    status: "playing",
+  };
+  assert.equal(isCurrentYouTubeEnd(end), true);
+  assert.equal(isCurrentYouTubeEnd({ ...end, status: "paused" }), false);
+  assert.equal(isCurrentYouTubeEnd({ ...end, status: "ended" }), false);
+  assert.equal(
+    isCurrentYouTubeEnd({ ...end, expectedPositionSeconds: 0 }),
+    false,
+  );
+  assert.equal(isCurrentYouTubeEnd({ ...end, localPositionSeconds: 0 }), false);
+  assert.equal(
+    isCurrentYouTubeEnd({ ...end, durationSeconds: undefined }),
+    false,
+  );
+  assert.equal(isCurrentYouTubeEnd({ ...end, durationSeconds: NaN }), false);
+});
 
 test.after(async () => {
   await rm(tempDir, { force: true, recursive: true });

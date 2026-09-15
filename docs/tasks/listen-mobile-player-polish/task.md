@@ -3,7 +3,7 @@
 Owner-approved 2026-09-12: match the generated reference, with smaller media,
 unboxed inline YouTube/views/likes metadata, existing desktop play/pause glyphs,
 song-accent heart, ambient thumbnail background, compact Watch-style navigation,
-tap-to-open volume, quiet header and one Up next row. Preserve actual video
+quiet header and one Up next row. Preserve actual video
 aspect/visibility and one mounted provider across expansion and resizing.
 
 Reference: [approved generated mockup](reference.png).
@@ -13,6 +13,13 @@ retain reachable controls rather than clip them.
 Owner subsequently approved the same unboxed metadata, compact volume control,
 and accent heart on desktop. Keep desktop artwork, transport glyphs and rail
 layout otherwise consistent with the existing design.
+
+Owner correction 2026-09-14: keep the volume slider and numeric percentage
+visible in the expanded player. The temporary tap-to-open volume popover crowded
+the artwork and controls. Also stop an empty Personal-room queue cleanly when a
+YouTube source ends: retain the terminal player state, publish one authoritative
+end, and never replay the final frames or project the displayed position beyond
+the known duration.
 
 Separate scoped copy: only the verified Kay Nest account in its own Personal room
 gets 'Fokof vir 7 dae' and 'Fok nee, vat die kak weg' for snooze/exclusion menu
@@ -35,10 +42,10 @@ may be released. Git/deployment authorized after QA.
 - YouTube, views and likes use one unboxed, wrapping icon/text row. Portrait
   fit verified with a two-line title and 3.9M views / 28K likes at 375x667,
   390x844 and 412x915; desktop at 1440x900 and 1440x600.
-- Volume opens on demand, retains the existing slider callback, closes on
-  outside interaction/Escape, and stays hit-testable inside short desktop rails.
-  The reviewer flagged clipping; both desktop heights passed the actual slider
-  hit test. Header actions close their menu after selection.
+- Volume remains visible with its existing local-only slider callback and a
+  tabular numeric percentage. Mobile and desktop layouts keep the full slider
+  hit area without an overlapping popover. Header actions close their menu after
+  selection.
 - 19 browser checks passed, including source-node continuity, rotation,
   permissions, transport, seek, drag/cancellation, navigation and metadata.
   Screenshots: ignored `.tmp/listen-youtube-375.png`, `-390.png`, `-412.png`,
@@ -72,3 +79,61 @@ Custom-domain inspection confirms watch.mistakestudios.com resolves to this Read
 deployment. Live checks: health 200, ready 200 (Supabase and Spacetime ready),
 excluded recording-review route 404. No database migration or Spacetime publish.
 Refresh existing clients before owner visual/audio QA.
+
+## Terminal playback and volume correction — 2026-09-14
+
+The canonical Listen, Watch transport and direct-media builders now carry the
+known source duration, so projected UI time is bounded. YouTube provider end
+events remain observable while a remote correction is settling. The periodic
+sync loop recognizes the local terminal state before applying a seek/play
+correction, publishes or advances only while authority is still playing, and
+therefore cannot repeatedly replay the final frames when no next item exists.
+The unbounded internal YouTube projection remains intentional for the existing
+missing-END fallback when a playable next queue item does exist.
+
+Test-first evidence: focused playback tests failed for the missing duration and
+terminal reconciliation before implementation, then 39/39 passed. A real-browser
+fixture now drives a YouTube ENDED event with an empty queue and verifies one end
+publication, no advance, and no repeat after the 750 ms sync tick. The expanded
+Listen browser suite also verifies the visible slider and percentage at the
+supported mobile and desktop sizes.
+
+Independent review caught a stale-end/replay race before release. Terminal
+evidence now requires both provider and canonical positions near the finite
+provider duration and canonical status playing. Earlier rewinds, paused/ended
+states and fresh same-source replays ignore the old end. YouTube joins the
+existing completed-media replay-to-zero command. The browser fixture ends at
+60 seconds, then replays and rejects a delayed end; the existing real-hook
+replay tests cover YouTube alongside direct/HLS. Replay coverage is post-hoc;
+the terminal evidence predicate has recorded red/green coverage.
+
+Final targeted gate: 380 player, YouTube, queue and Spacetime tests passed;
+19 mobile/desktop browser tests passed. Typecheck and lint passed. The full
+bounded run before the final review adjustment had 924 passes and three
+pre-existing mock failures in compact-playback and room-reload-recovery;
+their tested source and mocks are unchanged from HEAD. An earlier unbounded
+parallel run exhausted host memory; bounded concurrency completed normally.
+The independent Sol Medium reviewer found no remaining release blocker.
+No database or live-room module changes are required.
+
+## Production receipt — 2026-09-14
+
+Application commit `e63667d` is deployed as
+`dpl_BxXiBLHnD8WGm9QtfAqjwk1PE6xt`
+(`https://mistake-watch-7mg8ux1ik-cardinal117s-projects.vercel.app`).
+The clean Git export passed Vercel's production build and candidate readiness
+before promotion. Live custom-domain health and readiness returned 200; Supabase
+and Spacetime were ready. `/dev/listen-design` and the excluded recording-review
+API both returned 404. The local production build also passed.
+
+The task branch is pushed and PR #19 is open. Main is not updated: automatic
+approval review rejected direct main publication under the general Git approval.
+The explicitly authorized production promotion completed independently. The
+first Vercel upload failed with Not authorized; refreshing the existing local
+project link and explicitly selecting the verified team resolved it. No plan,
+credential, database or Spacetime changes were made.
+
+Refresh the site before owner audio/device QA. Automated provider fixtures are
+terminal-state and layout evidence, not a claim of real YouTube audio QA.
+Focused Watch memory was loaded (2 files, 4,556 characters, no truncation);
+a new memory checkpoint is deferred while Git integration remains open.

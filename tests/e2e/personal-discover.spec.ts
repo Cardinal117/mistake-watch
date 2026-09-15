@@ -41,6 +41,87 @@ qa(
 );
 
 qa(
+  "Personal Discover pauses scheduled reads in Visualizer and refreshes once on return",
+  async ({ page }) => {
+    await page.setViewportSize({ width: 1680, height: 960 });
+    await page.clock.install({ time: new Date() });
+    let reads = 0;
+    page.on("request", (request) => {
+      if (
+        request.url().includes("/recommendations/discover") &&
+        request.method() === "GET"
+      )
+        reads++;
+    });
+    await setup(page, {
+      metadataExpiresAt: new Date(Date.now() + 10_000).toISOString(),
+    });
+    await page.clock.runFor(100);
+    await page.getByRole("tab", { name: "Visualizer", exact: true }).click();
+    await expect(
+      page.getByRole("tab", { name: "Visualizer", exact: true }),
+    ).toHaveAttribute("aria-selected", "true");
+    await page.clock.runFor(100);
+    const beforeVisualizer = reads;
+    await page.clock.fastForward(90_000);
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await page.clock.runFor(100);
+    expect(reads).toBe(beforeVisualizer);
+    await expect(page.locator(".personal-regular")).toHaveCount(0);
+
+    const refreshed = page.waitForResponse(
+      (response) =>
+        response.url().includes("/recommendations/discover") &&
+        response.request().method() === "GET",
+    );
+    await page.getByRole("tab", { name: "Discover", exact: true }).click();
+    await refreshed;
+    await page.clock.runFor(100);
+    expect(reads).toBe(beforeVisualizer + 1);
+  },
+);
+
+qa(
+  "a feedback mutation during a pending read queues exactly one fresh follow-up",
+  async ({ page }) => {
+    await page.setViewportSize({ width: 1680, height: 960 });
+    await setup(page);
+    await expect(page.locator(".personal-regular").first()).toBeVisible();
+    await page.waitForTimeout(100);
+    let reads = 0;
+    let markStarted!: () => void;
+    let releaseFirst!: () => void;
+    const started = new Promise<void>((resolve) => (markStarted = resolve));
+    const release = new Promise<void>((resolve) => (releaseFirst = resolve));
+    await page.route("**/api/recommendations/discover*", async (route) => {
+      if (route.request().method() === "GET") {
+        reads++;
+        if (reads === 1) {
+          markStarted();
+          await release;
+        }
+      }
+      await route.fallback();
+    });
+
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await started;
+    const first = page.locator(".personal-regular").first();
+    await first.getByRole("button", { name: /Show actions/ }).click();
+    await first.getByRole("button", { name: /More options/ }).click();
+    await page.getByRole("menuitem", { name: "Not now · 7 days" }).click();
+    releaseFirst();
+
+    await expect.poll(() => reads).toBe(2);
+    await expect(
+      page.getByRole("button", { name: "Undo", exact: true }),
+    ).toBeVisible();
+    await page.waitForTimeout(100);
+    expect(reads).toBe(2);
+  },
+);
+
+qa(
   "Recommendation observations retain the displayed decision through pending queue confirmation",
   async ({ page }) => {
     await page.setViewportSize({ width: 1680, height: 960 });
@@ -533,7 +614,7 @@ for (const width of [390, 1680]) {
         metadataExpiresAt: new Date(Date.now() + 10_000).toISOString(),
       });
       await expect(page.locator(".personal-regular")).toHaveCount(
-        width === 390 ? 3 : 8,
+        width === 390 ? 3 : 9,
       );
       await expect(
         page.locator(".personal-recommendations .personal-track-row"),

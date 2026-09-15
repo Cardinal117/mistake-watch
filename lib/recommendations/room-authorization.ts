@@ -3,7 +3,7 @@ import "server-only";
 import { canAccessAccountRoom } from "@/lib/rooms/personal-access";
 import { cookies } from "next/headers";
 
-import { getAccountSummary } from "@/lib/account/server";
+import { getAccountSummaryForVerifiedUser } from "@/lib/account/server";
 import {
   getGuestIdentityCookieName,
   reclaimGuestMembership,
@@ -79,7 +79,6 @@ async function resolveAccountAccess(
 ): Promise<RecommendationRoomAccess | null> {
   const serverClient = await createSupabaseServerClient();
   const { data, error } = await serverClient.auth.getUser();
-
   if (error || !data.user) {
     return null;
   }
@@ -104,20 +103,26 @@ async function resolveAccountAccess(
     return null;
   }
 
-  if (!(await canAccessAccountRoom(room))) return null;
+  const personal = room.room_kind === "personal";
+  if (personal) {
+    if (data.user.is_anonymous !== false || data.user.id !== room.owner_user_id)
+      return null;
+  } else if (!(await canAccessAccountRoom(room))) return null;
 
-  const account = await getAccountSummary();
-
-  if (account.status !== "signed-in" || account.id !== data.user.id) {
+  const account = await getAccountSummaryForVerifiedUser(data.user, {
+    requireExistingProfile: room.room_kind === "personal",
+  });
+  if (!account || account.status !== "signed-in" || account.id !== data.user.id)
     return null;
-  }
+
+  if (personal && !(await canAccessAccountRoom(room, account))) return null;
 
   const catalogue = await getUploadedCatalogueAccess(account);
 
   return {
-    accountUserId: data.user.id,
+    accountUserId: account.id,
     catalogueScope: catalogue.allowed ? catalogue.scope : "none",
-    identityKey: `account:${roomId}:${data.user.id}`,
+    identityKey: `account:${roomId}:${account.id}`,
     kind: "account",
     memberId: member.id,
     roomId,

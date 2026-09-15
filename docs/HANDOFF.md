@@ -1,6 +1,30 @@
 # Mistake Watch Handoff
 
-Mode-icon follow-up: `aa769e1` is live as deployment `dpl_6gsekp6sDWCZNYGHNftGXC8iAtEQ`.
+## Live CPU efficiency release — 2026-09-15
+
+Commits `6a2c893`, `f35c1b0`, `2c6c64d` and receipt-alignment commit
+`e526ca0` are published on `codex/task-030-personal-music-catalogue` and live as
+Vercel deployment `dpl_BnUxVRq9pebHuEX1c35JjMGzS4Sc`. Supabase migration
+`20260915100111 catalogue_maintenance_scheduling` is hosted. Personal Discover
+coalesces inactive/concurrent refreshes, recommendation authorization reuses
+verified request-local context, and catalogue retention is fleet-coordinated in
+bounded batches.
+
+The exact clean source snapshot and Vercel build passed. Custom-domain health and
+readiness return 200, the excluded recording route returns 404, and the protected
+drain returns 401 without its secret. Existing unrelated recording-review and
+local workflow files remain uncommitted and were excluded. Production CPU savings
+and the first hosted completed-cleanup receipt still require observation; see the
+[release receipt](tasks/cpu-maintenance-scheduling/release.md).
+
+Player hotfix 2026-09-14: `e63667d` is live as deployment
+`dpl_BxXiBLHnD8WGm9QtfAqjwk1PE6xt`. Listen volume/percentage stay visible;
+YouTube terminal state rejects stale ends and explicit replay restarts at zero.
+380 focused tests, 19 browser tests, typecheck, lint, local/Vercel builds and live
+health/readiness passed. PR #19 is open; main is unchanged. See the latest
+[player receipt](tasks/listen-mobile-player-polish/task.md).
+
+Previous mode-icon follow-up: `aa769e1` was live as deployment `dpl_6gsekp6sDWCZNYGHNftGXC8iAtEQ`.
 The aperture animation now starts when the mark becomes visible, preserving the
 outgoing symbol before the destination swap. Sixteen browser checks and twenty
 unit checks passed; build and live readiness verified. See
@@ -17,7 +41,6 @@ See [implementation, QA and limits](tasks/room-brand-loading/qa.md).
 
 Production is Ready and verified on the custom domain; see [release receipt](tasks/room-brand-loading/release.md). Unrelated recording-review files remain local. Custom player buffering and new theme
 settings remain later work. No database or Spacetime publication is required.
-
 
 ## Live Watch consolidation - 2026-09-12
 
@@ -467,7 +490,6 @@ Rollback target is the prior fine-tuning release `dpl_AEkhfVx3PikrQ4e1YPe9HR4Szt
 No backend changes. Code, design contract, README and focused QA are committed and
 pushed. Keep this release live for requested QA.
 
-
 ## Previous checkpoint — TASK-027 fine-tuning live (2026-09-07)
 
 Owner passed three-device live QA on Opera, Opera GX and Huawei Chrome. The
@@ -726,7 +748,6 @@ Queue responsiveness/virtualization and playlist repair are implemented locally.
 [QA links, results and remaining acceptance](tasks/TASK-027-room-flow-and-queue-response/local-qa.md).
 This earlier checkpoint preceded 027.3 below; mobile Listen 027.4 remains pending.
 No production release or Git publication is included in this checkpoint.
-
 
 ### TASK-027.3 local Watch review
 

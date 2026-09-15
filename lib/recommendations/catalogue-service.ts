@@ -1,9 +1,12 @@
 import "server-only";
-import { failShadow } from "./shadow-failure";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/database.types";
 import { parseYouTubeDuration } from "@/lib/youtube/metadata";
-import { catalogueObject, CATALOGUE_MEDIA_ID } from "./catalogue-contracts";
+import {
+  catalogueObject,
+  CATALOGUE_MEDIA_ID,
+  parseCatalogueMaintenanceResult,
+} from "./catalogue-contracts";
 import {
   catalogueDailyLimit,
   normalizeCatalogueVideos,
@@ -39,16 +42,15 @@ export async function preparePersonalCatalogue(
 }
 
 export async function pruneMusicCatalogue() {
-  const { data, error } = await createSupabaseAdminClient().rpc(
-    "prune_music_catalogue",
-    {},
-  );
+  const { data, error } = await createSupabaseAdminClient()
+    .rpc("run_catalogue_retention_maintenance", {})
+    .abortSignal(AbortSignal.timeout(10_000));
   if (error) throw new Error("Catalogue cleanup failed");
-  const shadow = await createSupabaseAdminClient()
-    .rpc("prune_shadow_enrichment", {})
-    .abortSignal(AbortSignal.timeout(5000));
-  if (shadow.error) failShadow("cleanup", shadow.error);
-  return data;
+  try {
+    return parseCatalogueMaintenanceResult(data);
+  } catch {
+    throw new Error("Catalogue cleanup failed");
+  }
 }
 
 export async function runMusicCatalogueMaintenance() {

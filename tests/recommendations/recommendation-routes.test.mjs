@@ -102,6 +102,8 @@ test("routes resolve identity server-side and return private no-store responses"
   assert.match(roomRoute, /Cache-Control["']?:?\s*["']private, no-store/);
   assert.match(preferenceRoute, /Cache-Control["']?:?\s*["']private, no-store/);
   assert.match(authorization, /serverClient\.auth\.getUser\(\)/);
+  assert.match(authorization, /getAccountSummaryForVerifiedUser\(data\.user/);
+  assert.match(authorization, /canAccessAccountRoom\(room, account\)/);
   assert.match(authorization, /reclaimGuestMembership/);
   assert.match(authorization, /\.eq\("user_id", data\.user\.id\)/);
 });

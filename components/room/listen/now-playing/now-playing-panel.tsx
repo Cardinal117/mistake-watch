@@ -32,7 +32,6 @@ import {
   ListenMobileQueueNavigation,
   ListenMobileVisualizerNavigation,
 } from "../mobile/listen-mobile-context";
-import { PlayerPopover } from "../mobile/player-popover";
 import { formatSeconds } from "@/components/room/listen/helpers";
 import { ListenUpNextPreview } from "@/components/room/listen/now-playing/up-next-preview";
 
@@ -342,19 +341,12 @@ export function ListenNowPlayingPanel({
                   Visualizer
                 </button>
               )}
-              <PlayerPopover
-                label="Volume controls"
-                icon={
-                  volume <= 0 ? (
-                    <VolumeX aria-hidden />
-                  ) : (
-                    <Volume2 aria-hidden />
-                  )
-                }
-              >
-                <label className="listen-volume-label">
-                  Volume <span>{Math.round(volume)}%</span>
-                </label>
+              <div className="listen-volume-control">
+                {volume <= 0 ? (
+                  <VolumeX aria-hidden />
+                ) : (
+                  <Volume2 aria-hidden />
+                )}
                 <Slider
                   label="Volume"
                   min={0}
@@ -365,7 +357,13 @@ export function ListenNowPlayingPanel({
                     onVolumeChange(Number(event.currentTarget.value))
                   }
                 />
-              </PlayerPopover>
+                <span
+                  aria-label={`Volume ${Math.round(volume)} percent`}
+                  className="listen-volume-percentage"
+                >
+                  {Math.round(volume)}%
+                </span>
+              </div>
               {desktopShell && (
                 <IconButton
                   label="Fullscreen"

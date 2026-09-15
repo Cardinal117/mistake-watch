@@ -8,6 +8,9 @@ const {
   maintainBeforeRoomDrain,
   cataloguePreparationFailureStage,
 } = await loadRecommendationModule("catalogue-worker-core.ts");
+const { parseCatalogueMaintenanceResult } = await loadRecommendationModule(
+  "catalogue-contracts.ts",
+);
 const token = "03000000-0000-4000-8000-000000000001";
 const ids = ["catalogue01", "catalogue02"];
 const publicVideo = {
@@ -204,6 +207,96 @@ test("Disabled and exhausted workers still prune without a provider request", as
     assert.equal(fetched, 0);
     assert.equal(result.status, limit ? "budget-exhausted" : "disabled");
   }
+});
+test("Busy and not-due cleanup results do not suppress catalogue claims", async () => {
+  for (const status of ["busy", "not_due"]) {
+    let claims = 0;
+    const result = await runCatalogueWorker({
+      prune: async () => ({ status }),
+      claim: async () => {
+        claims++;
+        return { videoIds: [], leaseToken: null, budgetExhausted: false };
+      },
+      fetchBatch: async () => assert.fail("no claimed work"),
+      complete: async () => assert.fail("no claimed work"),
+    });
+    assert.equal(claims, 1);
+    assert.equal(result.status, "idle");
+  }
+});
+test("Catalogue maintenance accepts only its fixed service response", () => {
+  const completed = parseCatalogueMaintenanceResult({
+    status: "completed",
+    catalogueDeleted: 3,
+    shadowDeleted: 513,
+    shadowBatches: 2,
+    backlogPossible: false,
+    nextDueAt: "2026-09-15T12:00:00Z",
+  });
+  assert.equal(completed.shadowDeleted, 513);
+  for (const value of [
+    null,
+    {},
+    { status: "later" },
+    {
+      status: "busy",
+      catalogueDeleted: 0,
+      shadowDeleted: 0,
+      shadowBatches: 0,
+      backlogPossible: false,
+      nextDueAt: null,
+      privatePayload: "must not pass",
+    },
+    {
+      status: "not_due",
+      catalogueDeleted: -1,
+      shadowDeleted: 0,
+      shadowBatches: 0,
+      backlogPossible: false,
+      nextDueAt: "2026-09-15T12:00:00Z",
+    },
+    {
+      status: "busy",
+      catalogueDeleted: 1,
+      shadowDeleted: 0,
+      shadowBatches: 0,
+      backlogPossible: false,
+      nextDueAt: null,
+    },
+    {
+      status: "completed",
+      catalogueDeleted: 0,
+      shadowDeleted: 12_289,
+      shadowBatches: 25,
+      backlogPossible: true,
+      nextDueAt: "2026-09-15T12:00:00Z",
+    },
+    {
+      status: "completed",
+      catalogueDeleted: 0,
+      shadowDeleted: 1,
+      shadowBatches: 2,
+      backlogPossible: false,
+      nextDueAt: "2026-09-15T12:00:00Z",
+    },
+    {
+      status: "completed",
+      catalogueDeleted: 0,
+      shadowDeleted: 12_288,
+      shadowBatches: 24,
+      backlogPossible: false,
+      nextDueAt: "2026-09-15T12:00:00Z",
+    },
+    {
+      status: "completed",
+      catalogueDeleted: 16_384,
+      shadowDeleted: 0,
+      shadowBatches: 0,
+      backlogPossible: false,
+      nextDueAt: "2026-09-15T12:00:00Z",
+    },
+  ])
+    assert.throws(() => parseCatalogueMaintenanceResult(value));
 });
 test("Maintenance executes before a failed room transport", async () => {
   let cleaned = false;

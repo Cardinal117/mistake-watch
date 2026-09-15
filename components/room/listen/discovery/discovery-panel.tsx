@@ -47,7 +47,9 @@ import {
   youtubeMetadataToQueueItem,
 } from "@/components/room/listen/discovery/media-cards";
 
-export type DiscoveryPanelProps = ComponentProps<typeof LegacyDiscoveryPanel>;
+export type DiscoveryPanelProps = ComponentProps<typeof LegacyDiscoveryPanel> & {
+  active?: boolean;
+};
 export function ListenDiscoveryPanel(props: DiscoveryPanelProps) {
   return props.room.kind === "personal" ? (
     <PersonalDiscoveryPanel key={props.room.id} {...props} />

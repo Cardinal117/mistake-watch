@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import type { RoomQueueItem } from "@/lib/rooms";
 import type {
   DiscoverItem,
@@ -11,6 +17,7 @@ import type {
   DiscoverSurface,
 } from "@/lib/recommendations/discover-contracts";
 import { queuedPersonalTrack } from "@/lib/recommendations/personal-discovery-model";
+import { createDiscoveryRefreshCoordinator } from "@/lib/recommendations/discovery-refresh-coordinator";
 import { queueItemToDiscoveryQueueCommand } from "@/lib/recommendations/listen-discovery-interactions";
 import type { QueueAddInput } from "../shared";
 
@@ -51,6 +58,7 @@ export function usePersonalDiscovery(
   queue: RoomQueueItem[],
   add: (input: QueueAddInput) => void | Promise<void>,
   preferenceRevision = 0,
+  active = true,
 ) {
   const [data, setData] = useState<DiscoverResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -62,8 +70,8 @@ export function usePersonalDiscovery(
   const [added, setAdded] = useState<Set<string>>(new Set());
   const dataRef = useRef(data);
   const mounted = useRef(true);
-  const requestVersion = useRef(0);
   const mutationVersion = useRef(0);
+  const previousPreferenceRevision = useRef(preferenceRevision);
   const observed = useRef(new Set<string>());
   const inFlight = useRef(
     new Map<
@@ -114,8 +122,7 @@ export function usePersonalDiscovery(
     };
   }, []);
 
-  const refresh = useCallback(async () => {
-    const version = ++requestVersion.current;
+  const executeRefresh = useCallback(async () => {
     const mutation = mutationVersion.current;
     try {
       const response = await fetch(
@@ -129,7 +136,6 @@ export function usePersonalDiscovery(
         );
       if (
         mounted.current &&
-        version === requestVersion.current &&
         mutation === mutationVersion.current
       ) {
         const fresh = removeExpiredMetadata(body);
@@ -142,7 +148,6 @@ export function usePersonalDiscovery(
     } catch (err) {
       if (
         mounted.current &&
-        version === requestVersion.current &&
         mutation === mutationVersion.current
       ) {
         dataRef.current = null;
@@ -153,23 +158,59 @@ export function usePersonalDiscovery(
       }
     }
   }, [roomId]);
+  const [refreshCoordinator] = useState(() =>
+    createDiscoveryRefreshCoordinator(),
+  );
+  useLayoutEffect(() => {
+    refreshCoordinator.setRun(executeRefresh);
+  }, [executeRefresh, refreshCoordinator]);
+  const refresh = useCallback(
+    () => refreshCoordinator.request(),
+    [refreshCoordinator],
+  );
+  const invalidate = useCallback(
+    () => refreshCoordinator.invalidate(),
+    [refreshCoordinator],
+  );
+  useLayoutEffect(() => {
+    const hadQueuedWork = refreshCoordinator.hasQueued();
+    void refreshCoordinator.setActive(active);
+    let initial: ReturnType<typeof setTimeout> | undefined;
+    if (!active) void refreshCoordinator.invalidate();
+    else if (!hadQueuedWork)
+      initial = setTimeout(() => void refreshCoordinator.request(), 0);
+    return () => {
+      if (initial) clearTimeout(initial);
+      void refreshCoordinator.setActive(false);
+    };
+  }, [active, refreshCoordinator]);
+  useLayoutEffect(() => {
+    if (previousPreferenceRevision.current === preferenceRevision) return;
+    previousPreferenceRevision.current = preferenceRevision;
+    void refreshCoordinator.invalidate();
+  }, [preferenceRevision, refreshCoordinator]);
   useEffect(() => {
-    const initial = setTimeout(() => void refresh(), 0);
     const whenVisible = () => {
       if (document.visibilityState === "visible") void refresh();
     };
-    const interval = setInterval(whenVisible, 30_000);
+    const interval = active ? setInterval(whenVisible, 30_000) : undefined;
+    const whenSettingsChange = () => void invalidate();
     window.addEventListener("focus", whenVisible);
-    window.addEventListener("mw-listening-settings-changed", whenVisible);
+    window.addEventListener(
+      "mw-listening-settings-changed",
+      whenSettingsChange,
+    );
     document.addEventListener("visibilitychange", whenVisible);
     return () => {
-      clearTimeout(initial);
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
       window.removeEventListener("focus", whenVisible);
-      window.removeEventListener("mw-listening-settings-changed", whenVisible);
+      window.removeEventListener(
+        "mw-listening-settings-changed",
+        whenSettingsChange,
+      );
       document.removeEventListener("visibilitychange", whenVisible);
     };
-  }, [refresh, preferenceRevision]);
+  }, [active, invalidate, refresh]);
 
   const observe = useCallback(
     (
@@ -376,13 +417,12 @@ export function usePersonalDiscovery(
         setActionError(
           err instanceof Error ? err.message : "Feedback was not saved.",
         );
-      await refresh();
     } finally {
       ++mutationVersion.current;
       feedbackLock.current = false;
       if (mounted.current) setBusyFeedback(false);
     }
-    if (mounted.current) await refresh();
+    if (mounted.current) await invalidate();
   }
   return {
     data,
