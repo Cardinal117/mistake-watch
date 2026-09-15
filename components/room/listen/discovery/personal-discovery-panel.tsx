@@ -33,12 +33,14 @@ export function PersonalDiscoveryPanel(props: DiscoveryPanelProps) {
     canAddQueue,
     canPlay,
     canLoadSource,
+    active = true,
   } = props;
   const discovery = usePersonalDiscovery(
     room.id,
     items,
     onAddQueueItem,
     mediaPreferences.revision,
+    active,
   );
   const { data, observe } = discovery;
   const [browse, setBrowse] = useState<DiscoverSurface | null>(null);

@@ -160,6 +160,7 @@ export function ListenContentStage({
         role="tabpanel"
       >
         <ListenDiscoveryPanel
+          active={visible && view === "discover"}
           canAddQueue={canAddQueue}
           canLoadSource={canLoadSource}
           canPlay={canPlay}
