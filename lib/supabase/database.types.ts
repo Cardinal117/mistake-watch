@@ -1151,6 +1151,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      run_catalogue_retention_maintenance: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
       prune_shadow_enrichment: {
         Args: Record<PropertyKey, never>;
         Returns: number;

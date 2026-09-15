@@ -33,6 +33,64 @@ export function catalogueCount(value: unknown): value is number {
 export function catalogueDate(value: unknown): value is string {
   return typeof value === "string" && Number.isFinite(Date.parse(value));
 }
+
+export type CatalogueMaintenanceResult = {
+  status: "busy" | "not_due" | "completed";
+  catalogueDeleted: number;
+  shadowDeleted: number;
+  shadowBatches: number;
+  backlogPossible: boolean;
+  nextDueAt: string | null;
+};
+
+export function parseCatalogueMaintenanceResult(
+  value: unknown,
+): CatalogueMaintenanceResult {
+  const row = catalogueObject(value);
+  const skipped = row.status === "busy" || row.status === "not_due";
+  const shadowBatches = Number(row.shadowBatches);
+  const shadowDeleted = Number(row.shadowDeleted);
+  const validShadowWork =
+    shadowBatches === 0
+      ? shadowDeleted === 0
+      : shadowBatches <= 24 &&
+        shadowDeleted >= (shadowBatches - 1) * 512 + 1 &&
+        shadowDeleted <= shadowBatches * 512;
+  const allowed = [
+    "status",
+    "catalogueDeleted",
+    "shadowDeleted",
+    "shadowBatches",
+    "backlogPossible",
+    "nextDueAt",
+  ];
+  if (
+    Object.keys(row).length !== allowed.length ||
+    Object.keys(row).some((key) => !allowed.includes(key)) ||
+    !["busy", "not_due", "completed"].includes(String(row.status)) ||
+    !catalogueCount(row.catalogueDeleted) ||
+    !catalogueCount(row.shadowDeleted) ||
+    !catalogueCount(row.shadowBatches) ||
+    typeof row.backlogPossible !== "boolean" ||
+    (skipped &&
+      (row.catalogueDeleted !== 0 ||
+        row.shadowDeleted !== 0 ||
+        row.shadowBatches !== 0 ||
+        row.backlogPossible !== false)) ||
+    (row.status === "completed" &&
+      (Number(row.catalogueDeleted) > 16_384 ||
+        !validShadowWork ||
+        ((Number(row.catalogueDeleted) === 16_384 ||
+          (shadowBatches === 24 && shadowDeleted === 12_288)) &&
+          row.backlogPossible !== true))) ||
+    !(
+      (row.status === "busy" && row.nextDueAt === null) ||
+      (row.status !== "busy" && catalogueDate(row.nextDueAt))
+    )
+  )
+    throw new Error("Invalid catalogue maintenance result");
+  return row as CatalogueMaintenanceResult;
+}
 export function catalogueThumbnail(value: unknown): value is string | null {
   if (value === null) return true;
   if (typeof value !== "string" || value.length > 2048) return false;
