@@ -1,7 +1,7 @@
 # CPU efficiency slice — Personal Discover refresh control
 
-Status: implemented and locally verified on 2026-09-15; not published or
-deployed.
+Status: released on 2026-09-15 in `6a2c893`; production deployment
+`dpl_BnUxVRq9pebHuEX1c35JjMGzS4Sc` is Ready.
 
 ## Objective
 
@@ -60,3 +60,7 @@ review. It found no high-severity issue. Its Strict Mode, passive-effect race,
 render-ref lint and responsive-count concerns were addressed and independently
 verified on the host. The worker could not execute dependencies in its isolated
 container; host-side evidence above is authoritative for tests.
+
+The exact committed release snapshot passed a clean production build before
+deployment. Production health and readiness return 200 on the custom domain.
+See the combined [release receipt](../cpu-maintenance-scheduling/release.md).

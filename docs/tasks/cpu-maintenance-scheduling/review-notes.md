@@ -65,6 +65,13 @@ the final read-back confirmed them resolved with no new regression. The raw
 historical `.tmp` snapshots and fails on two generated bundles; current source
 passes when that ignored directory is excluded.
 
-Local-only: no hosted schema query or mutation, Git staging/publication, Vercel
-deployment, provider call or production measurement was performed. Actual CPU
-savings and the first successful hosted cleanup receipt remain release evidence.
+Release follow-up: the hosted migration is recorded as
+`20260915100111 catalogue_maintenance_scheduling`. The repository migration was
+renamed to that exact receipt in `e526ca0` so future migration tooling does not
+report a false pending change. Application deployment
+`dpl_BnUxVRq9pebHuEX1c35JjMGzS4Sc` is Ready on the custom domain. Health and
+readiness return 200; the excluded recording route returns 404 and the protected
+drain route returns 401 without its secret. The initialized maintenance state
+had no completed run at the release read-back. The first request/scheduled cleanup
+receipt and matched Vercel CPU comparison remain operational evidence rather
+than release claims. See [release.md](release.md).

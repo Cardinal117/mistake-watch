@@ -1,7 +1,7 @@
 # Catalogue cleanup scheduling
 
 Updated: 2026-09-15
-Status: implemented locally; release approval and hosted migration remain separate.
+Status: released on 2026-09-15; hosted migration and Vercel deployment verified.
 Documentation: full packet because this changes database coordination and retention.
 
 ## Objective
@@ -10,9 +10,10 @@ Reduce repeated physical cleanup during Personal Discover traffic while retainin
 metadata expiry, daily retention maintenance and current enrichment progress.
 
 The owner approved proceeding with the scheduling design after the two local
-CPU slices. The additive migration and application integration now pass local
-synthetic QA. No hosted schema, Git publication or production operation was
-performed in this slice.
+CPU slices. The additive migration and application integration passed local
+synthetic QA, were published to the feature branch, and are live. See the
+[release receipt](release.md) for the hosted version, deployment and smoke
+checks.
 
 ## Scope
 

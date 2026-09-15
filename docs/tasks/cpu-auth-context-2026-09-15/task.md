@@ -1,7 +1,7 @@
 # CPU efficiency slice — request-local recommendation authorization
 
-Status: implemented and locally verified on 2026-09-15; not published or
-deployed.
+Status: released on 2026-09-15 in `f35c1b0`; production deployment
+`dpl_BnUxVRq9pebHuEX1c35JjMGzS4Sc` is Ready.
 
 ## Objective
 
@@ -95,7 +95,8 @@ Memory preflight reused the current Watch retrieval: INDEX and Current-State,
 two files/4,556 characters, no truncation; repository evidence overrides older
 state. Checkpoint deferred to the repository task record; no vault write made.
 
-Next: specify durable maintenance cadence and wake-up guarantees before moving
-catalogue cleanup out of interactive requests. Recommend Astra Medium for that
-scheduling decision, then Sol Medium implementation with Supabase,
-risk-based-testing and qa-release-gate; review expiry and backlog progress.
+The next maintenance slice was specified, implemented and released alongside
+this change. See the combined
+[release receipt](../cpu-maintenance-scheduling/release.md). Production CPU
+savings remain a measurement question; request-local call reductions are
+verified by tests, not inferred from aggregate Vercel usage.
